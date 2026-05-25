@@ -1,0 +1,19 @@
+{
+  "name": "childrenapi",
+  "version": "1.0.0",
+  "description": "A backend API System that will be used to handle Street Children Information both medically and socially whenever help is given to them. Made with expressjs and nodejs technology + MySQL database for easy configuration.",
+  "license": "ISC",
+  "contributors": [
+    "Paschal Joseph <https://github.com/psychopods>",
+    "Kamuli Zila <https://github.com/kamulizila>",
+    "Happyness Juma <https://github.com/Happynessj>"
+  ],
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
