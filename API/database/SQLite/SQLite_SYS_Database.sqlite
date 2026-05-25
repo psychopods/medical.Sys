@@ -1,0 +1,90 @@
+-- Enable local relational foreign key enforcement inside SQLite instance
+PRAGMA foreign_keys = ON;
+
+-- 1. Dynamic Roles Table (Local Cache & Local Administrations)
+CREATE TABLE IF NOT EXISTS roles (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 0, -- 1 = Change made offline that needs a server push; 0 = In sync
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. System Permissions Table (Local Read-Only Engine Constraints)
+CREATE TABLE IF NOT EXISTS permissions (
+    id TEXT PRIMARY KEY NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    description TEXT
+);
+
+-- 3. Role-Permissions Bridging Table
+CREATE TABLE IF NOT EXISTS role_permissions (
+    role_id TEXT NOT NULL,
+    permission_id TEXT NOT NULL,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (role_id, permission_id),
+    FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions (id) ON DELETE CASCADE
+);
+
+-- 4. Staff Accounts Table (Supports Secure Offline Field Sign-In)
+CREATE TABLE IF NOT EXISTS staff_users (
+    id TEXT PRIMARY KEY NOT NULL,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role_id TEXT NOT NULL, 
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES roles (id)
+);
+
+-- 5. Children Master Registry Table (Offline Intake Engine)
+CREATE TABLE IF NOT EXISTS children_profiles (
+    id TEXT PRIMARY KEY NOT NULL,
+    custom_serial_id TEXT NOT NULL UNIQUE,
+    full_name TEXT NOT NULL,
+    gender TEXT NOT NULL CHECK(gender IN ('Male', 'Female', 'Unknown')),
+    estimated_birth_year INTEGER,
+    created_by_staff_id TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 1, -- Defaults to 1 because new profiles start offline
+    sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by_staff_id) REFERENCES staff_users (id)
+);
+
+-- 6. Biometric Fingerprint Templates Storage Table (Offline Vector Processing)
+CREATE TABLE IF NOT EXISTS biometric_fingerprints (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    finger_index INTEGER NOT NULL CHECK (finger_index BETWEEN 1 AND 10),
+    template_data BLOB NOT NULL, -- SQLite handles all binary sizes inside BLOB automatically
+    quality_score INTEGER NULL,
+    status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'VERIFIED', 'REJECTED')),
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 1, -- 1 = Needs syncing, 0 = Saved cleanly to MySQL
+    sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK (sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE,
+    UNIQUE(child_id, finger_index)
+);
+
+CREATE TRIGGER IF NOT EXISTS ts_trigger_biometrics
+AFTER UPDATE ON biometric_fingerprints
+BEGIN
+    UPDATE biometric_fingerprints 
+    SET last_modified_at = CURRENT_TIMESTAMP, is_dirty = 1, sync_status = 'local_updated'
+    WHERE id = NEW.id;
+END;
+
+-- Create performance indexes for local browser search speeds
+CREATE INDEX IF NOT EXISTS idx_lite_child_name ON children_profiles (full_name);
+CREATE INDEX IF NOT EXISTS idx_lite_child_serial ON children_profiles (custom_serial_id);
