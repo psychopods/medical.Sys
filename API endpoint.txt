@@ -1,0 +1,332 @@
+================================================================================
+FIELD OUTREACH AND STREET MEDICINE SYSTEM - API ENDPOINT SPECIFICATION
+================================================================================
+
+This document details all active API endpoints, authentication requirements,
+parameter properties (casing standards), and request/response structures.
+
+--------------------------------------------------------------------------------
+GENERAL TECHNICAL GUIDELINES
+--------------------------------------------------------------------------------
+
+1. CONTENT-TYPE STANDARD
+   - All API endpoints that receive body payloads require the HTTP header:
+     Content-Type: application/json
+
+2. CASING STANDARDS
+   - Request and Response JSON payload properties strictly use camelCase
+     (e.g., 'usernameOrEmail', 'roleId', 'permissionId').
+   - URL path parameters use camelCase (e.g., ':id', ':permissionId').
+   - The underlying MySQL database uses snake_case for tables and columns
+     (e.g., 'staff_users', 'role_id', 'password_hash'), but the API layer maps
+     these values cleanly into camelCase before emitting response payloads.
+
+3. AUTHENTICATION & SHIELDING
+   - Protected endpoints require a signed JSON Web Token (JWT) passed via
+     the HTTP Authorization header:
+     Authorization: Bearer <your_jwt_access_token>
+   - User privileges are validated in real-time by verifying dynamic
+     permission slugs mapped to the staff user's role.
+
+================================================================================
+SECTION 1: SYSTEM MONITORING
+================================================================================
+
+1. GET /health
+   - Description: Verifies application health and operational status.
+   - Authentication: None.
+   - Data Sending Method: URL GET request.
+   - Query Parameters: None.
+   - Response Payload Example:
+     {
+         "status": "ok"
+     }
+
+================================================================================
+SECTION 2: STAFF AUTHENTICATION & SESSION MANAGEMENT (/api/auth)
+================================================================================
+
+1. POST /api/auth/login
+   - Description: Validates credentials and issues a signed bearer access token.
+   - Authentication: None.
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "usernameOrEmail": "string" (Required - non-empty),
+         "password": "string" (Required - non-empty)
+     }
+   - Response Payload Example:
+     {
+         "accessToken": "eyJhbGciOiJIUzI1...",
+         "session": {
+             "sessionId": "4d7be15e-99ac-40eb-bc0e-36526117eb8a",
+             "staffUserId": "staff-admin-001",
+             "username": "master_admin",
+             "email": "paschaltimoth@gmx.us",
+             "roleId": "role-su-777",
+             "permissions": ["rbac:read", "rbac:write", "children:create"],
+             "issuedAt": "2026-05-26T10:30:59.000Z",
+             "expiresAt": "2026-05-26T22:30:59.000Z"
+         },
+         "localSession": {
+             "storageKey": "field_outreach.auth.session.v1",
+             "permissionCacheKey": "field_outreach.auth.permissions.v1",
+             "expiresAt": "2026-05-26T22:30:59.000Z"
+         }
+     }
+
+2. GET /api/auth/session
+   - Description: Loads active session properties from the presented token.
+   - Authentication: Protected (Requires Authorization Bearer Token).
+   - Data Sending Method: HTTP Authorization Header.
+   - Response Payload Example:
+     {
+         "session": {
+             "sessionId": "4d7be15e-99ac-40eb-bc0e-36526117eb8a",
+             "staffUserId": "staff-admin-001",
+             "username": "master_admin",
+             "email": "paschaltimoth@gmx.us",
+             "roleId": "role-su-777",
+             "permissions": ["rbac:read", "rbac:write"],
+             "issuedAt": "2026-05-26T10:30:59.000Z",
+             "expiresAt": "2026-05-26T22:30:59.000Z"
+         }
+     }
+
+3. POST /api/auth/logout
+   - Description: Emits session clearance notification (tokens are stateless).
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "message": "Local session cleared by client. Bearer token should be discarded from local storage."
+     }
+
+4. POST /api/auth/signup
+   - Description: Creates a new staff operator.
+   - Authentication: None.
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "username": "string" (Required - non-empty),
+         "email": "string" (Required - must be valid email format),
+         "password": "string" (Required - Minimum 6 characters),
+         "roleId": "string" (Required - Must refer to an existing role ID)
+     }
+   - Response Payload Example:
+     {
+         "message": "Staff user registered successfully.",
+         "user": {
+             "id": "3be55c0a-01df-4e2b-a010-8b636cd4f971",
+             "username": "field_medic_john",
+             "email": "john.medic@outreach.org",
+             "roleId": "role-nu-888",
+             "version": 1,
+             "createdAt": "2026-05-26T11:00:59.000Z"
+         }
+     }
+
+================================================================================
+SECTION 3: ROLE-BASED ACCESS CONTROL (/api/rbac)
+================================================================================
+
+--------------------------------------------------------------------------------
+ROLES CRUD OPERATIONS
+--------------------------------------------------------------------------------
+
+1. POST /api/rbac/roles
+   - Description: Registers a new authorization role profile.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "name": "string" (Required - Unique role profile name),
+         "description": "string" (Optional - null-coalescing fallback)
+     }
+   - Response Payload Example:
+     {
+         "message": "Role created successfully.",
+         "role": {
+             "id": "c1f7b0a3-2c1a-4d7a-8b83-d3a6eeef7f01",
+             "name": "Supervisor",
+             "description": "Outreach system administration manager",
+             "version": 1,
+             "lastModifiedAt": "2026-05-26T12:00:00.000Z"
+         }
+     }
+
+2. GET /api/rbac/roles
+   - Description: Lists all registered roles.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     {
+         "roles": [
+             {
+                 "id": "role-nu-888",
+                 "name": "Nurse",
+                 "description": "Field operator handling patient intake.",
+                 "version": 1,
+                 "lastModifiedAt": "2026-05-26T10:30:59.000Z"
+             }
+         ]
+     }
+
+3. GET /api/rbac/roles/:id
+   - Description: Retrieves a role by ID with nested linked permissions.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "role": {
+             "id": "role-su-777",
+             "name": "Super User",
+             "description": "System Administrator with complete access.",
+             "version": 1,
+             "lastModifiedAt": "2026-05-26T10:30:59.000Z",
+             "permissions": [
+                 {
+                     "id": "perm-001",
+                     "slug": "rbac:read",
+                     "description": "View roles and permissions"
+                 }
+             ]
+         }
+     }
+
+4. PUT /api/rbac/roles/:id
+   - Description: Updates an existing role's name/description and increments version.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "name": "string" (Required - Unique role profile name),
+         "description": "string" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Role updated successfully.",
+         "role": {
+             "id": "c1f7b0a3-2c1a-4d7a-8b83-d3a6eeef7f01",
+             "name": "Outreach Supervisor",
+             "description": "Modified supervisor profile",
+             "version": 2,
+             "lastModifiedAt": "2026-05-26T12:05:00.000Z"
+         }
+     }
+
+5. DELETE /api/rbac/roles/:id
+   - Description: Deletes a role (blocks deletion if assigned to active users).
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Role deleted successfully."
+     }
+
+--------------------------------------------------------------------------------
+PERMISSIONS CRUD OPERATIONS
+--------------------------------------------------------------------------------
+
+1. POST /api/rbac/permissions
+   - Description: Registers a new system-wide functional permission slug.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "slug": "string" (Required - Must follow 'domain:action' format, e.g. 'children:create'),
+         "description": "string" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Permission created successfully.",
+         "permission": {
+             "id": "f5b6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+             "slug": "biometrics:enroll",
+             "description": "Register fingerprints"
+         }
+     }
+
+2. GET /api/rbac/permissions
+   - Description: Lists all registered system permissions.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Response Payload Example:
+     {
+         "permissions": [
+             {
+                 "id": "perm-001",
+                 "slug": "rbac:read",
+                 "description": "View roles and permissions"
+             }
+         ]
+     }
+
+3. GET /api/rbac/permissions/:id
+   - Description: Retrieves permission profile details by ID.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "permission": {
+             "id": "f5b6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+             "slug": "biometrics:enroll",
+             "description": "Register fingerprints"
+         }
+     }
+
+4. PUT /api/rbac/permissions/:id
+   - Description: Updates a permission slug/description.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "slug": "string" (Required - format 'domain:action'),
+         "description": "string" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Permission updated successfully.",
+         "permission": {
+             "id": "f5b6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+             "slug": "biometrics:enroll_scan",
+             "description": "Register fingerprints and manage scan flows"
+         }
+     }
+
+5. DELETE /api/rbac/permissions/:id
+   - Description: Deletes a permission (automatically unlinks related roles).
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Permission deleted successfully."
+     }
+
+--------------------------------------------------------------------------------
+ROLE-PERMISSIONS BRIDGE ENDPOINTS (Linking Relationships)
+--------------------------------------------------------------------------------
+
+1. POST /api/rbac/roles/:id/permissions
+   - Description: Link a permission to a specific role.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter (role ID) & JSON raw body (permission ID).
+   - Request Body Parameters (camelCase):
+     {
+         "permissionId": "string" (Required - ID of the target permission)
+     }
+   - Response Payload Example:
+     {
+         "message": "Permission assigned to role successfully."
+     }
+
+2. DELETE /api/rbac/roles/:id/permissions/:permissionId
+   - Description: Unlink a permission from a specific role.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameters (role ID and permission ID).
+   - Response Payload Example:
+     {
+         "message": "Permission removed from role successfully."
+     }
+================================================================================

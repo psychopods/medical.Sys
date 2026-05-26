@@ -45,18 +45,31 @@ CREATE TABLE IF NOT EXISTS staff_users (
 );
 
 -- 5. Children Master Registry Table (Offline Intake Engine)
+CREATE TABLE IF NOT EXISTS child_locations (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Updated Children Master Registry Table
 CREATE TABLE IF NOT EXISTS children_profiles (
     id TEXT PRIMARY KEY NOT NULL,
     custom_serial_id TEXT NOT NULL UNIQUE,
     full_name TEXT NOT NULL,
     gender TEXT NOT NULL CHECK(gender IN ('Male', 'Female', 'Unknown')),
     estimated_birth_year INTEGER,
+    primary_location_id TEXT NOT NULL, 
     created_by_staff_id TEXT NOT NULL,
     version INTEGER NOT NULL DEFAULT 1,
-    is_dirty INTEGER NOT NULL DEFAULT 1, -- Defaults to 1 because new profiles start offline
+    is_dirty INTEGER NOT NULL DEFAULT 1,
     sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
     last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (primary_location_id) REFERENCES child_locations (id),
     FOREIGN KEY (created_by_staff_id) REFERENCES staff_users (id)
 );
 
@@ -77,6 +90,29 @@ CREATE TABLE IF NOT EXISTS biometric_fingerprints (
     UNIQUE(child_id, finger_index)
 );
 
+-- Local-only OPFS SQLite session cache for the PWA.
+-- This table is intentionally not synchronized to MySQL.
+CREATE TABLE IF NOT EXISTS local_auth_sessions (
+    id CHAR(36) NOT NULL,
+    staff_user_id CHAR(36) NOT NULL,
+    username TEXT NOT NULL,
+    email TEXT NOT NULL,
+    role_id CHAR(36) NOT NULL,
+    access_token TEXT NOT NULL,
+    permission_cache_json TEXT NOT NULL,
+    issued_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    last_used_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
+    PRIMARY KEY (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_local_auth_staff_user_id
+    ON local_auth_sessions (staff_user_id);
+
+CREATE INDEX IF NOT EXISTS idx_local_auth_active_expires_at
+    ON local_auth_sessions (is_active, expires_at);
+
 CREATE TRIGGER IF NOT EXISTS ts_trigger_biometrics
 AFTER UPDATE ON biometric_fingerprints
 BEGIN
@@ -88,3 +124,4 @@ END;
 -- Create performance indexes for local browser search speeds
 CREATE INDEX IF NOT EXISTS idx_lite_child_name ON children_profiles (full_name);
 CREATE INDEX IF NOT EXISTS idx_lite_child_serial ON children_profiles (custom_serial_id);
+CREATE INDEX IF NOT EXISTS idx_lite_child_loc ON children_profiles (primary_location_id);

@@ -2,7 +2,6 @@ CREATE DATABASE MySQL_SYS_Database;
 
 USE MySQL_SYS_Database;
 
--- Disable foreign key checks temporarily to safely configure tables
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `biometric_fingerprints`;
@@ -58,20 +57,33 @@ CREATE TABLE `staff_users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Children Master Registry Table (Maps cleanly to your Kid IDs sheet)
+CREATE TABLE `child_locations` (
+    `id` CHAR(36) NOT NULL,
+    `name` VARCHAR(100) NOT NULL UNIQUE,
+    `description` VARCHAR(255) NULL,
+    `version` INT NOT NULL DEFAULT 1,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Updated Children Master Registry Table (With Intake Age & Location Mapping)
 CREATE TABLE `children_profiles` (
-    `id` VARCHAR(36) NOT NULL,
+    `id` CHAR(36) NOT NULL,
     `custom_serial_id` VARCHAR(20) NOT NULL UNIQUE,
     `full_name` VARCHAR(150) NOT NULL,
-    `gender` ENUM('Male', 'Female') NOT NULL,
+    `gender` ENUM('Male', 'Female', 'Unknown') NOT NULL,
     `estimated_birth_year` INT NULL,
-    `created_by_staff_id` VARCHAR(36) NOT NULL,
+    `primary_location_id` CHAR(36) NOT NULL,
+    `created_by_staff_id` CHAR(36) NOT NULL,
     `version` INT NOT NULL DEFAULT 1,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
+    CONSTRAINT `fk_mysql_children_location` FOREIGN KEY (`primary_location_id`) REFERENCES `child_locations` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_mysql_children_staff` FOREIGN KEY (`created_by_staff_id`) REFERENCES `staff_users` (`id`) ON DELETE RESTRICT,
     INDEX `idx_mysql_child_name` (`full_name`),
-    INDEX `idx_mysql_custom_serial` (`custom_serial_id`)
+    INDEX `idx_mysql_custom_serial` (`custom_serial_id`),
+    INDEX `idx_mysql_child_location` (`primary_location_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 6. Biometric Fingerprint Templates Storage Table
