@@ -1,5 +1,6 @@
-/node_modules
+node_modules
 .env
 .sixth
 package-lock.json
 .sixth/skills/AI_Prompt.md
+dist

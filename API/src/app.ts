@@ -2,6 +2,8 @@ import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import pool from './config/database.ts';
 import { createAuthRouter } from './routes/authRoutes.ts';
+import { createBiometricsRouter } from './routes/biometricsRoutes.ts';
+import { createChildrenRouter } from './routes/childrenRoutes.ts';
 import { createRbacRouter } from './routes/rbacRoutes.ts';
 import { HttpError, toHttpError } from './utils/httpError.ts';
 
@@ -15,6 +17,8 @@ app.get('/health', (_request: Request, response: Response) => {
 });
 
 app.use('/api/auth', createAuthRouter(pool));
+app.use('/api/biometrics', createBiometricsRouter(pool));
+app.use('/api/children', createChildrenRouter(pool));
 app.use('/api/rbac', createRbacRouter(pool));
 
 app.use((_request: Request, _response: Response, next: NextFunction) => {
