@@ -330,3 +330,267 @@ ROLE-PERMISSIONS BRIDGE ENDPOINTS (Linking Relationships)
          "message": "Permission removed from role successfully."
      }
 ================================================================================
+
+SECTION 4: CHILD REGISTRATION MODULE (/api/children)
+================================================================================
+
+1. POST /api/children
+   - Description: Creates a child profile record.
+   - Authentication: Protected (Requires 'children:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Important Binding Rule:
+     createdByStaffId is server-bound from request.authSession.staffUserId.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - UUIDv4),
+         "customSerialId": "string" (Required - Unique),
+         "fullName": "string" (Required),
+         "gender": "string" (Required - 'Male' or 'Female'),
+         "estimatedBirthYear": "number|null" (Optional - 1900..current year),
+         "primaryLocationId": "string" (Required - UUIDv4)
+     }
+   - Response Payload Example:
+     {
+         "message": "Patient profile created successfully.",
+         "child": {
+             "id": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "customSerialId": "KID-2026-0001",
+             "fullName": "John Doe",
+             "gender": "Male",
+             "estimatedBirthYear": 2016,
+             "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
+             "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+             "version": 1
+         }
+     }
+
+2. GET /api/children
+   - Description: Lists child profiles.
+   - Authentication: Protected (Requires 'children:read' permission slug).
+   - Response Payload Example:
+     {
+         "children": [
+             {
+                 "id": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+                 "customSerialId": "KID-2026-0001",
+                 "fullName": "John Doe",
+                 "gender": "Male",
+                 "estimatedBirthYear": 2016,
+                 "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
+                 "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+                 "version": 1
+             }
+         ]
+     }
+
+3. GET /api/children/:id
+   - Description: Retrieves a single child profile.
+   - Authentication: Protected (Requires 'children:read' permission slug).
+   - Response Payload Example:
+     {
+         "child": {
+             "id": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "customSerialId": "KID-2026-0001",
+             "fullName": "John Doe",
+             "gender": "Male",
+             "estimatedBirthYear": 2016,
+             "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
+             "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+             "version": 1
+         }
+     }
+
+4. PUT /api/children/:id
+   - Description: Updates a child profile and increments version.
+   - Authentication: Protected (Requires 'children:update' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "customSerialId": "string" (Required),
+         "fullName": "string" (Required),
+         "gender": "string" (Required - 'Male' or 'Female'),
+         "estimatedBirthYear": "number|null" (Optional),
+         "primaryLocationId": "string" (Required - UUIDv4)
+     }
+   - Response Payload Example:
+     {
+         "message": "Patient profile updated successfully.",
+         "child": {
+             "id": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "customSerialId": "KID-2026-0001",
+             "fullName": "John Doe Updated",
+             "gender": "Male",
+             "estimatedBirthYear": 2016,
+             "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
+             "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+             "version": 2
+         }
+     }
+
+5. DELETE /api/children/:id
+   - Description: Deletes a child profile (cascades biometric records via FK).
+   - Authentication: Protected (Requires 'children:delete' permission slug).
+   - Response Payload Example:
+     {
+         "message": "Patient profile deleted successfully."
+     }
+
+================================================================================
+SECTION 5: BIOMETRIC MODULE (/api/biometrics)
+================================================================================
+
+1. POST /api/biometrics/enroll
+   - Description: Upserts (create/update) a fingerprint template for childId + fingerIndex.
+   - Authentication: Protected (Requires 'biometrics:create' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - UUIDv4 template ID),
+         "childId": "string" (Required - UUIDv4 child ID),
+         "fingerIndex": "number" (Required - integer 1..10),
+         "templateBase64": "string" (Required - base64 template bytes),
+         "qualityScore": "number|null" (Optional - integer 0..100),
+         "capturedAt": "string" (Optional metadata),
+         "matcherVersion": "string" (Optional metadata)
+     }
+   - Response Payload Example:
+     {
+         "fingerprint": {
+             "id": "d988fce7-f5ad-4f7a-b77e-2ce44b111117",
+             "childId": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "fingerIndex": 1,
+             "qualityScore": 89,
+             "status": "PENDING",
+             "version": 1
+         },
+         "enrollment": {
+             "childId": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "capturedFingerIndexes": [1],
+             "missingFingerIndexes": [2,3,4,5,6,7,8,9,10],
+             "isComplete": false
+         }
+     }
+
+2. GET /api/biometrics/child/:childId
+   - Description: Lists fingerprint records for a child with enrollment completeness.
+   - Authentication: Protected (Requires 'biometrics:read' permission slug).
+
+3. POST /api/biometrics/verify-1to1
+   - Description: Stores/returns bridge-computed 1:1 verification outcome.
+   - Authentication: Protected (Requires 'biometrics:read' permission slug).
+   - Enforcement Rule:
+     Child must have all 10 fingers enrolled; otherwise HTTP 409.
+   - Request Body Parameters:
+     {
+         "childId": "string" (Required),
+         "templateBase64": "string" (Required),
+         "matched": "boolean" (Required),
+         "score": "number" (Required),
+         "threshold": "number" (Required),
+         "fingerIndex": "number" (Optional)
+     }
+
+4. POST /api/biometrics/identify-1toN
+   - Description: Stores/returns bridge-computed 1:N identification outcome.
+   - Authentication: Protected (Requires 'biometrics:read' permission slug).
+   - Request Body Parameters:
+     {
+         "templateBase64": "string" (Required),
+         "matched": "boolean" (Required),
+         "score": "number" (Required),
+         "threshold": "number" (Required),
+         "candidateChildId": "string|null" (Required if matched=true),
+         "candidateFingerprintId": "string|null" (Required if matched=true)
+     }
+
+5. DELETE /api/biometrics/:id
+   - Description: Deletes a fingerprint template row.
+   - Authentication: Protected (Requires 'biometrics:delete' permission slug).
+   - Response Payload Example:
+     {
+         "message": "Fingerprint record deleted successfully."
+     }
+
+================================================================================
+SECTION 6: DUAL-STATE IDENTITY RESOLUTION (/api/identity)
+================================================================================
+
+1. POST /api/identity/resolve
+   - Description: Two-stage resolution helper for local-first search.
+   - Authentication: Protected (Requires 'biometrics:read' permission slug).
+   - Data Flow:
+     Stage A: client performs local SQLite biometric search.
+     Stage B: if no local match and internet exists, call this endpoint with runCentralLookup=true.
+   - Request Body Parameters (camelCase):
+     {
+         "templateBase64": "string" (Required),
+         "localMatched": "boolean" (Required),
+         "localChildId": "string|null" (Required if localMatched=true),
+         "runCentralLookup": "boolean" (Optional; default true)
+     }
+   - Response Shape:
+     {
+         "stage": "local|central|none",
+         "found": "boolean",
+         "child": "object|null",
+         "matchFingerprintId": "string|null",
+         "message": "string"
+     }
+
+================================================================================
+SECTION 7: OFFLINE/ONLINE SYNC ENGINE (/api/sync)
+================================================================================
+
+1. POST /api/sync/push
+   - Description: Pushes client offline changes to server with optimistic conflict handling.
+   - Authentication: Protected (Bearer token required).
+   - Request Body Parameters:
+     {
+         "childrenProfiles": [ ... ],
+         "biometricFingerprints": [ ... ]
+     }
+   - Response Payload Example:
+     {
+         "message": "Sync push accepted.",
+         "conflicts": [
+             {
+                 "domain": "children_profiles|biometric_fingerprints",
+                 "id": "string",
+                 "reason": "string"
+             }
+         ]
+     }
+
+2. GET /api/sync/delta?since=<ISO-8601 timestamp>
+   - Description: Pulls server-side additions/updates since the provided timestamp.
+   - Authentication: Protected (Bearer token required).
+   - Query Parameter:
+     since (Optional - ISO datetime; if omitted, full baseline since epoch)
+   - Response Payload Example:
+     {
+         "serverTime": "2026-05-28T12:45:00.000Z",
+         "childrenProfiles": [ ... ],
+         "biometricFingerprints": [ ... ]
+     }
+
+--------------------------------------------------------------------------------
+SYNC WORKER CONTEXT (Client-Side Contract)
+--------------------------------------------------------------------------------
+
+Background worker script location:
+  API/public/workers/syncWorker.ts
+
+Inbound messages:
+  INIT
+  NETWORK_STATUS
+  RUN_SYNC
+  STOP
+
+Outbound messages:
+  READY
+  SYNC_STATUS
+  SYNC_RESULT
+  SYNC_ERROR
+
+Purpose:
+  Keeps sync off the UI thread, queues pending records, pushes on reconnect,
+  then fetches server delta snapshots for local SQLite application.
+================================================================================
