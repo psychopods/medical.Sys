@@ -4,7 +4,9 @@ import pool from './config/database.ts';
 import { createAuthRouter } from './routes/authRoutes.ts';
 import { createBiometricsRouter } from './routes/biometricsRoutes.ts';
 import { createChildrenRouter } from './routes/childrenRoutes.ts';
+import { createIdentityRouter } from './routes/identityRoutes.ts';
 import { createRbacRouter } from './routes/rbacRoutes.ts';
+import { createSyncRouter } from './routes/syncDelta.ts';
 import { HttpError, toHttpError } from './utils/httpError.ts';
 
 const app = express();
@@ -19,7 +21,9 @@ app.get('/health', (_request: Request, response: Response) => {
 app.use('/api/auth', createAuthRouter(pool));
 app.use('/api/biometrics', createBiometricsRouter(pool));
 app.use('/api/children', createChildrenRouter(pool));
+app.use('/api/identity', createIdentityRouter(pool));
 app.use('/api/rbac', createRbacRouter(pool));
+app.use('/api/sync', createSyncRouter(pool));
 
 app.use((_request: Request, _response: Response, next: NextFunction) => {
     next(new HttpError(404, 'Route not found.'));

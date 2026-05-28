@@ -79,7 +79,7 @@ INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES
 ('role-nu-888', 'p-loc-r');
 
 INSERT INTO `staff_users` (`id`, `username`, `email`, `password_hash`, `role_id`, `version`) VALUES
-('staff-admin-001', 'psycho_moth', 'paschaltimoth@gmx.us', '$2b$10$H1f75Y.zyeXDYG4HouLL6uH8cJ4XKb4/3ItcC97ViedozwoNETjTu', 'role-su-777', 1);
+('staff-admin-001', 'droidgrim', 'droidgrim@gmail.com', '$2b$10$H1f75Y.zyeXDYG4HouLL6uH8cJ4XKb4/3ItcC97ViedozwoNETjTu', 'role-su-777', 1);
 
 INSERT INTO `child_locations` (`id`, `name`, `description`, `version`) VALUES
 ('loc-hub-001', 'Nyegezi Center', 'Outreach clinic base located at Nyegezi terminal point', 1),

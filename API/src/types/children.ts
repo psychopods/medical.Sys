@@ -20,6 +20,7 @@ export interface CreateChildProfileRequestBody {
     gender?: unknown;
     estimatedBirthYear?: unknown;
     primaryLocationId?: unknown;
+    createdByStaffId?: unknown;
 }
 
 export interface UpdateChildProfileRequestBody {
