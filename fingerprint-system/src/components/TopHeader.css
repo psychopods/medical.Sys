@@ -1,0 +1,448 @@
+/* Base styles - FULL WIDTH */
+.top-header {
+  background-color: #1a1a2e;
+  color: #fff;
+  padding: 10px 0;
+  font-size: 14px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.top-header-container {
+  width: 100%;
+  max-width: 100%; /* REMOVED the fixed max-width */
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 5%;
+  box-sizing: border-box;
+}
+
+.contact-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+}
+
+.contact-info span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* SVG Icon Styles */
+.contact-icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  transition: all 0.3s ease;
+}
+
+.social-icon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  transition: all 0.3s ease;
+}
+
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.social-links a {
+  color: #fff;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+}
+
+.social-links a:hover {
+  color: #00b4d8;
+  transform: translateY(-2px);
+}
+
+.social-links a:hover .social-icon {
+  stroke: #00b4d8;
+}
+
+/* Responsive Breakpoints - FULL WIDTH */
+
+/* Large Desktop (1200px - 1400px) */
+@media (min-width: 1200px) and (max-width: 1400px) {
+  .top-header-container {
+    padding: 0 4%;
+  }
+}
+
+/* Desktop (992px - 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .top-header-container {
+    padding: 0 3%;
+  }
+  
+  .contact-info span {
+    font-size: 13px;
+  }
+  
+  .contact-icon {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .social-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Tablet Landscape (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+  .top-header {
+    padding: 8px 0;
+  }
+  
+  .top-header-container {
+    padding: 0 4%;
+  }
+  
+  .contact-info {
+    gap: 12px;
+  }
+  
+  .contact-info span {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  
+  .contact-icon {
+    width: 13px;
+    height: 13px;
+  }
+  
+  .social-links {
+    gap: 10px;
+  }
+  
+  .social-icon {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/* Tablet Portrait (481px - 767px) */
+@media (min-width: 481px) and (max-width: 767px) {
+  .top-header {
+    padding: 8px 0;
+  }
+  
+  .top-header-container {
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 5%;
+    text-align: center;
+  }
+  
+  .contact-info {
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  .contact-info span {
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  
+  .contact-icon {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .social-links {
+    justify-content: center;
+  }
+  
+  .social-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Mobile (320px - 480px) */
+@media (max-width: 480px) {
+  .top-header {
+    padding: 6px 0;
+    font-size: 10px;
+  }
+  
+  .top-header-container {
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 4%;
+    text-align: center;
+  }
+  
+  .contact-info {
+    flex-direction: column;
+    gap: 5px;
+    justify-content: center;
+  }
+  
+  .contact-info span {
+    font-size: 10px;
+    white-space: normal;
+    word-break: break-word;
+    justify-content: center;
+  }
+  
+  .contact-icon {
+    width: 11px;
+    height: 11px;
+  }
+  
+  .social-links {
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .social-icon {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+/* Small Mobile (up to 360px) */
+@media (max-width: 360px) {
+  .top-header {
+    padding: 5px 0;
+  }
+  
+  .contact-info span {
+    font-size: 9px;
+  }
+  
+  .contact-icon {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .social-icon {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* For very large screens (1400px and above) - FULL WIDTH */
+@media (min-width: 1400px) {
+  .top-header-container {
+    padding: 0 6%;
+  }
+  
+  .contact-info span {
+    font-size: 15px;
+  }
+  
+  .contact-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .social-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Handle extremely large screens (1920px and above) - FULL WIDTH */
+@media (min-width: 1920px) {
+  .top-header-container {
+    padding: 0 8%;
+  }
+  
+  .contact-info span {
+    font-size: 16px;
+  }
+  
+  .contact-icon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .social-icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* For ultra-wide screens (2560px and above) */
+@media (min-width: 2560px) {
+  .top-header-container {
+    padding: 0 10%;
+  }
+  
+  .contact-info span {
+    font-size: 18px;
+  }
+  
+  .contact-icon {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .social-icon {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .top-header {
+    background-color: #fff;
+    color: #000;
+    border-bottom: 1px solid #ccc;
+  }
+  
+  .social-links a {
+    color: #000;
+  }
+}
+
+/* Accessibility: Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .social-links a {
+    transition: none;
+  }
+  
+  .social-links a:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .top-header {
+    background-color: #000;
+  }
+  
+  .social-links a:hover {
+    color: #ffff00;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .social-links a {
+    padding: 8px;
+    margin: -8px;
+  }
+  
+  .social-links a:active {
+    color: #00b4d8;
+  }
+}
+
+/* Toast Notification Styles */
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  min-width: 300px;
+  background: white;
+  border-radius: 10px;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  animation: slideIn 0.3s ease;
+  border-left: 4px solid;
+}
+
+.toast-notification.info {
+  border-left-color: #17a2b8;
+  background: #e8f7f9;
+}
+
+.toast-notification.info .toast-content svg {
+  color: #17a2b8;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.toast-content svg {
+  flex-shrink: 0;
+}
+
+.toast-content span {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease;
+}
+
+.toast-close:hover {
+  color: #333;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive toast */
+@media (max-width: 768px) {
+  .toast-notification {
+    top: 60px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+  }
+}
+
+/* Add cursor pointer to contact info */
+.contact-info span {
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.contact-info span:hover {
+  opacity: 0.8;
+}

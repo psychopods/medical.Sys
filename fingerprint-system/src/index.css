@@ -1,0 +1,26 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  width: 100%;
+}
+
+
+/* Add this to index.css to ensure sticky works */
+.App {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+.bottom-header {
+  backdrop-filter: blur(0px); /* This helps with sticky positioning */
+}
