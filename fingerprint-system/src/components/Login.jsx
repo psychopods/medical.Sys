@@ -17,7 +17,6 @@ const Login = () => {
   const [passwordError, setPasswordError] = useState('');
   
   const navigate = useNavigate();
-  
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -96,9 +95,9 @@ const Login = () => {
       // Determine if identifier is email or username
       const isEmail = identifier.includes('@') && identifier.includes('.');
       
-      // Prepare login data
+      // Prepare login data - backend expects usernameOrEmail
       const loginData = {
-        [isEmail ? 'email' : 'username']: identifier,
+        usernameOrEmail: identifier,  // Backend expects this field name
         password: password
       };
       
@@ -115,15 +114,28 @@ const Login = () => {
       
       if (response.ok && data.success) {
         // Store token based on remember me preference
+        // Backend returns both 'accessToken' and 'token' - use either
+        const tokenToStore = data.accessToken || data.token;
+        
         if (rememberMe) {
-          localStorage.setItem('token', data.token);
+          localStorage.setItem('token', tokenToStore);
+          // Store user data - backend returns user object with snake_case
           localStorage.setItem('user', JSON.stringify(data.user));
+          // Also store session for offline capabilities
+          if (data.session) {
+            localStorage.setItem('session', JSON.stringify(data.session));
+          }
         } else {
-          sessionStorage.setItem('token', data.token);
+          sessionStorage.setItem('token', tokenToStore);
           sessionStorage.setItem('user', JSON.stringify(data.user));
+          if (data.session) {
+            sessionStorage.setItem('session', JSON.stringify(data.session));
+          }
         }
         
-        showToast(`Welcome ${data.user.first_name || data.user.username}! Redirecting to dashboard...`, 'success');
+        // Display welcome message using snake_case fields from user object
+        const userName = data.user?.first_name || data.user?.username || 'User';
+        showToast(`Welcome ${userName}! Redirecting to dashboard...`, 'success');
         
         // Redirect to dashboard after successful login
         setTimeout(() => {
@@ -147,10 +159,8 @@ const Login = () => {
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
-    showToast('Redirecting to password reset page...', 'info');
-    setTimeout(() => {
-      navigate('/forgot-password');
-    }, 1000);
+    // Password reset not implemented yet
+    showToast('Password reset feature coming soon. Please contact system administrator.', 'info');
   };
 
   return (
