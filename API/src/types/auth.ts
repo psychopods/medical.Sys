@@ -22,6 +22,20 @@ export type LoginResponseBody = {
         permissionCacheKey: string;
         expiresAt: string;
     };
+    success?: boolean;
+    token?: string;
+    user?: {
+        user_id: string;
+        id: string;
+        username: string;
+        email: string;
+        role_id: string;
+        first_name: string;
+        last_name: string;
+        phone_number: string;
+        role: string;
+        permissions: string[];
+    };
 };
 
 export type JwtSessionClaims = {
@@ -40,6 +54,13 @@ export type SignupRequestBody = {
     email?: unknown;
     password?: unknown;
     roleId?: unknown;
+    firstName?: unknown;
+    first_name?: unknown;
+    lastName?: unknown;
+    last_name?: unknown;
+    phone?: unknown;
+    phoneNumber?: unknown;
+    phone_number?: unknown;
 };
 
 export type SignupResponseBody = {
@@ -49,7 +70,25 @@ export type SignupResponseBody = {
         username: string;
         email: string;
         roleId: string;
+        firstName: string;
+        lastName: string;
+        phone: string;
         version: number;
         createdAt: string;
     };
+};
+
+export type StaffUserDetail = {
+    id: string;
+    username: string;
+    email: string;
+    roleId: string;
+    roleName: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    securityStatus: string;
+    version: number;
+    createdAt: string;
+    lastActive: string | null;
 };

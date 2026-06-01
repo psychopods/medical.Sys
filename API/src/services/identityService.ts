@@ -77,8 +77,8 @@ async function loadChildProfileById(pool: Pool, childId: string): Promise<Identi
     };
 }
 
-async function findCentralMatchByTemplate(pool: Pool, templateData: Buffer): Promise<ResolveIdentityResult> {
-    const templateHash = createHash('sha256').update(templateData).digest('hex');
+async function findCentralMatchByTemplate(pool: Pool, templateBase64: string): Promise<ResolveIdentityResult> {
+    const templateHash = createHash('sha256').update(templateBase64.trim()).digest('hex');
 
     const [rows] = await pool.execute<IdentityLookupRow[]>(
         `SELECT
@@ -156,5 +156,5 @@ export async function resolveIdentity(
         };
     }
 
-    return findCentralMatchByTemplate(pool, templateData);
+    return findCentralMatchByTemplate(pool, templateBase64);
 }

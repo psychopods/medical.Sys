@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS `staff_sessions`;
 DROP TABLE IF EXISTS `staff_users`;
 DROP TABLE IF EXISTS `role_permissions`;
 DROP TABLE IF EXISTS `permissions`;
+DROP TABLE IF EXISTS `permission_categories`;
 DROP TABLE IF EXISTS `roles`;
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -21,12 +22,23 @@ CREATE TABLE `roles` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `permission_categories` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL UNIQUE,
+    `description` VARCHAR(255) NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `permissions` (
     `id` VARCHAR(36) NOT NULL,
     `slug` VARCHAR(100) NOT NULL UNIQUE,
     `description` VARCHAR(255) NULL,
+    `category_id` INT NULL,
     PRIMARY KEY (`id`),
-    INDEX `idx_perm_slug` (`slug`)
+    INDEX `idx_perm_slug` (`slug`),
+    CONSTRAINT `fk_mysql_perm_cat` FOREIGN KEY (`category_id`) REFERENCES `permission_categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `role_permissions` (
@@ -43,6 +55,9 @@ CREATE TABLE `staff_users` (
     `email` VARCHAR(100) NOT NULL UNIQUE,
     `password_hash` VARCHAR(255) NOT NULL,
     `role_id` VARCHAR(36) NOT NULL,
+    `first_name` VARCHAR(50) NOT NULL,
+    `last_name` VARCHAR(50) NOT NULL,
+    `phone_number` VARCHAR(20) NOT NULL,
     `security_status` VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
     `version` INT NOT NULL DEFAULT 1,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -80,6 +95,9 @@ CREATE TABLE `children_profiles` (
     `age_months_at_intake` INT NULL, -- Fixed: Restored to match registration payloads
     `primary_location_id` CHAR(36) NOT NULL,
     `created_by_staff_id` CHAR(36) NOT NULL,
+    `image1` MEDIUMTEXT NULL,
+    `image2` MEDIUMTEXT NULL,
+    `image3` MEDIUMTEXT NULL,
     `version` INT NOT NULL DEFAULT 1,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

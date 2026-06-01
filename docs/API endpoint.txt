@@ -62,7 +62,7 @@ SECTION 2: STAFF AUTHENTICATION & SESSION MANAGEMENT (/api/auth)
              "sessionId": "4d7be15e-99ac-40eb-bc0e-36526117eb8a",
              "staffUserId": "staff-admin-001",
              "username": "master_admin",
-             "email": "paschaltimoth@gmx.us",
+             "email": "admin@outreach.org",
              "roleId": "role-su-777",
              "permissions": ["rbac:read", "rbac:write", "children:create"],
              "issuedAt": "2026-05-26T10:30:59.000Z",
@@ -72,6 +72,20 @@ SECTION 2: STAFF AUTHENTICATION & SESSION MANAGEMENT (/api/auth)
              "storageKey": "field_outreach.auth.session.v1",
              "permissionCacheKey": "field_outreach.auth.permissions.v1",
              "expiresAt": "2026-05-26T22:30:59.000Z"
+         },
+         "success": true,
+         "token": "eyJhbGciOiJIUzI1...",
+         "user": {
+             "user_id": "staff-admin-001",
+             "id": "staff-admin-001",
+             "username": "master_admin",
+             "email": "admin@outreach.org",
+             "role_id": "role-su-777",
+             "first_name": "System",
+             "last_name": "Admin",
+             "phone_number": "+255000000000",
+             "role": "superuser",
+             "permissions": ["rbac:read", "rbac:write", "children:create"]
          }
      }
 
@@ -111,7 +125,10 @@ SECTION 2: STAFF AUTHENTICATION & SESSION MANAGEMENT (/api/auth)
          "username": "string" (Required - non-empty),
          "email": "string" (Required - must be valid email format),
          "password": "string" (Required - Minimum 6 characters),
-         "roleId": "string" (Required - Must refer to an existing role ID)
+         "roleId": "string" (Required - Must refer to an existing role ID),
+         "firstName": "string" (Required - non-empty),
+         "lastName": "string" (Required - non-empty),
+         "phone": "string" (Required - non-empty)
      }
    - Response Payload Example:
      {
@@ -121,20 +138,126 @@ SECTION 2: STAFF AUTHENTICATION & SESSION MANAGEMENT (/api/auth)
              "username": "field_medic_john",
              "email": "john.medic@outreach.org",
              "roleId": "role-nu-888",
+             "firstName": "John",
+             "lastName": "Medic",
+             "phone": "+255777666555",
              "version": 1,
              "createdAt": "2026-05-26T11:00:59.000Z"
          }
      }
 
+--------------------------------------------------------------------------------
+STAFF USER MANAGEMENT CRUD OPERATIONS (Protected)
+--------------------------------------------------------------------------------
+
+1. GET /api/auth/users
+   - Description: Lists all registered staff users with role names and last active times.
+   - Authentication: Protected (Requires 'admin:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     [
+         {
+             "id": "3be55c0a-01df-4e2b-a010-8b636cd4f971",
+             "username": "field_medic_john",
+             "email": "john.medic@outreach.org",
+             "roleId": "role-nu-888",
+             "roleName": "Nurse",
+             "firstName": "John",
+             "lastName": "Medic",
+             "phone": "+255777666555",
+             "securityStatus": "ACTIVE",
+             "version": 1,
+             "createdAt": "2026-05-26T11:00:59.000Z",
+             "lastActive": "2026-05-26T12:00:00.000Z"
+         }
+     ]
+
+2. GET /api/auth/users/generate_username?year=YYYY
+   - Description: Generates a sequential username in ST-YYYY-XXXX format.
+   - Authentication: Protected (Requires 'admin:create' permission slug).
+   - Data Sending Method: URL query parameter.
+   - Response Payload Example:
+     {
+         "username": "ST-2026-0004"
+     }
+
+3. POST /api/auth/users
+   - Description: Creates a new staff user profile.
+   - Authentication: Protected (Requires 'admin:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "username": "string" (Required - non-empty),
+         "email": "string" (Required - must be valid email format),
+         "password": "string" (Required - Minimum 6 characters),
+         "roleId": "string" (Required),
+         "firstName": "string" (Required),
+         "lastName": "string" (Required),
+         "phone": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "message": "Staff user registered successfully.",
+         "user": {
+             "id": "3be55c0a-01df-4e2b-a010-8b636cd4f971",
+             "username": "field_medic_john",
+             "email": "john.medic@outreach.org",
+             "roleId": "role-nu-888",
+             "firstName": "John",
+             "lastName": "Medic",
+             "phone": "+255777666555",
+             "version": 1,
+             "createdAt": "2026-05-26T11:00:59.000Z"
+         }
+     }
+
+4. PUT /api/auth/users/:id
+   - Description: Updates an existing staff user profile.
+   - Authentication: Protected (Requires 'admin:update' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "username": "string" (Required),
+         "email": "string" (Required),
+         "roleId": "string" (Required),
+         "firstName": "string" (Required),
+         "lastName": "string" (Required),
+         "phone": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "message": "Staff user updated successfully.",
+         "user": {
+             "id": "3be55c0a-01df-4e2b-a010-8b636cd4f971",
+             "username": "field_medic_john_updated",
+             "email": "john.medic.new@outreach.org",
+             "roleId": "role-nu-888",
+             "firstName": "John",
+             "lastName": "Medic",
+             "phone": "+255777666555",
+             "version": 2
+         }
+     }
+
+5. DELETE /api/auth/users/:id
+   - Description: Deletes a staff user profile.
+   - Authentication: Protected (Requires 'admin:delete' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Staff user deleted successfully."
+     }
+
 ================================================================================
-SECTION 3: ROLE-BASED ACCESS CONTROL (/api/rbac)
+SECTION 3: ROLE-BASED ACCESS CONTROL (/api)
 ================================================================================
 
 --------------------------------------------------------------------------------
 ROLES CRUD OPERATIONS
 --------------------------------------------------------------------------------
 
-1. POST /api/rbac/roles
+1. POST /api/roles
    - Description: Registers a new authorization role profile.
    - Authentication: Protected (Requires 'rbac:write' permission slug).
    - Data Sending Method: JSON raw body.
@@ -156,46 +279,53 @@ ROLES CRUD OPERATIONS
          }
      }
 
-2. GET /api/rbac/roles
-   - Description: Lists all registered roles.
+2. GET /api/roles
+   - Description: Lists all registered roles as a direct array.
    - Authentication: Protected (Requires 'rbac:read' permission slug).
    - Data Sending Method: URL GET request.
    - Response Payload Example:
-     {
-         "roles": [
-             {
-                 "id": "role-nu-888",
-                 "name": "Nurse",
-                 "description": "Field operator handling patient intake.",
-                 "version": 1,
-                 "lastModifiedAt": "2026-05-26T10:30:59.000Z"
-             }
-         ]
-     }
+     [
+         {
+             "id": "role-nu-888",
+             "name": "Nurse",
+             "description": "Field operator handling patient intake.",
+             "version": 1,
+             "lastModifiedAt": "2026-05-26T10:30:59.000Z"
+         }
+     ]
 
-3. GET /api/rbac/roles/:id
+3. GET /api/roles/:id
    - Description: Retrieves a role by ID with nested linked permissions.
    - Authentication: Protected (Requires 'rbac:read' permission slug).
    - Data Sending Method: URL path parameter.
    - Response Payload Example:
      {
-         "role": {
-             "id": "role-su-777",
-             "name": "Super User",
-             "description": "System Administrator with complete access.",
-             "version": 1,
-             "lastModifiedAt": "2026-05-26T10:30:59.000Z",
-             "permissions": [
-                 {
-                     "id": "perm-001",
-                     "slug": "rbac:read",
-                     "description": "View roles and permissions"
-                 }
-             ]
-         }
+         "id": "role-su-777",
+         "name": "Super User",
+         "description": "System Administrator with complete access.",
+         "version": 1,
+         "lastModifiedAt": "2026-05-26T10:30:59.000Z",
+         "permissions": [
+             {
+                 "id": "perm-001",
+                 "slug": "rbac:read",
+                 "description": "View roles and permissions",
+                 "categoryId": 4
+             }
+         ]
      }
 
-4. PUT /api/rbac/roles/:id
+4. GET /api/roles/:id/permissions
+   - Description: Retrieves a flat array of permission IDs associated with a role.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     [
+         "11111111-1111-4111-8111-111111111151",
+         "11111111-1111-4111-8111-111111111152"
+     ]
+
+5. PUT /api/roles/:id
    - Description: Updates an existing role's name/description and increments version.
    - Authentication: Protected (Requires 'rbac:write' permission slug).
    - Data Sending Method: URL path parameter & JSON raw body.
@@ -216,7 +346,7 @@ ROLES CRUD OPERATIONS
          }
      }
 
-5. DELETE /api/rbac/roles/:id
+6. DELETE /api/roles/:id
    - Description: Deletes a role (blocks deletion if assigned to active users).
    - Authentication: Protected (Requires 'rbac:write' permission slug).
    - Data Sending Method: URL path parameter.
@@ -229,7 +359,7 @@ ROLES CRUD OPERATIONS
 PERMISSIONS CRUD OPERATIONS
 --------------------------------------------------------------------------------
 
-1. POST /api/rbac/permissions
+1. POST /api/permissions
    - Description: Registers a new system-wide functional permission slug.
    - Authentication: Protected (Requires 'rbac:write' permission slug).
    - Data Sending Method: JSON raw body.
@@ -237,7 +367,8 @@ PERMISSIONS CRUD OPERATIONS
      {
          "id": "string" (Required - Must be a valid client-side generated UUIDv4),
          "slug": "string" (Required - Must follow 'domain:action' format, e.g. 'children:create'),
-         "description": "string" (Optional)
+         "description": "string" (Optional),
+         "categoryId": "number|null" (Optional)
      }
    - Response Payload Example:
      {
@@ -245,45 +376,45 @@ PERMISSIONS CRUD OPERATIONS
          "permission": {
              "id": "f5b6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
              "slug": "biometrics:enroll",
-             "description": "Register fingerprints"
+             "description": "Register fingerprints",
+             "categoryId": 2
          }
      }
 
-2. GET /api/rbac/permissions
-   - Description: Lists all registered system permissions.
+2. GET /api/permissions
+   - Description: Lists all registered system permissions as a direct array.
    - Authentication: Protected (Requires 'rbac:read' permission slug).
    - Response Payload Example:
-     {
-         "permissions": [
-             {
-                 "id": "perm-001",
-                 "slug": "rbac:read",
-                 "description": "View roles and permissions"
-             }
-         ]
-     }
+     [
+         {
+             "id": "perm-001",
+             "slug": "rbac:read",
+             "description": "View roles and permissions",
+             "categoryId": 4
+         }
+     ]
 
-3. GET /api/rbac/permissions/:id
+3. GET /api/permissions/:id
    - Description: Retrieves permission profile details by ID.
    - Authentication: Protected (Requires 'rbac:read' permission slug).
    - Data Sending Method: URL path parameter.
    - Response Payload Example:
      {
-         "permission": {
-             "id": "f5b6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
-             "slug": "biometrics:enroll",
-             "description": "Register fingerprints"
-         }
+         "id": "f5b6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+         "slug": "biometrics:enroll",
+         "description": "Register fingerprints",
+         "categoryId": 2
      }
 
-4. PUT /api/rbac/permissions/:id
-   - Description: Updates a permission slug/description.
+4. PUT /api/permissions/:id
+   - Description: Updates a permission slug/description/category.
    - Authentication: Protected (Requires 'rbac:write' permission slug).
    - Data Sending Method: URL path parameter & JSON raw body.
    - Request Body Parameters (camelCase):
      {
          "slug": "string" (Required - format 'domain:action'),
-         "description": "string" (Optional)
+         "description": "string" (Optional),
+         "categoryId": "number|null" (Optional)
      }
    - Response Payload Example:
      {
@@ -291,11 +422,12 @@ PERMISSIONS CRUD OPERATIONS
          "permission": {
              "id": "f5b6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
              "slug": "biometrics:enroll_scan",
-             "description": "Register fingerprints and manage scan flows"
+             "description": "Register fingerprints and manage scan flows",
+             "categoryId": 2
          }
      }
 
-5. DELETE /api/rbac/permissions/:id
+5. DELETE /api/permissions/:id
    - Description: Deletes a permission (automatically unlinks related roles).
    - Authentication: Protected (Requires 'rbac:write' permission slug).
    - Data Sending Method: URL path parameter.
@@ -305,10 +437,79 @@ PERMISSIONS CRUD OPERATIONS
      }
 
 --------------------------------------------------------------------------------
+PERMISSION CATEGORIES CRUD OPERATIONS
+--------------------------------------------------------------------------------
+
+1. GET /api/permission_categories
+   - Description: Lists all registered permission categories as a direct array.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Response Payload Example:
+     [
+         {
+             "id": 1,
+             "name": "Patients CRUD",
+             "description": "Manage child profiles and records",
+             "createdAt": "2026-05-26T10:30:59.000Z",
+             "updatedAt": "2026-05-26T10:30:59.000Z"
+         }
+     ]
+
+2. POST /api/permission_categories
+   - Description: Creates a new permission category.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "name": "string" (Required - Unique),
+         "description": "string" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Permission category created successfully.",
+         "category": {
+             "id": 5,
+             "name": "Scheduling",
+             "description": "Endpoints to schedule clinic rotations",
+             "createdAt": "2026-05-26T12:00:00.000Z",
+             "updatedAt": "2026-05-26T12:00:00.000Z"
+         }
+     }
+
+3. PUT /api/permission_categories/:id
+   - Description: Updates an existing permission category's name and description.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "name": "string" (Required),
+         "description": "string" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Permission category updated successfully.",
+         "category": {
+             "id": 5,
+             "name": "Outreach Scheduling",
+             "description": "Clinic rotation scheduling and planning",
+             "createdAt": "2026-05-26T12:00:00.000Z",
+             "updatedAt": "2026-05-26T12:05:00.000Z"
+         }
+     }
+
+4. DELETE /api/permission_categories/:id
+   - Description: Deletes a permission category (referencing permissions will have categoryId set to null).
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Permission category deleted successfully."
+     }
+
+--------------------------------------------------------------------------------
 ROLE-PERMISSIONS BRIDGE ENDPOINTS (Linking Relationships)
 --------------------------------------------------------------------------------
 
-1. POST /api/rbac/roles/:id/permissions
+1. POST /api/roles/:id/permissions
    - Description: Link a permission to a specific role.
    - Authentication: Protected (Requires 'rbac:write' permission slug).
    - Data Sending Method: URL path parameter (role ID) & JSON raw body (permission ID).
@@ -321,7 +522,7 @@ ROLE-PERMISSIONS BRIDGE ENDPOINTS (Linking Relationships)
          "message": "Permission assigned to role successfully."
      }
 
-2. DELETE /api/rbac/roles/:id/permissions/:permissionId
+2. DELETE /api/roles/:id/permissions/:permissionId
    - Description: Unlink a permission from a specific role.
    - Authentication: Protected (Requires 'rbac:write' permission slug).
    - Data Sending Method: URL path parameters (role ID and permission ID).
@@ -347,7 +548,10 @@ SECTION 4: CHILD REGISTRATION MODULE (/api/children)
          "fullName": "string" (Required),
          "gender": "string" (Required - 'Male' or 'Female'),
          "estimatedBirthYear": "number|null" (Optional - 1900..current year),
-         "primaryLocationId": "string" (Required - UUIDv4)
+         "primaryLocationId": "string" (Required - UUIDv4),
+         "image1": "string|null" (Optional - base64 image data URL starting with data:image/),
+         "image2": "string|null" (Optional - base64 image data URL starting with data:image/),
+         "image3": "string|null" (Optional - base64 image data URL starting with data:image/)
      }
    - Response Payload Example:
      {
@@ -360,6 +564,9 @@ SECTION 4: CHILD REGISTRATION MODULE (/api/children)
              "estimatedBirthYear": 2016,
              "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
              "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+             "image1": "data:image/jpeg;base64,...",
+             "image2": null,
+             "image3": null,
              "version": 1
          }
      }
@@ -378,6 +585,9 @@ SECTION 4: CHILD REGISTRATION MODULE (/api/children)
                  "estimatedBirthYear": 2016,
                  "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
                  "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+                 "image1": "data:image/jpeg;base64,...",
+                 "image2": null,
+                 "image3": null,
                  "version": 1
              }
          ]
@@ -396,6 +606,9 @@ SECTION 4: CHILD REGISTRATION MODULE (/api/children)
              "estimatedBirthYear": 2016,
              "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
              "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+             "image1": "data:image/jpeg;base64,...",
+             "image2": null,
+             "image3": null,
              "version": 1
          }
      }
@@ -409,7 +622,10 @@ SECTION 4: CHILD REGISTRATION MODULE (/api/children)
          "fullName": "string" (Required),
          "gender": "string" (Required - 'Male' or 'Female'),
          "estimatedBirthYear": "number|null" (Optional),
-         "primaryLocationId": "string" (Required - UUIDv4)
+         "primaryLocationId": "string" (Required - UUIDv4),
+         "image1": "string|null" (Optional - base64 image data URL),
+         "image2": "string|null" (Optional - base64 image data URL),
+         "image3": "string|null" (Optional - base64 image data URL)
      }
    - Response Payload Example:
      {
@@ -422,6 +638,9 @@ SECTION 4: CHILD REGISTRATION MODULE (/api/children)
              "estimatedBirthYear": 2016,
              "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
              "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+             "image1": "data:image/jpeg;base64,...",
+             "image2": "data:image/jpeg;base64,...",
+             "image3": null,
              "version": 2
          }
      }

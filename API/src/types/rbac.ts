@@ -6,10 +6,19 @@ export interface Role {
     lastModifiedAt?: string;
 }
 
+export interface PermissionCategory {
+    id: number;
+    name: string;
+    description: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
 export interface Permission {
     id: string;
     slug: string;
     description: string | null;
+    categoryId?: number | null;
 }
 
 export interface RoleWithPermissions extends Role {
@@ -31,11 +40,13 @@ export interface CreatePermissionRequestBody {
     id?: unknown;
     slug?: unknown;
     description?: unknown;
+    categoryId?: unknown;
 }
 
 export interface UpdatePermissionRequestBody {
     slug?: unknown;
     description?: unknown;
+    categoryId?: unknown;
 }
 
 export interface AssignPermissionRequestBody {

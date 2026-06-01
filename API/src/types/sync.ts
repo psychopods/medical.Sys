@@ -6,6 +6,9 @@ export interface SyncChildProfilePayload {
     estimatedBirthYear: number | null;
     primaryLocationId: string;
     createdByStaffId: string;
+    image1?: string | null;
+    image2?: string | null;
+    image3?: string | null;
     version: number;
     lastModifiedAt?: string;
 }

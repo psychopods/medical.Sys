@@ -68,8 +68,8 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
                 if (existingRows.length === 0) {
                     await connection.execute(
                         `INSERT INTO children_profiles
-                        (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, version)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                        (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                         [
                             child.id,
                             child.customSerialId,
@@ -78,6 +78,9 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
                             child.estimatedBirthYear,
                             child.primaryLocationId,
                             child.createdByStaffId,
+                            child.image1 ?? null,
+                            child.image2 ?? null,
+                            child.image3 ?? null,
                             child.version
                         ]
                     );
@@ -103,7 +106,7 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
 
                 const [updateResult] = await connection.execute<ResultSetHeader>(
                     `UPDATE children_profiles
-                     SET custom_serial_id = ?, full_name = ?, gender = ?, estimated_birth_year = ?, primary_location_id = ?, created_by_staff_id = ?, version = ?
+                     SET custom_serial_id = ?, full_name = ?, gender = ?, estimated_birth_year = ?, primary_location_id = ?, created_by_staff_id = ?, image1 = ?, image2 = ?, image3 = ?, version = ?
                      WHERE id = ? AND version = ?`,
                     [
                         child.customSerialId,
@@ -112,6 +115,9 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
                         child.estimatedBirthYear,
                         child.primaryLocationId,
                         child.createdByStaffId,
+                        child.image1 ?? null,
+                        child.image2 ?? null,
+                        child.image3 ?? null,
                         child.version,
                         child.id,
                         localVersion
@@ -232,7 +238,7 @@ export async function getSyncDelta(pool: Pool, since?: string): Promise<{
     const sinceDate = parseSinceTimestamp(since);
 
     const [childRows] = await pool.execute<RowDataPacket[]>(
-        `SELECT id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, version, last_modified_at
+        `SELECT id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, last_modified_at
          FROM children_profiles
          WHERE last_modified_at > ?
          ORDER BY last_modified_at ASC`,
@@ -257,6 +263,9 @@ export async function getSyncDelta(pool: Pool, since?: string): Promise<{
             estimatedBirthYear: row.estimated_birth_year,
             primaryLocationId: row.primary_location_id,
             createdByStaffId: row.created_by_staff_id,
+            image1: row.image1,
+            image2: row.image2,
+            image3: row.image3,
             version: row.version,
             lastModifiedAt: row.last_modified_at ? new Date(row.last_modified_at).toISOString() : undefined
         })),

@@ -1,7 +1,8 @@
-node_modules/
-dist/
-coverage/
-
+/node_modules
+/dist
+/coverage
+/.sixth
+/.github
 # Environment and local overrides
 .env
 .env.*

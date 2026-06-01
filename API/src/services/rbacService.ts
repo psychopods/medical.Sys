@@ -1,6 +1,6 @@
 import type { Pool, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { HttpError } from '../utils/httpError.ts';
-import type { Role, Permission, RoleWithPermissions } from '../types/rbac.ts';
+import type { Role, Permission, RoleWithPermissions, PermissionCategory } from '../types/rbac.ts';
 
 // Helper to validate client-side generated UUIDv4 format
 function validateUUIDv4(id: string): void {
@@ -75,7 +75,7 @@ export async function getRoleWithPermissions(pool: Pool, id: string): Promise<Ro
 
     // 2. Fetch associated permissions
     const [permRows] = await pool.execute<RowDataPacket[]>(
-        `SELECT p.id, p.slug, p.description
+        `SELECT p.id, p.slug, p.description, p.category_id
          FROM permissions p
          INNER JOIN role_permissions rp ON rp.permission_id = p.id
          WHERE rp.role_id = ?
@@ -92,7 +92,8 @@ export async function getRoleWithPermissions(pool: Pool, id: string): Promise<Ro
         permissions: permRows.map((row) => ({
             id: row.id,
             slug: row.slug,
-            description: row.description
+            description: row.description,
+            categoryId: row.category_id
         }))
     };
 }
@@ -176,7 +177,8 @@ export async function createPermission(
     pool: Pool,
     id: string,
     slug: string,
-    description: string | null
+    description: string | null,
+    categoryId?: number | null
 ): Promise<Permission> {
     validateUUIDv4(id);
 
@@ -199,34 +201,47 @@ export async function createPermission(
         throw new HttpError(409, `Permission slug '${normalizedSlug}' is already taken.`);
     }
 
+    // Verify category exists if provided
+    if (categoryId !== undefined && categoryId !== null) {
+        const [catExisting] = await pool.execute<RowDataPacket[]>(
+            'SELECT 1 FROM permission_categories WHERE id = ? LIMIT 1',
+            [categoryId]
+        );
+        if (catExisting.length === 0) {
+            throw new HttpError(400, `Permission category with ID ${categoryId} does not exist.`);
+        }
+    }
+
     await pool.execute(
-        `INSERT INTO permissions (id, slug, description)
-         VALUES (?, ?, ?)`,
-        [id, normalizedSlug, description]
+        `INSERT INTO permissions (id, slug, description, category_id)
+         VALUES (?, ?, ?, ?)`,
+        [id, normalizedSlug, description, categoryId || null]
     );
 
     return {
         id,
         slug: normalizedSlug,
-        description
+        description,
+        categoryId: categoryId || null
     };
 }
 
 export async function listPermissions(pool: Pool): Promise<Permission[]> {
     const [rows] = await pool.execute<RowDataPacket[]>(
-        'SELECT id, slug, description FROM permissions ORDER BY slug'
+        'SELECT id, slug, description, category_id FROM permissions ORDER BY slug'
     );
 
     return rows.map((row) => ({
         id: row.id,
         slug: row.slug,
-        description: row.description
+        description: row.description,
+        categoryId: row.category_id
     }));
 }
 
 export async function getPermission(pool: Pool, id: string): Promise<Permission> {
     const [rows] = await pool.execute<RowDataPacket[]>(
-        'SELECT id, slug, description FROM permissions WHERE id = ? LIMIT 1',
+        'SELECT id, slug, description, category_id FROM permissions WHERE id = ? LIMIT 1',
         [id]
     );
     const row = rows[0];
@@ -237,7 +252,8 @@ export async function getPermission(pool: Pool, id: string): Promise<Permission>
     return {
         id: row.id,
         slug: row.slug,
-        description: row.description
+        description: row.description,
+        categoryId: row.category_id
     };
 }
 
@@ -245,7 +261,8 @@ export async function updatePermission(
     pool: Pool,
     id: string,
     slug: string,
-    description: string | null
+    description: string | null,
+    categoryId?: number | null
 ): Promise<Permission> {
     const normalizedSlug = slug.trim().toLowerCase();
     if (!normalizedSlug) {
@@ -274,17 +291,29 @@ export async function updatePermission(
         throw new HttpError(409, `Permission slug '${normalizedSlug}' is already taken by another permission.`);
     }
 
+    // Verify category exists if provided
+    if (categoryId !== undefined && categoryId !== null) {
+        const [catExisting] = await pool.execute<RowDataPacket[]>(
+            'SELECT 1 FROM permission_categories WHERE id = ? LIMIT 1',
+            [categoryId]
+        );
+        if (catExisting.length === 0) {
+            throw new HttpError(400, `Permission category with ID ${categoryId} does not exist.`);
+        }
+    }
+
     await pool.execute(
         `UPDATE permissions
-         SET slug = ?, description = ?
+         SET slug = ?, description = ?, category_id = ?
          WHERE id = ?`,
-        [normalizedSlug, description, id]
+        [normalizedSlug, description, categoryId || null, id]
     );
 
     return {
         id,
         slug: normalizedSlug,
-        description
+        description,
+        categoryId: categoryId || null
     };
 }
 
@@ -300,6 +329,129 @@ export async function deletePermission(pool: Pool, id: string): Promise<void> {
 
     // Delete it (Foreign keys to role_permissions will cascade delete)
     await pool.execute('DELETE FROM permissions WHERE id = ?', [id]);
+}
+
+// ==========================================
+// 4. PERMISSION CATEGORIES SERVICE FUNCTIONS
+// ==========================================
+
+export async function createPermissionCategory(
+    pool: Pool,
+    name: string,
+    description: string | null
+): Promise<PermissionCategory> {
+    const normalizedName = name.trim();
+    if (!normalizedName) {
+        throw new HttpError(400, 'Category name cannot be empty.');
+    }
+
+    // Check if category name is already taken
+    const [existing] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM permission_categories WHERE LOWER(name) = ? LIMIT 1',
+        [normalizedName.toLowerCase()]
+    );
+    if (existing.length > 0) {
+        throw new HttpError(409, `Permission category '${normalizedName}' is already taken.`);
+    }
+
+    const [result] = await pool.execute<ResultSetHeader>(
+        'INSERT INTO permission_categories (name, description) VALUES (?, ?)',
+        [normalizedName, description]
+    );
+
+    const newId = result.insertId;
+
+    // Fetch the newly created category to return full details
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        'SELECT id, name, description, created_at, updated_at FROM permission_categories WHERE id = ?',
+        [newId]
+    );
+
+    const row = rows[0];
+    return {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+        updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined
+    };
+}
+
+export async function listPermissionCategories(pool: Pool): Promise<PermissionCategory[]> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        'SELECT id, name, description, created_at, updated_at FROM permission_categories ORDER BY name'
+    );
+
+    return rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+        updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined
+    }));
+}
+
+export async function updatePermissionCategory(
+    pool: Pool,
+    id: number,
+    name: string,
+    description: string | null
+): Promise<PermissionCategory> {
+    const normalizedName = name.trim();
+    if (!normalizedName) {
+        throw new HttpError(400, 'Category name cannot be empty.');
+    }
+
+    // Check if category exists
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        'SELECT id FROM permission_categories WHERE id = ? LIMIT 1',
+        [id]
+    );
+    if (rows.length === 0) {
+        throw new HttpError(404, `Permission category with ID ${id} not found.`);
+    }
+
+    // Check if name is taken by another category
+    const [existing] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM permission_categories WHERE LOWER(name) = ? AND id != ? LIMIT 1',
+        [normalizedName.toLowerCase(), id]
+    );
+    if (existing.length > 0) {
+        throw new HttpError(409, `Permission category name '${normalizedName}' is already taken.`);
+    }
+
+    await pool.execute(
+        'UPDATE permission_categories SET name = ?, description = ? WHERE id = ?',
+        [normalizedName, description, id]
+    );
+
+    const [updatedRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT id, name, description, created_at, updated_at FROM permission_categories WHERE id = ?',
+        [id]
+    );
+
+    const row = updatedRows[0];
+    return {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+        updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined
+    };
+}
+
+export async function deletePermissionCategory(pool: Pool, id: number): Promise<void> {
+    // Check if category exists
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM permission_categories WHERE id = ? LIMIT 1',
+        [id]
+    );
+    if (rows.length === 0) {
+        throw new HttpError(404, `Permission category with ID ${id} not found.`);
+    }
+
+    // Delete it (Foreign keys in permissions table set category_id to NULL on delete)
+    await pool.execute('DELETE FROM permission_categories WHERE id = ?', [id]);
 }
 
 // ==========================================

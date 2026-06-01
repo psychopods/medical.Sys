@@ -65,7 +65,7 @@ export function createRbacRouter(pool: Pool): Router {
         async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
             try {
                 const roles = await rbacService.listRoles(pool);
-                response.status(200).json({ roles });
+                response.status(200).json(roles);
             } catch (error) {
                 next(toHttpError(error));
             }
@@ -81,7 +81,23 @@ export function createRbacRouter(pool: Pool): Router {
                 const id = requireString(request.params.id, 'id');
                 const role = await rbacService.getRoleWithPermissions(pool, id);
 
-                response.status(200).json({ role });
+                response.status(200).json(role);
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    // GET permissions linked to a Role (direct array of permission IDs)
+    router.get(
+        '/roles/:id/permissions',
+        requirePermission(pool, 'rbac:read'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const role = await rbacService.getRoleWithPermissions(pool, id);
+                const permissionIds = role.permissions.map((p) => p.id);
+                response.status(200).json(permissionIds);
             } catch (error) {
                 next(toHttpError(error));
             }
@@ -145,8 +161,11 @@ export function createRbacRouter(pool: Pool): Router {
                 const id = requireString(request.body.id, 'id');
                 const slug = requireString(request.body.slug, 'slug');
                 const description = optionalString(request.body.description);
+                const categoryId = request.body.categoryId !== undefined && request.body.categoryId !== null
+                    ? Number(request.body.categoryId)
+                    : null;
 
-                const permission = await rbacService.createPermission(pool, id, slug, description);
+                const permission = await rbacService.createPermission(pool, id, slug, description, categoryId);
 
                 response.status(201).json({
                     message: 'Permission created successfully.',
@@ -165,7 +184,7 @@ export function createRbacRouter(pool: Pool): Router {
         async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
             try {
                 const permissions = await rbacService.listPermissions(pool);
-                response.status(200).json({ permissions });
+                response.status(200).json(permissions);
             } catch (error) {
                 next(toHttpError(error));
             }
@@ -181,7 +200,7 @@ export function createRbacRouter(pool: Pool): Router {
                 const id = requireString(request.params.id, 'id');
                 const permission = await rbacService.getPermission(pool, id);
 
-                response.status(200).json({ permission });
+                response.status(200).json(permission);
             } catch (error) {
                 next(toHttpError(error));
             }
@@ -201,8 +220,11 @@ export function createRbacRouter(pool: Pool): Router {
                 const id = requireString(request.params.id, 'id');
                 const slug = requireString(request.body.slug, 'slug');
                 const description = optionalString(request.body.description);
+                const categoryId = request.body.categoryId !== undefined && request.body.categoryId !== null
+                    ? Number(request.body.categoryId)
+                    : null;
 
-                const permission = await rbacService.updatePermission(pool, id, slug, description);
+                const permission = await rbacService.updatePermission(pool, id, slug, description, categoryId);
 
                 response.status(200).json({
                     message: 'Permission updated successfully.',
@@ -232,6 +254,87 @@ export function createRbacRouter(pool: Pool): Router {
         }
     );
     
+    // LIST all Permission Categories
+    router.get(
+        '/permission_categories',
+        requirePermission(pool, 'rbac:read'),
+        async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const categories = await rbacService.listPermissionCategories(pool);
+                response.status(200).json(categories);
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    // CREATE Permission Category
+    router.post(
+        '/permission_categories',
+        requirePermission(pool, 'rbac:write'),
+        async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const name = requireString(request.body.name, 'name');
+                const description = optionalString(request.body.description);
+
+                const category = await rbacService.createPermissionCategory(pool, name, description);
+
+                response.status(201).json({
+                    message: 'Permission category created successfully.',
+                    category
+                });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    // UPDATE Permission Category
+    router.put(
+        '/permission_categories/:id',
+        requirePermission(pool, 'rbac:write'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = Number(requireString(request.params.id, 'id'));
+                if (isNaN(id)) {
+                    throw new HttpError(400, 'Category ID must be a valid number.');
+                }
+                const name = requireString(request.body.name, 'name');
+                const description = optionalString(request.body.description);
+
+                const category = await rbacService.updatePermissionCategory(pool, id, name, description);
+
+                response.status(200).json({
+                    message: 'Permission category updated successfully.',
+                    category
+                });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    // DELETE Permission Category
+    router.delete(
+        '/permission_categories/:id',
+        requirePermission(pool, 'rbac:write'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = Number(requireString(request.params.id, 'id'));
+                if (isNaN(id)) {
+                    throw new HttpError(400, 'Category ID must be a valid number.');
+                }
+                await rbacService.deletePermissionCategory(pool, id);
+
+                response.status(200).json({
+                    message: 'Permission category deleted successfully.'
+                });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
     // ASSIGN Permission to Role
     router.post(
         '/roles/:id/permissions',

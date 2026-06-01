@@ -8,6 +8,9 @@ export interface ChildProfile {
     estimatedBirthYear: number | null;
     primaryLocationId: string;
     createdByStaffId: string;
+    image1?: string | null;
+    image2?: string | null;
+    image3?: string | null;
     version: number;
     createdAt?: string;
     lastModifiedAt?: string;
@@ -21,6 +24,9 @@ export interface CreateChildProfileRequestBody {
     estimatedBirthYear?: unknown;
     primaryLocationId?: unknown;
     createdByStaffId?: unknown;
+    image1?: unknown;
+    image2?: unknown;
+    image3?: unknown;
 }
 
 export interface UpdateChildProfileRequestBody {
@@ -29,4 +35,7 @@ export interface UpdateChildProfileRequestBody {
     gender?: unknown;
     estimatedBirthYear?: unknown;
     primaryLocationId?: unknown;
+    image1?: unknown;
+    image2?: unknown;
+    image3?: unknown;
 }

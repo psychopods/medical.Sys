@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 import type { Pool, RowDataPacket } from 'mysql2/promise';
-import type { AuthenticatedStaffSession, JwtSessionClaims } from '../types/auth.ts';
+import type { AuthenticatedStaffSession, JwtSessionClaims, StaffUserDetail } from '../types/auth.ts';
 import { HttpError } from '../utils/httpError.ts';
 
 type StaffAuthRow = RowDataPacket & {
@@ -11,6 +11,10 @@ type StaffAuthRow = RowDataPacket & {
     email: string;
     password_hash: string;
     role_id: string;
+    first_name: string;
+    last_name: string;
+    phone_number: string;
+    role_name: string;
     permission_slugs: string | null;
 };
 
@@ -71,7 +75,20 @@ export async function authenticateStaff(
     pool: Pool,
     usernameOrEmail: string,
     password: string
-): Promise<{ accessToken: string; session: AuthenticatedStaffSession }> {
+): Promise<{
+    accessToken: string;
+    session: AuthenticatedStaffSession;
+    user: {
+        id: string;
+        username: string;
+        email: string;
+        roleId: string;
+        firstName: string;
+        lastName: string;
+        phone: string;
+        roleName: string;
+    };
+}> {
     const normalizedIdentifier = usernameOrEmail.trim().toLowerCase();
 
     const [rows] = await pool.execute<StaffAuthRow[]>(
@@ -82,12 +99,17 @@ export async function authenticateStaff(
                 su.email,
                 su.password_hash,
                 su.role_id,
+                su.first_name,
+                su.last_name,
+                su.phone_number,
+                r.name AS role_name,
                 GROUP_CONCAT(DISTINCT p.slug ORDER BY p.slug SEPARATOR ',') AS permission_slugs
             FROM staff_users su
+            INNER JOIN roles r ON r.id = su.role_id
             LEFT JOIN role_permissions rp ON rp.role_id = su.role_id
             LEFT JOIN permissions p ON p.id = rp.permission_id
             WHERE LOWER(su.username) = ? OR LOWER(su.email) = ?
-            GROUP BY su.id, su.username, su.email, su.password_hash, su.role_id
+            GROUP BY su.id, su.username, su.email, su.password_hash, su.role_id, su.first_name, su.last_name, su.phone_number, r.name
             LIMIT 1
         `,
         [normalizedIdentifier, normalizedIdentifier]
@@ -121,7 +143,20 @@ export async function authenticateStaff(
         audience: process.env.JWT_AUDIENCE ?? 'field-outreach-pwa'
     });
 
-    return { accessToken, session };
+    return {
+        accessToken,
+        session,
+        user: {
+            id: staffUser.id,
+            username: staffUser.username,
+            email: staffUser.email,
+            roleId: staffUser.role_id,
+            firstName: staffUser.first_name,
+            lastName: staffUser.last_name,
+            phone: staffUser.phone_number,
+            roleName: staffUser.role_name
+        }
+    };
 }
 
 export function verifyAccessToken(accessToken: string): JwtSessionClaims {
@@ -189,12 +224,18 @@ export async function registerStaff(
     username: string,
     email: string,
     password: string,
-    roleId: string
+    roleId: string,
+    firstName: string,
+    lastName: string,
+    phone: string
 ): Promise<{
     id: string;
     username: string;
     email: string;
     roleId: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
     version: number;
     createdAt: string;
 }> {
@@ -244,12 +285,26 @@ export async function registerStaff(
     // 6. Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
+    const normalizedFirstName = firstName.trim();
+    const normalizedLastName = lastName.trim();
+    const normalizedPhone = phone.trim();
+
+    if (!normalizedFirstName) {
+        throw new HttpError(400, 'First name cannot be empty.');
+    }
+    if (!normalizedLastName) {
+        throw new HttpError(400, 'Last name cannot be empty.');
+    }
+    if (!normalizedPhone) {
+        throw new HttpError(400, 'Phone number cannot be empty.');
+    }
+
     // 7. Insert the user
     const createdAt = new Date().toISOString();
     await pool.execute(
-        `INSERT INTO staff_users (id, username, email, password_hash, role_id, version)
-         VALUES (?, ?, ?, ?, ?, 1)`,
-        [id, normalizedUsername, normalizedEmail, passwordHash, roleId]
+        `INSERT INTO staff_users (id, username, email, password_hash, role_id, first_name, last_name, phone_number, version)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+        [id, normalizedUsername, normalizedEmail, passwordHash, roleId, normalizedFirstName, normalizedLastName, normalizedPhone]
     );
 
     return {
@@ -257,7 +312,153 @@ export async function registerStaff(
         username: normalizedUsername,
         email: normalizedEmail,
         roleId,
+        firstName: normalizedFirstName,
+        lastName: normalizedLastName,
+        phone: normalizedPhone,
         version: 1,
         createdAt
     };
+}
+
+export async function listStaffUsers(pool: Pool): Promise<StaffUserDetail[]> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT 
+            su.id,
+            su.username,
+            su.email,
+            su.role_id,
+            r.name AS role_name,
+            su.first_name,
+            su.last_name,
+            su.phone_number,
+            su.security_status,
+            su.version,
+            su.created_at,
+            (SELECT MAX(ss.last_accessed_at) FROM staff_sessions ss WHERE ss.staff_user_id = su.id) AS last_active
+         FROM staff_users su
+         INNER JOIN roles r ON r.id = su.role_id
+         ORDER BY su.created_at DESC`
+    );
+
+    return rows.map((row) => ({
+        id: row.id,
+        username: row.username,
+        email: row.email,
+        roleId: row.role_id,
+        roleName: row.role_name,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        phone: row.phone_number,
+        securityStatus: row.security_status,
+        version: row.version,
+        createdAt: new Date(row.created_at).toISOString(),
+        lastActive: row.last_active ? new Date(row.last_active).toISOString() : null
+    }));
+}
+
+export async function generateStaffUsername(pool: Pool, year: number): Promise<string> {
+    const prefix = `ST-${year}-`;
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT username FROM staff_users WHERE username LIKE ? ORDER BY username DESC LIMIT 1`,
+        [`${prefix}%`]
+    );
+
+    let nextNum = 1;
+    if (rows.length > 0) {
+        const lastUsername = rows[0].username;
+        const parts = lastUsername.split('-');
+        if (parts.length === 3) {
+            const seqStr = parts[2];
+            const seq = parseInt(seqStr, 10);
+            if (!isNaN(seq)) {
+                nextNum = seq + 1;
+            }
+        }
+    }
+
+    const suffix = String(nextNum).padStart(4, '0');
+    return `${prefix}${suffix}`;
+}
+
+export async function updateStaffUser(
+    pool: Pool,
+    id: string,
+    username: string,
+    email: string,
+    roleId: string,
+    firstName: string,
+    lastName: string,
+    phone: string
+): Promise<{
+    id: string;
+    username: string;
+    email: string;
+    roleId: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    version: number;
+}> {
+    const [userRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT version FROM staff_users WHERE id = ? LIMIT 1',
+        [id]
+    );
+    if (userRows.length === 0) {
+        throw new HttpError(404, 'Staff user not found.');
+    }
+
+    const currentVersion = userRows[0].version;
+    const nextVersion = currentVersion + 1;
+
+    const [roleRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM roles WHERE id = ? LIMIT 1',
+        [roleId]
+    );
+    if (roleRows.length === 0) {
+        throw new HttpError(400, 'The specified Role ID does not exist.');
+    }
+
+    const [existingRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT id, username, email FROM staff_users WHERE (LOWER(username) = ? OR LOWER(email) = ?) AND id != ? LIMIT 1',
+        [username.trim().toLowerCase(), email.trim().toLowerCase(), id]
+    );
+    if (existingRows.length > 0) {
+        const match = existingRows[0];
+        if (match.username.toLowerCase() === username.trim().toLowerCase()) {
+            throw new HttpError(409, 'Username is already taken.');
+        }
+        if (match.email.toLowerCase() === email.trim().toLowerCase()) {
+            throw new HttpError(409, 'Email is already registered.');
+        }
+    }
+
+    await pool.execute(
+        `UPDATE staff_users 
+         SET username = ?, email = ?, role_id = ?, first_name = ?, last_name = ?, phone_number = ?, version = ?
+         WHERE id = ?`,
+        [username.trim(), email.trim().toLowerCase(), roleId, firstName.trim(), lastName.trim(), phone.trim(), nextVersion, id]
+    );
+
+    return {
+        id,
+        username: username.trim(),
+        email: email.trim().toLowerCase(),
+        roleId,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim(),
+        version: nextVersion
+    };
+}
+
+export async function deleteStaffUser(pool: Pool, id: string): Promise<void> {
+    const [userRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM staff_users WHERE id = ? LIMIT 1',
+        [id]
+    );
+    if (userRows.length === 0) {
+        throw new HttpError(404, 'Staff user not found.');
+    }
+
+    await pool.execute('DELETE FROM staff_users WHERE id = ?', [id]);
 }

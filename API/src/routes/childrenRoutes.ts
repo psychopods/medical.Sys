@@ -41,6 +41,20 @@ function optionalString(value: unknown): string | null {
     return value.trim();
 }
 
+function optionalImageString(value: unknown, fieldName: string): string | null {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+    if (typeof value !== 'string') {
+        throw new HttpError(400, `${fieldName} must be a string.`);
+    }
+    const trimmed = value.trim();
+    if (trimmed.length > 0 && !trimmed.startsWith('data:image/')) {
+        throw new HttpError(400, `${fieldName} must be a valid base64 image data URL (start with data:image/).`);
+    }
+    return trimmed;
+}
+
 export function createChildrenRouter(pool: Pool): Router {
     const router = Router();
 
@@ -70,6 +84,10 @@ export function createChildrenRouter(pool: Pool): Router {
                 const bodyStaffId = optionalString(request.body.createdByStaffId);
                 const createdByStaffId = bodyStaffId || sessionStaffId;
 
+                const image1 = optionalImageString(request.body.image1, 'image1');
+                const image2 = optionalImageString(request.body.image2, 'image2');
+                const image3 = optionalImageString(request.body.image3, 'image3');
+
                 const child = await childrenService.createChildProfile(
                     pool,
                     id,
@@ -78,7 +96,10 @@ export function createChildrenRouter(pool: Pool): Router {
                     gender,
                     estimatedBirthYear,
                     primaryLocationId,
-                    createdByStaffId
+                    createdByStaffId,
+                    image1,
+                    image2,
+                    image3
                 );
 
                 response.status(201).json({
@@ -138,6 +159,10 @@ export function createChildrenRouter(pool: Pool): Router {
                 const estimatedBirthYear = parseBirthYear(request.body.estimatedBirthYear);
                 const primaryLocationId = requireString(request.body.primaryLocationId, 'primaryLocationId');
 
+                const image1 = optionalImageString(request.body.image1, 'image1');
+                const image2 = optionalImageString(request.body.image2, 'image2');
+                const image3 = optionalImageString(request.body.image3, 'image3');
+
                 const child = await childrenService.updateChildProfile(
                     pool,
                     id,
@@ -145,7 +170,10 @@ export function createChildrenRouter(pool: Pool): Router {
                     fullName,
                     gender,
                     estimatedBirthYear,
-                    primaryLocationId
+                    primaryLocationId,
+                    image1,
+                    image2,
+                    image3
                 );
 
                 response.status(200).json({

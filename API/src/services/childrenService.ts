@@ -18,7 +18,10 @@ export async function createChildProfile(
     gender: Gender,
     estimatedBirthYear: number | null,
     primaryLocationId: string,
-    createdByStaffId: string
+    createdByStaffId: string,
+    image1?: string | null,
+    image2?: string | null,
+    image3?: string | null
 ): Promise<ChildProfile> {
     // 1. Enforce client-side UUID format
     validateUUIDv4(id, 'patient ID');
@@ -78,9 +81,20 @@ export async function createChildProfile(
     // 7. Insert record
     const createdAt = new Date().toISOString();
     await pool.execute(
-        `INSERT INTO children_profiles (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, version)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-        [id, normalizedSerial, normalizedFullName, gender, estimatedBirthYear, primaryLocationId, createdByStaffId]
+        `INSERT INTO children_profiles (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+        [
+            id,
+            normalizedSerial,
+            normalizedFullName,
+            gender,
+            estimatedBirthYear,
+            primaryLocationId,
+            createdByStaffId,
+            image1 ?? null,
+            image2 ?? null,
+            image3 ?? null
+        ]
     );
 
     return {
@@ -91,6 +105,9 @@ export async function createChildProfile(
         estimatedBirthYear,
         primaryLocationId,
         createdByStaffId,
+        image1: image1 ?? null,
+        image2: image2 ?? null,
+        image3: image3 ?? null,
         version: 1,
         createdAt,
         lastModifiedAt: createdAt
@@ -99,7 +116,7 @@ export async function createChildProfile(
 
 export async function listChildProfiles(pool: Pool): Promise<ChildProfile[]> {
     const [rows] = await pool.execute<RowDataPacket[]>(
-        `SELECT id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, version, created_at, last_modified_at
+        `SELECT id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, created_at, last_modified_at
          FROM children_profiles
          ORDER BY custom_serial_id`
     );
@@ -112,6 +129,9 @@ export async function listChildProfiles(pool: Pool): Promise<ChildProfile[]> {
         estimatedBirthYear: row.estimated_birth_year,
         primaryLocationId: row.primary_location_id,
         createdByStaffId: row.created_by_staff_id,
+        image1: row.image1,
+        image2: row.image2,
+        image3: row.image3,
         version: row.version,
         createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
         lastModifiedAt: row.last_modified_at ? new Date(row.last_modified_at).toISOString() : undefined
@@ -120,7 +140,7 @@ export async function listChildProfiles(pool: Pool): Promise<ChildProfile[]> {
 
 export async function getChildProfile(pool: Pool, id: string): Promise<ChildProfile> {
     const [rows] = await pool.execute<RowDataPacket[]>(
-        `SELECT id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, version, created_at, last_modified_at
+        `SELECT id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, created_at, last_modified_at
          FROM children_profiles
          WHERE id = ? LIMIT 1`,
         [id]
@@ -139,6 +159,9 @@ export async function getChildProfile(pool: Pool, id: string): Promise<ChildProf
         estimatedBirthYear: row.estimated_birth_year,
         primaryLocationId: row.primary_location_id,
         createdByStaffId: row.created_by_staff_id,
+        image1: row.image1,
+        image2: row.image2,
+        image3: row.image3,
         version: row.version,
         createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
         lastModifiedAt: row.last_modified_at ? new Date(row.last_modified_at).toISOString() : undefined
@@ -152,11 +175,14 @@ export async function updateChildProfile(
     fullName: string,
     gender: Gender,
     estimatedBirthYear: number | null,
-    primaryLocationId: string
+    primaryLocationId: string,
+    image1?: string | null,
+    image2?: string | null,
+    image3?: string | null
 ): Promise<ChildProfile> {
     // 1. Verify existence & fetch version
     const [rows] = await pool.execute<RowDataPacket[]>(
-        'SELECT version, created_by_staff_id FROM children_profiles WHERE id = ? LIMIT 1',
+        'SELECT version, created_by_staff_id, image1, image2, image3 FROM children_profiles WHERE id = ? LIMIT 1',
         [id]
     );
     const existingProfile = rows[0];
@@ -208,13 +234,28 @@ export async function updateChildProfile(
     // 6. Increment version count for offline synchronization integrity tracking
     const nextVersion = existingProfile.version + 1;
 
+    const finalImage1 = image1 !== undefined ? image1 : existingProfile.image1;
+    const finalImage2 = image2 !== undefined ? image2 : existingProfile.image2;
+    const finalImage3 = image3 !== undefined ? image3 : existingProfile.image3;
+
     // 7. Execute Update
     const lastModifiedAt = new Date().toISOString();
     await pool.execute(
         `UPDATE children_profiles
-         SET custom_serial_id = ?, full_name = ?, gender = ?, estimated_birth_year = ?, primary_location_id = ?, version = ?
+         SET custom_serial_id = ?, full_name = ?, gender = ?, estimated_birth_year = ?, primary_location_id = ?, image1 = ?, image2 = ?, image3 = ?, version = ?
          WHERE id = ?`,
-        [normalizedSerial, normalizedFullName, gender, estimatedBirthYear, primaryLocationId, nextVersion, id]
+        [
+            normalizedSerial,
+            normalizedFullName,
+            gender,
+            estimatedBirthYear,
+            primaryLocationId,
+            finalImage1 ?? null,
+            finalImage2 ?? null,
+            finalImage3 ?? null,
+            nextVersion,
+            id
+        ]
     );
 
     return {
@@ -225,6 +266,9 @@ export async function updateChildProfile(
         estimatedBirthYear,
         primaryLocationId,
         createdByStaffId: existingProfile.created_by_staff_id,
+        image1: finalImage1 ?? null,
+        image2: finalImage2 ?? null,
+        image3: finalImage3 ?? null,
         version: nextVersion,
         lastModifiedAt
     };

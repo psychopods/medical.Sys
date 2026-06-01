@@ -22,7 +22,7 @@ app.use('/api/auth', createAuthRouter(pool));
 app.use('/api/biometrics', createBiometricsRouter(pool));
 app.use('/api/children', createChildrenRouter(pool));
 app.use('/api/identity', createIdentityRouter(pool));
-app.use('/api/rbac', createRbacRouter(pool));
+app.use('/api', createRbacRouter(pool));
 app.use('/api/sync', createSyncRouter(pool));
 
 app.use((_request: Request, _response: Response, next: NextFunction) => {
