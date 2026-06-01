@@ -3,10 +3,493 @@ import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './UserManagement.css';
 
+  // API base URL
+const API_BASE_URL = 'http://localhost:9865';
+
 const UserManagement = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [permissions, setPermissions] = useState([]);
+  const [rolePermissions, setRolePermissions] = useState({});
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [activePage, setActivePage] = useState('list');
+  const [editingUser, setEditingUser] = useState(null);
+  const [editingRole, setEditingRole] = useState(null);
+  const [editingPermission, setEditingPermission] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [selectedRolePermissions, setSelectedRolePermissions] = useState([]);
+  const [selectedRoleForPermissions, setSelectedRoleForPermissions] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const [generatedUsername, setGeneratedUsername] = useState('');
+  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [permissionFormData, setPermissionFormData] = useState({
+    name: '',
+    display_name: '',
+    category_id: '',
+    description: ''
+  });
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    description: ''
+  });
+  const [stats, setStats] = useState({
+    total_users: 0,
+    active_roles: 0,
+    online_now: 0,
+    total_permissions: 0,
+    total_categories: 0
+  });
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    role_id: '',
+    first_name: '',
+    last_name: '',
+    phone_number: ''
+  });
+  const [roleFormData, setRoleFormData] = useState({
+    role_name: '',
+    description: ''
+  });
+  const [formErrors, setFormErrors] = useState({
+    username: '',
+    email: '',
+    password: '',
+    role_id: '',
+    first_name: '',
+    last_name: ''
+  });
+  const [permissionFormErrors, setPermissionFormErrors] = useState({
+    name: '',
+    display_name: '',
+    category_id: ''
+  });
+  const [categoryFormErrors, setCategoryFormErrors] = useState({
+    name: ''
+  });
+
   const navigate = useNavigate();
+
+
+  // Helper function to get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
+
+  // API Calls - Categories
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/permission_categories`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPermissions(data);
+        setStats(prev => ({ ...prev, total_categories: data.length }));
+        return data;
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+    return [];
+  };
+
+  const addCategory = async (categoryData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/permission_categories`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(categoryData)
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
+    }
+    return null;
+  };
+
+  const updateCategory = async (id, categoryData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/permission_categories/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(categoryData)
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error updating category:', error);
+    }
+    return null;
+  };
+
+  const deleteCategory = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/permission_categories/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    }
+    return false;
+  };
+
+  // API Calls - Permissions
+  const [availablePermissions, setAvailablePermissions] = useState([]);
+  const [permissionCategories, setPermissionCategories] = useState([]);
+
+  const fetchAllPermissions = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/permissions`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAvailablePermissions(data);
+        setStats(prev => ({ ...prev, total_permissions: data.length }));
+        return data;
+      }
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+    }
+    return [];
+  };
+
+  const addPermission = async (permissionData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/permissions`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(permissionData)
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error adding permission:', error);
+    }
+    return null;
+  };
+
+  const updatePermission = async (id, permissionData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/permissions/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(permissionData)
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error updating permission:', error);
+    }
+    return null;
+  };
+
+  const deletePermission = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/permissions/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error deleting permission:', error);
+    }
+    return false;
+  };
+
+  // API Calls - Roles
+  const fetchRoles = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/roles`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRoles(data);
+        setStats(prev => ({ ...prev, active_roles: data.length }));
+        return data;
+      }
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+    }
+    return [];
+  };
+
+  const addRole = async (roleData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/roles`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(roleData)
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error adding role:', error);
+    }
+    return null;
+  };
+
+  const updateRole = async (id, roleData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/roles/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(roleData)
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error updating role:', error);
+    }
+    return null;
+  };
+
+  const deleteRole = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/roles/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error deleting role:', error);
+    }
+    return false;
+  };
+
+  // API Calls - Users
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/staff_users`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+        setStats(prev => ({ ...prev, total_users: data.length }));
+        return data;
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+    return [];
+  };
+
+  const addUser = async (userData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/staff_users`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(userData)
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error adding user:', error);
+    }
+    return null;
+  };
+
+  const updateUser = async (id, userData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/staff_users/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(userData)
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+    }
+    return null;
+  };
+
+  const deleteUser = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/staff_users/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
+    return false;
+  };
+
+  // API Calls - Role Permissions
+  const fetchRolePermissions = async (roleId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}/permissions`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const permissionIds = data.map(p => p.permission_id);
+        setSelectedRolePermissions(permissionIds);
+        return permissionIds;
+      }
+    } catch (error) {
+      console.error('Error fetching role permissions:', error);
+    }
+    return [];
+  };
+
+  const assignPermission = async (roleId, permissionId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}/permissions`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ permission_id: permissionId })
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error assigning permission:', error);
+    }
+    return false;
+  };
+
+  const removePermission = async (roleId, permissionId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}/permissions/${permissionId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error removing permission:', error);
+    }
+    return false;
+  };
+
+  // API Calls - Others
+  const fetchOnlineUsers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/online_users`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStats(prev => ({ ...prev, online_now: data.count }));
+      }
+    } catch (error) {
+      console.error('Error fetching online users:', error);
+    }
+  };
+
+  const fetchAuditLogs = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/audit_logs`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAuditLogs(data);
+      }
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+    }
+  };
+
+  const generateUsername = async () => {
+    try {
+      const currentYear = new Date().getFullYear();
+      const response = await fetch(`${API_BASE_URL}/api/staff_users/generate_username?year=${currentYear}`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setGeneratedUsername(data.username);
+        setFormData(prev => ({ ...prev, username: data.username }));
+        return data.username;
+      }
+    } catch (error) {
+      console.error('Error generating username:', error);
+    }
+    return null;
+  };
+
+  const generateTemporaryPassword = () => {
+    const length = 10;
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijkmnpqrstuvwxyz';
+    const numbers = '23456789';
+    const special = '!@#$%&*';
+    
+    let password = '';
+    password += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
+    password += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+    password += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    password += special.charAt(Math.floor(Math.random() * special.length));
+    
+    const allChars = uppercase + lowercase + numbers + special;
+    for (let i = password.length; i < length; i++) {
+      password += allChars.charAt(Math.floor(Math.random() * allChars.length));
+    }
+    
+    password = password.split('').sort(() => 0.5 - Math.random()).join('');
+    setGeneratedPassword(password);
+    setFormData(prev => ({ ...prev, password }));
+    return password;
+  };
+
+  const sendEmailNotification = async (email, username, password, firstName, lastName) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/send_credentials`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          to_email: email,
+          username: username,
+          temporary_password: password,
+          first_name: firstName,
+          last_name: lastName,
+          login_url: window.location.origin
+        })
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Error sending email:', error);
+    }
+    return false;
+  };
+
+  // Initialize data on mount
+  useEffect(() => {
+    const initData = async () => {
+      await Promise.all([
+        fetchCategories(),
+        fetchAllPermissions(),
+        fetchRoles(),
+        fetchUsers(),
+        fetchAuditLogs(),
+        fetchOnlineUsers()
+      ]);
+    };
+    initData();
+  }, []);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
@@ -18,6 +501,20 @@ const UserManagement = () => {
     setLoading(false);
   }, [navigate]);
 
+  useEffect(() => {
+    if (activePage === 'add_user') {
+      generateUsername();
+      generateTemporaryPassword();
+    }
+  }, [activePage]);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: '' });
+    }, 3000);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
@@ -26,30 +523,801 @@ const UserManagement = () => {
     navigate('/login');
   };
 
-  const handleAddUser = () => {
-    alert('Add New User Form');
+  // Category CRUD Operations
+  const handleAddCategory = async () => {
+    if (!categoryFormData.name.trim()) {
+      setCategoryFormErrors({ name: 'Category name is required' });
+      return;
+    }
+    
+    const result = await addCategory({
+      name: categoryFormData.name.trim(),
+      description: categoryFormData.description || ''
+    });
+    
+    if (result) {
+      await fetchCategories();
+      setActivePage('categories');
+      resetCategoryForm();
+      showToast('Category added successfully!', 'success');
+    } else {
+      showToast('Failed to add category', 'error');
+    }
   };
 
-  const handleManageRoles = () => {
-    alert('Role Management');
+  const handleUpdateCategory = async () => {
+    if (!categoryFormData.name.trim()) {
+      setCategoryFormErrors({ name: 'Category name is required' });
+      return;
+    }
+    
+    const result = await updateCategory(editingCategory.id, {
+      name: categoryFormData.name.trim(),
+      description: categoryFormData.description || ''
+    });
+    
+    if (result) {
+      await fetchCategories();
+      setActivePage('categories');
+      setEditingCategory(null);
+      resetCategoryForm();
+      showToast('Category updated successfully!', 'success');
+    } else {
+      showToast('Failed to update category', 'error');
+    }
   };
 
-  const handleViewAuditLogs = () => {
-    alert('Audit Logs');
+  const handleDeleteCategory = async (categoryId, categoryName) => {
+    if (window.confirm(`Are you sure you want to delete category "${categoryName}"?`)) {
+      const success = await deleteCategory(categoryId);
+      if (success) {
+        await fetchCategories();
+        showToast('Category deleted successfully!', 'success');
+      } else {
+        showToast('Failed to delete category', 'error');
+      }
+    }
   };
 
-  const users = [
-    { name: 'John Doe', email: 'john@fingerprint.com', role: 'Admin', status: 'active', lastActive: '2024-01-15' },
-    { name: 'Jane Smith', email: 'jane@fingerprint.com', role: 'Nurse', status: 'active', lastActive: '2024-01-14' },
-    { name: 'Dr. Sarah Johnson', email: 'sarah@fingerprint.com', role: 'Doctor', status: 'active', lastActive: '2024-01-13' },
-    { name: 'Mike Brown', email: 'mike@fingerprint.com', role: 'Lab Technician', status: 'inactive', lastActive: '2024-01-10' },
-    { name: 'Lisa Wilson', email: 'lisa@fingerprint.com', role: 'Pharmacist', status: 'active', lastActive: '2024-01-12' },
-  ];
+  const resetCategoryForm = () => {
+    setCategoryFormData({ name: '', description: '' });
+    setCategoryFormErrors({ name: '' });
+  };
+
+  const handleEditCategory = (category) => {
+    setEditingCategory(category);
+    setCategoryFormData({
+      name: category.name,
+      description: category.description || ''
+    });
+    setActivePage('edit_category');
+  };
+
+  // Permission CRUD Operations
+  const validatePermissionForm = () => {
+    let isValid = true;
+    const errors = { name: '', display_name: '', category_id: '' };
+
+    if (!permissionFormData.name.trim()) {
+      errors.name = 'Permission name is required';
+      isValid = false;
+    } else if (!/^[a-z_]+$/.test(permissionFormData.name)) {
+      errors.name = 'Use lowercase letters and underscores only';
+      isValid = false;
+    }
+    if (!permissionFormData.display_name.trim()) {
+      errors.display_name = 'Display name is required';
+      isValid = false;
+    }
+    if (!permissionFormData.category_id) {
+      errors.category_id = 'Category is required';
+      isValid = false;
+    }
+
+    setPermissionFormErrors(errors);
+    return isValid;
+  };
+
+  const handleAddPermission = async () => {
+    if (!validatePermissionForm()) return;
+
+    const result = await addPermission({
+      name: permissionFormData.name.toLowerCase(),
+      display_name: permissionFormData.display_name,
+      category_id: parseInt(permissionFormData.category_id),
+      description: permissionFormData.description || ''
+    });
+
+    if (result) {
+      await fetchAllPermissions();
+      setActivePage('permissions');
+      resetPermissionForm();
+      showToast('Permission added successfully!', 'success');
+    } else {
+      showToast('Failed to add permission', 'error');
+    }
+  };
+
+  const handleUpdatePermission = async () => {
+    if (!validatePermissionForm()) return;
+
+    const result = await updatePermission(editingPermission.id, {
+      name: permissionFormData.name.toLowerCase(),
+      display_name: permissionFormData.display_name,
+      category_id: parseInt(permissionFormData.category_id),
+      description: permissionFormData.description || ''
+    });
+
+    if (result) {
+      await fetchAllPermissions();
+      setActivePage('permissions');
+      setEditingPermission(null);
+      resetPermissionForm();
+      showToast('Permission updated successfully!', 'success');
+    } else {
+      showToast('Failed to update permission', 'error');
+    }
+  };
+
+  const handleDeletePermission = async (permissionId, permissionName) => {
+    if (window.confirm(`Are you sure you want to delete permission "${permissionName}"?`)) {
+      const success = await deletePermission(permissionId);
+      if (success) {
+        await fetchAllPermissions();
+        showToast('Permission deleted successfully!', 'success');
+      } else {
+        showToast('Failed to delete permission', 'error');
+      }
+    }
+  };
+
+  const resetPermissionForm = () => {
+    setPermissionFormData({
+      name: '',
+      display_name: '',
+      category_id: '',
+      description: ''
+    });
+    setPermissionFormErrors({ name: '', display_name: '', category_id: '' });
+  };
+
+  // Role CRUD Operations
+  const validateRoleForm = () => {
+    if (!roleFormData.role_name.trim()) {
+      showToast('Role name is required', 'error');
+      return false;
+    }
+    return true;
+  };
+
+  const handleAddRole = async () => {
+    if (!validateRoleForm()) return;
+    
+    const result = await addRole({
+      role_name: roleFormData.role_name,
+      description: roleFormData.description || ''
+    });
+    
+    if (result) {
+      await fetchRoles();
+      setActivePage('roles');
+      resetRoleForm();
+      showToast('Role added successfully!', 'success');
+    } else {
+      showToast('Failed to add role', 'error');
+    }
+  };
+
+  const handleUpdateRole = async () => {
+    if (!validateRoleForm()) return;
+    
+    const result = await updateRole(editingRole.role_id, {
+      role_name: roleFormData.role_name,
+      description: roleFormData.description || ''
+    });
+    
+    if (result) {
+      await fetchRoles();
+      setActivePage('roles');
+      setEditingRole(null);
+      resetRoleForm();
+      showToast('Role updated successfully!', 'success');
+    } else {
+      showToast('Failed to update role', 'error');
+    }
+  };
+
+  const handleDeleteRole = async (roleId, roleName) => {
+    if (window.confirm(`Are you sure you want to delete role "${roleName}"?`)) {
+      const success = await deleteRole(roleId);
+      if (success) {
+        await fetchRoles();
+        showToast('Role deleted successfully!', 'success');
+      } else {
+        showToast('Failed to delete role', 'error');
+      }
+    }
+  };
+
+  const resetRoleForm = () => {
+    setRoleFormData({ role_name: '', description: '' });
+  };
+
+  // User CRUD Operations
+  const validateUserForm = () => {
+    let isValid = true;
+    const errors = {
+      username: '',
+      email: '',
+      password: '',
+      role_id: '',
+      first_name: '',
+      last_name: ''
+    };
+
+    if (!formData.username.trim()) {
+      errors.username = 'Username is required';
+      isValid = false;
+    }
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Email is invalid';
+      isValid = false;
+    }
+    if (!editingUser && !formData.password) {
+      errors.password = 'Password is required';
+      isValid = false;
+    }
+    if (!formData.role_id) {
+      errors.role_id = 'Role is required';
+      isValid = false;
+    }
+    if (!formData.first_name.trim()) {
+      errors.first_name = 'First name is required';
+      isValid = false;
+    }
+    if (!formData.last_name.trim()) {
+      errors.last_name = 'Last name is required';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleAddUser = async () => {
+    if (!validateUserForm()) return;
+    
+    const result = await addUser({
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+      role_id: parseInt(formData.role_id),
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      phone_number: formData.phone_number
+    });
+    
+    if (result) {
+      await sendEmailNotification(
+        formData.email,
+        formData.username,
+        formData.password,
+        formData.first_name,
+        formData.last_name
+      );
+      
+      await fetchUsers();
+      setActivePage('users');
+      resetForm();
+      showToast('User added successfully! Credentials sent to email.', 'success');
+    } else {
+      showToast('Failed to add user', 'error');
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!validateUserForm()) return;
+    
+    const result = await updateUser(editingUser.user_id, {
+      username: formData.username,
+      email: formData.email,
+      role_id: parseInt(formData.role_id),
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      phone_number: formData.phone_number
+    });
+    
+    if (result) {
+      await fetchUsers();
+      setActivePage('users');
+      setEditingUser(null);
+      resetForm();
+      showToast('User updated successfully!', 'success');
+    } else {
+      showToast('Failed to update user', 'error');
+    }
+  };
+
+  const handleDeleteUser = async (userId, userName) => {
+    if (window.confirm(`Are you sure you want to delete ${userName}?`)) {
+      const success = await deleteUser(userId);
+      if (success) {
+        await fetchUsers();
+        showToast('User deleted successfully!', 'success');
+      } else {
+        showToast('Failed to delete user', 'error');
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      username: generatedUsername,
+      email: '',
+      password: '',
+      role_id: '',
+      first_name: '',
+      last_name: '',
+      phone_number: ''
+    });
+    setFormErrors({
+      username: '',
+      email: '',
+      password: '',
+      role_id: '',
+      first_name: '',
+      last_name: ''
+    });
+    setGeneratedPassword('');
+    setShowPassword(false);
+  };
+
+  // Role Permissions Management
+  const togglePermission = async (permissionId) => {
+    if (!selectedRoleForPermissions) return;
+    
+    const isCurrentlyAssigned = selectedRolePermissions.includes(permissionId);
+    
+    let success;
+    if (isCurrentlyAssigned) {
+      success = await removePermission(selectedRoleForPermissions.role_id, permissionId);
+    } else {
+      success = await assignPermission(selectedRoleForPermissions.role_id, permissionId);
+    }
+    
+    if (success) {
+      if (isCurrentlyAssigned) {
+        setSelectedRolePermissions(prev => prev.filter(id => id !== permissionId));
+        showToast('Permission removed from role', 'success');
+      } else {
+        setSelectedRolePermissions(prev => [...prev, permissionId]);
+        showToast('Permission assigned to role', 'success');
+      }
+    } else {
+      showToast('Failed to update permission', 'error');
+    }
+  };
+
+  const handleManagePermissions = async (role) => {
+    setSelectedRoleForPermissions(role);
+    await fetchRolePermissions(role.role_id);
+    setActivePage('manage_permissions');
+  };
+
+  const handleEditUser = (userItem) => {
+    setEditingUser(userItem);
+    setFormData({
+      username: userItem.username,
+      email: userItem.email,
+      password: '',
+      role_id: userItem.role_id || '',
+      first_name: userItem.first_name || '',
+      last_name: userItem.last_name || '',
+      phone_number: userItem.phone_number || ''
+    });
+    setActivePage('edit_user');
+  };
+
+  const handleEditRole = (role) => {
+    setEditingRole(role);
+    setRoleFormData({
+      role_name: role.role_name,
+      description: role.description || ''
+    });
+    setActivePage('edit_role');
+  };
+
+  const handleEditPermission = (permission) => {
+    setEditingPermission(permission);
+    setPermissionFormData({
+      name: permission.name,
+      display_name: permission.display_name,
+      category_id: permission.category_id,
+      description: permission.description || ''
+    });
+    setActivePage('edit_permission');
+  };
+
+  const getPermissionsByCategory = () => {
+    const grouped = {};
+    availablePermissions.forEach(perm => {
+      const category = permissionCategories.find(c => c.id === perm.category_id);
+      const categoryName = category ? category.name : 'Uncategorized';
+      if (!grouped[categoryName]) {
+        grouped[categoryName] = [];
+      }
+      grouped[categoryName].push(perm);
+    });
+    return grouped;
+  };
+
+  const ToastNotification = () => {
+    if (!toast.show) return null;
+    return (
+      <div className={`um-toast-notification ${toast.type}`}>
+        <div className="um-toast-content">
+          {toast.type === 'success' && <span>✓</span>}
+          {toast.type === 'error' && <span>✗</span>}
+          {toast.type === 'info' && <span>ℹ</span>}
+          <span>{toast.message}</span>
+        </div>
+        <button className="um-toast-close" onClick={() => setToast({ show: false, message: '', type: '' })}>×</button>
+      </div>
+    );
+  };
+
+  // Render Users List Page
+  const renderUsersList = () => (
+    <div className="um-page-content">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <div className="um-header-actions">
+          <h1>System Users</h1>
+          <button className="um-add-btn" onClick={() => setActivePage('add_user')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/>
+              <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"/>
+              <path d="M22 22L20 20"/>
+            </svg>
+            Add New User
+          </button>
+        </div>
+      </div>
+      <div className="um-recent-table">
+        <table className="um-data-table">
+          <thead>
+            <tr><th>S/N</th><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th><th>Last Active</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {users.map((userItem, index) => (
+              <tr key={userItem.user_id}>
+                <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                <td>{userItem.username}</td>
+                <td>{userItem.first_name} {userItem.last_name}</td>
+                <td>{userItem.email}</td>
+                <td>{userItem.role_name}</td>
+                <td>{userItem.last_active || 'N/A'}</td>
+                <td><span className="um-status-badge um-status-active">{userItem.status || 'active'}</span></td>
+                <td>
+                  <button className="um-action-btn um-edit-btn" onClick={() => handleEditUser(userItem)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
+                  </button>
+                  <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteUser(userItem.user_id, userItem.username)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Render Add/Edit User Page
+  const renderUserForm = () => (
+    <div className="um-page-content-full">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => { setActivePage('users'); setEditingUser(null); resetForm(); }}>← Back to Users</button>
+        <h1>{editingUser ? 'Edit User' : 'Add New User'}</h1>
+        <p>{editingUser ? 'Update user information' : 'Create a new system user account. Credentials will be sent via email.'}</p>
+      </div>
+      <div className="um-form-container-full">
+        <div className="um-form-grid-full">
+          <div className="um-form-group">
+            <label>Username (Auto-generated) *</label>
+            <input type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} readOnly={!editingUser} style={!editingUser ? { background: '#f0f0f0' } : {}} />
+            {!editingUser && <span className="um-helper-text">Username automatically generated in format: ST-YYYY-XXXX</span>}
+          </div>
+          <div className="um-form-group"><label>Email *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></div>
+          <div className="um-form-group"><label>First Name *</label><input type="text" value={formData.first_name} onChange={(e) => setFormData({...formData, first_name: e.target.value})} /></div>
+          <div className="um-form-group"><label>Last Name *</label><input type="text" value={formData.last_name} onChange={(e) => setFormData({...formData, last_name: e.target.value})} /></div>
+          <div className="um-form-group"><label>Phone Number</label><input type="tel" value={formData.phone_number} onChange={(e) => setFormData({...formData, phone_number: e.target.value})} /></div>
+          {!editingUser && (
+            <div className="um-form-group">
+              <label>Temporary Password *</label>
+              <div className="um-password-wrapper">
+                <input type={showPassword ? "text" : "password"} value={formData.password} readOnly style={{ background: '#f0f0f0' }} />
+                <button type="button" className="um-password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? 'Hide' : 'Show'}</button>
+              </div>
+            </div>
+          )}
+          <div className="um-form-group">
+            <label>Role *</label>
+            <select value={formData.role_id} onChange={(e) => setFormData({...formData, role_id: e.target.value})}>
+              <option value="">Select Role</option>
+              {roles.map(role => (<option key={role.role_id} value={role.role_id}>{role.role_name}</option>))}
+            </select>
+          </div>
+        </div>
+        <div className="um-form-actions">
+          <button className="um-btn-secondary" onClick={() => { setActivePage('users'); setEditingUser(null); resetForm(); }}>Cancel</button>
+          <button className="um-btn-primary" onClick={editingUser ? handleUpdateUser : handleAddUser}>{editingUser ? 'Update User' : 'Add User'}</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Roles List Page
+  const renderRolesList = () => (
+    <div className="um-page-content">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <div className="um-header-actions">
+          <h1>System Roles</h1>
+          <div className="um-header-buttons">
+            <button className="um-add-btn" onClick={() => setActivePage('add_role')}>Add New Role</button>
+          </div>
+        </div>
+      </div>
+      <div className="um-roles-table-container">
+        <table className="um-data-table">
+          <thead><tr><th>S/N</th><th>Role Name</th><th>Description</th><th>Actions</th></tr></thead>
+          <tbody>
+            {roles.map((role, index) => (
+              <tr key={role.role_id}>
+                <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                <td><strong>{role.role_name}</strong></td>
+                <td>{role.description}</td>
+                <td>
+                  <button className="um-action-btn um-permission-btn" onClick={() => handleManagePermissions(role)} title="Manage Permissions">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+                  </button>
+                  <button className="um-action-btn um-edit-btn" onClick={() => handleEditRole(role)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
+                  </button>
+                  <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteRole(role.role_id, role.role_name)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Render Add/Edit Role Page
+  const renderRoleForm = () => (
+    <div className="um-page-content-full">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => { setActivePage('roles'); setEditingRole(null); resetRoleForm(); }}>← Back to Roles</button>
+        <h1>{editingRole ? 'Edit Role' : 'Add New Role'}</h1>
+      </div>
+      <div className="um-form-container-full">
+        <div className="um-form-section">
+          <div className="um-form-grid-full">
+            <div className="um-form-group"><label>Role Name *</label><input type="text" value={roleFormData.role_name} onChange={(e) => setRoleFormData({...roleFormData, role_name: e.target.value})} /></div>
+            <div className="um-form-group"><label>Description</label><textarea rows="3" value={roleFormData.description} onChange={(e) => setRoleFormData({...roleFormData, description: e.target.value})} /></div>
+          </div>
+        </div>
+        <div className="um-form-actions">
+          <button className="um-btn-secondary" onClick={() => { setActivePage('roles'); setEditingRole(null); resetRoleForm(); }}>Cancel</button>
+          <button className="um-btn-primary" onClick={editingRole ? handleUpdateRole : handleAddRole}>{editingRole ? 'Update Role' : 'Create Role'}</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Permissions List Page
+  const renderPermissionsList = () => (
+    <div className="um-page-content">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <div className="um-header-actions">
+          <h1>System Permissions</h1>
+          <button className="um-add-btn" onClick={() => { setEditingPermission(null); resetPermissionForm(); setActivePage('add_permission'); }}>Define New Permission</button>
+        </div>
+      </div>
+      <div className="um-permissions-table-container">
+        <table className="um-data-table">
+          <thead><tr><th>Category</th><th>Permission Name</th><th>Description</th><th>System Name</th><th>Actions</th></tr></thead>
+          <tbody>
+            {availablePermissions.map((permission) => {
+              const category = permissionCategories.find(c => c.id === permission.category_id);
+              return (
+                <tr key={permission.id}>
+                  <td>{category ? category.name : 'Uncategorized'}</td>
+                  <td><strong>{permission.display_name}</strong></td>
+                  <td>{permission.description}</td>
+                  <td><code className="um-code-tag">{permission.name}</code></td>
+                  <td>
+                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditPermission(permission)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
+                    </button>
+                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeletePermission(permission.id, permission.display_name)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Render Add/Edit Permission Page
+  const renderPermissionForm = () => (
+    <div className="um-page-content-full">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => { setActivePage('permissions'); setEditingPermission(null); resetPermissionForm(); }}>← Back to Permissions</button>
+        <h1>{editingPermission ? 'Edit Permission' : 'Define New Permission'}</h1>
+      </div>
+      <div className="um-form-container-full">
+        <div className="um-form-section">
+          <div className="um-form-grid-full">
+            <div className="um-form-group"><label>Permission Name (system name) *</label><input type="text" value={permissionFormData.name} onChange={(e) => setPermissionFormData({...permissionFormData, name: e.target.value})} placeholder="e.g., view_children, edit_child" /><span className="um-helper-text">Use lowercase with underscores (no spaces)</span></div>
+            <div className="um-form-group"><label>Display Name *</label><input type="text" value={permissionFormData.display_name} onChange={(e) => setPermissionFormData({...permissionFormData, display_name: e.target.value})} placeholder="e.g., View Children" /></div>
+            <div className="um-form-group"><label>Category *</label><select value={permissionFormData.category_id} onChange={(e) => setPermissionFormData({...permissionFormData, category_id: e.target.value})}><option value="">Select Category</option>{permissionCategories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}</select></div>
+            <div className="um-form-group"><label>Description</label><textarea rows="4" value={permissionFormData.description} onChange={(e) => setPermissionFormData({...permissionFormData, description: e.target.value})} /></div>
+          </div>
+        </div>
+        <div className="um-form-actions">
+          <button className="um-btn-secondary" onClick={() => { setActivePage('permissions'); setEditingPermission(null); resetPermissionForm(); }}>Cancel</button>
+          <button className="um-btn-primary" onClick={editingPermission ? handleUpdatePermission : handleAddPermission}>{editingPermission ? 'Update Permission' : 'Create Permission'}</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Categories List Page
+  const renderCategoriesList = () => (
+    <div className="um-page-content">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <div className="um-header-actions">
+          <h1>Permission Categories</h1>
+          <button className="um-add-btn" onClick={() => { setEditingCategory(null); resetCategoryForm(); setActivePage('add_category'); }}>Add New Category</button>
+        </div>
+      </div>
+      <div className="um-categories-table-container">
+        <table className="um-data-table">
+          <thead><tr><th>S/N</th><th>Category Name</th><th>Description</th><th>Created At</th><th>Last Updated</th><th>Actions</th></tr></thead>
+          <tbody>
+            {permissionCategories.map((category, index) => (
+              <tr key={category.id}>
+                <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                <td><strong>{category.name}</strong></td>
+                <td>{category.description}</td>
+                <td>{category.created_at || 'N/A'}</td>
+                <td>{category.updated_at || 'N/A'}</td>
+                <td>
+                  <button className="um-action-btn um-edit-btn" onClick={() => handleEditCategory(category)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
+                  </button>
+                  <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteCategory(category.id, category.name)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Render Add/Edit Category Page
+  const renderCategoryForm = () => (
+    <div className="um-page-content-full">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => { setActivePage('categories'); setEditingCategory(null); resetCategoryForm(); }}>← Back to Categories</button>
+        <h1>{editingCategory ? 'Edit Category' : 'Add New Category'}</h1>
+      </div>
+      <div className="um-form-container-full">
+        <div className="um-form-section">
+          <div className="um-form-grid-full">
+            <div className="um-form-group"><label>Category Name *</label><input type="text" value={categoryFormData.name} onChange={(e) => setCategoryFormData({...categoryFormData, name: e.target.value})} /></div>
+            <div className="um-form-group"><label>Description</label><textarea rows="4" value={categoryFormData.description} onChange={(e) => setCategoryFormData({...categoryFormData, description: e.target.value})} /></div>
+          </div>
+        </div>
+        <div className="um-form-actions">
+          <button className="um-btn-secondary" onClick={() => { setActivePage('categories'); setEditingCategory(null); resetCategoryForm(); }}>Cancel</button>
+          <button className="um-btn-primary" onClick={editingCategory ? handleUpdateCategory : handleAddCategory}>{editingCategory ? 'Update Category' : 'Create Category'}</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Manage Permissions Page
+  const renderManagePermissions = () => {
+    const groupedPermissions = getPermissionsByCategory();
+    const flattenedPermissions = [];
+    Object.keys(groupedPermissions).forEach(category => {
+      groupedPermissions[category].forEach(permission => {
+        flattenedPermissions.push({ ...permission, category });
+      });
+    });
+
+    return (
+      <div className="um-page-content-full">
+        <div className="um-page-header">
+          <button className="um-back-btn" onClick={() => { setActivePage('roles'); setSelectedRoleForPermissions(null); setSelectedRolePermissions([]); }}>← Back to Roles</button>
+          <h1>Manage Permissions</h1>
+          <p>Assign permissions to role: <strong>{selectedRoleForPermissions?.role_name}</strong></p>
+        </div>
+        <div className="um-permissions-manage-container">
+          <div className="um-permissions-summary-bar">
+            <div className="um-permissions-summary-info">
+              <span className="um-permissions-count-badge">{selectedRolePermissions.length} permissions assigned</span>
+              <span className="um-permissions-total-badge">out of {availablePermissions.length} total</span>
+            </div>
+            <p className="um-permissions-note">Check the boxes below to grant or revoke permissions for this role.</p>
+          </div>
+          <div className="um-permissions-manage-table-container">
+            <table className="um-permissions-manage-table">
+              <thead><tr><th style={{ width: '50px' }}><input type="checkbox" className="um-check-all-checkbox" checked={selectedRolePermissions.length === availablePermissions.length && availablePermissions.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedRolePermissions(availablePermissions.map(p => p.id)); showToast('All permissions assigned to role', 'success'); } else { setSelectedRolePermissions([]); showToast('All permissions removed from role', 'success'); } }} /></th><th>Permission Name</th><th>Category</th><th>Description</th></tr></thead>
+              <tbody>
+                {flattenedPermissions.map((permission) => (
+                  <tr key={permission.id}>
+                    <td style={{ textAlign: 'center' }}><input type="checkbox" className="um-permission-checkbox-input" checked={selectedRolePermissions.includes(permission.id)} onChange={() => togglePermission(permission.id)} /></td>
+                    <td><div className="um-permission-name-cell"><strong>{permission.display_name}</strong><br /><code className="um-permission-code">{permission.name}</code></div></td>
+                    <td><span className="um-permission-category-tag">{permission.category}</span></td>
+                    <td className="um-permission-description-cell">{permission.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="um-form-actions"><button className="um-btn-secondary" onClick={() => { setActivePage('roles'); setSelectedRoleForPermissions(null); setSelectedRolePermissions([]); }}>Close</button></div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Audit Logs Page
+  const renderAuditLogs = () => (
+    <div className="um-page-content">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <div className="um-header-actions">
+          <h1>Audit Logs</h1>
+          <button className="um-refresh-btn" onClick={() => { fetchAuditLogs(); showToast('Audit logs refreshed!', 'success'); }}>Refresh</button>
+        </div>
+      </div>
+      <div className="um-audit-table-container">
+        <table className="um-data-table">
+          <thead><tr><th>S/N</th><th>Action</th><th>Username</th><th>Timestamp</th><th>Details</th></tr></thead>
+          <tbody>
+            {auditLogs.map((log, index) => (
+              <tr key={log.log_id}><td style={{ textAlign: 'center' }}>{index + 1}</td><td>{log.action}</td><td>{log.username}</td><td>{log.timestamp}</td><td>{log.details}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
-      <div className="dashboard-loading">
-        <div className="spinner"></div>
+      <div className="um-dashboard-loading">
+        <div className="um-spinner"></div>
         <p>Loading...</p>
       </div>
     );
@@ -59,147 +1327,46 @@ const UserManagement = () => {
 
   return (
     <Layout user={user} onLogout={handleLogout}>
-      <div className="user-management-container">
-        <div className="page-header">
-          <h1>User Management</h1>
-          <p>Manage system users, roles, and permissions</p>
-        </div>
+      <ToastNotification />
+      <div className="um-user-management-container">
+        {activePage === 'list' && (
+          <>
+            <div className="um-page-header">
+              <h1>User Management</h1>
+              <p>Manage system users, roles, and permissions</p>
+            </div>
+            <div className="um-stats-grid">
+              <div className="um-stat-card"><div className="um-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21V19C17 16.8 15.2 15 13 15H5C2.8 15 1 16.8 1 19V21"/><circle cx="9" cy="7" r="4"/><path d="M23 21V19C22.9 16.8 21.1 15 19 15"/><path d="M16 3.13C17.2 3.72 18 5.01 18 6.5C18 7.99 17.2 9.28 16 9.87"/></svg></div><div className="um-stat-info"><h3>{stats.total_users}</h3><p>Total Users</p></div></div>
+              <div className="um-stat-card"><div className="um-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/><path d="M12 6V12L16 14"/></svg></div><div className="um-stat-info"><h3>{stats.active_roles}</h3><p>Active Roles</p></div></div>
+              <div className="um-stat-card"><div className="um-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg></div><div className="um-stat-info"><h3>{stats.online_now}</h3><p>Online Now</p></div></div>
+              <div className="um-stat-card"><div className="um-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/><path d="M12 6v6l4 2"/></svg></div><div className="um-stat-info"><h3>{stats.total_permissions}</h3><p>Total Permissions</p></div></div>
+              <div className="um-stat-card"><div className="um-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4L20 4"/><path d="M4 8L20 8"/><path d="M4 12L14 12"/><rect x="2" y="2" width="20" height="20" rx="2"/></svg></div><div className="um-stat-info"><h3>{stats.total_categories}</h3><p>Total Categories</p></div></div>
+            </div>
+            <div className="um-section-title">Quick Actions</div>
+            <div className="um-actions-grid">
+              <div className="um-action-card" onClick={() => setActivePage('users')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/><path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"/></svg></div><div className="um-action-info"><h4>Manage Users</h4><p>View, add, edit, or delete system users</p></div></div>
+              <div className="um-action-card" onClick={() => setActivePage('roles')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/><path d="M12 6V12L16 14"/></svg></div><div className="um-action-info"><h4>Manage Roles</h4><p>Configure roles and permissions</p></div></div>
+              <div className="um-action-card" onClick={() => setActivePage('permissions')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg></div><div className="um-action-info"><h4>Define Permissions</h4><p>Create, edit, or delete system permissions</p></div></div>
+              <div className="um-action-card" onClick={() => setActivePage('categories')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4L20 4"/><path d="M4 8L20 8"/><path d="M4 12L14 12"/><rect x="2" y="2" width="20" height="20" rx="2"/></svg></div><div className="um-action-info"><h4>Manage Categories</h4><p>Create, edit, or delete permission categories</p></div></div>
+              <div className="um-action-card" onClick={() => setActivePage('audit')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2V6"/><path d="M8 2V6"/><path d="M3 10H21"/></svg></div><div className="um-action-info"><h4>View Audit Logs</h4><p>Track system activities</p></div></div>
+            </div>
+          </>
+        )}
 
-        {/* Stats Cards */}
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M17 21V19C17 16.8 15.2 15 13 15H5C2.8 15 1 16.8 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M23 21V19C22.9 16.8 21.1 15 19 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 3.13C17.2 3.72 18 5.01 18 6.5C18 7.99 17.2 9.28 16 9.87" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="stat-info">
-              <h3>25</h3>
-              <p>Total Users</p>
-              <span className="trend">+3 this month</span>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="stat-info">
-              <h3>5</h3>
-              <p>Active Roles</p>
-              <span className="trend">Admin, Nurse, Doctor, Lab, Pharma</span>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="12" r="4" fill="currentColor" stroke="currentColor" strokeWidth="2"/>
-              </svg>
-            </div>
-            <div className="stat-info">
-              <h3>12</h3>
-              <p>Online Now</p>
-              <span className="trend">Currently active</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="section-title">Quick Actions</div>
-        <div className="actions-grid">
-          <div className="action-card" onClick={handleAddUser}>
-            <div className="action-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M22 22L20 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="action-info">
-              <h4>Add New User</h4>
-              <p>Create new system user account</p>
-            </div>
-          </div>
-          <div className="action-card" onClick={handleManageRoles}>
-            <div className="action-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="action-info">
-              <h4>Manage Roles</h4>
-              <p>Configure roles and permissions</p>
-            </div>
-          </div>
-          <div className="action-card" onClick={handleViewAuditLogs}>
-            <div className="action-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 3L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M21 3L3 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <rect x="5" y="5" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="action-info">
-              <h4>View Audit Logs</h4>
-              <p>Track system activities</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Users Table */}
-        <div className="section-title">System Users</div>
-        <div className="recent-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Last Active</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((userItem, index) => (
-                <tr key={index}>
-                  <td>{userItem.name}</td>
-                  <td>{userItem.email}</td>
-                  <td>{userItem.role}</td>
-                  <td>{userItem.lastActive}</td>
-                  <td>
-                    <span className={`status-badge ${userItem.status === 'active' ? 'status-completed' : 'status-pending'}`}>
-                      {userItem.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button className="action-btn edit-btn" onClick={() => alert(`Edit ${userItem.name}`)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17 3L21 7L7 21H3V17L17 3Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                    <button className="action-btn delete-btn" onClick={() => alert(`Delete ${userItem.name}`)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        <path d="M10 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        <path d="M14 11V17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {activePage === 'users' && renderUsersList()}
+        {activePage === 'add_user' && renderUserForm()}
+        {activePage === 'edit_user' && renderUserForm()}
+        {activePage === 'roles' && renderRolesList()}
+        {activePage === 'add_role' && renderRoleForm()}
+        {activePage === 'edit_role' && renderRoleForm()}
+        {activePage === 'permissions' && renderPermissionsList()}
+        {activePage === 'add_permission' && renderPermissionForm()}
+        {activePage === 'edit_permission' && renderPermissionForm()}
+        {activePage === 'categories' && renderCategoriesList()}
+        {activePage === 'add_category' && renderCategoryForm()}
+        {activePage === 'edit_category' && renderCategoryForm()}
+        {activePage === 'manage_permissions' && renderManagePermissions()}
+        {activePage === 'audit' && renderAuditLogs()}
       </div>
     </Layout>
   );

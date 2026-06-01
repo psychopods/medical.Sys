@@ -431,7 +431,7 @@
   color: #999;
 }
 
-/* Upload Options */
+/* Upload Options - Icon Only */
 .child-reg-upload-options {
   display: flex;
   gap: 8px;
@@ -443,28 +443,108 @@
 .child-reg-btn-upload, 
 .child-reg-btn-camera, 
 .child-reg-btn-remove {
-  padding: 6px 12px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: none;
+  border-radius: 50%;
   cursor: pointer;
-  font-size: 12px;
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
 }
 
-.child-reg-btn-upload { background: #667eea; color: #fff; }
-.child-reg-btn-upload:hover { background: #5a67d8; }
-.child-reg-btn-camera { background: #48bb78; color: #fff; }
-.child-reg-btn-camera:hover { background: #38a169; }
-.child-reg-btn-remove { background: #f56565; color: #fff; }
-.child-reg-btn-remove:hover { background: #e53e3e; }
+.child-reg-btn-upload {
+  background: #667eea;
+  color: #fff;
+}
+
+.child-reg-btn-upload:hover {
+  background: #5a67d8;
+  transform: scale(1.05);
+}
+
+.child-reg-btn-camera {
+  background: #48bb78;
+  color: #fff;
+}
+
+.child-reg-btn-camera:hover {
+  background: #38a169;
+  transform: scale(1.05);
+}
+
+.child-reg-btn-remove {
+  background: #f56565;
+  color: #fff;
+}
+
+.child-reg-btn-remove:hover {
+  background: #e53e3e;
+  transform: scale(1.05);
+}
 
 /* Camera Preview */
-.child-reg-camera-preview { width: 100%; }
-.child-reg-camera-video { width: 100%; border-radius: 8px; margin-bottom: 8px; }
-.child-reg-camera-controls { display: flex; gap: 8px; justify-content: center; }
-.child-reg-btn-capture { background: #48bb78; color: #fff; border: none; padding: 6px 12px; cursor: pointer; }
-.child-reg-btn-cancel { background: #a0aec0; color: #fff; border: none; padding: 6px 12px; cursor: pointer; }
+.child-reg-camera-preview { 
+  width: 100%; 
+}
 
-.child-reg-optional-note { font-size: 12px; color: #999; text-align: center; margin-top: 10px; }
+.child-reg-camera-video { 
+  width: 100%; 
+  border-radius: 8px; 
+  margin-bottom: 8px; 
+}
+
+.child-reg-camera-controls { 
+  display: flex; 
+  gap: 10px; 
+  justify-content: center; 
+  margin-top: 8px;
+}
+
+.child-reg-btn-capture, 
+.child-reg-btn-cancel {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-btn-capture {
+  background: #48bb78;
+  color: #fff;
+}
+
+.child-reg-btn-capture:hover {
+  background: #38a169;
+  transform: scale(1.05);
+}
+
+.child-reg-btn-cancel {
+  background: #a0aec0;
+  color: #fff;
+}
+
+.child-reg-btn-cancel:hover {
+  background: #718096;
+  transform: scale(1.05);
+}
+
+.child-reg-optional-note { 
+  font-size: 12px; 
+  color: #999; 
+  text-align: center; 
+  margin-bottom: 15px; 
+  font-style: italic;
+}
 
 /* Buttons */
 .child-reg-btn-primary, 
@@ -1126,6 +1206,19 @@
   text-align: center;
 }
 
+/* Error Styles */
+.error-input {
+  border-color: #dc3545 !important;
+  background-color: #fff5f5 !important;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .child-reg-page-content {
@@ -1237,4 +1330,3 @@
     transform: rotate(360deg);
   }
 }
-

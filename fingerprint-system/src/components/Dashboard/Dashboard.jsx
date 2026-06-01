@@ -15,19 +15,23 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Get user from storage
     const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     
-    if (storedUser) {
+    // Check both user AND token for better security
+    if (storedUser && token) {
       setUser(JSON.parse(storedUser));
       console.log('User loaded:', JSON.parse(storedUser));
     } else {
-      console.log('No user found, redirecting to login');
+      console.log('No user or token found, redirecting to login');
       navigate('/login');
     }
     setLoading(false);
   }, [navigate]);
 
   const handleLogout = () => {
+    // Clear all auth data
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     sessionStorage.removeItem('user');
@@ -38,22 +42,18 @@ const Dashboard = () => {
   const renderDashboardContent = () => {
     if (!user) return null;
 
-    switch (user.role) {
-      case 'superuser':
-        return <SuperUserDashboard user={user} />;
-      case 'nurse':
-        return <NurseDashboard user={user} />;
-      case 'doctor':
-        return <DoctorDashboard user={user} />;
-      case 'lab_technician':
-        return <LabTechnicianDashboard user={user} />;
-      case 'pharmacist':
-        return <PharmacistDashboard user={user} />;
-      case 'staff':
-        return <StaffDashboard user={user} />;
-      default:
-        return <StaffDashboard user={user} />;
-    }
+    // Role to component mapping (cleaner than switch)
+    const roleComponents = {
+      superuser: SuperUserDashboard,
+      nurse: NurseDashboard,
+      doctor: DoctorDashboard,
+      lab_technician: LabTechnicianDashboard,
+      pharmacist: PharmacistDashboard,
+      staff: StaffDashboard,
+    };
+
+    const DashboardComponent = roleComponents[user.role] || StaffDashboard;
+    return <DashboardComponent user={user} onLogout={handleLogout} />;
   };
 
   if (loading) {

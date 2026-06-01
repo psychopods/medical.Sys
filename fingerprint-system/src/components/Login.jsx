@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
+
+const API_BASE_URL = 'http://localhost:9865';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState('');
@@ -15,6 +17,7 @@ const Login = () => {
   const [passwordError, setPasswordError] = useState('');
   
   const navigate = useNavigate();
+  
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -73,29 +76,6 @@ const Login = () => {
   const handleRememberMeChange = (e) => {
     const isChecked = e.target.checked;
     setRememberMe(isChecked);
-    if (isChecked) {
-      showToast('You will stay logged in on this device', 'info');
-    } else {
-      showToast('Remember me disabled', 'info');
-    }
-  };
-
-  // Determine user role based on email/username
-  const getUserRole = (username) => {
-    const lowerUsername = username.toLowerCase();
-    if (lowerUsername.includes('admin') || lowerUsername.includes('superuser')) {
-      return { role: 'superuser', roleName: 'Super User' };
-    } else if (lowerUsername.includes('nurse')) {
-      return { role: 'nurse', roleName: 'Nurse' };
-    } else if (lowerUsername.includes('doctor') || lowerUsername.includes('dr')) {
-      return { role: 'doctor', roleName: 'Doctor' };
-    } else if (lowerUsername.includes('lab') || lowerUsername.includes('technician')) {
-      return { role: 'lab_technician', roleName: 'Laboratory Technician' };
-    } else if (lowerUsername.includes('pharma') || lowerUsername.includes('pharmacist')) {
-      return { role: 'pharmacist', roleName: 'Pharmacist' };
-    } else {
-      return { role: 'staff', roleName: 'Staff' };
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -112,43 +92,57 @@ const Login = () => {
     
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Determine if identifier is email or username
       const isEmail = identifier.includes('@') && identifier.includes('.');
       
-      // Get user role based on username
-      const { role, roleName } = getUserRole(identifier);
-      
-      // Create user data object
-      const userData = {
-        id: Math.floor(Math.random() * 1000),
-        name: identifier.split('@')[0] || identifier,
-        email: isEmail ? identifier : `${identifier}@fingerprint.com`,
-        username: identifier,
-        role: role,
-        roleName: roleName,
-        loginTime: new Date().toISOString(),
-        rememberMe: rememberMe
+      // Prepare login data
+      const loginData = {
+        [isEmail ? 'email' : 'username']: identifier,
+        password: password
       };
       
-      // Store user data
-      if (rememberMe) {
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', 'dummy-token-' + Date.now());
+      // Make API call to login endpoint
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(loginData)
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        // Store token based on remember me preference
+        if (rememberMe) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        } else {
+          sessionStorage.setItem('token', data.token);
+          sessionStorage.setItem('user', JSON.stringify(data.user));
+        }
+        
+        showToast(`Welcome ${data.user.first_name || data.user.username}! Redirecting to dashboard...`, 'success');
+        
+        // Redirect to dashboard after successful login
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
       } else {
-        sessionStorage.setItem('user', JSON.stringify(userData));
-        sessionStorage.setItem('token', 'dummy-token-' + Date.now());
+        // Handle login error
+        showToast(data.message || 'Invalid credentials. Please try again.', 'error');
+        
+        // Clear password field
+        setPassword('');
+        setPasswordError('Invalid credentials');
       }
-      
-      console.log('Login successful:', userData);
-      showToast(`Welcome ${roleName}! Redirecting to dashboard...`, 'success');
-      
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
-      
+    } catch (error) {
+      console.error('Login error:', error);
+      showToast('Network error. Please check your connection.', 'error');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleForgotPassword = (e) => {

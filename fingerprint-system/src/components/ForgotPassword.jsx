@@ -21,6 +21,7 @@ const ForgotPassword = () => {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   
   const navigate = useNavigate();
+  const API_BASE_URL = 'http://localhost:3000';
 
   // Password strength criteria
   const [passwordCriteria, setPasswordCriteria] = useState({
@@ -36,6 +37,15 @@ const ForgotPassword = () => {
     setTimeout(() => {
       setToast({ show: false, message: '', type: '' });
     }, 3000);
+  };
+
+  // Helper function to get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    return {
+      'Authorization': token ? `Bearer ${token}` : '',
+      'Content-Type': 'application/json'
+    };
   };
 
   // Validate email
@@ -174,6 +184,7 @@ const ForgotPassword = () => {
     }
   };
 
+  // API: Send OTP
   const handleSendOTP = async (e) => {
     e.preventDefault();
     
@@ -186,24 +197,43 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     
-    setTimeout(() => {
-      showToast(`OTP sent to ${email}`, 'success');
-      setStep(2);
-      setIsLoading(false);
-      setResendTimer(30);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
       
-      const timer = setInterval(() => {
-        setResendTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }, 1500);
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        showToast(data.message || `OTP sent to ${email}`, 'success');
+        setStep(2);
+        setResendTimer(30);
+        
+        const timer = setInterval(() => {
+          setResendTimer((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        showToast(data.message || 'Failed to send OTP. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      showToast('Network error. Please check your connection.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // API: Verify OTP
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
     
@@ -216,34 +246,73 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     
-    setTimeout(() => {
-      showToast('OTP verified successfully!', 'success');
-      setStep(3);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, otp })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        showToast(data.message || 'OTP verified successfully!', 'success');
+        setStep(3);
+      } else {
+        showToast(data.message || 'Invalid OTP. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      showToast('Network error. Please check your connection.', 'error');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
-  const handleResendOTP = () => {
+  // API: Resend OTP
+  const handleResendOTP = async () => {
     if (resendTimer > 0) return;
     
     setIsLoading(true);
-    setTimeout(() => {
-      showToast('New OTP sent to your email', 'success');
-      setIsLoading(false);
-      setResendTimer(30);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/resend-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email })
+      });
       
-      const timer = setInterval(() => {
-        setResendTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }, 1000);
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        showToast(data.message || 'New OTP sent to your email', 'success');
+        setResendTimer(30);
+        
+        const timer = setInterval(() => {
+          setResendTimer((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        showToast(data.message || 'Failed to resend OTP. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Error resending OTP:', error);
+      showToast('Network error. Please check your connection.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // API: Reset Password
   const handleResetPassword = async (e) => {
     e.preventDefault();
     
@@ -263,14 +332,37 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     
-    setTimeout(() => {
-      showToast('Password reset successfully! Redirecting to login...', 'success');
-      setIsLoading(false);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          email, 
+          otp, 
+          new_password: newPassword,
+          confirm_password: confirmPassword
+        })
+      });
       
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-    }, 1500);
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        showToast(data.message || 'Password reset successfully! Redirecting to login...', 'success');
+        
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
+      } else {
+        showToast(data.message || 'Failed to reset password. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      showToast('Network error. Please check your connection.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Calculate password strength percentage
@@ -300,7 +392,15 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="forgot-password-container">
+    <div className="forgot-password-page">
+      {/* Hero Section */}
+      <div className="forgot-password-hero">
+        <div className="forgot-password-hero-content">
+          <h1>Reset Password</h1>
+          <p>Secure account recovery for your Fingerprint System</p>
+        </div>
+      </div>
+
       {/* Toast Notification */}
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
@@ -308,6 +408,12 @@ const ForgotPassword = () => {
             {toast.type === 'success' ? (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : toast.type === 'info' ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             ) : (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -327,403 +433,405 @@ const ForgotPassword = () => {
         </div>
       )}
 
-      <div className="forgot-password-wrapper">
-        <div className="forgot-password-left">
-          <div className="forgot-password-brand">
-            <Link to="/" className="brand-link">
-              <svg className="brand-icon" width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M18 12C18 8.69 15.31 6 12 6" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <h2>Fingerprint System</h2>
-            </Link>
-            <p>Secure Biometric Authentication</p>
+      <div className="forgot-password-container">
+        <div className="forgot-password-wrapper">
+          <div className="forgot-password-left">
+            <div className="forgot-password-brand">
+              <Link to="/" className="brand-link">
+                <svg className="brand-icon" width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M18 12C18 8.69 15.31 6 12 6" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <h2>Fingerprint System</h2>
+              </Link>
+              <p>Secure Biometric Authentication</p>
+            </div>
+            <div className="forgot-password-features">
+              <div className="feature">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C10.6868 2 9.38642 2.25866 8.17317 2.7612C6.95991 3.26375 5.85752 4.00035 4.92893 4.92893C3.05357 6.8043 2 9.34784 2 12C2 14.6522 3.05357 17.1957 4.92893 19.0711C5.85752 19.9997 6.95991 20.7362 8.17317 21.2388C9.38642 21.7413 10.6868 22 12 22C14.6522 22 17.1957 20.9464 19.0711 19.0711C20.9464 17.1957 22 14.6522 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <div>
+                  <h4>Secure Recovery</h4>
+                  <p>Bank-grade encryption</p>
+                </div>
+              </div>
+              <div className="feature">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <div>
+                  <h4>Quick Process</h4>
+                  <p>Reset in minutes</p>
+                </div>
+              </div>
+              <div className="feature">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <div>
+                  <h4>24/7 Support</h4>
+                  <p>Always here to help</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="forgot-password-features">
-            <div className="feature">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C10.6868 2 9.38642 2.25866 8.17317 2.7612C6.95991 3.26375 5.85752 4.00035 4.92893 4.92893C3.05357 6.8043 2 9.34784 2 12C2 14.6522 3.05357 17.1957 4.92893 19.0711C5.85752 19.9997 6.95991 20.7362 8.17317 21.2388C9.38642 21.7413 10.6868 22 12 22C14.6522 22 17.1957 20.9464 19.0711 19.0711C20.9464 17.1957 22 14.6522 22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <div>
-                <h4>Secure Recovery</h4>
-                <p>Bank-grade encryption</p>
-              </div>
-            </div>
-            <div className="feature">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <div>
-                <h4>Quick Process</h4>
-                <p>Reset in minutes</p>
-              </div>
-            </div>
-            <div className="feature">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <div>
-                <h4>24/7 Support</h4>
-                <p>Always here to help</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="forgot-password-right">
-          <div className="forgot-password-form-container">
-            {/* Step 1: Email Input */}
-            {step === 1 && (
-              <>
-                <div className="forgot-password-header">
-                  <h3>Forgot Password?</h3>
-                  <p>Enter your email address to receive a verification code</p>
-                </div>
-                
-                <form onSubmit={handleSendOTP} className="forgot-password-form" noValidate>
-                  <div className="input-group">
-                    <label htmlFor="email">Email Address</label>
-                    <div className={`input-icon ${emailError ? 'has-error' : ''}`}>
-                      <svg className="input-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <input
-                        type="email"
-                        id="email"
-                        placeholder="Enter your email address"
-                        value={email}
-                        onChange={handleEmailChange}
-                        onBlur={() => validateEmail(email)}
-                        required
-                        disabled={isLoading}
-                        className={emailError ? 'error-input' : ''}
-                      />
-                    </div>
-                    {emailError && <div className="field-error">{emailError}</div>}
+          
+          <div className="forgot-password-right">
+            <div className="forgot-password-form-container">
+              {/* Step 1: Email Input */}
+              {step === 1 && (
+                <>
+                  <div className="forgot-password-header">
+                    <h3>Forgot Password?</h3>
+                    <p>Enter your email address to receive a verification code</p>
                   </div>
                   
-                  <button type="submit" className="reset-submit" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <svg className="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M12 2C14.6522 2 17.1957 3.05357 19.0711 4.92893" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <form onSubmit={handleSendOTP} className="forgot-password-form" noValidate>
+                    <div className="input-group">
+                      <label htmlFor="email">Email Address</label>
+                      <div className={`input-icon ${emailError ? 'has-error' : ''}`}>
+                        <svg className="input-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                        Send Reset Code
-                      </>
-                    )}
-                  </button>
-                </form>
-                
-                <div className="back-to-login">
-                  <Link to="/login">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Back to Login
-                  </Link>
-                </div>
-              </>
-            )}
-
-            {/* Step 2: OTP Verification */}
-            {step === 2 && (
-              <>
-                <div className="forgot-password-header">
-                  <h3>Verify OTP</h3>
-                  <p>Enter the 6-digit code sent to {email}</p>
-                </div>
-                
-                <form onSubmit={handleVerifyOTP} className="forgot-password-form" noValidate>
-                  <div className="input-group">
-                    <label htmlFor="otp">Verification Code</label>
-                    <div className={`input-icon ${otpError ? 'has-error' : ''}`}>
-                      <svg className="input-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth="2"/>
-                        <line x1="3" y1="15" x2="21" y2="15" stroke="currentColor" strokeWidth="2"/>
-                        <line x1="9" y1="21" x2="9" y2="9" stroke="currentColor" strokeWidth="2"/>
-                      </svg>
-                      <input
-                        type="text"
-                        id="otp"
-                        placeholder="Enter 6-digit code"
-                        maxLength="6"
-                        value={otp}
-                        onChange={handleOtpChange}
-                        onBlur={() => validateOTP(otp)}
-                        required
-                        disabled={isLoading}
-                        className={otpError ? 'error-input' : ''}
-                      />
+                        <input
+                          type="email"
+                          id="email"
+                          placeholder="Enter your email address"
+                          value={email}
+                          onChange={handleEmailChange}
+                          onBlur={() => validateEmail(email)}
+                          required
+                          disabled={isLoading}
+                          className={emailError ? 'error-input' : ''}
+                        />
+                      </div>
+                      {emailError && <div className="field-error">{emailError}</div>}
                     </div>
-                    {otpError && <div className="field-error">{otpError}</div>}
-                  </div>
-                  
-                  <button type="submit" className="reset-submit" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <svg className="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M12 2C14.6522 2 17.1957 3.05357 19.0711 4.92893" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
-                        Verifying...
-                      </>
-                    ) : (
-                      'Verify Code'
-                    )}
-                  </button>
-                </form>
-                
-                <div className="resend-otp">
-                  <button 
-                    onClick={handleResendOTP} 
-                    disabled={resendTimer > 0 || isLoading}
-                    className="resend-btn"
-                  >
-                    {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend Code'}
-                  </button>
-                </div>
-                
-                <div className="back-to-login">
-                  <Link to="/login">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Back to Login
-                  </Link>
-                </div>
-              </>
-            )}
-
-            {/* Step 3: Reset Password */}
-            {step === 3 && (
-              <>
-                <div className="forgot-password-header">
-                  <h3>Reset Password</h3>
-                  <p>Create a new password for your account</p>
-                </div>
-                
-                <form onSubmit={handleResetPassword} className="forgot-password-form" noValidate>
-                  <div className="input-group">
-                    <label htmlFor="newPassword">New Password</label>
-                    <div className={`input-icon ${passwordError ? 'has-error' : ''}`}>
-                      <svg className="input-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        id="newPassword"
-                        placeholder="Enter new password"
-                        value={newPassword}
-                        onChange={handlePasswordChange}
-                        onBlur={() => checkPasswordStrength(newPassword)}
-                        required
-                        disabled={isLoading}
-                        className={passwordError ? 'error-input' : ''}
-                      />
-                      <button
-                        type="button"
-                        className="toggle-password"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M1 12C1 12 5 20 12 20C19 20 23 12 23 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        ) : (
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M17.94 17.94C16.2306 19.243 14.1491 19.9649 12 20C5 20 1 12 1 12C2.24389 9.68192 3.96914 7.65663 6.06 6.06M9.9 4.24C10.5883 4.07887 11.2931 3.99836 12 4C19 4 23 12 23 12C22.393 13.1356 21.6691 14.2047 20.84 15.19M4.73 4.73L19.27 19.27" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-                    {passwordError && <div className="field-error">{passwordError}</div>}
                     
-                    {/* Password Strength Indicator */}
-                    {newPassword && !passwordError && (
-                      <div className="password-strength">
-                        <div className="strength-bar">
-                          <div 
-                            className="strength-fill"
-                            style={{
-                              width: `${getStrengthPercentage()}%`,
-                              backgroundColor: getStrengthColor()
-                            }}
-                          />
-                        </div>
-                        <div className="strength-text" style={{ color: getStrengthColor() }}>
-                          Password Strength: {getStrengthText()}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Password Criteria List */}
-                    {newPassword && (
-                      <div className="password-criteria">
-                        <div className={`criteria-item ${passwordCriteria.minLength ? 'met' : ''}`}>
-                          {passwordCriteria.minLength ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          ) : (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                              <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                            </svg>
-                          )}
-                          <span>At least 8 characters</span>
-                        </div>
-                        <div className={`criteria-item ${passwordCriteria.hasUppercase ? 'met' : ''}`}>
-                          {passwordCriteria.hasUppercase ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          ) : (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                              <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                            </svg>
-                          )}
-                          <span>At least one uppercase letter</span>
-                        </div>
-                        <div className={`criteria-item ${passwordCriteria.hasLowercase ? 'met' : ''}`}>
-                          {passwordCriteria.hasLowercase ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          ) : (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                              <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                            </svg>
-                          )}
-                          <span>At least one lowercase letter</span>
-                        </div>
-                        <div className={`criteria-item ${passwordCriteria.hasNumber ? 'met' : ''}`}>
-                          {passwordCriteria.hasNumber ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          ) : (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                              <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                            </svg>
-                          )}
-                          <span>At least one number</span>
-                        </div>
-                        <div className={`criteria-item ${passwordCriteria.hasSpecialChar ? 'met' : ''}`}>
-                          {passwordCriteria.hasSpecialChar ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          ) : (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                              <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                            </svg>
-                          )}
-                          <span>At least one special character (!@#$%^&*)</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    <button type="submit" className="reset-submit" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <svg className="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12 2C14.6522 2 17.1957 3.05357 19.0711 4.92893" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          Send Reset Code
+                        </>
+                      )}
+                    </button>
+                  </form>
                   
-                  <div className="input-group">
-                    <label htmlFor="confirmPassword">Confirm Password</label>
-                    <div className={`input-icon ${confirmPasswordError ? 'has-error' : ''}`}>
-                      <svg className="input-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <div className="back-to-login">
+                    <Link to="/login">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        id="confirmPassword"
-                        placeholder="Confirm new password"
-                        value={confirmPassword}
-                        onChange={handleConfirmPasswordChange}
-                        onBlur={() => validateConfirmPassword(confirmPassword)}
-                        required
-                        disabled={isLoading}
-                        className={confirmPasswordError ? 'error-input' : ''}
-                      />
-                      <button
-                        type="button"
-                        className="toggle-password"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        {showConfirmPassword ? (
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M1 12C1 12 5 20 12 20C19 20 23 12 23 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        ) : (
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M17.94 17.94C16.2306 19.243 14.1491 19.9649 12 20C5 20 1 12 1 12C2.24389 9.68192 3.96914 7.65663 6.06 6.06M9.9 4.24C10.5883 4.07887 11.2931 3.99836 12 4C19 4 23 12 23 12C22.393 13.1356 21.6691 14.2047 20.84 15.19M4.73 4.73L19.27 19.27" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-                    {confirmPasswordError && <div className="field-error">{confirmPasswordError}</div>}
-                    {confirmPassword && !confirmPasswordError && newPassword === confirmPassword && (
-                      <div className="password-match-success">
-                        ✓ Passwords match
-                      </div>
-                    )}
+                      Back to Login
+                    </Link>
+                  </div>
+                </>
+              )}
+
+              {/* Step 2: OTP Verification */}
+              {step === 2 && (
+                <>
+                  <div className="forgot-password-header">
+                    <h3>Verify OTP</h3>
+                    <p>Enter the 6-digit code sent to {email}</p>
                   </div>
                   
-                  <button type="submit" className="reset-submit" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <svg className="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M12 2C14.6522 2 17.1957 3.05357 19.0711 4.92893" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  <form onSubmit={handleVerifyOTP} className="forgot-password-form" noValidate>
+                    <div className="input-group">
+                      <label htmlFor="otp">Verification Code</label>
+                      <div className={`input-icon ${otpError ? 'has-error' : ''}`}>
+                        <svg className="input-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth="2"/>
+                          <line x1="3" y1="15" x2="21" y2="15" stroke="currentColor" strokeWidth="2"/>
+                          <line x1="9" y1="21" x2="9" y2="9" stroke="currentColor" strokeWidth="2"/>
                         </svg>
-                        Resetting...
-                      </>
-                    ) : (
-                      'Reset Password'
-                    )}
-                  </button>
-                </form>
-                
-                <div className="back-to-login">
-                  <Link to="/login">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Back to Login
-                  </Link>
-                </div>
-              </>
-            )}
+                        <input
+                          type="text"
+                          id="otp"
+                          placeholder="Enter 6-digit code"
+                          maxLength="6"
+                          value={otp}
+                          onChange={handleOtpChange}
+                          onBlur={() => validateOTP(otp)}
+                          required
+                          disabled={isLoading}
+                          className={otpError ? 'error-input' : ''}
+                        />
+                      </div>
+                      {otpError && <div className="field-error">{otpError}</div>}
+                    </div>
+                    
+                    <button type="submit" className="reset-submit" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <svg className="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12 2C14.6522 2 17.1957 3.05357 19.0711 4.92893" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          Verifying...
+                        </>
+                      ) : (
+                        'Verify Code'
+                      )}
+                    </button>
+                  </form>
+                  
+                  <div className="resend-otp">
+                    <button 
+                      onClick={handleResendOTP} 
+                      disabled={resendTimer > 0 || isLoading}
+                      className="resend-btn"
+                    >
+                      {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend Code'}
+                    </button>
+                  </div>
+                  
+                  <div className="back-to-login">
+                    <Link to="/login">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Back to Login
+                    </Link>
+                  </div>
+                </>
+              )}
+
+              {/* Step 3: Reset Password */}
+              {step === 3 && (
+                <>
+                  <div className="forgot-password-header">
+                    <h3>Reset Password</h3>
+                    <p>Create a new password for your account</p>
+                  </div>
+                  
+                  <form onSubmit={handleResetPassword} className="forgot-password-form" noValidate>
+                    <div className="input-group">
+                      <label htmlFor="newPassword">New Password</label>
+                      <div className={`input-icon ${passwordError ? 'has-error' : ''}`}>
+                        <svg className="input-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          id="newPassword"
+                          placeholder="Enter new password"
+                          value={newPassword}
+                          onChange={handlePasswordChange}
+                          onBlur={() => checkPasswordStrength(newPassword)}
+                          required
+                          disabled={isLoading}
+                          className={passwordError ? 'error-input' : ''}
+                        />
+                        <button
+                          type="button"
+                          className="toggle-password"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M1 12C1 12 5 20 12 20C19 20 23 12 23 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M17.94 17.94C16.2306 19.243 14.1491 19.9649 12 20C5 20 1 12 1 12C2.24389 9.68192 3.96914 7.65663 6.06 6.06M9.9 4.24C10.5883 4.07887 11.2931 3.99836 12 4C19 4 23 12 23 12C22.393 13.1356 21.6691 14.2047 20.84 15.19M4.73 4.73L19.27 19.27" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                      {passwordError && <div className="field-error">{passwordError}</div>}
+                      
+                      {/* Password Strength Indicator */}
+                      {newPassword && !passwordError && (
+                        <div className="password-strength">
+                          <div className="strength-bar">
+                            <div 
+                              className="strength-fill"
+                              style={{
+                                width: `${getStrengthPercentage()}%`,
+                                backgroundColor: getStrengthColor()
+                              }}
+                            />
+                          </div>
+                          <div className="strength-text" style={{ color: getStrengthColor() }}>
+                            Password Strength: {getStrengthText()}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Password Criteria List */}
+                      {newPassword && (
+                        <div className="password-criteria">
+                          <div className={`criteria-item ${passwordCriteria.minLength ? 'met' : ''}`}>
+                            {passwordCriteria.minLength ? (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            )}
+                            <span>At least 8 characters</span>
+                          </div>
+                          <div className={`criteria-item ${passwordCriteria.hasUppercase ? 'met' : ''}`}>
+                            {passwordCriteria.hasUppercase ? (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            )}
+                            <span>At least one uppercase letter</span>
+                          </div>
+                          <div className={`criteria-item ${passwordCriteria.hasLowercase ? 'met' : ''}`}>
+                            {passwordCriteria.hasLowercase ? (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            )}
+                            <span>At least one lowercase letter</span>
+                          </div>
+                          <div className={`criteria-item ${passwordCriteria.hasNumber ? 'met' : ''}`}>
+                            {passwordCriteria.hasNumber ? (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            )}
+                            <span>At least one number</span>
+                          </div>
+                          <div className={`criteria-item ${passwordCriteria.hasSpecialChar ? 'met' : ''}`}>
+                            {passwordCriteria.hasSpecialChar ? (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                              </svg>
+                            )}
+                            <span>At least one special character (!@#$%^&*)</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="input-group">
+                      <label htmlFor="confirmPassword">Confirm Password</label>
+                      <div className={`input-icon ${confirmPasswordError ? 'has-error' : ''}`}>
+                        <svg className="input-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          id="confirmPassword"
+                          placeholder="Confirm new password"
+                          value={confirmPassword}
+                          onChange={handleConfirmPasswordChange}
+                          onBlur={() => validateConfirmPassword(confirmPassword)}
+                          required
+                          disabled={isLoading}
+                          className={confirmPasswordError ? 'error-input' : ''}
+                        />
+                        <button
+                          type="button"
+                          className="toggle-password"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M1 12C1 12 5 20 12 20C19 20 23 12 23 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M17.94 17.94C16.2306 19.243 14.1491 19.9649 12 20C5 20 1 12 1 12C2.24389 9.68192 3.96914 7.65663 6.06 6.06M9.9 4.24C10.5883 4.07887 11.2931 3.99836 12 4C19 4 23 12 23 12C22.393 13.1356 21.6691 14.2047 20.84 15.19M4.73 4.73L19.27 19.27" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                      {confirmPasswordError && <div className="field-error">{confirmPasswordError}</div>}
+                      {confirmPassword && !confirmPasswordError && newPassword === confirmPassword && (
+                        <div className="password-match-success">
+                          ✓ Passwords match
+                        </div>
+                      )}
+                    </div>
+                    
+                    <button type="submit" className="reset-submit" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <svg className="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12 2C14.6522 2 17.1957 3.05357 19.0711 4.92893" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          Resetting...
+                        </>
+                      ) : (
+                        'Reset Password'
+                      )}
+                    </button>
+                  </form>
+                  
+                  <div className="back-to-login">
+                    <Link to="/login">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M12 19L5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Back to Login
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
