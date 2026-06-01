@@ -2,12 +2,15 @@
 PRAGMA foreign_keys = OFF;
 
 -- Clear any old local metadata states safely
+DELETE FROM local_auth_sessions;
 DELETE FROM role_permissions;
+DELETE FROM biometric_fingerprints;
+DELETE FROM children_profiles;
+DELETE FROM staff_users;
 DELETE FROM child_locations;
 DELETE FROM permissions;
 DELETE FROM permission_categories;
 DELETE FROM roles;
-DELETE FROM staff_users;
 
 PRAGMA foreign_keys = ON;
 
@@ -73,7 +76,7 @@ INSERT INTO role_permissions (role_id, permission_id, is_dirty) VALUES
 
 -- G. Seed Staff Accounts (For initial development/offline testing validation)
 INSERT INTO staff_users (id, username, email, password_hash, role_id, first_name, last_name, phone_number, version, is_dirty, sync_status) VALUES
-('33333333-3333-4333-8333-333333333331', 'droidgrim', 'droidgrim@gmail.com', '$2b$10$H1f75Y.zyeXDYG4HouLL6uH8cJ4XKb4/3ItcC97ViedozwoNETjTu', '22222222-2222-4222-8222-222222222221', 'System', 'Admin', '+255000000000', 1, 0, 'synced');
+('33333333-3333-4333-8333-333333333331', 'droidgrim', 'droidgrim@gmail.com', '$2b$10$H1f75Y.zyeXDYG4HouLL6uH8cJ4XKb4/3ItcC97ViedozwoNETjTu', '22222222-2222-4222-8222-222222222221', 'Paschal', 'Timoth', '+255000000000', 1, 0, 'synced');
 
 -- H. Seed Initial Clinical Outreach Locations
 INSERT INTO child_locations (id, name, description, version, is_dirty, sync_status) VALUES

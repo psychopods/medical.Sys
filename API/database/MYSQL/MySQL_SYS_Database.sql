@@ -1,3 +1,4 @@
+DROP DATABASE MySQL_SYS_Database;
 CREATE DATABASE MySQL_SYS_Database;
 USE MySQL_SYS_Database;
 

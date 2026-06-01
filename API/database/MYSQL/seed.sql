@@ -1,6 +1,9 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
+DELETE FROM `staff_sessions`;
 DELETE FROM `role_permissions`;
+DELETE FROM `biometric_fingerprints`;
+DELETE FROM `children_profiles`;
 DELETE FROM `staff_users`;
 DELETE FROM `child_locations`;
 DELETE FROM `permissions`;
@@ -84,8 +87,8 @@ INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES
 ('22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111124'),
 ('22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111132');
 
-INSERT INTO `staff_users` (`id`, `username`, `email`, `password_hash`, `role_id`, `version`) VALUES
-('33333333-3333-4333-8333-333333333331', 'droidgrim', 'droidgrim@gmail.com', '$2b$10$H1f75Y.zyeXDYG4HouLL6uH8cJ4XKb4/3ItcC97ViedozwoNETjTu', '22222222-2222-4222-8222-222222222221', 1);
+INSERT INTO `staff_users` (`id`, `username`, `email`, `password_hash`, `role_id`, `first_name`, `last_name`, `phone_number`, `version`) VALUES
+('33333333-3333-4333-8333-333333333331', 'droidgrim', 'droidgrim@gmail.com', '$2b$10$H1f75Y.zyeXDYG4HouLL6uH8cJ4XKb4/3ItcC97ViedozwoNETjTu', '22222222-2222-4222-8222-222222222221', 'Paschal', 'Timoth', '+255000000000', 1);
 
 INSERT INTO `child_locations` (`id`, `name`, `description`, `version`) VALUES
 ('550e8400-e29b-41d4-a716-446655440001', 'Nyegezi Center', 'Outreach clinic base located at Nyegezi terminal point', 1),
