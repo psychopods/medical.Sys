@@ -1,6 +1,14 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import type { Pool, RowDataPacket } from 'mysql2/promise';
-import { authenticateStaff, registerStaff, listStaffUsers, generateStaffUsername, updateStaffUser, deleteStaffUser } from '../services/authService.ts';
+import {
+    authenticateStaff,
+    registerStaff,
+    listStaffUsers,
+    generateStaffUsername,
+    updateStaffUser,
+    deleteStaffUser,
+    getActiveOnlineStaffCount
+} from '../services/authService.ts';
 import { requireAuthenticated, requirePermission } from '../middleware/auth.ts';
 import type { LoginRequestBody, LoginResponseBody, SignupRequestBody, SignupResponseBody } from '../types/auth.ts';
 import { HttpError, toHttpError } from '../utils/httpError.ts';
@@ -108,6 +116,19 @@ export function createAuthRouter(pool: Pool): Router {
             try {
                 const users = await listStaffUsers(pool);
                 response.status(200).json(users);
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/online-count',
+        requirePermission(pool, 'admin:read'),
+        async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const activeOnlineCount = await getActiveOnlineStaffCount(pool);
+                response.status(200).json({ activeOnlineCount });
             } catch (error) {
                 next(toHttpError(error));
             }

@@ -22,6 +22,10 @@ type PermissionRow = RowDataPacket & {
     slug: string;
 };
 
+type ActiveOnlineCountRow = RowDataPacket & {
+    active_online_count: number;
+};
+
 const DEFAULT_SESSION_TTL_SECONDS = 12 * 60 * 60;
 
 function getJwtSecret(): string {
@@ -143,6 +147,16 @@ export async function authenticateStaff(
         audience: process.env.JWT_AUDIENCE ?? 'field-outreach-pwa'
     });
 
+    await pool.execute(
+        `INSERT INTO staff_sessions (id, staff_user_id, is_active, last_accessed_at)
+         VALUES (?, ?, 1, NOW())
+         ON DUPLICATE KEY UPDATE
+            staff_user_id = VALUES(staff_user_id),
+            is_active = 1,
+            last_accessed_at = NOW()`,
+        [session.sessionId, session.staffUserId]
+    );
+
     return {
         accessToken,
         session,
@@ -157,6 +171,19 @@ export async function authenticateStaff(
             roleName: staffUser.role_name
         }
     };
+}
+
+export async function getActiveOnlineStaffCount(pool: Pool): Promise<number> {
+    const [rows] = await pool.execute<ActiveOnlineCountRow[]>(
+        `
+            SELECT COUNT(DISTINCT staff_user_id) AS active_online_count
+            FROM staff_sessions
+            WHERE is_active = 1
+              AND last_accessed_at >= NOW() - INTERVAL 12 HOUR
+        `
+    );
+
+    return Number(rows[0]?.active_online_count ?? 0);
 }
 
 export function verifyAccessToken(accessToken: string): JwtSessionClaims {

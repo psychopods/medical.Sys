@@ -5,6 +5,7 @@ import { createAuthRouter } from './routes/authRoutes.ts';
 import { createBiometricsRouter } from './routes/biometricsRoutes.ts';
 import { createChildrenRouter } from './routes/childrenRoutes.ts';
 import { createIdentityRouter } from './routes/identityRoutes.ts';
+import { createLocationsRouter } from './routes/locationsRoutes.ts';
 import { createRbacRouter } from './routes/rbacRoutes.ts';
 import { createSyncRouter } from './routes/syncDelta.ts';
 import { HttpError, toHttpError } from './utils/httpError.ts';
@@ -22,6 +23,7 @@ app.use('/api/auth', createAuthRouter(pool));
 app.use('/api/biometrics', createBiometricsRouter(pool));
 app.use('/api/children', createChildrenRouter(pool));
 app.use('/api/identity', createIdentityRouter(pool));
+app.use('/api/locations', createLocationsRouter(pool));
 app.use('/api', createRbacRouter(pool));
 app.use('/api/sync', createSyncRouter(pool));
 

@@ -4,9 +4,6 @@
 /.sixth
 /.github
 # Environment and local overrides
-.env
-.env.*
-!.env.example
 
 # Logs and debug artifacts
 *.log
@@ -27,3 +24,5 @@ database/SQLite/*.sqlite3
 Thumbs.db
 .vscode/
 .idea/
+yes
+yes.pub
