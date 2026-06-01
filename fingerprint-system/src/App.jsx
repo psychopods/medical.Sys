@@ -8,6 +8,8 @@ import Login from './components/Login';
 import Services from './components/Services';
 import About from './components/About';
 import Contact from './components/Contact';
+import Partners from './components/Partners';
+import Mission from './components/Mission';
 import ForgotPassword from './components/ForgotPassword';
 import Dashboard from './components/Dashboard/Dashboard';
 import UserManagement from './components/Dashboard/UserManagement';
@@ -44,6 +46,8 @@ function App() {
           <Route path="/" element={
             <PublicLayout>
               <HeroSection />
+              <Mission />
+              <Partners />
             </PublicLayout>
           } />
           <Route path="/login" element={
@@ -69,6 +73,16 @@ function App() {
           <Route path="/contact" element={
             <PublicLayout>
               <Contact />
+            </PublicLayout>
+          } />
+          <Route path="/partners" element={
+            <PublicLayout>
+              <Partners />
+            </PublicLayout>
+          } />
+          <Route path="/mission" element={
+            <PublicLayout>
+              <Mission />
             </PublicLayout>
           } />
           

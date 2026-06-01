@@ -1,12 +1,14 @@
 /* Base styles - FULL WIDTH */
 .hero-section {
   position: relative;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   display: flex;
   align-items: center;
   overflow: hidden;
   width: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .hero-overlay {
@@ -15,7 +17,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.1) 100%);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.85) 0%, rgba(118, 75, 162, 0.85) 100%);
 }
 
 .hero-particles {
@@ -83,99 +85,38 @@
 }
 
 .highlight {
-  color: #ffd700;
+  color: #ffffff;
   position: relative;
   display: inline-block;
 }
 
+/* Removed the underline effect */
 .highlight::after {
-  content: '';
-  position: absolute;
-  bottom: 5px;
-  left: 0;
-  width: 100%;
-  height: 8px;
-  background: rgba(255, 215, 0, 0.3);
-  z-index: -1;
+  display: none;
 }
 
 .hero-subtitle {
-  font-size: clamp(0.85rem, 2.5vw, 1.1rem);
-  color: rgba(255, 255, 255, 0.9);
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  color: rgba(255, 255, 255, 0.95);
   margin-bottom: 30px;
   line-height: 1.6;
+  font-weight: 500;
 }
 
-.hero-buttons {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 50px;
-  flex-wrap: wrap;
+/* Hero Description - New Section */
+.hero-description {
+  margin-bottom: 40px;
 }
 
-.btn-primary, .btn-secondary {
-  padding: 12px 30px;
-  border: none;
-  border-radius: 50px;
-  font-size: clamp(0.8rem, 2vw, 1rem);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.description-text {
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.7;
+  margin-bottom: 15px;
 }
 
-.btn-icon {
-  width: 18px;
-  height: 18px;
-  stroke: currentColor;
-  stroke-width: 2;
-  fill: none;
-  transition: all 0.3s ease;
-}
-
-.btn-primary {
-  background-color: #ffd700;
-  color: #333;
-}
-
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.5);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
-}
-
-.btn-primary:active::before {
-  width: 300px;
-  height: 300px;
-}
-
-.btn-primary:hover {
-  background-color: #ffed4e;
-  transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-}
-
-.btn-secondary {
-  background-color: transparent;
-  color: #fff;
-  border: 2px solid #fff;
-}
-
-.btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+.description-text:last-child {
+  margin-bottom: 0;
 }
 
 .hero-stats {
@@ -206,7 +147,7 @@
   opacity: 0.9;
 }
 
-/* Fingerprint Animation */
+/* Fingerprint Animation - White and clearly visible */
 .hero-image {
   position: relative;
   display: flex;
@@ -220,15 +161,15 @@
   position: relative;
   z-index: 2;
   cursor: pointer;
-  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.3));
 }
 
 .fingerprint-svg {
-  width: clamp(100px, 15vw, 250px);
-  height: clamp(100px, 15vw, 250px);
-  stroke: #ffd700;
-  stroke-width: 1.5;
+  width: clamp(120px, 18vw, 280px);
+  height: clamp(120px, 18vw, 280px);
+  stroke: white;
+  stroke-width: 2;
   fill: none;
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
 }
 
 .fingerprint-rings {
@@ -244,7 +185,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 2px solid rgba(255, 215, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.4);
   animation: expandRing 3s infinite;
 }
 
@@ -268,13 +209,13 @@
 
 @keyframes expandRing {
   0% {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     opacity: 0.6;
   }
   100% {
-    width: 500px;
-    height: 500px;
+    width: 550px;
+    height: 550px;
     opacity: 0;
   }
 }
@@ -286,7 +227,7 @@
   }
   50% {
     transform: scale(1.05);
-    opacity: 0.9;
+    opacity: 0.95;
   }
   100% {
     transform: scale(1);
@@ -324,11 +265,6 @@
     padding: 70px 3%;
     gap: 30px;
   }
-  
-  .btn-icon {
-    width: 16px;
-    height: 16px;
-  }
 }
 
 @media (min-width: 768px) and (max-width: 991px) {
@@ -347,8 +283,8 @@
     text-align: center;
   }
   
-  .hero-buttons {
-    justify-content: center;
+  .hero-description {
+    text-align: left;
   }
   
   .hero-stats {
@@ -379,19 +315,8 @@
     text-align: center;
   }
   
-  .hero-buttons {
-    gap: 15px;
-    justify-content: center;
-    margin-bottom: 40px;
-  }
-  
-  .btn-primary, .btn-secondary {
-    padding: 10px 25px;
-  }
-  
-  .btn-icon {
-    width: 14px;
-    height: 14px;
+  .hero-description {
+    text-align: left;
   }
   
   .hero-stats {
@@ -420,22 +345,12 @@
     text-align: center;
   }
   
-  .highlight::after {
-    height: 5px;
-    bottom: 2px;
+  .hero-description {
+    text-align: left;
   }
   
-  .hero-buttons {
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 35px;
-  }
-  
-  .btn-primary, .btn-secondary {
-    width: 100%;
-    max-width: 250px;
-    justify-content: center;
+  .description-text {
+    font-size: 0.85rem;
   }
   
   .hero-stats {
@@ -451,24 +366,18 @@
     height: 30px;
   }
   
-  .btn-primary:hover, .btn-secondary:hover {
-    transform: none;
-  }
-  
   .stat:hover {
     transform: none;
   }
 }
 
 @media (max-width: 360px) {
-  .btn-primary, .btn-secondary {
-    max-width: 220px;
-    padding: 8px 16px;
+  .hero-stats {
+    gap: 12px;
   }
   
-  .btn-icon {
-    width: 12px;
-    height: 12px;
+  .description-text {
+    font-size: 0.8rem;
   }
 }
 
@@ -488,9 +397,8 @@
     height: 100px;
   }
   
-  .btn-icon {
-    width: 20px;
-    height: 20px;
+  .description-text {
+    font-size: 1.05rem;
   }
 }
 
@@ -502,6 +410,10 @@
   
   .hero-wave svg {
     height: 120px;
+  }
+  
+  .description-text {
+    font-size: 1.1rem;
   }
 }
 
@@ -520,9 +432,7 @@
     color: #000;
   }
   
-  .btn-primary, .btn-secondary {
-    border: 1px solid #000;
-    background: none;
+  .highlight {
     color: #000;
   }
 }
@@ -534,8 +444,6 @@
   .ring,
   .hero-content,
   .hero-image,
-  .btn-primary,
-  .btn-secondary,
   .stat {
     animation: none;
     transition: none;
@@ -557,15 +465,6 @@
     background: #000;
   }
   
-  .btn-primary {
-    background: #ffff00;
-    color: #000;
-  }
-  
-  .btn-secondary {
-    border: 2px solid #fff;
-  }
-  
   .highlight {
     color: #ffff00;
   }
@@ -573,10 +472,6 @@
 
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
-  .btn-primary:active, .btn-secondary:active {
-    transform: scale(0.98);
-  }
-  
   .fingerprint-animation:active {
     transform: scale(0.95);
   }

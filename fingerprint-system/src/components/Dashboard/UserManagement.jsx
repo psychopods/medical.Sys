@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './UserManagement.css';
 
-  // API base URL
+// API base URL
 const API_BASE_URL = 'http://localhost:9865';
 
 const UserManagement = () => {
@@ -26,10 +26,9 @@ const UserManagement = () => {
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [permissionFormData, setPermissionFormData] = useState({
-    name: '',
-    display_name: '',
-    category_id: '',
-    description: ''
+    slug: '',
+    description: '',
+    categoryId: ''
   });
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
@@ -46,34 +45,32 @@ const UserManagement = () => {
     username: '',
     email: '',
     password: '',
-    role_id: '',
-    first_name: '',
-    last_name: '',
-    phone_number: ''
+    roleId: '',
+    firstName: '',
+    lastName: '',
+    phone: ''
   });
   const [roleFormData, setRoleFormData] = useState({
-    role_name: '',
+    name: '',
     description: ''
   });
   const [formErrors, setFormErrors] = useState({
     username: '',
     email: '',
     password: '',
-    role_id: '',
-    first_name: '',
-    last_name: ''
+    roleId: '',
+    firstName: '',
+    lastName: ''
   });
   const [permissionFormErrors, setPermissionFormErrors] = useState({
-    name: '',
-    display_name: '',
-    category_id: ''
+    slug: '',
+    categoryId: ''
   });
   const [categoryFormErrors, setCategoryFormErrors] = useState({
     name: ''
   });
 
   const navigate = useNavigate();
-
 
   // Helper function to get auth headers
   const getAuthHeaders = () => {
@@ -84,7 +81,7 @@ const UserManagement = () => {
     };
   };
 
-  // API Calls - Categories
+  // API Calls - Categories (matches spec: /api/permission_categories)
   const fetchCategories = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/permission_categories`, {
@@ -107,7 +104,10 @@ const UserManagement = () => {
       const response = await fetch(`${API_BASE_URL}/api/permission_categories`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(categoryData)
+        body: JSON.stringify({
+          name: categoryData.name,
+          description: categoryData.description || ''
+        })
       });
       if (response.ok) {
         return await response.json();
@@ -123,7 +123,10 @@ const UserManagement = () => {
       const response = await fetch(`${API_BASE_URL}/api/permission_categories/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(categoryData)
+        body: JSON.stringify({
+          name: categoryData.name,
+          description: categoryData.description || ''
+        })
       });
       if (response.ok) {
         return await response.json();
@@ -147,7 +150,7 @@ const UserManagement = () => {
     return false;
   };
 
-  // API Calls - Permissions
+  // API Calls - Permissions (matches spec: /api/permissions)
   const [availablePermissions, setAvailablePermissions] = useState([]);
   const [permissionCategories, setPermissionCategories] = useState([]);
 
@@ -173,7 +176,12 @@ const UserManagement = () => {
       const response = await fetch(`${API_BASE_URL}/api/permissions`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(permissionData)
+        body: JSON.stringify({
+          id: crypto.randomUUID(),
+          slug: permissionData.slug,
+          description: permissionData.description || '',
+          categoryId: permissionData.categoryId ? parseInt(permissionData.categoryId) : null
+        })
       });
       if (response.ok) {
         return await response.json();
@@ -189,7 +197,11 @@ const UserManagement = () => {
       const response = await fetch(`${API_BASE_URL}/api/permissions/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(permissionData)
+        body: JSON.stringify({
+          slug: permissionData.slug,
+          description: permissionData.description || '',
+          categoryId: permissionData.categoryId ? parseInt(permissionData.categoryId) : null
+        })
       });
       if (response.ok) {
         return await response.json();
@@ -213,7 +225,7 @@ const UserManagement = () => {
     return false;
   };
 
-  // API Calls - Roles
+  // API Calls - Roles (matches spec: /api/roles)
   const fetchRoles = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/roles`, {
@@ -236,7 +248,11 @@ const UserManagement = () => {
       const response = await fetch(`${API_BASE_URL}/api/roles`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(roleData)
+        body: JSON.stringify({
+          id: crypto.randomUUID(),
+          name: roleData.name,
+          description: roleData.description || ''
+        })
       });
       if (response.ok) {
         return await response.json();
@@ -252,7 +268,10 @@ const UserManagement = () => {
       const response = await fetch(`${API_BASE_URL}/api/roles/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(roleData)
+        body: JSON.stringify({
+          name: roleData.name,
+          description: roleData.description || ''
+        })
       });
       if (response.ok) {
         return await response.json();
@@ -276,10 +295,10 @@ const UserManagement = () => {
     return false;
   };
 
-  // API Calls - Users
+  // API Calls - Users (matches spec: /api/auth/users)
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/staff_users`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -296,10 +315,19 @@ const UserManagement = () => {
 
   const addUser = async (userData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/staff_users`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(userData)
+        body: JSON.stringify({
+          id: crypto.randomUUID(),
+          username: userData.username,
+          email: userData.email,
+          password: userData.password,
+          roleId: userData.roleId,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phone: userData.phone || ''
+        })
       });
       if (response.ok) {
         return await response.json();
@@ -312,10 +340,17 @@ const UserManagement = () => {
 
   const updateUser = async (id, userData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/staff_users/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(userData)
+        body: JSON.stringify({
+          username: userData.username,
+          email: userData.email,
+          roleId: userData.roleId,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phone: userData.phone || ''
+        })
       });
       if (response.ok) {
         return await response.json();
@@ -328,7 +363,7 @@ const UserManagement = () => {
 
   const deleteUser = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/staff_users/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -339,7 +374,7 @@ const UserManagement = () => {
     return false;
   };
 
-  // API Calls - Role Permissions
+  // API Calls - Role Permissions (matches spec: /api/roles/:id/permissions)
   const fetchRolePermissions = async (roleId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}/permissions`, {
@@ -347,9 +382,9 @@ const UserManagement = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        const permissionIds = data.map(p => p.permission_id);
-        setSelectedRolePermissions(permissionIds);
-        return permissionIds;
+        // data is an array of permission IDs
+        setSelectedRolePermissions(data);
+        return data;
       }
     } catch (error) {
       console.error('Error fetching role permissions:', error);
@@ -362,7 +397,7 @@ const UserManagement = () => {
       const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}/permissions`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ permission_id: permissionId })
+        body: JSON.stringify({ permissionId: permissionId })
       });
       return response.ok;
     } catch (error) {
@@ -384,39 +419,11 @@ const UserManagement = () => {
     return false;
   };
 
-  // API Calls - Others
-  const fetchOnlineUsers = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/online_users`, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(prev => ({ ...prev, online_now: data.count }));
-      }
-    } catch (error) {
-      console.error('Error fetching online users:', error);
-    }
-  };
-
-  const fetchAuditLogs = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/audit_logs`, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAuditLogs(data);
-      }
-    } catch (error) {
-      console.error('Error fetching audit logs:', error);
-    }
-  };
-
+  // Generate username (matches spec: /api/auth/users/generate_username)
   const generateUsername = async () => {
     try {
       const currentYear = new Date().getFullYear();
-      const response = await fetch(`${API_BASE_URL}/api/staff_users/generate_username?year=${currentYear}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users/generate_username?year=${currentYear}`, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -456,17 +463,18 @@ const UserManagement = () => {
   };
 
   const sendEmailNotification = async (email, username, password, firstName, lastName) => {
+    // This endpoint may need to be implemented on the backend
     try {
-      const response = await fetch(`${API_BASE_URL}/api/send_credentials`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/send_credentials`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          to_email: email,
+          toEmail: email,
           username: username,
-          temporary_password: password,
-          first_name: firstName,
-          last_name: lastName,
-          login_url: window.location.origin
+          temporaryPassword: password,
+          firstName: firstName,
+          lastName: lastName,
+          loginUrl: window.location.origin
         })
       });
       return response.ok;
@@ -484,7 +492,6 @@ const UserManagement = () => {
         fetchAllPermissions(),
         fetchRoles(),
         fetchUsers(),
-        fetchAuditLogs(),
         fetchOnlineUsers()
       ]);
     };
@@ -507,6 +514,21 @@ const UserManagement = () => {
       generateTemporaryPassword();
     }
   }, [activePage]);
+
+  // Fetch online users (custom endpoint - adjust as needed)
+  const fetchOnlineUsers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/online_users`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStats(prev => ({ ...prev, online_now: data.count || data.length || 0 }));
+      }
+    } catch (error) {
+      console.error('Error fetching online users:', error);
+    }
+  };
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -596,21 +618,17 @@ const UserManagement = () => {
   // Permission CRUD Operations
   const validatePermissionForm = () => {
     let isValid = true;
-    const errors = { name: '', display_name: '', category_id: '' };
+    const errors = { slug: '', categoryId: '' };
 
-    if (!permissionFormData.name.trim()) {
-      errors.name = 'Permission name is required';
+    if (!permissionFormData.slug.trim()) {
+      errors.slug = 'Permission slug is required';
       isValid = false;
-    } else if (!/^[a-z_]+$/.test(permissionFormData.name)) {
-      errors.name = 'Use lowercase letters and underscores only';
-      isValid = false;
-    }
-    if (!permissionFormData.display_name.trim()) {
-      errors.display_name = 'Display name is required';
+    } else if (!/^[a-z]+:[a-z_]+$/.test(permissionFormData.slug)) {
+      errors.slug = 'Use format: domain:action (e.g., children:create)';
       isValid = false;
     }
-    if (!permissionFormData.category_id) {
-      errors.category_id = 'Category is required';
+    if (!permissionFormData.categoryId) {
+      errors.categoryId = 'Category is required';
       isValid = false;
     }
 
@@ -622,10 +640,9 @@ const UserManagement = () => {
     if (!validatePermissionForm()) return;
 
     const result = await addPermission({
-      name: permissionFormData.name.toLowerCase(),
-      display_name: permissionFormData.display_name,
-      category_id: parseInt(permissionFormData.category_id),
-      description: permissionFormData.description || ''
+      slug: permissionFormData.slug.toLowerCase(),
+      description: permissionFormData.description || '',
+      categoryId: permissionFormData.categoryId
     });
 
     if (result) {
@@ -642,10 +659,9 @@ const UserManagement = () => {
     if (!validatePermissionForm()) return;
 
     const result = await updatePermission(editingPermission.id, {
-      name: permissionFormData.name.toLowerCase(),
-      display_name: permissionFormData.display_name,
-      category_id: parseInt(permissionFormData.category_id),
-      description: permissionFormData.description || ''
+      slug: permissionFormData.slug.toLowerCase(),
+      description: permissionFormData.description || '',
+      categoryId: permissionFormData.categoryId
     });
 
     if (result) {
@@ -659,8 +675,8 @@ const UserManagement = () => {
     }
   };
 
-  const handleDeletePermission = async (permissionId, permissionName) => {
-    if (window.confirm(`Are you sure you want to delete permission "${permissionName}"?`)) {
+  const handleDeletePermission = async (permissionId, permissionSlug) => {
+    if (window.confirm(`Are you sure you want to delete permission "${permissionSlug}"?`)) {
       const success = await deletePermission(permissionId);
       if (success) {
         await fetchAllPermissions();
@@ -673,17 +689,16 @@ const UserManagement = () => {
 
   const resetPermissionForm = () => {
     setPermissionFormData({
-      name: '',
-      display_name: '',
-      category_id: '',
-      description: ''
+      slug: '',
+      description: '',
+      categoryId: ''
     });
-    setPermissionFormErrors({ name: '', display_name: '', category_id: '' });
+    setPermissionFormErrors({ slug: '', categoryId: '' });
   };
 
   // Role CRUD Operations
   const validateRoleForm = () => {
-    if (!roleFormData.role_name.trim()) {
+    if (!roleFormData.name.trim()) {
       showToast('Role name is required', 'error');
       return false;
     }
@@ -694,7 +709,7 @@ const UserManagement = () => {
     if (!validateRoleForm()) return;
     
     const result = await addRole({
-      role_name: roleFormData.role_name,
+      name: roleFormData.name,
       description: roleFormData.description || ''
     });
     
@@ -711,8 +726,8 @@ const UserManagement = () => {
   const handleUpdateRole = async () => {
     if (!validateRoleForm()) return;
     
-    const result = await updateRole(editingRole.role_id, {
-      role_name: roleFormData.role_name,
+    const result = await updateRole(editingRole.id, {
+      name: roleFormData.name,
       description: roleFormData.description || ''
     });
     
@@ -740,7 +755,7 @@ const UserManagement = () => {
   };
 
   const resetRoleForm = () => {
-    setRoleFormData({ role_name: '', description: '' });
+    setRoleFormData({ name: '', description: '' });
   };
 
   // User CRUD Operations
@@ -750,9 +765,9 @@ const UserManagement = () => {
       username: '',
       email: '',
       password: '',
-      role_id: '',
-      first_name: '',
-      last_name: ''
+      roleId: '',
+      firstName: '',
+      lastName: ''
     };
 
     if (!formData.username.trim()) {
@@ -770,16 +785,16 @@ const UserManagement = () => {
       errors.password = 'Password is required';
       isValid = false;
     }
-    if (!formData.role_id) {
-      errors.role_id = 'Role is required';
+    if (!formData.roleId) {
+      errors.roleId = 'Role is required';
       isValid = false;
     }
-    if (!formData.first_name.trim()) {
-      errors.first_name = 'First name is required';
+    if (!formData.firstName.trim()) {
+      errors.firstName = 'First name is required';
       isValid = false;
     }
-    if (!formData.last_name.trim()) {
-      errors.last_name = 'Last name is required';
+    if (!formData.lastName.trim()) {
+      errors.lastName = 'Last name is required';
       isValid = false;
     }
 
@@ -794,10 +809,10 @@ const UserManagement = () => {
       username: formData.username,
       email: formData.email,
       password: formData.password,
-      role_id: parseInt(formData.role_id),
-      first_name: formData.first_name,
-      last_name: formData.last_name,
-      phone_number: formData.phone_number
+      roleId: formData.roleId,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phone: formData.phone
     });
     
     if (result) {
@@ -805,8 +820,8 @@ const UserManagement = () => {
         formData.email,
         formData.username,
         formData.password,
-        formData.first_name,
-        formData.last_name
+        formData.firstName,
+        formData.lastName
       );
       
       await fetchUsers();
@@ -821,13 +836,13 @@ const UserManagement = () => {
   const handleUpdateUser = async () => {
     if (!validateUserForm()) return;
     
-    const result = await updateUser(editingUser.user_id, {
+    const result = await updateUser(editingUser.id, {
       username: formData.username,
       email: formData.email,
-      role_id: parseInt(formData.role_id),
-      first_name: formData.first_name,
-      last_name: formData.last_name,
-      phone_number: formData.phone_number
+      roleId: formData.roleId,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phone: formData.phone
     });
     
     if (result) {
@@ -858,18 +873,18 @@ const UserManagement = () => {
       username: generatedUsername,
       email: '',
       password: '',
-      role_id: '',
-      first_name: '',
-      last_name: '',
-      phone_number: ''
+      roleId: '',
+      firstName: '',
+      lastName: '',
+      phone: ''
     });
     setFormErrors({
       username: '',
       email: '',
       password: '',
-      role_id: '',
-      first_name: '',
-      last_name: ''
+      roleId: '',
+      firstName: '',
+      lastName: ''
     });
     setGeneratedPassword('');
     setShowPassword(false);
@@ -883,9 +898,9 @@ const UserManagement = () => {
     
     let success;
     if (isCurrentlyAssigned) {
-      success = await removePermission(selectedRoleForPermissions.role_id, permissionId);
+      success = await removePermission(selectedRoleForPermissions.id, permissionId);
     } else {
-      success = await assignPermission(selectedRoleForPermissions.role_id, permissionId);
+      success = await assignPermission(selectedRoleForPermissions.id, permissionId);
     }
     
     if (success) {
@@ -903,7 +918,7 @@ const UserManagement = () => {
 
   const handleManagePermissions = async (role) => {
     setSelectedRoleForPermissions(role);
-    await fetchRolePermissions(role.role_id);
+    await fetchRolePermissions(role.id);
     setActivePage('manage_permissions');
   };
 
@@ -913,10 +928,10 @@ const UserManagement = () => {
       username: userItem.username,
       email: userItem.email,
       password: '',
-      role_id: userItem.role_id || '',
-      first_name: userItem.first_name || '',
-      last_name: userItem.last_name || '',
-      phone_number: userItem.phone_number || ''
+      roleId: userItem.roleId || '',
+      firstName: userItem.firstName || '',
+      lastName: userItem.lastName || '',
+      phone: userItem.phone || ''
     });
     setActivePage('edit_user');
   };
@@ -924,7 +939,7 @@ const UserManagement = () => {
   const handleEditRole = (role) => {
     setEditingRole(role);
     setRoleFormData({
-      role_name: role.role_name,
+      name: role.name,
       description: role.description || ''
     });
     setActivePage('edit_role');
@@ -933,10 +948,9 @@ const UserManagement = () => {
   const handleEditPermission = (permission) => {
     setEditingPermission(permission);
     setPermissionFormData({
-      name: permission.name,
-      display_name: permission.display_name,
-      category_id: permission.category_id,
-      description: permission.description || ''
+      slug: permission.slug,
+      description: permission.description || '',
+      categoryId: permission.categoryId || ''
     });
     setActivePage('edit_permission');
   };
@@ -944,7 +958,7 @@ const UserManagement = () => {
   const getPermissionsByCategory = () => {
     const grouped = {};
     availablePermissions.forEach(perm => {
-      const category = permissionCategories.find(c => c.id === perm.category_id);
+      const category = permissionCategories.find(c => c.id === perm.categoryId);
       const categoryName = category ? category.name : 'Uncategorized';
       if (!grouped[categoryName]) {
         grouped[categoryName] = [];
@@ -993,19 +1007,19 @@ const UserManagement = () => {
           </thead>
           <tbody>
             {users.map((userItem, index) => (
-              <tr key={userItem.user_id}>
+              <tr key={userItem.id}>
                 <td style={{ textAlign: 'center' }}>{index + 1}</td>
                 <td>{userItem.username}</td>
-                <td>{userItem.first_name} {userItem.last_name}</td>
+                <td>{userItem.firstName} {userItem.lastName}</td>
                 <td>{userItem.email}</td>
-                <td>{userItem.role_name}</td>
-                <td>{userItem.last_active || 'N/A'}</td>
-                <td><span className="um-status-badge um-status-active">{userItem.status || 'active'}</span></td>
+                <td>{userItem.roleName}</td>
+                <td>{userItem.lastActive || 'N/A'}</td>
+                <td><span className="um-status-badge um-status-active">{userItem.securityStatus || 'ACTIVE'}</span></td>
                 <td>
                   <button className="um-action-btn um-edit-btn" onClick={() => handleEditUser(userItem)}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
                   </button>
-                  <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteUser(userItem.user_id, userItem.username)}>
+                  <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteUser(userItem.id, userItem.username)}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
                   </button>
                 </td>
@@ -1033,9 +1047,9 @@ const UserManagement = () => {
             {!editingUser && <span className="um-helper-text">Username automatically generated in format: ST-YYYY-XXXX</span>}
           </div>
           <div className="um-form-group"><label>Email *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></div>
-          <div className="um-form-group"><label>First Name *</label><input type="text" value={formData.first_name} onChange={(e) => setFormData({...formData, first_name: e.target.value})} /></div>
-          <div className="um-form-group"><label>Last Name *</label><input type="text" value={formData.last_name} onChange={(e) => setFormData({...formData, last_name: e.target.value})} /></div>
-          <div className="um-form-group"><label>Phone Number</label><input type="tel" value={formData.phone_number} onChange={(e) => setFormData({...formData, phone_number: e.target.value})} /></div>
+          <div className="um-form-group"><label>First Name *</label><input type="text" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} /></div>
+          <div className="um-form-group"><label>Last Name *</label><input type="text" value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} /></div>
+          <div className="um-form-group"><label>Phone Number</label><input type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} /></div>
           {!editingUser && (
             <div className="um-form-group">
               <label>Temporary Password *</label>
@@ -1047,9 +1061,9 @@ const UserManagement = () => {
           )}
           <div className="um-form-group">
             <label>Role *</label>
-            <select value={formData.role_id} onChange={(e) => setFormData({...formData, role_id: e.target.value})}>
+            <select value={formData.roleId} onChange={(e) => setFormData({...formData, roleId: e.target.value})}>
               <option value="">Select Role</option>
-              {roles.map(role => (<option key={role.role_id} value={role.role_id}>{role.role_name}</option>))}
+              {roles.map(role => (<option key={role.id} value={role.id}>{role.name}</option>))}
             </select>
           </div>
         </div>
@@ -1078,9 +1092,9 @@ const UserManagement = () => {
           <thead><tr><th>S/N</th><th>Role Name</th><th>Description</th><th>Actions</th></tr></thead>
           <tbody>
             {roles.map((role, index) => (
-              <tr key={role.role_id}>
+              <tr key={role.id}>
                 <td style={{ textAlign: 'center' }}>{index + 1}</td>
-                <td><strong>{role.role_name}</strong></td>
+                <td><strong>{role.name}</strong></td>
                 <td>{role.description}</td>
                 <td>
                   <button className="um-action-btn um-permission-btn" onClick={() => handleManagePermissions(role)} title="Manage Permissions">
@@ -1089,7 +1103,7 @@ const UserManagement = () => {
                   <button className="um-action-btn um-edit-btn" onClick={() => handleEditRole(role)}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
                   </button>
-                  <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteRole(role.role_id, role.role_name)}>
+                  <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteRole(role.id, role.name)}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
                   </button>
                 </td>
@@ -1111,7 +1125,7 @@ const UserManagement = () => {
       <div className="um-form-container-full">
         <div className="um-form-section">
           <div className="um-form-grid-full">
-            <div className="um-form-group"><label>Role Name *</label><input type="text" value={roleFormData.role_name} onChange={(e) => setRoleFormData({...roleFormData, role_name: e.target.value})} /></div>
+            <div className="um-form-group"><label>Role Name *</label><input type="text" value={roleFormData.name} onChange={(e) => setRoleFormData({...roleFormData, name: e.target.value})} /></div>
             <div className="um-form-group"><label>Description</label><textarea rows="3" value={roleFormData.description} onChange={(e) => setRoleFormData({...roleFormData, description: e.target.value})} /></div>
           </div>
         </div>
@@ -1135,21 +1149,20 @@ const UserManagement = () => {
       </div>
       <div className="um-permissions-table-container">
         <table className="um-data-table">
-          <thead><tr><th>Category</th><th>Permission Name</th><th>Description</th><th>System Name</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Category</th><th>Permission Slug</th><th>Description</th><th>Actions</th></tr></thead>
           <tbody>
             {availablePermissions.map((permission) => {
-              const category = permissionCategories.find(c => c.id === permission.category_id);
+              const category = permissionCategories.find(c => c.id === permission.categoryId);
               return (
                 <tr key={permission.id}>
                   <td>{category ? category.name : 'Uncategorized'}</td>
-                  <td><strong>{permission.display_name}</strong></td>
+                  <td><code className="um-code-tag">{permission.slug}</code></td>
                   <td>{permission.description}</td>
-                  <td><code className="um-code-tag">{permission.name}</code></td>
                   <td>
                     <button className="um-action-btn um-edit-btn" onClick={() => handleEditPermission(permission)}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
                     </button>
-                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeletePermission(permission.id, permission.display_name)}>
+                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeletePermission(permission.id, permission.slug)}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
                     </button>
                   </td>
@@ -1172,9 +1185,8 @@ const UserManagement = () => {
       <div className="um-form-container-full">
         <div className="um-form-section">
           <div className="um-form-grid-full">
-            <div className="um-form-group"><label>Permission Name (system name) *</label><input type="text" value={permissionFormData.name} onChange={(e) => setPermissionFormData({...permissionFormData, name: e.target.value})} placeholder="e.g., view_children, edit_child" /><span className="um-helper-text">Use lowercase with underscores (no spaces)</span></div>
-            <div className="um-form-group"><label>Display Name *</label><input type="text" value={permissionFormData.display_name} onChange={(e) => setPermissionFormData({...permissionFormData, display_name: e.target.value})} placeholder="e.g., View Children" /></div>
-            <div className="um-form-group"><label>Category *</label><select value={permissionFormData.category_id} onChange={(e) => setPermissionFormData({...permissionFormData, category_id: e.target.value})}><option value="">Select Category</option>{permissionCategories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}</select></div>
+            <div className="um-form-group"><label>Permission Slug (domain:action) *</label><input type="text" value={permissionFormData.slug} onChange={(e) => setPermissionFormData({...permissionFormData, slug: e.target.value})} placeholder="e.g., children:create, children:read" /><span className="um-helper-text">Format: domain:action (e.g., children:create, admin:read)</span></div>
+            <div className="um-form-group"><label>Category *</label><select value={permissionFormData.categoryId} onChange={(e) => setPermissionFormData({...permissionFormData, categoryId: e.target.value})}><option value="">Select Category</option>{permissionCategories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}</select></div>
             <div className="um-form-group"><label>Description</label><textarea rows="4" value={permissionFormData.description} onChange={(e) => setPermissionFormData({...permissionFormData, description: e.target.value})} /></div>
           </div>
         </div>
@@ -1205,8 +1217,8 @@ const UserManagement = () => {
                 <td style={{ textAlign: 'center' }}>{index + 1}</td>
                 <td><strong>{category.name}</strong></td>
                 <td>{category.description}</td>
-                <td>{category.created_at || 'N/A'}</td>
-                <td>{category.updated_at || 'N/A'}</td>
+                <td>{category.createdAt || 'N/A'}</td>
+                <td>{category.updatedAt || 'N/A'}</td>
                 <td>
                   <button className="um-action-btn um-edit-btn" onClick={() => handleEditCategory(category)}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
@@ -1260,7 +1272,7 @@ const UserManagement = () => {
         <div className="um-page-header">
           <button className="um-back-btn" onClick={() => { setActivePage('roles'); setSelectedRoleForPermissions(null); setSelectedRolePermissions([]); }}>← Back to Roles</button>
           <h1>Manage Permissions</h1>
-          <p>Assign permissions to role: <strong>{selectedRoleForPermissions?.role_name}</strong></p>
+          <p>Assign permissions to role: <strong>{selectedRoleForPermissions?.name}</strong></p>
         </div>
         <div className="um-permissions-manage-container">
           <div className="um-permissions-summary-bar">
@@ -1272,12 +1284,12 @@ const UserManagement = () => {
           </div>
           <div className="um-permissions-manage-table-container">
             <table className="um-permissions-manage-table">
-              <thead><tr><th style={{ width: '50px' }}><input type="checkbox" className="um-check-all-checkbox" checked={selectedRolePermissions.length === availablePermissions.length && availablePermissions.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedRolePermissions(availablePermissions.map(p => p.id)); showToast('All permissions assigned to role', 'success'); } else { setSelectedRolePermissions([]); showToast('All permissions removed from role', 'success'); } }} /></th><th>Permission Name</th><th>Category</th><th>Description</th></tr></thead>
+              <thead><tr><th style={{ width: '50px' }}><input type="checkbox" className="um-check-all-checkbox" checked={selectedRolePermissions.length === availablePermissions.length && availablePermissions.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedRolePermissions(availablePermissions.map(p => p.id)); showToast('All permissions assigned to role', 'success'); } else { setSelectedRolePermissions([]); showToast('All permissions removed from role', 'success'); } }} /></th><th>Permission Slug</th><th>Category</th><th>Description</th></tr></thead>
               <tbody>
                 {flattenedPermissions.map((permission) => (
                   <tr key={permission.id}>
                     <td style={{ textAlign: 'center' }}><input type="checkbox" className="um-permission-checkbox-input" checked={selectedRolePermissions.includes(permission.id)} onChange={() => togglePermission(permission.id)} /></td>
-                    <td><div className="um-permission-name-cell"><strong>{permission.display_name}</strong><br /><code className="um-permission-code">{permission.name}</code></div></td>
+                    <td><div className="um-permission-name-cell"><code className="um-permission-code">{permission.slug}</code></div></td>
                     <td><span className="um-permission-category-tag">{permission.category}</span></td>
                     <td className="um-permission-description-cell">{permission.description}</td>
                   </tr>
@@ -1290,29 +1302,6 @@ const UserManagement = () => {
       </div>
     );
   };
-
-  // Render Audit Logs Page
-  const renderAuditLogs = () => (
-    <div className="um-page-content">
-      <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
-        <div className="um-header-actions">
-          <h1>Audit Logs</h1>
-          <button className="um-refresh-btn" onClick={() => { fetchAuditLogs(); showToast('Audit logs refreshed!', 'success'); }}>Refresh</button>
-        </div>
-      </div>
-      <div className="um-audit-table-container">
-        <table className="um-data-table">
-          <thead><tr><th>S/N</th><th>Action</th><th>Username</th><th>Timestamp</th><th>Details</th></tr></thead>
-          <tbody>
-            {auditLogs.map((log, index) => (
-              <tr key={log.log_id}><td style={{ textAlign: 'center' }}>{index + 1}</td><td>{log.action}</td><td>{log.username}</td><td>{log.timestamp}</td><td>{log.details}</td></tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
 
   if (loading) {
     return (
@@ -1348,7 +1337,6 @@ const UserManagement = () => {
               <div className="um-action-card" onClick={() => setActivePage('roles')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/><path d="M12 6V12L16 14"/></svg></div><div className="um-action-info"><h4>Manage Roles</h4><p>Configure roles and permissions</p></div></div>
               <div className="um-action-card" onClick={() => setActivePage('permissions')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg></div><div className="um-action-info"><h4>Define Permissions</h4><p>Create, edit, or delete system permissions</p></div></div>
               <div className="um-action-card" onClick={() => setActivePage('categories')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4L20 4"/><path d="M4 8L20 8"/><path d="M4 12L14 12"/><rect x="2" y="2" width="20" height="20" rx="2"/></svg></div><div className="um-action-info"><h4>Manage Categories</h4><p>Create, edit, or delete permission categories</p></div></div>
-              <div className="um-action-card" onClick={() => setActivePage('audit')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2V6"/><path d="M8 2V6"/><path d="M3 10H21"/></svg></div><div className="um-action-info"><h4>View Audit Logs</h4><p>Track system activities</p></div></div>
             </div>
           </>
         )}
@@ -1366,7 +1354,6 @@ const UserManagement = () => {
         {activePage === 'add_category' && renderCategoryForm()}
         {activePage === 'edit_category' && renderCategoryForm()}
         {activePage === 'manage_permissions' && renderManagePermissions()}
-        {activePage === 'audit' && renderAuditLogs()}
       </div>
     </Layout>
   );

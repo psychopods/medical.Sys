@@ -1,18 +1,32 @@
-/* Base styles - FULL WIDTH */
+/* TopHeader.css - Full Width Professional Design with Hide on Scroll */
+
 .top-header {
-  background-color: #1a1a2e;
+  background: linear-gradient(135deg, #0f1423 0%, #1a1a2e 100%);
   color: #fff;
   padding: 10px 0;
-  font-size: 14px;
+  font-size: 13px;
   width: 100%;
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Hide on scroll */
+.top-header.hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.top-header.visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .top-header-container {
   width: 100%;
-  max-width: 100%; /* REMOVED the fixed max-width */
-  margin: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -20,10 +34,11 @@
   box-sizing: border-box;
 }
 
+/* Contact Info */
 .contact-info {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 20px;
   align-items: center;
 }
 
@@ -32,10 +47,25 @@
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.contact-info span:hover {
+  color: #00b4d8;
+  transform: translateY(-1px);
 }
 
 /* SVG Icon Styles */
 .contact-icon {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  transition: all 0.3s ease;
+}
+
+.social-icon {
   width: 16px;
   height: 16px;
   stroke: currentColor;
@@ -44,19 +74,11 @@
   transition: all 0.3s ease;
 }
 
-.social-icon {
-  width: 18px;
-  height: 18px;
-  stroke: currentColor;
-  stroke-width: 2;
-  fill: none;
-  transition: all 0.3s ease;
-}
-
+/* Social Links */
 .social-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 15px;
   align-items: center;
 }
 
@@ -68,6 +90,7 @@
   align-items: center;
   justify-content: center;
   padding: 5px;
+  border-radius: 50%;
 }
 
 .social-links a:hover {
@@ -79,291 +102,15 @@
   stroke: #00b4d8;
 }
 
-/* Responsive Breakpoints - FULL WIDTH */
-
-/* Large Desktop (1200px - 1400px) */
-@media (min-width: 1200px) and (max-width: 1400px) {
-  .top-header-container {
-    padding: 0 4%;
-  }
-}
-
-/* Desktop (992px - 1199px) */
-@media (min-width: 992px) and (max-width: 1199px) {
-  .top-header-container {
-    padding: 0 3%;
-  }
-  
-  .contact-info span {
-    font-size: 13px;
-  }
-  
-  .contact-icon {
-    width: 14px;
-    height: 14px;
-  }
-  
-  .social-icon {
-    width: 16px;
-    height: 16px;
-  }
-}
-
-/* Tablet Landscape (768px - 991px) */
-@media (min-width: 768px) and (max-width: 991px) {
-  .top-header {
-    padding: 8px 0;
-  }
-  
-  .top-header-container {
-    padding: 0 4%;
-  }
-  
-  .contact-info {
-    gap: 12px;
-  }
-  
-  .contact-info span {
-    font-size: 12px;
-    white-space: nowrap;
-  }
-  
-  .contact-icon {
-    width: 13px;
-    height: 13px;
-  }
-  
-  .social-links {
-    gap: 10px;
-  }
-  
-  .social-icon {
-    width: 15px;
-    height: 15px;
-  }
-}
-
-/* Tablet Portrait (481px - 767px) */
-@media (min-width: 481px) and (max-width: 767px) {
-  .top-header {
-    padding: 8px 0;
-  }
-  
-  .top-header-container {
-    flex-direction: column;
-    gap: 8px;
-    padding: 0 5%;
-    text-align: center;
-  }
-  
-  .contact-info {
-    justify-content: center;
-    gap: 15px;
-  }
-  
-  .contact-info span {
-    font-size: 11px;
-    white-space: nowrap;
-  }
-  
-  .contact-icon {
-    width: 12px;
-    height: 12px;
-  }
-  
-  .social-links {
-    justify-content: center;
-  }
-  
-  .social-icon {
-    width: 14px;
-    height: 14px;
-  }
-}
-
-/* Mobile (320px - 480px) */
-@media (max-width: 480px) {
-  .top-header {
-    padding: 6px 0;
-    font-size: 10px;
-  }
-  
-  .top-header-container {
-    flex-direction: column;
-    gap: 6px;
-    padding: 0 4%;
-    text-align: center;
-  }
-  
-  .contact-info {
-    flex-direction: column;
-    gap: 5px;
-    justify-content: center;
-  }
-  
-  .contact-info span {
-    font-size: 10px;
-    white-space: normal;
-    word-break: break-word;
-    justify-content: center;
-  }
-  
-  .contact-icon {
-    width: 11px;
-    height: 11px;
-  }
-  
-  .social-links {
-    justify-content: center;
-    gap: 8px;
-  }
-  
-  .social-icon {
-    width: 13px;
-    height: 13px;
-  }
-}
-
-/* Small Mobile (up to 360px) */
-@media (max-width: 360px) {
-  .top-header {
-    padding: 5px 0;
-  }
-  
-  .contact-info span {
-    font-size: 9px;
-  }
-  
-  .contact-icon {
-    width: 10px;
-    height: 10px;
-  }
-  
-  .social-icon {
-    width: 12px;
-    height: 12px;
-  }
-}
-
-/* For very large screens (1400px and above) - FULL WIDTH */
-@media (min-width: 1400px) {
-  .top-header-container {
-    padding: 0 6%;
-  }
-  
-  .contact-info span {
-    font-size: 15px;
-  }
-  
-  .contact-icon {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .social-icon {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-/* Handle extremely large screens (1920px and above) - FULL WIDTH */
-@media (min-width: 1920px) {
-  .top-header-container {
-    padding: 0 8%;
-  }
-  
-  .contact-info span {
-    font-size: 16px;
-  }
-  
-  .contact-icon {
-    width: 20px;
-    height: 20px;
-  }
-  
-  .social-icon {
-    width: 22px;
-    height: 22px;
-  }
-}
-
-/* For ultra-wide screens (2560px and above) */
-@media (min-width: 2560px) {
-  .top-header-container {
-    padding: 0 10%;
-  }
-  
-  .contact-info span {
-    font-size: 18px;
-  }
-  
-  .contact-icon {
-    width: 22px;
-    height: 22px;
-  }
-  
-  .social-icon {
-    width: 24px;
-    height: 24px;
-  }
-}
-
-/* Print styles */
-@media print {
-  .top-header {
-    background-color: #fff;
-    color: #000;
-    border-bottom: 1px solid #ccc;
-  }
-  
-  .social-links a {
-    color: #000;
-  }
-}
-
-/* Accessibility: Reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-  .social-links a {
-    transition: none;
-  }
-  
-  .social-links a:hover {
-    transform: none;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .top-header {
-    background-color: #000;
-  }
-  
-  .social-links a:hover {
-    color: #ffff00;
-  }
-}
-
-/* Touch device optimizations */
-@media (hover: none) and (pointer: coarse) {
-  .social-links a {
-    padding: 8px;
-    margin: -8px;
-  }
-  
-  .social-links a:active {
-    color: #00b4d8;
-  }
-}
-
-/* Toast Notification Styles */
+/* Toast Notification */
 .toast-notification {
   position: fixed;
-  top: 20px;
+  top: 80px;
   right: 20px;
   min-width: 300px;
   background: white;
-  border-radius: 10px;
-  padding: 15px 20px;
+  border-radius: 12px;
+  padding: 14px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -427,8 +174,71 @@
   }
 }
 
-/* Responsive toast */
+/* Hide on mobile screens (below 768px) */
 @media (max-width: 768px) {
+  .top-header {
+    display: none;
+  }
+}
+
+/* Responsive Breakpoints - Full Width */
+
+/* Large Desktop (1200px - 1400px) */
+@media (min-width: 1200px) and (max-width: 1400px) {
+  .top-header-container {
+    padding: 0 4%;
+  }
+}
+
+/* Desktop (992px - 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .top-header-container {
+    padding: 0 3%;
+  }
+  
+  .contact-info {
+    gap: 15px;
+  }
+  
+  .contact-info span {
+    font-size: 12px;
+  }
+  
+  .contact-icon {
+    width: 13px;
+    height: 13px;
+  }
+  
+  .social-icon {
+    width: 15px;
+    height: 15px;
+  }
+  
+  .social-links {
+    gap: 12px;
+  }
+}
+
+/* Tablet Landscape (768px - 991px) - HIDE TOP HEADER */
+@media (min-width: 768px) and (max-width: 991px) {
+  .top-header {
+    display: none;
+  }
+}
+
+/* Tablet Portrait (481px - 767px) - HIDE TOP HEADER */
+@media (min-width: 481px) and (max-width: 767px) {
+  .top-header {
+    display: none;
+  }
+}
+
+/* Mobile (320px - 480px) - HIDE TOP HEADER */
+@media (max-width: 480px) {
+  .top-header {
+    display: none;
+  }
+  
   .toast-notification {
     top: 60px;
     right: 10px;
@@ -437,12 +247,117 @@
   }
 }
 
-/* Add cursor pointer to contact info */
-.contact-info span {
-  cursor: pointer;
-  transition: opacity 0.3s ease;
+/* For very large screens (1400px and above) */
+@media (min-width: 1400px) and (max-width: 1919px) {
+  .top-header-container {
+    padding: 0 6%;
+  }
+  
+  .contact-info span {
+    font-size: 14px;
+  }
+  
+  .contact-icon {
+    width: 15px;
+    height: 15px;
+  }
+  
+  .social-icon {
+    width: 17px;
+    height: 17px;
+  }
+  
+  .social-links {
+    gap: 18px;
+  }
 }
 
-.contact-info span:hover {
-  opacity: 0.8;
+/* For ultra-wide screens (1920px and above) */
+@media (min-width: 1920px) {
+  .top-header-container {
+    padding: 0 8%;
+  }
+  
+  .contact-info span {
+    font-size: 15px;
+  }
+  
+  .contact-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .social-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .social-links {
+    gap: 20px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .top-header {
+    background: #fff;
+    color: #000;
+    border-bottom: 1px solid #ccc;
+  }
+  
+  .social-links a {
+    color: #000;
+  }
+  
+  .toast-notification {
+    display: none;
+  }
+}
+
+/* Accessibility: Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .top-header,
+  .social-links a,
+  .contact-info span {
+    transition: none;
+  }
+  
+  .social-links a:hover {
+    transform: none;
+  }
+  
+  .contact-info span:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .top-header {
+    background: #000;
+  }
+  
+  .social-links a:hover {
+    color: #ffff00;
+  }
+  
+  .contact-info span:hover {
+    color: #ffff00;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .social-links a {
+    padding: 8px;
+    margin: -8px;
+  }
+  
+  .social-links a:active {
+    color: #00b4d8;
+  }
+  
+  .contact-info span:active {
+    color: #00b4d8;
+  }
 }

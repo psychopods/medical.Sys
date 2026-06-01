@@ -11,87 +11,79 @@ const Services = () => {
     }, 3000);
   };
 
-  const handleGetStarted = (serviceName) => {
-    showToast(`Getting started with ${serviceName}!`, 'success');
-  };
-
   const services = [
     {
       id: 1,
-      title: 'Fingerprint Scanner',
-      description: 'High-precision fingerprint scanning technology for accurate identification and authentication.',
+      title: 'Medical Care',
+      description: 'Free health checkups, emergency treatment, and regular medical support for street children. Each visit is tracked via fingerprint for continuous care.',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M18 12C18 8.69 15.31 6 12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 8V16M8 12H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="1.5"/>
         </svg>
-      ),
-      features: ['99.9% Accuracy', 'Instant Recognition', 'Anti-spoofing Technology']
+      )
     },
     {
       id: 2,
-      title: 'Biometric Access Control',
-      description: 'Secure door access systems using fingerprint recognition for enhanced security.',
+      title: 'Food Supply',
+      description: 'Nutritious meals provided to street children during their visit to the center. Fingerprint registration ensures each child receives proper food support when they come for assistance.',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M4 12H2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M22 12H20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 8C18 4.68629 15.3137 2 12 2C8.68629 2 6 4.68629 6 8V11.1C6 12.4 6.5 13.6 7.4 14.5L8 15.1V22H16V15.1L16.6 14.5C17.5 13.6 18 12.3 18 11V8Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M10 2L10 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M14 2L14 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M9 15H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
-      ),
-      features: ['Real-time Monitoring', 'Multi-factor Authentication', 'Remote Access Control']
+      )
     },
     {
       id: 3,
-      title: 'Time & Attendance System',
-      description: 'Automated employee time tracking with fingerprint verification to prevent time theft.',
+      title: 'Clothing & Shoes',
+      description: 'Clean, weather-appropriate clothing and durable footwear provided during visits. Every child receives proper attire based on their size recorded via fingerprint.',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C10 2 8 3 8 5C8 6 9 7 10 8C9 9 8 10 8 12C8 14 9 15 10 16C8 17 8 19 8 21H16C16 19 16 17 14 16C15 15 16 14 16 12C16 10 15 9 14 8C15 7 16 6 16 5C16 3 14 2 12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M9 12H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M10 16H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
-      ),
-      features: ['Automated Reports', 'Payroll Integration', 'Mobile Check-in/out']
+      )
     },
     {
       id: 4,
-      title: 'Security Solutions',
-      description: 'Comprehensive security packages combining fingerprint access with surveillance systems.',
+      title: 'Fingerprint Registration',
+      description: 'Secure biometric registration system to track service distribution, maintain health records, and ensure every child receives consistent support during each visit.',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 16V12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 8H12.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M18 12C18 8.69 15.31 6 12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M18 12C18 15.31 15.31 18 12 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
-      ),
-      features: ['24/7 Monitoring', 'Instant Alerts', 'Cloud Backup']
+      )
     },
     {
       id: 5,
-      title: 'Integration API',
-      description: 'Easy-to-integrate API solutions for adding fingerprint authentication to your applications.',
+      title: 'Education Support',
+      description: 'Basic education materials and school enrollment assistance provided during visits. Tracked through our biometric system for continued support.',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 6V4M12 6C10 6 8 7 8 9C8 11 10 12 12 12C14 12 16 11 16 9C16 7 14 6 12 6Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M4 16C4 14 6 12 9 12H15C18 12 20 14 20 16V20H4V16Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <circle cx="12" cy="8" r="2" stroke="currentColor" strokeWidth="1.5"/>
         </svg>
-      ),
-      features: ['RESTful API', 'Comprehensive Documentation', 'Developer Support']
+      )
     },
     {
       id: 6,
-      title: 'Mobile Biometrics',
-      description: 'Mobile-ready fingerprint authentication solutions for smartphones and tablets.',
+      title: 'Shelter & Care',
+      description: 'Safe overnight shelter, hygiene facilities, and emotional support counseling during visits. Fingerprint check-in ensures safety and accountability.',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="5" y="2" width="14" height="20" rx="2" ry="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          <line x1="12" y1="18" x2="12.01" y2="18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+          <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>
-      ),
-      features: ['Cross-platform', 'Offline Mode', 'Face & Fingerprint Combo']
+      )
     }
   ];
 
@@ -101,13 +93,13 @@ const Services = () => {
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
           <div className="toast-content">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             <span>{toast.message}</span>
           </div>
           <button className="toast-close" onClick={() => setToast({ show: false, message: '', type: '' })}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
@@ -118,13 +110,17 @@ const Services = () => {
       {/* Hero Section */}
       <div className="services-hero">
         <div className="services-hero-content">
-          <h1>Our Services</h1>
-          <p>Comprehensive biometric security solutions tailored to your needs</p>
+          <h1>Our Care Services</h1>
+          <p>BB Medical Center provides comprehensive support for street children through secure fingerprint registration</p>
         </div>
       </div>
 
       {/* Services Grid */}
       <div className="services-container">
+        <div className="services-intro">
+          <h2>How Fingerprint Registration Helps</h2>
+          <p>Every child gets a unique digital identity, ensuring they receive consistent care across all services during each visit — from medicine to meals, clothing to shelter.</p>
+        </div>
         <div className="services-grid">
           {services.map((service) => (
             <div className="service-card" key={service.id}>
@@ -133,40 +129,8 @@ const Services = () => {
               </div>
               <h3>{service.title}</h3>
               <p>{service.description}</p>
-              <div className="service-features">
-                {service.features.map((feature, index) => (
-                  <span key={index} className="feature-tag">{feature}</span>
-                ))}
-              </div>
-              <button 
-                className="service-btn"
-                onClick={() => handleGetStarted(service.title)}
-              >
-                Get Started
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* CTA Section */}
-      <div className="services-cta">
-        <div className="services-cta-content">
-          <h2>Need a Custom Solution?</h2>
-          <p>Contact us for personalized biometric security solutions</p>
-          <button 
-            className="cta-btn"
-            onClick={() => showToast('Contacting sales team...', 'success')}
-          >
-            Contact Sales
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22 16.92V19.92C22.0011 20.1985 21.9441 20.4742 21.8325 20.7294C21.7209 20.9845 21.5573 21.2136 21.352 21.4019C21.1467 21.5901 20.9044 21.7335 20.6407 21.8227C20.377 21.9119 20.0975 21.945 19.82 21.92C16.7428 21.5856 13.787 20.5341 11.17 18.85C8.77339 17.3147 6.72533 15.2666 5.19 12.87C3.49911 10.2412 2.44847 7.27147 2.12 4.18C2.09508 3.90353 2.12791 3.62496 2.21673 3.36212C2.30555 3.09928 2.44838 2.85766 2.63595 2.65273C2.82353 2.4478 3.05183 2.2843 3.30629 2.17243C3.56075 2.06056 3.8358 2.00295 4.114 2.003H7.114C7.59512 1.99831 8.06584 2.14076 8.46248 2.41041C8.85911 2.68005 9.15998 3.06252 9.322 3.51C9.58123 4.24178 9.76598 4.99767 9.874 5.767C9.94477 6.26118 9.89305 6.76492 9.72364 7.2335C9.55424 7.70209 9.27246 8.12003 8.905 8.447L8.015 9.272C9.42636 11.6562 11.3869 13.6186 13.77 15.032L14.596 14.142C14.9225 13.7749 15.3401 13.4935 15.8083 13.3243C16.2766 13.1551 16.7799 13.1034 17.274 13.174C18.0467 13.2825 18.806 13.4689 19.541 13.73C19.992 13.8927 20.3771 14.1962 20.6479 14.5967C20.9186 14.9972 21.0604 15.4723 21.053 15.957L21 16.92Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
         </div>
       </div>
     </div>

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './TopHeader.css';
 
 const TopHeader = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   const showToast = (message, type = 'info') => {
     setToast({ show: true, message, type });
@@ -11,26 +13,38 @@ const TopHeader = () => {
     }, 3000);
   };
 
+  // Hide top header on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        // Scrolling down - hide
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up - show
+        setIsVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
+
   const handlePhoneClick = () => {
-    showToast('📞 Calling +1 234 567 890', 'info');
-    // You can add actual phone call functionality here
-    // window.location.href = 'tel:+1234567890';
+    showToast('📞 Calling +255 712 345 678', 'info');
   };
 
   const handleEmailClick = () => {
-    showToast('✉️ Opening email client: info@fingerprintsystem.com', 'info');
-    // You can add actual email functionality here
-    // window.location.href = 'mailto:info@fingerprintsystem.com';
+    showToast('✉️ Opening email client: info@bbmedicalcenter.org', 'info');
   };
 
   const handleSocialClick = (platform) => {
     showToast(`🔗 Opening ${platform} page`, 'info');
-    // You can add actual social media links here
-    // window.open(`https://www.${platform.toLowerCase()}.com/yourpage`, '_blank');
   };
 
   return (
-    <div className="top-header">
+    <div className={`top-header ${isVisible ? 'visible' : 'hidden'}`}>
       {/* Toast Notification */}
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
@@ -69,14 +83,14 @@ const TopHeader = () => {
             <svg className="contact-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M22 16.92V19.92C22.0011 20.1985 21.9441 20.4742 21.8325 20.7294C21.7209 20.9845 21.5573 21.2136 21.352 21.4019C21.1467 21.5901 20.9044 21.7335 20.6407 21.8227C20.377 21.9119 20.0975 21.945 19.82 21.92C16.7428 21.5856 13.787 20.5341 11.17 18.85C8.77339 17.3147 6.72533 15.2666 5.19 12.87C3.49911 10.2412 2.44847 7.27147 2.12 4.18C2.09508 3.90353 2.12791 3.62496 2.21673 3.36212C2.30555 3.09928 2.44838 2.85766 2.63595 2.65273C2.82353 2.4478 3.05183 2.2843 3.30629 2.17243C3.56075 2.06056 3.8358 2.00295 4.114 2.003H7.114C7.59512 1.99831 8.06584 2.14076 8.46248 2.41041C8.85911 2.68005 9.15998 3.06252 9.322 3.51C9.58123 4.24178 9.76598 4.99767 9.874 5.767C9.94477 6.26118 9.89305 6.76492 9.72364 7.2335C9.55424 7.70209 9.27246 8.12003 8.905 8.447L8.015 9.272C9.42636 11.6562 11.3869 13.6186 13.77 15.032L14.596 14.142C14.9225 13.7749 15.3401 13.4935 15.8083 13.3243C16.2766 13.1551 16.7799 13.1034 17.274 13.174C18.0467 13.2825 18.806 13.4689 19.541 13.73C19.992 13.8927 20.3771 14.1962 20.6479 14.5967C20.9186 14.9972 21.0604 15.4723 21.053 15.957L21 16.92Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            +1 234 567 890
+            +255 712 345 678
           </span>
           <span onClick={handleEmailClick} style={{ cursor: 'pointer' }}>
             <svg className="contact-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            info@fingerprintsystem.com
+            info@bbmedicalcenter.org
           </span>
         </div>
         <div className="social-links">
@@ -138,7 +152,6 @@ const TopHeader = () => {
               <path d="M16 16V13C16 12.4696 15.7893 11.9609 15.4142 11.5858C15.0391 11.2107 14.5304 11 14 11C13.4696 11 12.9609 11.2107 12.5858 11.5858C12.2107 11.9609 12 12.4696 12 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </a>
-          {/* YouTube */}
           <a 
             href="#" 
             aria-label="YouTube"

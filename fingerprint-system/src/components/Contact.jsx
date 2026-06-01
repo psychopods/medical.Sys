@@ -43,8 +43,7 @@ const Contact = () => {
         </svg>
       ),
       title: 'Phone',
-      details: ['+1 234 567 890', '+1 234 567 891'],
-      action: () => showToast('Calling support team...', 'info')
+      details: ['+255 712 345 678', '+255 765 432 109']
     },
     {
       icon: (
@@ -54,8 +53,7 @@ const Contact = () => {
         </svg>
       ),
       title: 'Email',
-      details: ['info@fingerprintsystem.com', 'support@fingerprintsystem.com'],
-      action: () => showToast('Opening email client...', 'info')
+      details: ['info@bbmedicalcenter.org', 'support@bbmedicalcenter.org']
     },
     {
       icon: (
@@ -65,8 +63,7 @@ const Contact = () => {
         </svg>
       ),
       title: 'Office',
-      details: ['123 Security Street, Tech City, TC 12345'],
-      action: () => showToast('Getting directions...', 'info')
+      details: ['Dar es Salaam, Tanzania']
     },
     {
       icon: (
@@ -76,8 +73,7 @@ const Contact = () => {
         </svg>
       ),
       title: 'Business Hours',
-      details: ['Mon-Fri: 9:00 AM - 6:00 PM', 'Sat-Sun: Closed'],
-      action: () => showToast('Viewing business hours', 'info')
+      details: ['Mon-Fri: 9:00 AM - 6:00 PM', 'Sat: 9:00 AM - 2:00 PM']
     }
   ];
 
@@ -87,13 +83,13 @@ const Contact = () => {
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
           <div className="toast-content">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             <span>{toast.message}</span>
           </div>
           <button className="toast-close" onClick={() => setToast({ show: false, message: '', type: '' })}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
@@ -105,15 +101,15 @@ const Contact = () => {
       <div className="contact-hero">
         <div className="contact-hero-content">
           <h1>Contact Us</h1>
-          <p>Get in touch with our team for any inquiries or support</p>
+          <p>BB Medical Center - Reach out to support our mission for street children</p>
         </div>
       </div>
 
-      {/* Contact Info Section */}
+      {/* Contact Info Section - Full Width */}
       <div className="contact-info-section">
         <div className="contact-info-grid">
           {contactInfo.map((info, index) => (
-            <div className="contact-info-card" key={index} onClick={info.action}>
+            <div className="contact-info-card" key={index}>
               <div className="contact-info-icon">
                 {info.icon}
               </div>
@@ -126,33 +122,33 @@ const Contact = () => {
         </div>
       </div>
 
-      {/* Contact Form Section */}
+      {/* Contact Form Section - Full Width */}
       <div className="contact-form-section">
         <div className="contact-form-container">
           <div className="contact-form-left">
             <h2>Send us a Message</h2>
-            <p>Have a question or need assistance? Fill out the form and our team will get back to you within 24 hours.</p>
+            <p>Have questions about our programs or want to support our cause? Fill out the form and our team will get back to you.</p>
             <div className="contact-features">
               <div className="contact-feature">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <span>Quick Response Time</span>
               </div>
               <div className="contact-feature">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span>24/7 Support Available</span>
+                <span>Compassionate Support</span>
               </div>
               <div className="contact-feature">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span>Expert Team</span>
+                <span>Dedicated Team</span>
               </div>
             </div>
           </div>
@@ -208,53 +204,12 @@ const Contact = () => {
               </div>
               <button type="submit" className="submit-btn">
                 Send Message
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
             </form>
-          </div>
-        </div>
-      </div>
-
-      {/* Map Section */}
-      <div className="contact-map-section">
-        <div className="contact-map-container">
-          <h2>Find Us Here</h2>
-          <div className="map-placeholder">
-            <svg width="100%" height="300" viewBox="0 0 800 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="800" height="300" fill="#f0f0f0" rx="10"/>
-              <circle cx="400" cy="150" r="50" fill="#667eea" fillOpacity="0.2" stroke="#667eea" strokeWidth="2"/>
-              <circle cx="400" cy="150" r="10" fill="#667eea"/>
-              <path d="M400 100V150L430 180" stroke="#667eea" strokeWidth="2" strokeLinecap="round"/>
-              <text x="400" y="230" textAnchor="middle" fill="#666" fontSize="14">123 Security Street, Tech City</text>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      {/* FAQ Section */}
-      <div className="contact-faq">
-        <div className="contact-faq-container">
-          <h2>Frequently Asked Questions</h2>
-          <div className="faq-grid">
-            <div className="faq-item">
-              <h4>How quickly do you respond?</h4>
-              <p>We typically respond within 24 hours during business days.</p>
-            </div>
-            <div className="faq-item">
-              <h4>Do you offer technical support?</h4>
-              <p>Yes, we provide 24/7 technical support for all our products.</p>
-            </div>
-            <div className="faq-item">
-              <h4>Can I get a demo?</h4>
-              <p>Absolutely! Contact us to schedule a free demo of our products.</p>
-            </div>
-            <div className="faq-item">
-              <h4>What are your pricing plans?</h4>
-              <p>Contact our sales team for customized pricing based on your needs.</p>
-            </div>
           </div>
         </div>
       </div>

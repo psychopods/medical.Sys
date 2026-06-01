@@ -93,27 +93,19 @@ const About = () => {
     }
   ];
 
-  const milestones = [
-    { year: '2020', title: 'Company Founded', description: 'Started with a vision to revolutionize biometric security' },
-    { year: '2021', title: 'First Product Launch', description: 'Released our flagship fingerprint scanner' },
-    { year: '2022', title: '1000+ Customers', description: 'Reached milestone of serving over 1000 businesses' },
-    { year: '2023', title: 'Global Expansion', description: 'Expanded operations to 15 countries worldwide' },
-    { year: '2024', title: 'AI Integration', description: 'Launched AI-powered fingerprint recognition' }
-  ];
-
   return (
     <div className="about-page">
       {/* Toast Notification */}
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
           <div className="toast-content">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             <span>{toast.message}</span>
           </div>
           <button className="toast-close" onClick={() => setToast({ show: false, message: '', type: '' })}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
@@ -125,7 +117,7 @@ const About = () => {
       <div className="about-hero">
         <div className="about-hero-content">
           <h1>About Us</h1>
-          <p>Pioneering the future of biometric security since 2020</p>
+          <p>BB Medical Center - Compassionate care for street children since 2020</p>
         </div>
       </div>
 
@@ -134,34 +126,16 @@ const About = () => {
         <div className="about-story-container">
           <div className="about-story-content">
             <h2>Our Story</h2>
-            <p>Founded in 2020, Fingerprint System emerged from a simple yet powerful idea: to make advanced biometric security accessible to businesses of all sizes. What started as a small team of cybersecurity enthusiasts has grown into a global leader in fingerprint recognition technology.</p>
-            <p>Today, we serve over 1,000+ businesses across 15 countries, protecting millions of users with our cutting-edge biometric solutions. Our commitment to innovation and security has made us the trusted choice for enterprises worldwide.</p>
-            <div className="stats-container">
-              <div className="stat-item">
-                <h3>1,000+</h3>
-                <p>Businesses Protected</p>
-              </div>
-              <div className="stat-item">
-                <h3>15+</h3>
-                <p>Countries Served</p>
-              </div>
-              <div className="stat-item">
-                <h3>99.9%</h3>
-                <p>Accuracy Rate</p>
-              </div>
-              <div className="stat-item">
-                <h3>24/7</h3>
-                <p>Customer Support</p>
-              </div>
-            </div>
+            <p>Founded in 2020, BB Medical Center emerged from a simple yet powerful idea: to provide essential care and support to street children who have no one to turn to. What started as a small team of compassionate individuals has grown into a trusted organization serving hundreds of children.</p>
+            <p>Today, we provide medical care, nutritious food, clothing, education support, and shelter to street children across Tanzania. Our commitment to using fingerprint registration ensures every child receives consistent care and support during each visit.</p>
           </div>
           <div className="about-story-image">
             <svg width="100%" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="50" y="50" width="300" height="200" rx="10" fill="rgba(102,126,234,0.1)" stroke="#667eea" strokeWidth="2"/>
-              <circle cx="200" cy="150" r="40" stroke="#667eea" strokeWidth="2" fill="none"/>
-              <path d="M200 110V150L225 175" stroke="#667eea" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M160 150H240" stroke="#667eea" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M200 110V150" stroke="#667eea" strokeWidth="2" strokeLinecap="round"/>
+              <rect x="50" y="50" width="300" height="200" rx="10" fill="rgba(79,70,229,0.1)" stroke="#4f46e5" strokeWidth="2"/>
+              <circle cx="200" cy="150" r="40" stroke="#4f46e5" strokeWidth="2" fill="none"/>
+              <path d="M200 110V150L225 175" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M160 150H240" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M200 110V150" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
         </div>
@@ -176,7 +150,7 @@ const About = () => {
             </svg>
           </div>
           <h3>Our Mission</h3>
-          <p>To provide cutting-edge biometric security solutions that protect what matters most, making advanced technology accessible and reliable for businesses worldwide.</p>
+          <p>To provide compassionate medical care, food, clothing, education, and shelter to street children, ensuring they receive dignified support through secure fingerprint registration.</p>
         </div>
         <div className="vision-card">
           <div className="vision-icon">
@@ -187,7 +161,7 @@ const About = () => {
             </svg>
           </div>
           <h3>Our Vision</h3>
-          <p>To become the world's leading provider of biometric authentication, creating a safer digital ecosystem through innovation and excellence.</p>
+          <p>To create a world where no street child is left without care, creating a safe and supportive environment through innovation and compassion.</p>
         </div>
       </div>
 
@@ -207,25 +181,9 @@ const About = () => {
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="about-timeline">
-        <h2>Our Journey</h2>
-        <div className="timeline-container">
-          {milestones.map((milestone, index) => (
-            <div className="timeline-item" key={index}>
-              <div className="timeline-year">{milestone.year}</div>
-              <div className="timeline-content">
-                <h4>{milestone.title}</h4>
-                <p>{milestone.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Team Section */}
       <div className="about-team">
-        <h2>Leadership Team</h2>
+        <h2>Our Team</h2>
         <div className="team-grid">
           {teamMembers.map((member) => (
             <div className="team-card" key={member.id}>
@@ -235,32 +193,8 @@ const About = () => {
               <h3>{member.name}</h3>
               <p className="team-position">{member.position}</p>
               <p className="team-bio">{member.bio}</p>
-              <button 
-                className="connect-btn"
-                onClick={() => showToast(`Connect with ${member.name}`, 'success')}
-              >
-                Connect
-              </button>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* CTA Section */}
-      <div className="about-cta">
-        <div className="about-cta-content">
-          <h2>Ready to Secure Your Business?</h2>
-          <p>Join thousands of businesses that trust Fingerprint System</p>
-          <button 
-            className="cta-btn"
-            onClick={() => showToast('Contacting sales team...', 'success')}
-          >
-            Get Started Today
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
         </div>
       </div>
     </div>
