@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './NurseDashboard.css';
 
+// API base URL
+const API_BASE_URL = 'http://localhost:9865';
+
 const NurseDashboard = ({ user, onLogout }) => {
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
@@ -9,57 +12,498 @@ const NurseDashboard = ({ user, onLogout }) => {
   const [fingerprintExists, setFingerprintExists] = useState(null);
   const [existingChild, setExistingChild] = useState(null);
   const [registrationStep, setRegistrationStep] = useState(1);
-  const [formData, setFormData] = useState({
-    childName: '',
-    dateOfBirth: '',
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [generatedId, setGeneratedId] = useState('');
+  const [locations, setLocations] = useState([]);
+  const [childrenData, setChildrenData] = useState([]);
+  const [fingerprintData, setFingerprintData] = useState([]);
+  const [formErrors, setFormErrors] = useState({
+    fullName: '',
+    estimatedBirthYear: '',
     gender: '',
-    location: ''
+    primaryLocationId: ''
   });
-
-  // Sample data for statistics
+  
+  // Stats data
   const [statsData, setStatsData] = useState({
-    totalChildren: 156,
-    todayRegistrations: 8,
-    fingerprintsCaptured: 142,
-    pendingFingerprints: 14,
-    totalLocations: 34,
-    activeUsers: 12
+    totalChildren: 0,
+    todayRegistrations: 0,
+    fingerprintsCaptured: 0,
+    pendingFingerprints: 0,
+    totalLocations: 0
   });
 
-  // Sample data for recent activities
-  const recentActivities = [
-    { id: 1, childName: 'John Doe', activity: 'New Registration', time: '10:30 AM', date: '2024-01-15', status: 'completed' },
-    { id: 2, childName: 'Jane Smith', activity: 'Fingerprint Captured', time: '11:00 AM', date: '2024-01-15', status: 'completed' },
-    { id: 3, childName: 'Mike Johnson', activity: 'Medical Checkup', time: '11:30 AM', date: '2024-01-15', status: 'pending' },
-    { id: 4, childName: 'Sarah Williams', activity: 'Vaccination', time: '09:15 AM', date: '2024-01-14', status: 'completed' },
-    { id: 5, childName: 'David Brown', activity: 'Growth Monitoring', time: '02:00 PM', date: '2024-01-14', status: 'completed' },
-  ];
+  // Recent activities
+  const [recentActivities, setRecentActivities] = useState([]);
 
-  // Sample data for location distribution
-  const locationStats = [
-    { location: 'Dar es Salaam', count: 45, percentage: 29 },
-    { location: 'Arusha', count: 28, percentage: 18 },
-    { location: 'Mwanza', count: 22, percentage: 14 },
-    { location: 'Mbeya', count: 18, percentage: 12 },
-    { location: 'Tanga', count: 15, percentage: 10 },
-    { location: 'Other Locations', count: 28, percentage: 17 },
-  ];
+  // Location distribution data (calculated from actual data)
+  const [locationStats, setLocationStats] = useState([]);
 
-  // Sample data for monthly registrations
-  const monthlyRegistrations = [
-    { month: 'Jan', count: 24 },
-    { month: 'Feb', count: 28 },
-    { month: 'Mar', count: 32 },
-    { month: 'Apr', count: 30 },
-    { month: 'May', count: 35 },
-    { month: 'Jun', count: 38 },
-    { month: 'Jul', count: 42 },
-    { month: 'Aug', count: 45 },
-    { month: 'Sep', count: 40 },
-    { month: 'Oct', count: 38 },
-    { month: 'Nov', count: 35 },
-    { month: 'Dec', count: 42 },
-  ];
+  // Monthly registrations (calculated from actual data)
+  const [monthlyRegistrations, setMonthlyRegistrations] = useState([]);
+
+  const [formData, setFormData] = useState({
+    fullName: '',
+    estimatedBirthYear: '',
+    gender: '',
+    primaryLocationId: ''
+  });
+
+  // Helper function to get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
+
+  // Fetch locations for dropdown
+  const fetchLocations = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/locations`, {
+        headers: getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const locationsArray = Array.isArray(data) ? data : (data.locations || []);
+        setLocations(locationsArray);
+        setStatsData(prev => ({ ...prev, totalLocations: locationsArray.length }));
+      }
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+    }
+  };
+
+  // Fetch children and calculate stats
+  const fetchChildren = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/children`, {
+        headers: getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const childrenArray = data.children || data;
+        setChildrenData(childrenArray);
+        
+        const today = new Date().toISOString().split('T')[0];
+        const todayRegistrations = childrenArray.filter(child => {
+          const childDate = child.createdAt?.split('T')[0];
+          return childDate === today;
+        }).length;
+        
+        setStatsData(prev => ({ 
+          ...prev, 
+          totalChildren: childrenArray.length,
+          todayRegistrations: todayRegistrations
+        }));
+        
+        // Calculate location statistics
+        calculateLocationStats(childrenArray);
+        
+        // Calculate monthly registrations
+        calculateMonthlyRegistrations(childrenArray);
+        
+        // Generate recent activities from children data
+        generateRecentActivities(childrenArray);
+      }
+    } catch (error) {
+      console.error('Error fetching children:', error);
+      setChildrenData([]);
+    }
+  };
+
+  // Generate recent activities from children data
+  const generateRecentActivities = (children) => {
+    const activities = children
+      .filter(child => child.createdAt)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 10)
+      .map(child => {
+        const date = new Date(child.createdAt);
+        return {
+          id: child.id,
+          childName: child.fullName,
+          activity: 'New Registration',
+          date: date.toLocaleDateString(),
+          time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'completed'
+        };
+      });
+    
+    setRecentActivities(activities);
+  };
+
+  // Calculate location statistics from children data
+  const calculateLocationStats = (children) => {
+    const locationCount = {};
+    children.forEach(child => {
+      const locationId = child.primaryLocationId;
+      if (locationId) {
+        locationCount[locationId] = (locationCount[locationId] || 0) + 1;
+      }
+    });
+    
+    const stats = Object.entries(locationCount).map(([locationId, count]) => {
+      const location = locations.find(loc => loc.id === locationId);
+      return {
+        location: location?.name || locationId,
+        name: location?.name || locationId,
+        count: count,
+        percentage: (count / children.length) * 100
+      };
+    }).sort((a, b) => b.count - a.count).slice(0, 6);
+    
+    setLocationStats(stats);
+  };
+
+  // Calculate monthly registrations from children data
+  const calculateMonthlyRegistrations = (children) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyCount = {};
+    
+    children.forEach(child => {
+      if (child.createdAt) {
+        const date = new Date(child.createdAt);
+        const month = months[date.getMonth()];
+        monthlyCount[month] = (monthlyCount[month] || 0) + 1;
+      }
+    });
+    
+    const chartData = months.map(month => ({
+      month: month,
+      count: monthlyCount[month] || 0
+    }));
+    
+    setMonthlyRegistrations(chartData);
+  };
+
+  // Fetch fingerprints for stats
+  const fetchFingerprints = async () => {
+    try {
+      const allFingerprints = [];
+      for (const child of childrenData) {
+        if (child.id) {
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/biometrics/child/${child.id}`, {
+              headers: getAuthHeaders()
+            });
+            if (response.ok) {
+              const data = await response.json();
+              allFingerprints.push(data);
+            }
+          } catch (e) {
+            console.error('Error fetching fingerprints for child:', e);
+          }
+        }
+      }
+      setFingerprintData(allFingerprints);
+      setStatsData(prev => ({ 
+        ...prev, 
+        fingerprintsCaptured: allFingerprints.length,
+        pendingFingerprints: childrenData.length - allFingerprints.length
+      }));
+    } catch (error) {
+      console.error('Error fetching fingerprints:', error);
+      setFingerprintData([]);
+    }
+  };
+
+  // Generate registration ID
+  const generateRegistrationId = async () => {
+    const currentYear = new Date().getFullYear();
+    const nextNumber = (childrenData.length + 1).toString().padStart(4, '0');
+    setGeneratedId(`KID-${currentYear}-${nextNumber}`);
+  };
+
+  // Validate form
+  const validateForm = () => {
+    let isValid = true;
+    const errors = {
+      fullName: '',
+      estimatedBirthYear: '',
+      gender: '',
+      primaryLocationId: ''
+    };
+
+    if (!formData.fullName.trim()) {
+      errors.fullName = 'Child name is required';
+      isValid = false;
+    } else if (formData.fullName.trim().length < 2) {
+      errors.fullName = 'Child name must be at least 2 characters';
+      isValid = false;
+    }
+
+    if (!formData.estimatedBirthYear) {
+      errors.estimatedBirthYear = 'Estimated birth year is required';
+      isValid = false;
+    } else {
+      const year = parseInt(formData.estimatedBirthYear);
+      const currentYear = new Date().getFullYear();
+      if (year < 1900 || year > currentYear) {
+        errors.estimatedBirthYear = `Year must be between 1900 and ${currentYear}`;
+        isValid = false;
+      }
+    }
+
+    if (!formData.gender) {
+      errors.gender = 'Gender is required';
+      isValid = false;
+    }
+
+    if (!formData.primaryLocationId) {
+      errors.primaryLocationId = 'Location is required';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  // Handle form change
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: '' });
+    }
+  };
+
+  // Add registration to API
+  const addRegistration = async (newChild) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/children`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          id: crypto.randomUUID(),
+          customSerialId: generatedId,
+          fullName: newChild.fullName,
+          gender: newChild.gender,
+          estimatedBirthYear: parseInt(newChild.estimatedBirthYear),
+          primaryLocationId: newChild.primaryLocationId
+        })
+      });
+      
+      if (response.ok) {
+        return await response.json();
+      } else {
+        throw new Error('Failed to register child');
+      }
+    } catch (error) {
+      console.error('Error adding registration:', error);
+      const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
+      offlineData.push(newChild);
+      localStorage.setItem('offline_registrations', JSON.stringify(offlineData));
+      return newChild;
+    }
+  };
+
+  // Enroll fingerprint
+  const enrollFingerprint = async (childId, qualityScore) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/biometrics/enroll`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          id: crypto.randomUUID(),
+          childId: childId,
+          fingerIndex: 1,
+          templateBase64: "sample_fingerprint_template_base64",
+          qualityScore: qualityScore,
+          capturedAt: new Date().toISOString(),
+          matcherVersion: "1.0"
+        })
+      });
+      
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error enrolling fingerprint:', error);
+    }
+    return null;
+  };
+
+  // Verify fingerprint (simulated for now)
+  const verifyFingerprint = async () => {
+    setIsVerifying(true);
+    setTimeout(() => {
+      const matched = Math.random() > 0.5;
+      if (matched && childrenData.length > 0) {
+        const child = childrenData[0];
+        setExistingChild({
+          id: child.id,
+          customSerialId: child.customSerialId,
+          fullName: child.fullName,
+          estimatedBirthYear: child.estimatedBirthYear,
+          age: calculateAgeFromYear(child.estimatedBirthYear),
+          gender: child.gender,
+          locationName: getLocationName(child.primaryLocationId),
+          createdAt: child.createdAt,
+          lastVisit: new Date().toLocaleDateString()
+        });
+        setFingerprintExists(true);
+      } else {
+        setFingerprintExists(false);
+      }
+      setIsVerifying(false);
+    }, 1500);
+  };
+
+  // Get location name
+  const getLocationName = (locationId) => {
+    const location = locations.find(loc => loc.id === locationId);
+    return location ? location.name : '';
+  };
+
+  // Calculate age from year
+  const calculateAgeFromYear = (estimatedBirthYear) => {
+    if (!estimatedBirthYear) return 'N/A';
+    const currentYear = new Date().getFullYear();
+    const age = currentYear - estimatedBirthYear;
+    return `${age} year${age !== 1 ? 's' : ''}`;
+  };
+
+  // Handle fingerprint capture
+  const handleFingerprintCapture = () => {
+    const quality = Math.floor(Math.random() * 30) + 70;
+    alert(`Fingerprint captured with ${quality}% quality!`);
+    setShowFingerprintCapture(true);
+    sessionStorage.setItem('captured_fingerprint', JSON.stringify({
+      quality: quality,
+      timestamp: new Date().toISOString()
+    }));
+  };
+
+  // Handle continue registration
+  const handleContinueRegistration = async () => {
+    if (!validateForm()) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    const capturedFingerprint = JSON.parse(sessionStorage.getItem('captured_fingerprint') || '{}');
+    
+    const newChild = {
+      fullName: formData.fullName,
+      estimatedBirthYear: formData.estimatedBirthYear,
+      gender: formData.gender,
+      primaryLocationId: formData.primaryLocationId
+    };
+
+    const result = await addRegistration(newChild);
+    
+    if (result) {
+      if (capturedFingerprint.quality) {
+        await enrollFingerprint(result.child?.id || result.id, capturedFingerprint.quality);
+      }
+      
+      alert(offlineMode 
+        ? `✓ Child registered in OFFLINE mode with ID: ${generatedId}. Data will sync when online.` 
+        : `✓ Child registered successfully with ID: ${generatedId}!`
+      );
+      
+      setShowRegistrationForm(false);
+      setShowFingerprintCapture(false);
+      setRegistrationStep(1);
+      setFormData({
+        fullName: '',
+        estimatedBirthYear: '',
+        gender: '',
+        primaryLocationId: ''
+      });
+      setFormErrors({
+        fullName: '',
+        estimatedBirthYear: '',
+        gender: '',
+        primaryLocationId: ''
+      });
+      
+      // Refresh data
+      await fetchChildren();
+      await fetchFingerprints();
+      generateRegistrationId();
+      sessionStorage.removeItem('captured_fingerprint');
+    }
+  };
+
+  // Handle load existing record
+  const handleLoadExistingRecord = () => {
+    alert(`Loading record for: ${existingChild?.fullName}`);
+    setShowVerifyFingerprint(false);
+    setFingerprintExists(null);
+    setExistingChild(null);
+  };
+
+  // Sync offline data
+  const handleSyncOfflineData = async () => {
+    setIsSyncing(true);
+    const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
+    
+    for (const record of offlineData) {
+      try {
+        await addRegistration(record);
+      } catch (error) {
+        console.error('Error syncing record:', error);
+      }
+    }
+    
+    localStorage.removeItem('offline_registrations');
+    setOfflineMode(false);
+    alert(`✓ Synchronized ${offlineData.length} records successfully!`);
+    setIsSyncing(false);
+    await fetchChildren();
+    await fetchFingerprints();
+  };
+
+  // Get max count for Y-axis
+  const getMaxCount = () => {
+    return Math.max(...monthlyRegistrations.map(m => m.count), 1);
+  };
+
+  // Initialize data on mount
+  useEffect(() => {
+    const initData = async () => {
+      await fetchLocations();
+      await fetchChildren();
+      await fetchFingerprints();
+      generateRegistrationId();
+    };
+    initData();
+  }, []);
+
+  // Update fingerprints when children data changes
+  useEffect(() => {
+    if (childrenData.length > 0) {
+      fetchFingerprints();
+    }
+  }, [childrenData]);
+
+  // Update location stats when locations or children data changes
+  useEffect(() => {
+    if (childrenData.length > 0 && locations.length > 0) {
+      calculateLocationStats(childrenData);
+      calculateMonthlyRegistrations(childrenData);
+    }
+  }, [childrenData, locations]);
+
+  // Network status listener
+  useEffect(() => {
+    const handleOnline = () => setOfflineMode(false);
+    const handleOffline = () => setOfflineMode(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Stats cards data
   const stats = [
@@ -71,9 +515,7 @@ const NurseDashboard = ({ user, onLogout }) => {
         </svg>
       ), 
       value: statsData.totalChildren, 
-      label: 'Total Children Registered',
-      trend: '+12%',
-      trendUp: true
+      label: 'Total Children Registered'
     },
     { 
       icon: (
@@ -85,9 +527,7 @@ const NurseDashboard = ({ user, onLogout }) => {
         </svg>
       ), 
       value: statsData.fingerprintsCaptured, 
-      label: 'Fingerprints Captured',
-      trend: '+8%',
-      trendUp: true
+      label: 'Fingerprints Captured'
     },
     { 
       icon: (
@@ -99,9 +539,7 @@ const NurseDashboard = ({ user, onLogout }) => {
         </svg>
       ), 
       value: statsData.pendingFingerprints, 
-      label: 'Pending Fingerprints',
-      trend: '-5%',
-      trendUp: false
+      label: 'Pending Fingerprints'
     },
     { 
       icon: (
@@ -111,67 +549,9 @@ const NurseDashboard = ({ user, onLogout }) => {
         </svg>
       ), 
       value: statsData.todayRegistrations, 
-      label: "Today's Registrations",
-      trend: '+2',
-      trendUp: true
+      label: "Today's Registrations"
     },
   ];
-
-  const handleFormChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleFingerprintCapture = () => {
-    const captured = Math.random() > 0.3;
-    if (captured) {
-      alert('Fingerprint captured successfully!');
-      setShowFingerprintCapture(true);
-      setFingerprintExists(false);
-    } else {
-      alert('Fingerprint capture failed. Please try again.');
-    }
-  };
-
-  const handleVerifyFingerprint = () => {
-    const exists = Math.random() > 0.5;
-    setFingerprintExists(exists);
-    if (exists) {
-      setExistingChild({
-        name: 'Sarah Williams',
-        id: 'CH-2024-004',
-        lastVisit: '2024-01-15',
-        age: '1 year 6 months',
-        gender: 'Female',
-        location: 'Mbeya'
-      });
-    }
-  };
-
-  const handleContinueRegistration = () => {
-    if (offlineMode) {
-      alert('Saving to local offline database...');
-    } else {
-      alert('Saving to central online database...');
-    }
-    setShowRegistrationForm(false);
-    setShowFingerprintCapture(false);
-    setRegistrationStep(1);
-    setFormData({
-      childName: '',
-      dateOfBirth: '',
-      gender: '',
-      location: ''
-    });
-  };
-
-  const handleLoadExistingRecord = () => {
-    alert(`Loading existing record for: ${existingChild?.name}`);
-    setShowVerifyFingerprint(false);
-    setFingerprintExists(null);
-  };
 
   return (
     <div className="nurse-dashboard-wrapper">
@@ -184,13 +564,18 @@ const NurseDashboard = ({ user, onLogout }) => {
             <circle cx="12" cy="16" r="1" fill="#856404"/>
           </svg>
           You are in Offline Mode. Data will sync when connection is restored.
+          {localStorage.getItem('offline_registrations') && JSON.parse(localStorage.getItem('offline_registrations') || '[]').length > 0 && (
+            <button className="nurse-dashboard-sync-btn" onClick={handleSyncOfflineData} disabled={isSyncing}>
+              {isSyncing ? 'Syncing...' : `Sync (${JSON.parse(localStorage.getItem('offline_registrations') || '[]').length} pending)`}
+            </button>
+          )}
         </div>
       )}
 
       {/* Welcome Section */}
       <div className="nurse-dashboard-welcome-section">
-        <h1>Welcome back, {user?.name || user?.username || 'Nurse'}!</h1>
-        <p>Here's what's happening with child registrations today.</p>
+        <h1>Welcome back, {user?.firstName || user?.username || 'Nurse'}!</h1>
+        <p>Track today's child registration activity and updates.</p>
       </div>
 
       {/* Stats Cards */}
@@ -201,9 +586,6 @@ const NurseDashboard = ({ user, onLogout }) => {
             <div className="nurse-dashboard-stat-info">
               <h3>{stat.value}</h3>
               <p>{stat.label}</p>
-              <span className={`nurse-dashboard-stat-trend ${stat.trendUp ? 'trend-up' : 'trend-down'}`}>
-                {stat.trend}
-              </span>
             </div>
           </div>
         ))}
@@ -218,40 +600,68 @@ const NurseDashboard = ({ user, onLogout }) => {
             <span className="nurse-dashboard-data-card-subtitle">All locations</span>
           </div>
           <div className="nurse-dashboard-location-list">
-            {locationStats.map((loc, index) => (
+            {locationStats.length > 0 ? locationStats.map((loc, index) => (
               <div className="nurse-dashboard-location-item" key={index}>
                 <div className="nurse-dashboard-location-info">
-                  <span className="nurse-dashboard-location-name">{loc.location}</span>
+                  <span className="nurse-dashboard-location-name">{loc.location || loc.name}</span>
                   <span className="nurse-dashboard-location-count">{loc.count} children</span>
                 </div>
                 <div className="nurse-dashboard-progress-bar">
                   <div className="nurse-dashboard-progress-fill" style={{ width: `${loc.percentage}%` }}></div>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="nurse-dashboard-loading-text">No registration data available</div>
+            )}
           </div>
         </div>
 
-        {/* Monthly Registrations Chart */}
+        {/* Monthly Registrations Chart with Y-Axis */}
         <div className="nurse-dashboard-data-card">
           <div className="nurse-dashboard-data-card-header">
             <h3>Monthly Registrations</h3>
-            <span className="nurse-dashboard-data-card-subtitle">2024 Overview</span>
+            <span className="nurse-dashboard-data-card-subtitle">Overview</span>
           </div>
-          <div className="nurse-dashboard-monthly-chart">
-            {monthlyRegistrations.map((month, index) => (
-              <div className="nurse-dashboard-chart-bar-container" key={index}>
-                <div className="nurse-dashboard-chart-label">{month.month}</div>
-                <div className="nurse-dashboard-chart-bar-wrapper">
-                  <div 
-                    className="nurse-dashboard-chart-bar" 
-                    style={{ height: `${(month.count / 50) * 100}%` }}
-                  >
-                    <span className="nurse-dashboard-chart-value">{month.count}</span>
-                  </div>
-                </div>
+          <div className="nurse-dashboard-monthly-chart-container">
+            <div className="nurse-dashboard-monthly-chart">
+              {/* Y-Axis Labels */}
+              <div className="nurse-dashboard-chart-y-axis">
+                <span>{getMaxCount()}</span>
+                <span>{Math.round(getMaxCount() * 0.75)}</span>
+                <span>{Math.round(getMaxCount() * 0.5)}</span>
+                <span>{Math.round(getMaxCount() * 0.25)}</span>
+                <span>0</span>
               </div>
-            ))}
+              
+              {/* Y-Axis Line */}
+              <div className="nurse-dashboard-chart-y-axis-line"></div>
+              
+              {/* X-Axis Line */}
+              <div className="nurse-dashboard-chart-x-axis-line"></div>
+              
+              {/* Bars */}
+              {monthlyRegistrations.length > 0 ? monthlyRegistrations.map((month, index) => {
+                const maxCount = getMaxCount();
+                const barHeight = maxCount > 0 ? (month.count / maxCount) * 100 : 0;
+                return (
+                  <div className="nurse-dashboard-chart-bar-container" key={index}>
+                    <div className="nurse-dashboard-chart-bar-wrapper">
+                      <div 
+                        className="nurse-dashboard-chart-bar" 
+                        style={{ height: `${barHeight}%` }}
+                      >
+                        {month.count > 0 && (
+                          <span className="nurse-dashboard-chart-value">{month.count}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="nurse-dashboard-chart-label">{month.month}</div>
+                  </div>
+                );
+              }) : (
+                <div className="nurse-dashboard-loading-text">No registration data available</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -270,7 +680,7 @@ const NurseDashboard = ({ user, onLogout }) => {
             </tr>
           </thead>
           <tbody>
-            {recentActivities.map((activity) => (
+            {recentActivities.length > 0 ? recentActivities.map((activity) => (
               <tr key={activity.id}>
                 <td>{activity.childName}</td>
                 <td>{activity.activity}</td>
@@ -282,45 +692,13 @@ const NurseDashboard = ({ user, onLogout }) => {
                   </span>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center' }}>No recent activities</td>
+              </tr>
+            )}
           </tbody>
         </table>
-      </div>
-
-      {/* Registration Workflow */}
-      <div className="nurse-dashboard-section-title">Registration Workflow</div>
-      <div className="nurse-dashboard-workflow-steps">
-        <div className="nurse-dashboard-workflow-step">
-          <div className="nurse-dashboard-step-number">1</div>
-          <div className="nurse-dashboard-step-content">
-            <h4>Register New Child</h4>
-            <p>Capture child information and details</p>
-          </div>
-        </div>
-        <div className="nurse-dashboard-workflow-arrow">→</div>
-        <div className="nurse-dashboard-workflow-step">
-          <div className="nurse-dashboard-step-number">2</div>
-          <div className="nurse-dashboard-step-content">
-            <h4>Capture Fingerprint</h4>
-            <p>Scan and store fingerprint data</p>
-          </div>
-        </div>
-        <div className="nurse-dashboard-workflow-arrow">→</div>
-        <div className="nurse-dashboard-workflow-step">
-          <div className="nurse-dashboard-step-number">3</div>
-          <div className="nurse-dashboard-step-content">
-            <h4>Verify Fingerprint</h4>
-            <p>Check if child already exists</p>
-          </div>
-        </div>
-        <div className="nurse-dashboard-workflow-arrow">→</div>
-        <div className="nurse-dashboard-workflow-step">
-          <div className="nurse-dashboard-step-number">4</div>
-          <div className="nurse-dashboard-step-content">
-            <h4>Save Record</h4>
-            <p>Save to {offlineMode ? 'Offline' : 'Online'} Database</p>
-          </div>
-        </div>
       </div>
 
       {/* Child Registration Form Modal */}
@@ -338,23 +716,56 @@ const NurseDashboard = ({ user, onLogout }) => {
                 <div className="nurse-dashboard-form-grid">
                   <div className="nurse-dashboard-form-group">
                     <label>Child's Full Name *</label>
-                    <input type="text" name="childName" value={formData.childName} onChange={handleFormChange} placeholder="Enter child's name" />
+                    <input 
+                      type="text" 
+                      name="fullName" 
+                      value={formData.fullName} 
+                      onChange={handleFormChange} 
+                      placeholder="Enter child's name"
+                      className={formErrors.fullName ? 'error-input' : ''}
+                    />
+                    {formErrors.fullName && <span className="error-message">{formErrors.fullName}</span>}
                   </div>
                   <div className="nurse-dashboard-form-group">
-                    <label>Date of Birth *</label>
-                    <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleFormChange} />
+                    <label>Estimated Birth Year *</label>
+                    <input 
+                      type="number" 
+                      name="estimatedBirthYear" 
+                      value={formData.estimatedBirthYear} 
+                      onChange={handleFormChange} 
+                      placeholder="e.g., 2020"
+                      className={formErrors.estimatedBirthYear ? 'error-input' : ''}
+                    />
+                    {formErrors.estimatedBirthYear && <span className="error-message">{formErrors.estimatedBirthYear}</span>}
                   </div>
                   <div className="nurse-dashboard-form-group">
                     <label>Gender *</label>
-                    <select name="gender" value={formData.gender} onChange={handleFormChange}>
+                    <select 
+                      name="gender" 
+                      value={formData.gender} 
+                      onChange={handleFormChange}
+                      className={formErrors.gender ? 'error-input' : ''}
+                    >
                       <option value="">Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                     </select>
+                    {formErrors.gender && <span className="error-message">{formErrors.gender}</span>}
                   </div>
                   <div className="nurse-dashboard-form-group">
                     <label>Location *</label>
-                    <input type="text" name="location" value={formData.location} onChange={handleFormChange} placeholder="Enter location" />
+                    <select 
+                      name="primaryLocationId" 
+                      value={formData.primaryLocationId} 
+                      onChange={handleFormChange}
+                      className={formErrors.primaryLocationId ? 'error-input' : ''}
+                    >
+                      <option value="">Select Location</option>
+                      {locations.map(loc => (
+                        <option key={loc.id} value={loc.id}>{loc.name}</option>
+                      ))}
+                    </select>
+                    {formErrors.primaryLocationId && <span className="error-message">{formErrors.primaryLocationId}</span>}
                   </div>
                 </div>
                 <div className="nurse-dashboard-modal-actions">
@@ -410,27 +821,30 @@ const NurseDashboard = ({ user, onLogout }) => {
                 <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18" stroke="#667eea" strokeWidth="1.5"/>
               </svg>
               <p>Place finger on the scanner to verify</p>
-              <button className="nurse-dashboard-btn-primary" onClick={handleVerifyFingerprint}>Verify Fingerprint</button>
+              <button className="nurse-dashboard-btn-primary" onClick={verifyFingerprint} disabled={isVerifying}>
+                {isVerifying ? 'Verifying...' : 'Verify Fingerprint'}
+              </button>
             </div>
             
-            {fingerprintExists === true && (
+            {fingerprintExists === true && existingChild && (
               <div className="nurse-dashboard-verification-result">
                 <div className="nurse-dashboard-success-message">
                   <h3>✓ Fingerprint Found!</h3>
                   <p>Child already registered in the system.</p>
                   <div className="nurse-dashboard-child-info">
-                    <p><strong>Name:</strong> {existingChild?.name}</p>
-                    <p><strong>ID:</strong> {existingChild?.id}</p>
-                    <p><strong>Age:</strong> {existingChild?.age}</p>
-                    <p><strong>Gender:</strong> {existingChild?.gender}</p>
-                    <p><strong>Location:</strong> {existingChild?.location}</p>
-                    <p><strong>Last Visit:</strong> {existingChild?.lastVisit}</p>
+                    <p><strong>Name:</strong> {existingChild.fullName}</p>
+                    <p><strong>ID:</strong> {existingChild.customSerialId}</p>
+                    <p><strong>Age:</strong> {existingChild.age}</p>
+                    <p><strong>Gender:</strong> {existingChild.gender}</p>
+                    <p><strong>Location:</strong> {existingChild.locationName}</p>
+                    <p><strong>Last Visit:</strong> {existingChild.lastVisit}</p>
                   </div>
                   <div className="nurse-dashboard-modal-actions">
                     <button className="nurse-dashboard-btn-primary" onClick={handleLoadExistingRecord}>Load Existing Record</button>
                     <button className="nurse-dashboard-btn-secondary" onClick={() => {
                       setShowVerifyFingerprint(false);
                       setFingerprintExists(null);
+                      setExistingChild(null);
                     }}>Close</button>
                   </div>
                 </div>

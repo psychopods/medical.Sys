@@ -1345,3 +1345,117 @@
   stroke: white;
   stroke-width: 2;
 }
+
+/* User Info Section - Clean design like Add New User */
+.um-user-info-section {
+  background: transparent;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.um-user-info-row {
+  display: flex;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.um-user-info-row:last-child {
+  border-bottom: none;
+}
+
+.um-user-info-label {
+  width: 120px;
+  font-weight: 600;
+  color: #333;
+}
+
+.um-user-info-value {
+  flex: 1;
+  color: #666;
+}
+
+/* Password Requirements Section */
+.um-password-requirements {
+  margin-top: 20px;
+  padding: 20px;
+  background: transparent;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.um-requirements-title {
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 14px;
+}
+
+.um-requirements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.um-requirement-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #999;
+  transition: all 0.2s ease;
+}
+
+.um-requirement-item.um-valid {
+  color: #28a745;
+}
+
+.um-req-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  font-size: 14px;
+}
+
+/* Action Buttons Group */
+.um-action-buttons-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.um-reset-password-btn {
+  background: #ffc107;
+  color: #856404;
+}
+
+.um-reset-password-btn:hover {
+  background: #e0a800;
+  transform: translateY(-1px);
+}
+
+/* Password Wrapper for consistency */
+.um-password-wrapper {
+  display: flex;
+  gap: 10px;
+}
+
+.um-password-wrapper input {
+  flex: 1;
+}
+
+.um-password-toggle {
+  padding: 0 15px;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.um-password-toggle:hover {
+  background: #e0e0e0;
+}

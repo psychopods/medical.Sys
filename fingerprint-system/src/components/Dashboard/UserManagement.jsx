@@ -16,6 +16,10 @@ const UserManagement = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [activePage, setActivePage] = useState('list');
   const [editingUser, setEditingUser] = useState(null);
+  const [resettingUser, setResettingUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [editingPermission, setEditingPermission] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -81,7 +85,9 @@ const UserManagement = () => {
     };
   };
 
-  // API Calls - Categories (matches spec: /api/permission_categories)
+  // API Calls - Categories
+  const [permissionCategories, setPermissionCategories] = useState([]);
+
   const fetchCategories = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/permission_categories`, {
@@ -89,7 +95,7 @@ const UserManagement = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        setPermissions(data);
+        setPermissionCategories(data);
         setStats(prev => ({ ...prev, total_categories: data.length }));
         return data;
       }
@@ -150,9 +156,8 @@ const UserManagement = () => {
     return false;
   };
 
-  // API Calls - Permissions (matches spec: /api/permissions)
+  // API Calls - Permissions
   const [availablePermissions, setAvailablePermissions] = useState([]);
-  const [permissionCategories, setPermissionCategories] = useState([]);
 
   const fetchAllPermissions = async () => {
     try {
@@ -162,6 +167,7 @@ const UserManagement = () => {
       if (response.ok) {
         const data = await response.json();
         setAvailablePermissions(data);
+        setPermissions(data);
         setStats(prev => ({ ...prev, total_permissions: data.length }));
         return data;
       }
@@ -225,7 +231,7 @@ const UserManagement = () => {
     return false;
   };
 
-  // API Calls - Roles (matches spec: /api/roles)
+  // API Calls - Roles
   const fetchRoles = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/roles`, {
@@ -295,7 +301,7 @@ const UserManagement = () => {
     return false;
   };
 
-  // API Calls - Users (matches spec: /api/auth/users)
+  // API Calls - Users
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
@@ -361,6 +367,24 @@ const UserManagement = () => {
     return null;
   };
 
+  const resetUserPassword = async (id, newPassword) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users/${id}/reset-password`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          password: newPassword
+        })
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+    }
+    return null;
+  };
+
   const deleteUser = async (id) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/users/${id}`, {
@@ -374,7 +398,7 @@ const UserManagement = () => {
     return false;
   };
 
-  // API Calls - Role Permissions (matches spec: /api/roles/:id/permissions)
+  // API Calls - Role Permissions
   const fetchRolePermissions = async (roleId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}/permissions`, {
@@ -382,7 +406,6 @@ const UserManagement = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        // data is an array of permission IDs
         setSelectedRolePermissions(data);
         return data;
       }
@@ -419,7 +442,6 @@ const UserManagement = () => {
     return false;
   };
 
-  // Generate username (matches spec: /api/auth/users/generate_username)
   const generateUsername = async () => {
     try {
       const currentYear = new Date().getFullYear();
@@ -463,7 +485,6 @@ const UserManagement = () => {
   };
 
   const sendEmailNotification = async (email, username, password, firstName, lastName) => {
-    // This endpoint may need to be implemented on the backend
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/send_credentials`, {
         method: 'POST',
@@ -515,7 +536,6 @@ const UserManagement = () => {
     }
   }, [activePage]);
 
-  // Fetch online users (custom endpoint - adjust as needed)
   const fetchOnlineUsers = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/online_users`, {
@@ -856,6 +876,48 @@ const UserManagement = () => {
     }
   };
 
+  const handleResetPasswordClick = (userItem) => {
+    setResettingUser(userItem);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowNewPassword(false);
+    setActivePage('reset_password');
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword) {
+      showToast('Please enter a new password', 'error');
+      return;
+    }
+    if (newPassword.length < 6) {
+      showToast('Password must be at least 6 characters', 'error');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast('Passwords do not match', 'error');
+      return;
+    }
+
+    const result = await resetUserPassword(resettingUser.id, newPassword);
+    
+    if (result) {
+      await sendEmailNotification(
+        resettingUser.email,
+        resettingUser.username,
+        newPassword,
+        resettingUser.firstName,
+        resettingUser.lastName
+      );
+      showToast(`Password reset successfully for ${resettingUser.username}. New credentials sent to email.`, 'success');
+      setActivePage('users');
+      setResettingUser(null);
+      setNewPassword('');
+      setConfirmPassword('');
+    } else {
+      showToast('Failed to reset password', 'error');
+    }
+  };
+
   const handleDeleteUser = async (userId, userName) => {
     if (window.confirm(`Are you sure you want to delete ${userName}?`)) {
       const success = await deleteUser(userId);
@@ -983,7 +1045,7 @@ const UserManagement = () => {
     );
   };
 
-  // Render Users List Page
+  // Render Users List Page with Reset Password button
   const renderUsersList = () => (
     <div className="um-page-content">
       <div className="um-page-header">
@@ -1003,7 +1065,16 @@ const UserManagement = () => {
       <div className="um-recent-table">
         <table className="um-data-table">
           <thead>
-            <tr><th>S/N</th><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th><th>Last Active</th><th>Status</th><th>Actions</th></tr>
+            <tr>
+              <th>S/N</th>
+              <th>Username</th>
+              <th>Full Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Last Active</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
           </thead>
           <tbody>
             {users.map((userItem, index) => (
@@ -1013,20 +1084,146 @@ const UserManagement = () => {
                 <td>{userItem.firstName} {userItem.lastName}</td>
                 <td>{userItem.email}</td>
                 <td>{userItem.roleName}</td>
-                <td>{userItem.lastActive || 'N/A'}</td>
+                <td>{userItem.lastActive ? new Date(userItem.lastActive).toLocaleString() : 'N/A'}</td>
                 <td><span className="um-status-badge um-status-active">{userItem.securityStatus || 'ACTIVE'}</span></td>
                 <td>
-                  <button className="um-action-btn um-edit-btn" onClick={() => handleEditUser(userItem)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
-                  </button>
-                  <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteUser(userItem.id, userItem.username)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
-                  </button>
+                  <div className="um-action-buttons-group">
+                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditUser(userItem)} title="Edit User">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 3L21 7L7 21H3V17L17 3Z"/>
+                      </svg>
+                    </button>
+                    <button className="um-action-btn um-reset-password-btn" onClick={() => handleResetPasswordClick(userItem)} title="Reset Password">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 2L15 8" strokeWidth="2"/>
+                        <path d="M21 2L15 8" strokeWidth="2" transform="translate(0, 14)"/>
+                        <path d="M12 22C7 22 3 18 3 13" strokeWidth="2"/>
+                        <path d="M12 2C7 2 3 6 3 11" strokeWidth="2"/>
+                        <circle cx="18" cy="5" r="2" fill="currentColor"/>
+                        <circle cx="18" cy="19" r="2" fill="currentColor"/>
+                      </svg>
+                    </button>
+                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteUser(userItem.id, userItem.username)} title="Delete User">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 7H20" strokeWidth="2"/>
+                        <path d="M10 11V17" strokeWidth="2"/>
+                        <path d="M14 11V17" strokeWidth="2"/>
+                        <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
+                        <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
+                      </svg>
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+
+  // Reset Password Page - Designed like Add New User (no cards, no shadows, full width)
+  const renderResetPasswordPage = () => (
+    <div className="um-page-content-full">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => { setActivePage('users'); setResettingUser(null); setNewPassword(''); setConfirmPassword(''); }}>← Back to Users</button>
+        <h1>Reset User Password</h1>
+        <p>Reset password for user account. New credentials will be sent via email.</p>
+      </div>
+      
+      <div className="um-form-container-full">
+        {/* User Information Section - Simple info display */}
+        <div className="um-user-info-section">
+          <div className="um-user-info-row">
+            <div className="um-user-info-label">User:</div>
+            <div className="um-user-info-value">{resettingUser?.firstName} {resettingUser?.lastName}</div>
+          </div>
+          <div className="um-user-info-row">
+            <div className="um-user-info-label">Username:</div>
+            <div className="um-user-info-value">{resettingUser?.username}</div>
+          </div>
+          <div className="um-user-info-row">
+            <div className="um-user-info-label">Email:</div>
+            <div className="um-user-info-value">{resettingUser?.email}</div>
+          </div>
+          <div className="um-user-info-row">
+            <div className="um-user-info-label">Role:</div>
+            <div className="um-user-info-value">{resettingUser?.roleName}</div>
+          </div>
+        </div>
+
+        {/* Password Form */}
+        <div className="um-form-section">
+          <div className="um-form-grid-full">
+            <div className="um-form-group">
+              <label>New Password *</label>
+              <div className="um-password-wrapper">
+                <input 
+                  type={showNewPassword ? "text" : "password"} 
+                  value={newPassword} 
+                  onChange={(e) => setNewPassword(e.target.value)} 
+                  placeholder="Enter new password (min 6 characters)"
+                />
+                <button type="button" className="um-password-toggle" onClick={() => setShowNewPassword(!showNewPassword)}>
+                  {showNewPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              <span className="um-helper-text">Password must be at least 6 characters long</span>
+            </div>
+
+            <div className="um-form-group">
+              <label>Confirm Password *</label>
+              <div className="um-password-wrapper">
+                <input 
+                  type={showNewPassword ? "text" : "password"} 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  placeholder="Confirm new password"
+                />
+              </div>
+            </div>
+
+            {/* Password Requirements Checklist */}
+            <div className="um-password-requirements">
+              <div className="um-requirements-title">Password Requirements:</div>
+              <div className="um-requirements-grid">
+                <div className={`um-requirement-item ${newPassword.length >= 6 ? 'um-valid' : ''}`}>
+                  <span className="um-req-icon">{newPassword.length >= 6 ? '✓' : '○'}</span>
+                  <span>At least 6 characters</span>
+                </div>
+                <div className={`um-requirement-item ${/[A-Z]/.test(newPassword) ? 'um-valid' : ''}`}>
+                  <span className="um-req-icon">{/[A-Z]/.test(newPassword) ? '✓' : '○'}</span>
+                  <span>Uppercase letter (A-Z)</span>
+                </div>
+                <div className={`um-requirement-item ${/[a-z]/.test(newPassword) ? 'um-valid' : ''}`}>
+                  <span className="um-req-icon">{/[a-z]/.test(newPassword) ? '✓' : '○'}</span>
+                  <span>Lowercase letter (a-z)</span>
+                </div>
+                <div className={`um-requirement-item ${/[0-9]/.test(newPassword) ? 'um-valid' : ''}`}>
+                  <span className="um-req-icon">{/[0-9]/.test(newPassword) ? '✓' : '○'}</span>
+                  <span>Number (0-9)</span>
+                </div>
+                <div className={`um-requirement-item ${/[!@#$%&*]/.test(newPassword) ? 'um-valid' : ''}`}>
+                  <span className="um-req-icon">{/[!@#$%&*]/.test(newPassword) ? '✓' : '○'}</span>
+                  <span>Special character (!@#$%&*)</span>
+                </div>
+                <div className={`um-requirement-item ${newPassword === confirmPassword && newPassword !== '' ? 'um-valid' : ''}`}>
+                  <span className="um-req-icon">{newPassword === confirmPassword && newPassword !== '' ? '✓' : '○'}</span>
+                  <span>Passwords match</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="um-form-actions">
+          <button className="um-btn-secondary" onClick={() => { setActivePage('users'); setResettingUser(null); setNewPassword(''); setConfirmPassword(''); }}>
+            Cancel
+          </button>
+          <button className="um-btn-primary" onClick={handleResetPassword}>
+            Reset Password & Send Email
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1210,15 +1407,24 @@ const UserManagement = () => {
       </div>
       <div className="um-categories-table-container">
         <table className="um-data-table">
-          <thead><tr><th>S/N</th><th>Category Name</th><th>Description</th><th>Created At</th><th>Last Updated</th><th>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th>S/N</th>
+              <th>Category Name</th>
+              <th>Description</th>
+              <th>Created At</th>
+              <th>Last Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
           <tbody>
             {permissionCategories.map((category, index) => (
               <tr key={category.id}>
                 <td style={{ textAlign: 'center' }}>{index + 1}</td>
                 <td><strong>{category.name}</strong></td>
-                <td>{category.description}</td>
-                <td>{category.createdAt || 'N/A'}</td>
-                <td>{category.updatedAt || 'N/A'}</td>
+                <td>{category.description || '—'}</td>
+                <td>{category.createdAt ? new Date(category.createdAt).toLocaleString() : 'N/A'}</td>
+                <td>{category.updatedAt ? new Date(category.updatedAt).toLocaleString() : 'N/A'}</td>
                 <td>
                   <button className="um-action-btn um-edit-btn" onClick={() => handleEditCategory(category)}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
@@ -1231,6 +1437,11 @@ const UserManagement = () => {
             ))}
           </tbody>
         </table>
+        {permissionCategories.length === 0 && (
+          <div className="um-no-data">
+            <p>No permission categories found. Click "Add New Category" to create one.</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1284,20 +1495,55 @@ const UserManagement = () => {
           </div>
           <div className="um-permissions-manage-table-container">
             <table className="um-permissions-manage-table">
-              <thead><tr><th style={{ width: '50px' }}><input type="checkbox" className="um-check-all-checkbox" checked={selectedRolePermissions.length === availablePermissions.length && availablePermissions.length > 0} onChange={(e) => { if (e.target.checked) { setSelectedRolePermissions(availablePermissions.map(p => p.id)); showToast('All permissions assigned to role', 'success'); } else { setSelectedRolePermissions([]); showToast('All permissions removed from role', 'success'); } }} /></th><th>Permission Slug</th><th>Category</th><th>Description</th></tr></thead>
+              <thead>
+                <tr>
+                  <th style={{ width: '50px' }}>
+                    <input 
+                      type="checkbox" 
+                      className="um-check-all-checkbox" 
+                      checked={selectedRolePermissions.length === availablePermissions.length && availablePermissions.length > 0} 
+                      onChange={(e) => { 
+                        if (e.target.checked) { 
+                          setSelectedRolePermissions(availablePermissions.map(p => p.id)); 
+                          showToast('All permissions assigned to role', 'success'); 
+                        } else { 
+                          setSelectedRolePermissions([]); 
+                          showToast('All permissions removed from role', 'success'); 
+                        } 
+                      }} 
+                    />
+                  </th>
+                  <th>Permission Slug</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
               <tbody>
                 {flattenedPermissions.map((permission) => (
                   <tr key={permission.id}>
-                    <td style={{ textAlign: 'center' }}><input type="checkbox" className="um-permission-checkbox-input" checked={selectedRolePermissions.includes(permission.id)} onChange={() => togglePermission(permission.id)} /></td>
-                    <td><div className="um-permission-name-cell"><code className="um-permission-code">{permission.slug}</code></div></td>
-                    <td><span className="um-permission-category-tag">{permission.category}</span></td>
+                    <td style={{ textAlign: 'center' }}>
+                      <input 
+                        type="checkbox" 
+                        className="um-permission-checkbox-input" 
+                        checked={selectedRolePermissions.includes(permission.id)} 
+                        onChange={() => togglePermission(permission.id)} 
+                      />
+                    </td>
+                    <td className="um-permission-name-cell">
+                      <code className="um-permission-code">{permission.slug}</code>
+                    </td>
+                    <td>
+                      <span className="um-permission-category-tag">{permission.category}</span>
+                    </td>
                     <td className="um-permission-description-cell">{permission.description}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="um-form-actions"><button className="um-btn-secondary" onClick={() => { setActivePage('roles'); setSelectedRoleForPermissions(null); setSelectedRolePermissions([]); }}>Close</button></div>
+          <div className="um-form-actions">
+            <button className="um-btn-secondary" onClick={() => { setActivePage('roles'); setSelectedRoleForPermissions(null); setSelectedRolePermissions([]); }}>Close</button>
+          </div>
         </div>
       </div>
     );
@@ -1344,6 +1590,7 @@ const UserManagement = () => {
         {activePage === 'users' && renderUsersList()}
         {activePage === 'add_user' && renderUserForm()}
         {activePage === 'edit_user' && renderUserForm()}
+        {activePage === 'reset_password' && renderResetPasswordPage()}
         {activePage === 'roles' && renderRolesList()}
         {activePage === 'add_role' && renderRoleForm()}
         {activePage === 'edit_role' && renderRoleForm()}

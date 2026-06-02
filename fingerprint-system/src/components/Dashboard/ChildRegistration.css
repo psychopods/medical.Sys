@@ -1330,3 +1330,1125 @@
     transform: rotate(360deg);
   }
 }
+
+/* ============================================
+   LOCATIONS MANAGEMENT - CLEAN STYLES (No Cards, No Shadows)
+   ============================================ */
+
+/* Add New Location Button */
+.child-reg-add-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.3s ease;
+}
+
+.child-reg-add-btn:hover {
+  background: #5a67d8;
+}
+
+.child-reg-add-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Location Form Container */
+.child-reg-location-form-container {
+  border: 1px solid #e0e0e0;
+  padding: 25px;
+  margin-bottom: 30px;
+  background: #ffffff;
+}
+
+.child-reg-location-form-container h3 {
+  margin: 0 0 20px 0;
+  color: #1a1a2e;
+  font-size: 18px;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Action Buttons for Locations Table */
+.child-reg-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  margin: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+
+.child-reg-edit-btn {
+  color: #3b82f6;
+}
+
+.child-reg-edit-btn:hover {
+  background: #eff6ff;
+}
+
+.child-reg-delete-btn {
+  color: #ef4444;
+}
+
+.child-reg-delete-btn:hover {
+  background: #fee2e2;
+}
+
+/* No Data Message */
+.child-reg-no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 14px;
+  border: 1px solid #e0e0e0;
+  background: #ffffff;
+  margin-top: 0;
+}
+
+.child-reg-no-data p {
+  margin: 0;
+}
+
+/* Form Actions */
+.child-reg-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Form Grid for Location Form */
+.child-reg-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* Form Group Styling */
+.child-reg-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.child-reg-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.child-reg-form-group input,
+.child-reg-form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  background: #ffffff;
+  transition: border-color 0.3s ease;
+  font-family: inherit;
+}
+
+.child-reg-form-group input:focus,
+.child-reg-form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.child-reg-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Button Styles (if not already present) */
+.child-reg-btn-primary,
+.child-reg-btn-secondary {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.3s ease;
+}
+
+.child-reg-btn-primary {
+  background: #667eea;
+  color: #fff;
+}
+
+.child-reg-btn-primary:hover {
+  background: #5a67d8;
+}
+
+.child-reg-btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #e0e0e0;
+}
+
+.child-reg-btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+/* Search Bar */
+.child-reg-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  padding: 10px 15px;
+  margin-bottom: 20px;
+}
+
+.child-reg-search-bar svg {
+  stroke: #999;
+  flex-shrink: 0;
+}
+
+.child-reg-search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: transparent;
+}
+
+.child-reg-search-bar input::placeholder {
+  color: #999;
+}
+
+/* Data Table Container */
+.child-reg-data-table-container {
+  border: 1px solid #e0e0e0;
+  overflow-x: auto;
+  background: #ffffff;
+}
+
+.child-reg-data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.child-reg-data-table thead {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-reg-data-table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 13px;
+}
+
+.child-reg-data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  color: #666;
+  font-size: 13px;
+}
+
+.child-reg-data-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.child-reg-data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .child-reg-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .child-reg-header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .child-reg-form-actions {
+    flex-direction: column;
+  }
+  
+  .child-reg-form-actions button {
+    width: 100%;
+  }
+}
+
+.child-reg-action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.child-reg-action-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+
+.child-reg-view-btn {
+  color: #17a2b8;
+}
+
+.child-reg-view-btn:hover {
+  background: #e8f7f9;
+}
+
+.child-reg-edit-btn {
+  color: #ffc107;
+}
+
+.child-reg-edit-btn:hover {
+  background: #fff3cd;
+}
+
+.child-reg-fingerprint-btn {
+  color: #28a745;
+}
+
+.child-reg-fingerprint-btn:hover {
+  background: #d4edda;
+}
+
+.child-reg-delete-btn {
+  color: #dc3545;
+}
+
+.child-reg-delete-btn:hover {
+  background: #f8d7da;
+}
+
+/* Modal Styles */
+.child-reg-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.child-reg-modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.child-reg-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-reg-modal-header h3 {
+  margin: 0;
+  color: #1a1a2e;
+}
+
+.child-reg-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+}
+
+.child-reg-modal-body {
+  padding: 20px;
+}
+
+.child-reg-modal-footer {
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Fingerprint Progress */
+.child-reg-fingerprint-progress {
+  margin: 20px 0;
+}
+
+.child-reg-progress-bar {
+  background: #e0e0e0;
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.child-reg-progress-fill {
+  background: #28a745;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.child-reg-finger-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.child-reg-finger-badge {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  color: #999;
+}
+
+.child-reg-finger-badge.captured {
+  background: #28a745;
+  color: white;
+}
+
+.child-reg-finger-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.child-reg-enrolled-fingers {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.child-reg-enrolled-fingers h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #1a1a2e;
+}
+
+/* ============================================
+   FINGERPRINT ENROLLMENT PAGE STYLES
+   ============================================ */
+
+/* Enrollment Container - Two Column Layout */
+.child-reg-enrollment-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+/* Fingerprint Scanner Area */
+.child-reg-fingerprint-scanner {
+  border: 1px solid #e0e0e0;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.child-reg-scanner-area {
+  text-align: center;
+  padding: 50px 30px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-scanner-area svg {
+  margin-bottom: 25px;
+}
+
+.child-reg-scanner-area p {
+  color: #666;
+  margin-bottom: 25px;
+  font-size: 14px;
+}
+
+/* Scanning Animation */
+.child-reg-scanning-animation {
+  margin: 20px 0;
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+}
+
+.child-reg-scan-line {
+  position: relative;
+  height: 2px;
+  background: #667eea;
+  animation: child-reg-scan 1.5s ease-in-out infinite;
+  width: 100%;
+  margin: 20px 0;
+}
+
+@keyframes child-reg-scan {
+  0% {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+}
+
+/* Capture Success Area */
+.child-reg-capture-success {
+  text-align: center;
+  width: 100%;
+}
+
+.child-reg-capture-success svg {
+  margin-bottom: 20px;
+}
+
+.child-reg-capture-success h3 {
+  color: #28a745;
+  margin-bottom: 15px;
+  font-size: 20px;
+}
+
+/* Quality Bar */
+.child-reg-quality-bar {
+  width: 100%;
+  max-width: 300px;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 15px auto;
+}
+
+.child-reg-quality-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.child-reg-quality-fill.excellent {
+  background: #28a745;
+}
+
+.child-reg-quality-fill.good {
+  background: #ffc107;
+}
+
+.child-reg-quality-fill.poor {
+  background: #dc3545;
+}
+
+/* Enrollment Info Sidebar */
+.child-reg-enrollment-info {
+  border: 1px solid #e0e0e0;
+  padding: 25px;
+  background: #ffffff;
+}
+
+.child-reg-enrollment-info h3 {
+  margin: 0 0 20px 0;
+  color: #1a1a2e;
+  font-size: 18px;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-reg-enrollment-info ul {
+  margin: 0 0 25px 0;
+  padding-left: 20px;
+}
+
+.child-reg-enrollment-info li {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+/* Fingerprint Tips */
+.child-reg-fingerprint-tips {
+  background: #f8f9fa;
+  padding: 20px;
+  margin-top: 20px;
+  border-left: 3px solid #667eea;
+}
+
+.child-reg-fingerprint-tips h4 {
+  margin: 0 0 12px 0;
+  color: #1a1a2e;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.child-reg-fingerprint-tips p {
+  margin: 8px 0;
+  color: #666;
+  font-size: 13px;
+}
+
+/* Enrollment Actions */
+.child-reg-enrollment-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 25px;
+}
+
+/* Disabled Button State */
+.child-reg-btn-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.child-reg-btn-primary:disabled:hover {
+  background: #ccc;
+  transform: none;
+}
+
+/* ============================================
+   MODAL IMPROVEMENTS
+   ============================================ */
+
+/* Modal Body Scroll */
+.child-reg-modal-body {
+  padding: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Modal Footer */
+.child-reg-modal-footer {
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* View Images Section in Modal */
+.child-reg-view-images {
+  margin-bottom: 20px;
+}
+
+/* Modal Animation */
+@keyframes child-reg-modal-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.child-reg-modal-content {
+  animation: child-reg-modal-fade-in 0.2s ease;
+}
+
+/* ============================================
+   ACTION BUTTONS IMPROVEMENTS
+   ============================================ */
+
+/* Action Buttons Container */
+.child-reg-action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Action Icon Buttons */
+.child-reg-action-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.child-reg-action-icon-btn:hover {
+  transform: scale(1.1);
+}
+
+/* View Button */
+.child-reg-view-btn {
+  color: #17a2b8;
+}
+
+.child-reg-view-btn:hover {
+  background: #e8f7f9;
+}
+
+/* Edit Button */
+.child-reg-edit-btn {
+  color: #ffc107;
+}
+
+.child-reg-edit-btn:hover {
+  background: #fff3cd;
+}
+
+/* Fingerprint Button */
+.child-reg-fingerprint-btn {
+  color: #28a745;
+}
+
+.child-reg-fingerprint-btn:hover {
+  background: #d4edda;
+}
+
+/* Delete Button */
+.child-reg-delete-btn {
+  color: #dc3545;
+}
+
+.child-reg-delete-btn:hover {
+  background: #f8d7da;
+}
+
+/* ============================================
+   TABLE ACTION COLUMN WIDTH
+   ============================================ */
+
+.child-reg-data-table th:last-child,
+.child-reg-data-table td:last-child {
+  text-align: center;
+  min-width: 120px;
+}
+
+.child-reg-recent-table th:last-child,
+.child-reg-recent-table td:last-child {
+  text-align: center;
+  min-width: 100px;
+}
+
+/* Hover Effects for Table Rows */
+.child-reg-data-table tbody tr:hover .child-reg-action-icon-btn,
+.child-reg-recent-table tbody tr:hover .child-reg-action-icon-btn {
+  opacity: 1;
+}
+
+/* ============================================
+   PRINT STYLES (Hide Action Buttons in Print)
+   ============================================ */
+
+@media print {
+  .child-reg-action-buttons,
+  .child-reg-action-icon-btn,
+  .child-reg-print-btn-page,
+  .child-reg-add-btn,
+  .child-reg-back-btn,
+  .child-reg-modal-overlay,
+  .child-reg-toast-notification {
+    display: none !important;
+  }
+  
+  .child-reg-data-table th:last-child,
+  .child-reg-data-table td:last-child,
+  .child-reg-recent-table th:last-child,
+  .child-reg-recent-table td:last-child {
+    display: none;
+  }
+}
+
+/* ============================================
+   LOADING STATE FOR BUTTONS
+   ============================================ */
+
+.child-reg-action-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   TOOLTIP STYLES
+   ============================================ */
+
+.child-reg-action-icon-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 10001;
+  pointer-events: none;
+}
+
+/* ============================================
+   RESPONSIVE ENROLLMENT PAGE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .child-reg-enrollment-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .child-reg-scanner-area {
+    padding: 30px 20px;
+    min-height: 350px;
+  }
+  
+  .child-reg-enrollment-info {
+    padding: 20px;
+  }
+  
+  .child-reg-enrollment-actions {
+    flex-direction: column;
+  }
+  
+  .child-reg-enrollment-actions button {
+    width: 100%;
+  }
+  
+  .child-reg-quality-bar {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .child-reg-scanner-area svg {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .child-reg-capture-success h3 {
+    font-size: 18px;
+  }
+  
+  .child-reg-enrollment-info ul {
+    padding-left: 15px;
+  }
+  
+  .child-reg-enrollment-info li {
+    font-size: 13px;
+  }
+}
+
+/* ============================================
+   QUALITY BADGE VARIATIONS
+   ============================================ */
+
+.child-reg-quality-excellent {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-quality-good {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.child-reg-quality-fair {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.child-reg-quality-poor {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* ============================================
+   STATUS BADGE VARIATIONS
+   ============================================ */
+
+.child-reg-status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* ============================================
+   MODAL FORM GROUP SPACING
+   ============================================ */
+
+.child-reg-modal-body .child-reg-form-group {
+  margin-bottom: 15px;
+}
+
+.child-reg-modal-body .child-reg-form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   MODAL INFO GRID
+   ============================================ */
+
+.child-reg-modal-body .child-reg-info-grid {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   SUCCESS/INFO MESSAGES IN MODAL
+   ============================================ */
+
+.child-reg-modal-body .child-reg-success-message {
+  margin: 0;
+  padding: 20px;
+}
+
+.child-reg-modal-body .child-reg-info-message {
+  margin: 0;
+  padding: 20px;
+}
+
+/* ============================================
+   FINGERPRINT AREA IN MODAL
+   ============================================ */
+
+.child-reg-modal-body .child-reg-fingerprint-area {
+  margin: 0 0 20px 0;
+  padding: 30px;
+}
+
+/* ============================================
+   RESPONSIVE FINGER LIST
+   ============================================ */
+
+@media (max-width: 480px) {
+  .child-reg-finger-list {
+    gap: 6px;
+  }
+  
+  .child-reg-finger-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+  
+  .child-reg-action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .child-reg-action-icon-btn {
+    padding: 4px 6px;
+  }
+  
+  .child-reg-data-table th:last-child,
+  .child-reg-data-table td:last-child {
+    min-width: 80px;
+  }
+}
+
+
+/* ============================================
+   CHILD VIEW PAGE - THREE COLUMN IMAGES
+   ============================================ */
+
+/* View Container */
+.child-reg-view-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* View Images Section */
+.child-reg-view-images-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.child-reg-view-images-section h3 {
+  margin: 0 0 15px 0;
+  color: #1a1a2e;
+  font-size: 16px;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Three Column Grid for Images */
+.child-reg-view-images-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* Image Card */
+.child-reg-view-image-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.child-reg-view-image-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.child-reg-view-image-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  background: #f0f0f0;
+}
+
+.child-reg-view-image-card span {
+  display: block;
+  padding: 10px;
+  background: #f8f9fa;
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* View Info Section */
+.child-reg-view-info-section {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+/* Info Grid */
+.child-reg-view-info-section .child-reg-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* Info Item */
+.child-reg-view-info-section .child-reg-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.child-reg-view-info-section .child-reg-info-item label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.child-reg-view-info-section .child-reg-info-item span {
+  font-size: 15px;
+  color: #1a1a2e;
+  font-weight: 500;
+}
+
+/* View Actions */
+.child-reg-view-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* No Images Message */
+.child-reg-no-images-message {
+  text-align: center;
+  padding: 60px 20px;
+  background: #f8f9fa;
+  border: 1px dashed #e0e0e0;
+  border-radius: 8px;
+}
+
+.child-reg-no-images-message p {
+  color: #999;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Responsive - Two columns on tablet */
+@media (max-width: 768px) {
+  .child-reg-view-images-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  
+  .child-reg-view-image-card img {
+    height: 180px;
+  }
+  
+  .child-reg-view-info-section .child-reg-info-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
+
+/* Responsive - One column on mobile */
+@media (max-width: 480px) {
+  .child-reg-view-images-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .child-reg-view-image-card img {
+    height: 250px;
+  }
+  
+  .child-reg-view-actions {
+    flex-direction: column;
+  }
+  
+  .child-reg-view-actions button {
+    width: 100%;
+  }
+}

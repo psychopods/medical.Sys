@@ -4,10 +4,12 @@ import './Layout.css';
 
 const Layout = ({ children, user, onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const mainContentRef = useRef(null);
   const scrollPositions = useRef({});
+  const userMenuRef = useRef(null);
 
   // Save scroll position before navigation
   useEffect(() => {
@@ -31,6 +33,17 @@ const Layout = ({ children, user, onLogout }) => {
       mainContentRef.current.scrollTop = savedPosition;
     }
   }, [location.pathname]);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const menuItems = [
     { 
@@ -113,6 +126,7 @@ const Layout = ({ children, user, onLogout }) => {
   };
 
   const handleLogout = () => {
+    setShowUserMenu(false);
     onLogout();
   };
 
@@ -126,6 +140,31 @@ const Layout = ({ children, user, onLogout }) => {
       '/pharmacy': 'Pharmacy',
     };
     return titles[path] || 'Dashboard';
+  };
+
+  // Helper function to get user display name
+  const getUserDisplayName = () => {
+    if (!user) return 'User';
+    if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
+    if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name}`;
+    if (user.name) return user.name;
+    if (user.username) return user.username;
+    return 'Staff User';
+  };
+
+  // Helper function to get user avatar initial
+  const getUserInitial = () => {
+    const name = getUserDisplayName();
+    return name.charAt(0).toUpperCase();
+  };
+
+  // Helper function to get user role display name
+  const getUserRoleDisplay = () => {
+    if (!user) return 'Staff';
+    if (user.roleName) return user.roleName;
+    if (user.role) return user.role.charAt(0).toUpperCase() + user.role.slice(1);
+    if (user.role_id) return user.role_id;
+    return 'Staff';
   };
 
   return (
@@ -171,12 +210,12 @@ const Layout = ({ children, user, onLogout }) => {
         <div className="sidebar-footer">
           <div className="user-info">
             <div className="user-avatar">
-              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              {getUserInitial()}
             </div>
             {isSidebarOpen && (
               <div className="user-details">
-                <p className="user-name">{user?.name || 'User'}</p>
-                <p className="user-role">{user?.roleName || 'Staff'}</p>
+                <p className="user-name">{getUserDisplayName()}</p>
+                <p className="user-role">{getUserRoleDisplay()}</p>
               </div>
             )}
           </div>
@@ -198,11 +237,73 @@ const Layout = ({ children, user, onLogout }) => {
         <div className="main-header">
           <h1>{getPageTitle(location.pathname)}</h1>
           <div className="header-actions">
-            <div className="date-time">
-              {new Date().toLocaleDateString()}
-            </div>
-            <div className="user-badge">
-              <span>{user?.name || 'User'}</span>
+            {/* Date removed - only user info remains */}
+            
+            {/* User Info in Right Corner */}
+            <div className="user-menu-container" ref={userMenuRef}>
+              <button 
+                className="user-badge" 
+                onClick={() => setShowUserMenu(!showUserMenu)}
+              >
+                <div className="user-avatar-small">
+                  {getUserInitial()}
+                </div>
+                <div className="user-info-text">
+                  <span className="user-name-text">{getUserDisplayName()}</span>
+                  <span className="user-role-text">{getUserRoleDisplay()}</span>
+                </div>
+                <svg 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2"
+                  className={`dropdown-arrow ${showUserMenu ? 'open' : ''}`}
+                >
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              
+              {/* Dropdown Menu */}
+              {showUserMenu && (
+                <div className="user-dropdown">
+                  <div className="dropdown-header">
+                    <div className="dropdown-avatar">
+                      {getUserInitial()}
+                    </div>
+                    <div className="dropdown-info">
+                      <div className="dropdown-name">{getUserDisplayName()}</div>
+                      <div className="dropdown-email">{user?.email || 'No email'}</div>
+                      <div className="dropdown-role">{getUserRoleDisplay()}</div>
+                    </div>
+                  </div>
+                  <div className="dropdown-divider"></div>
+                  <button className="dropdown-item" onClick={() => navigate('/profile')}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    My Profile
+                  </button>
+                  <button className="dropdown-item" onClick={() => navigate('/settings')}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    Settings
+                  </button>
+                  <div className="dropdown-divider"></div>
+                  <button className="dropdown-item dropdown-logout" onClick={handleLogout}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                      <polyline points="16 17 21 12 16 7"/>
+                      <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
