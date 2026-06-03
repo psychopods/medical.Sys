@@ -55,12 +55,8 @@ export type SignupRequestBody = {
     password?: unknown;
     roleId?: unknown;
     firstName?: unknown;
-    first_name?: unknown;
     lastName?: unknown;
-    last_name?: unknown;
     phone?: unknown;
-    phoneNumber?: unknown;
-    phone_number?: unknown;
 };
 
 export type SignupResponseBody = {

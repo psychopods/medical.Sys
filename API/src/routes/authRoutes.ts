@@ -9,13 +9,13 @@ import {
     deleteStaffUser,
     getActiveOnlineStaffCount
 } from '../services/authService.ts';
+import { requestPasswordResetLink, resetPasswordWithToken } from '../services/passwordResetService.ts';
 import { requireAuthenticated, requirePermission } from '../middleware/auth.ts';
 import type { LoginRequestBody, LoginResponseBody, SignupRequestBody, SignupResponseBody } from '../types/auth.ts';
 import { HttpError, toHttpError } from '../utils/httpError.ts';
 
 const LOCAL_SESSION_STORAGE_KEY = 'field_outreach.auth.session.v1';
 const LOCAL_PERMISSION_CACHE_KEY = 'field_outreach.auth.permissions.v1';
-
 function requireString(value: unknown, fieldName: string): string {
     if (typeof value !== 'string' || value.trim().length === 0) {
         throw new HttpError(400, `${fieldName} is required.`);
@@ -83,9 +83,9 @@ export function createAuthRouter(pool: Pool): Router {
                 const email = requireString(request.body.email, 'email');
                 const password = requireString(request.body.password, 'password');
                 const roleId = requireString(request.body.roleId, 'roleId');
-                const firstName = requireString(request.body.firstName || request.body.first_name, 'firstName');
-                const lastName = requireString(request.body.lastName || request.body.last_name, 'lastName');
-                const phone = requireString(request.body.phone || request.body.phoneNumber || request.body.phone_number, 'phone');
+                const firstName = requireString(request.body.firstName, 'firstName');
+                const lastName = requireString(request.body.lastName, 'lastName');
+                const phone = requireString(request.body.phone, 'phone');
 
                 const user = await registerStaff(pool, id, username, email, password, roleId, firstName, lastName, phone);
 
@@ -109,6 +109,41 @@ export function createAuthRouter(pool: Pool): Router {
         });
     });
 
+    router.post('/forgot-password', async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+        try {
+            const email = requireString(request.body?.email, 'email');
+            await requestPasswordResetLink(pool, email);
+            response.status(200).json({
+                success: true,
+                message: 'If the account exists, a password reset link has been sent to the registered email address.'
+            });
+        } catch (error) {
+            next(toHttpError(error));
+        }
+    });
+
+    router.post('/reset-password', async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+        try {
+            const token = requireString(request.body?.token, 'token');
+            const newPassword = requireString(request.body?.new_password, 'new_password');
+            const confirmPassword = requireString(request.body?.confirm_password, 'confirm_password');
+
+            if (newPassword !== confirmPassword) {
+                response.status(400).json({ success: false, message: 'Passwords do not match.' });
+                return;
+            }
+
+            await resetPasswordWithToken(pool, token, newPassword);
+
+            response.status(200).json({
+                success: true,
+                message: 'Password reset successfully.'
+            });
+        } catch (error) {
+            next(toHttpError(error));
+        }
+    });
+
     router.get(
         '/users',
         requirePermission(pool, 'admin:read'),
@@ -129,6 +164,62 @@ export function createAuthRouter(pool: Pool): Router {
             try {
                 const activeOnlineCount = await getActiveOnlineStaffCount(pool);
                 response.status(200).json({ activeOnlineCount });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/online_users',
+        requirePermission(pool, 'admin:read'),
+        async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const activeOnlineCount = await getActiveOnlineStaffCount(pool);
+                response.status(200).json({ count: activeOnlineCount });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.post(
+        '/send_credentials',
+        requirePermission(pool, 'admin:create'),
+        async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const toEmail = requireString(request.body?.toEmail, 'toEmail');
+                await requestPasswordResetLink(pool, toEmail, request.authSession?.staffUserId ?? null);
+                response.status(200).json({
+                    success: true,
+                    message: `Password reset link queued for ${toEmail}.`
+                });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.post(
+        '/users/:id/password-reset-link',
+        requirePermission(pool, 'admin:update'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const [rows] = await pool.execute<RowDataPacket[]>(
+                    'SELECT id, email FROM staff_users WHERE id = ? LIMIT 1',
+                    [id]
+                );
+                const target = rows[0];
+                if (!target) {
+                    throw new HttpError(404, 'Staff user not found.');
+                }
+
+                await requestPasswordResetLink(pool, target.email, request.authSession?.staffUserId ?? null);
+                response.status(200).json({
+                    success: true,
+                    message: `Password reset link queued for ${target.email}.`
+                });
             } catch (error) {
                 next(toHttpError(error));
             }

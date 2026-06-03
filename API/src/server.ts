@@ -10,9 +10,8 @@ async function bootstrap() {
         console.log('Connection Pool initialized.');
         connection.release();
 
-        // Fire up the Backend-First Security Helper Thread
         startSecurityHelperThread();
-        console.log('Backend Security Helper background thread fully armed and active.');
+        console.log('Backend Security Helper thread active.');
 
         app.listen(PORT, () => {
             console.log(`http://localhost:${PORT}`);

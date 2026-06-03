@@ -114,12 +114,19 @@ export async function createChildProfile(
     };
 }
 
-export async function listChildProfiles(pool: Pool): Promise<ChildProfile[]> {
-    const [rows] = await pool.execute<RowDataPacket[]>(
-        `SELECT id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, created_at, last_modified_at
-         FROM children_profiles
-         ORDER BY custom_serial_id`
-    );
+export async function listChildProfiles(pool: Pool, registrationDate?: string): Promise<ChildProfile[]> {
+    let query = `SELECT id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, created_at, last_modified_at
+         FROM children_profiles`;
+    const params: string[] = [];
+
+    if (registrationDate) {
+        query += ' WHERE DATE(created_at) = ?';
+        params.push(registrationDate);
+    }
+
+    query += ' ORDER BY custom_serial_id';
+
+    const [rows] = await pool.execute<RowDataPacket[]>(query, params);
 
     return rows.map((row) => ({
         id: row.id,

@@ -2,7 +2,7 @@ export interface SyncChildProfilePayload {
     id: string;
     customSerialId: string;
     fullName: string;
-    gender: 'Male' | 'Female' | 'Unknown';
+    gender: 'Male' | 'Female';
     estimatedBirthYear: number | null;
     primaryLocationId: string;
     createdByStaffId: string;

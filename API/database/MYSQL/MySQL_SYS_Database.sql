@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS `biometric_fingerprints`;
 DROP TABLE IF EXISTS `children_profiles`;
 DROP TABLE IF EXISTS `child_locations`;
 DROP TABLE IF EXISTS `staff_sessions`;
+DROP TABLE IF EXISTS `password_reset_tokens`;
 DROP TABLE IF EXISTS `staff_users`;
 DROP TABLE IF EXISTS `role_permissions`;
 DROP TABLE IF EXISTS `permissions`;
@@ -76,6 +77,21 @@ CREATE TABLE `staff_sessions` (
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_sessions_staff` FOREIGN KEY (`staff_user_id`) REFERENCES `staff_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `password_reset_tokens` (
+    `id` CHAR(36) NOT NULL,
+    `staff_user_id` CHAR(36) NOT NULL,
+    `token_hash` CHAR(64) NOT NULL UNIQUE,
+    `requested_by_staff_id` CHAR(36) NULL,
+    `expires_at` TIMESTAMP NOT NULL,
+    `used_at` TIMESTAMP NULL,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_reset_token_staff` FOREIGN KEY (`staff_user_id`) REFERENCES `staff_users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_reset_token_requester` FOREIGN KEY (`requested_by_staff_id`) REFERENCES `staff_users` (`id`) ON DELETE SET NULL,
+    INDEX `idx_reset_token_expires_at` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `child_locations` (

@@ -116,9 +116,13 @@ export function createChildrenRouter(pool: Pool): Router {
     router.get(
         '/',
         requirePermission(pool, 'children:read'),
-        async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
+        async (request: Request, response: Response, next: NextFunction): Promise<void> => {
             try {
-                const children = await childrenService.listChildProfiles(pool);
+                const registrationDateRaw = request.query.registrationDate;
+                const registrationDate = typeof registrationDateRaw === 'string' && registrationDateRaw.trim().length > 0
+                    ? registrationDateRaw.trim()
+                    : undefined;
+                const children = await childrenService.listChildProfiles(pool, registrationDate);
                 response.status(200).json({ children });
             } catch (error) {
                 next(toHttpError(error));
