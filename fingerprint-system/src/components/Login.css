@@ -5,21 +5,48 @@
 }
 
 .login-hero {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 60px 20px;
+  position: relative;
+  width: 100%;
+  height: 350px;
+  background-image: url('/image2.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 102, 204, 0.8);
+}
+
+.login-hero-content {
+  position: relative;
+  z-index: 1;
   text-align: center;
-  color: #fff;
+  color: white;
 }
 
 .login-hero-content h1 {
-  font-size: 48px;
+  font-size: 56px;
+  font-weight: 700;
   margin-bottom: 20px;
+  color: #ffd700;
+  letter-spacing: 2px;
   animation: fadeInUp 0.8s ease;
 }
 
 .login-hero-content p {
-  font-size: 18px;
-  opacity: 0.9;
+  font-size: 20px;
+  opacity: 0.95;
   animation: fadeInUp 0.8s ease 0.2s both;
 }
 
@@ -34,19 +61,10 @@
   }
 }
 
-.login-container {
-  min-height: calc(100vh - 70px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  padding: 40px 20px;
-}
-
 .login-wrapper {
   max-width: 1200px;
   width: 100%;
-  margin: -40px auto 0;
+  margin: -60px auto 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
   background: #fff;
@@ -55,11 +73,12 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
   position: relative;
   z-index: 10;
+  animation: fadeInUp 0.8s ease 0.1s both;
 }
 
 /* Left Side */
 .login-left {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
   padding: 60px 40px;
   color: #fff;
   display: flex;
@@ -70,20 +89,26 @@
 .login-brand {
   text-align: center;
   margin-bottom: 50px;
+  animation: fadeInUp 0.8s ease 0.2s both;
 }
 
 .brand-icon {
   margin-bottom: 20px;
+  transition: transform 0.3s ease;
+}
+
+.brand-icon:hover {
+  transform: scale(1.05);
 }
 
 .login-brand h2 {
   font-size: 28px;
-  color: #00b4d8;
+  color: #ffd700;
   margin-bottom: 10px;
 }
 
 .login-brand p {
-  color: #b0b0b0;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
 }
 
@@ -97,21 +122,37 @@
   display: flex;
   align-items: center;
   gap: 15px;
+  animation: fadeInUp 0.8s ease backwards;
+  transition: transform 0.3s ease;
+}
+
+.feature:nth-child(1) { animation-delay: 0.3s; }
+.feature:nth-child(2) { animation-delay: 0.4s; }
+.feature:nth-child(3) { animation-delay: 0.5s; }
+
+.feature:hover {
+  transform: translateX(5px);
 }
 
 .feature svg {
-  color: #00b4d8;
+  color: #ffd700;
   flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.feature:hover svg {
+  transform: scale(1.1);
 }
 
 .feature h4 {
   font-size: 16px;
   margin-bottom: 5px;
+  color: #fff;
 }
 
 .feature p {
   font-size: 13px;
-  color: #b0b0b0;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Right Side */
@@ -120,6 +161,7 @@
   background: #fff;
   display: flex;
   align-items: center;
+  animation: fadeInUp 0.8s ease 0.2s both;
 }
 
 .login-form-container {
@@ -133,7 +175,7 @@
 
 .login-header h3 {
   font-size: 28px;
-  color: #1a1a2e;
+  color: #0066cc;
   margin-bottom: 10px;
 }
 
@@ -158,31 +200,28 @@
   font-size: 14px;
   font-weight: 500;
   color: #333;
+  transition: color 0.3s ease;
 }
 
 .input-icon {
   position: relative;
-  display: flex;
-  align-items: center;
   width: 100%;
 }
 
-.email-icon {
-  position: absolute;
-  left: 15px;
-  color: #999;
-  z-index: 1;
-  pointer-events: none;
-}
-
+/* Left icons (email, lock) */
+.email-icon,
 .lock-icon {
   position: absolute;
   left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
   color: #999;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
+  transition: color 0.3s ease;
 }
 
+/* Input field styling */
 .input-icon input {
   width: 100%;
   padding: 14px 50px 14px 45px;
@@ -191,14 +230,17 @@
   font-size: 14px;
   transition: all 0.3s ease;
   background: #fff;
+  box-sizing: border-box;
 }
 
 .input-icon input:focus {
   outline: none;
-  border-color: #00b4d8;
-  box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.1);
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  transform: translateY(-2px);
 }
 
+/* Eye toggle button - positioned inside the input on the right */
 .toggle-password {
   position: absolute;
   right: 15px;
@@ -212,16 +254,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1;
+  z-index: 2;
+  transition: all 0.3s ease;
 }
 
 .toggle-password:hover {
-  color: #00b4d8;
+  color: #0066cc;
 }
 
 .toggle-password svg {
   width: 20px;
   height: 20px;
+  display: block;
 }
 
 .login-options {
@@ -237,24 +281,50 @@
   gap: 8px;
   cursor: pointer;
   color: #666;
+  transition: color 0.3s ease;
+}
+
+.checkbox-label:hover {
+  color: #0066cc;
 }
 
 .checkbox-label input {
   cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.checkbox-label input:checked {
+  transform: scale(1.1);
 }
 
 .forgot-password {
-  color: #00b4d8;
+  color: #0066cc;
   text-decoration: none;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.forgot-password::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #0066cc;
+  transition: width 0.3s ease;
 }
 
 .forgot-password:hover {
-  color: #0096b4;
+  color: #0052a3;
+}
+
+.forgot-password:hover::after {
+  width: 100%;
 }
 
 .login-submit {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0066cc;
   color: #fff;
   border: none;
   padding: 14px;
@@ -270,8 +340,13 @@
 }
 
 .login-submit:hover {
+  background: #0052a3;
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 20px rgba(0, 102, 204, 0.2);
+}
+
+.login-submit:active {
+  transform: translateY(0);
 }
 
 /* Responsive */
@@ -301,6 +376,10 @@
     text-align: center;
   }
   
+  .feature:hover {
+    transform: translateY(-5px);
+  }
+  
   .login-hero-content h1 {
     font-size: 36px;
   }
@@ -308,13 +387,13 @@
   .login-hero-content p {
     font-size: 16px;
   }
+  
+  .login-hero {
+    height: 280px;
+  }
 }
 
 @media (max-width: 768px) {
-  .login-container {
-    padding: 20px;
-  }
-  
   .login-features {
     flex-direction: column;
   }
@@ -328,7 +407,8 @@
   }
   
   .login-hero {
-    padding: 40px 20px;
+    height: 250px;
+    background-attachment: scroll;
   }
   
   .login-hero-content h1 {
@@ -337,6 +417,24 @@
   
   .login-hero-content p {
     font-size: 14px;
+  }
+  
+  .toggle-password {
+    right: 12px;
+  }
+  
+  .toggle-password svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .input-icon input {
+    padding: 12px 45px 12px 40px;
+  }
+  
+  .email-icon,
+  .lock-icon {
+    left: 12px;
   }
 }
 
@@ -356,30 +454,76 @@
   }
   
   .input-icon input {
-    padding: 12px 45px 12px 40px;
+    padding: 12px 40px 12px 38px;
+  }
+  
+  .login-hero {
+    height: 200px;
   }
   
   .login-hero-content h1 {
     font-size: 24px;
   }
+  
+  .toggle-password {
+    right: 10px;
+  }
+  
+  .toggle-password svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .email-icon,
+  .lock-icon {
+    left: 10px;
+  }
+  
+  .email-icon svg,
+  .lock-icon svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 
 /* Error message styles */
-.error-message {
-  background-color: #fee;
-  border: 1px solid #fcc;
-  color: #c33;
-  padding: 12px 15px;
-  border-radius: 10px;
-  font-size: 13px;
-  margin-bottom: 20px;
+.field-error {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 5px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
+  animation: shake 0.5s ease;
 }
 
-.error-message svg {
-  flex-shrink: 0;
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.field-error::before {
+  content: '⚠';
+  font-size: 12px;
+}
+
+.input-icon.has-error .email-icon,
+.input-icon.has-error .lock-icon {
+  color: #dc3545;
+}
+
+.input-icon.has-error input {
+  border-color: #dc3545;
+}
+
+.input-icon.has-error input:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.error-input {
+  border-color: #dc3545 !important;
 }
 
 /* Loading spinner animation */
@@ -417,11 +561,11 @@ input:disabled {
 /* Toast Notification Styles */
 .toast-notification {
   position: fixed;
-  top: 20px;
+  top: 80px;
   right: 20px;
   min-width: 300px;
   background: white;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 15px 20px;
   display: flex;
   align-items: center;
@@ -486,11 +630,12 @@ input:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .toast-close:hover {
   color: #333;
+  transform: scale(1.1);
 }
 
 @keyframes slideIn {
@@ -507,42 +652,69 @@ input:disabled {
 /* Responsive toast */
 @media (max-width: 768px) {
   .toast-notification {
-    top: 10px;
+    top: 70px;
     right: 10px;
     left: 10px;
     min-width: auto;
   }
 }
 
-/* Field Error Styles */
-.field-error {
-  color: #dc3545;
-  font-size: 12px;
-  margin-top: 5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .login-hero {
+    background-attachment: scroll;
+  }
+  
+  .login-hero-content h1,
+  .login-hero-content p,
+  .login-wrapper,
+  .login-brand,
+  .feature,
+  .login-right {
+    animation: none;
+  }
+  
+  .brand-icon,
+  .feature,
+  .feature svg,
+  .input-icon input,
+  .toggle-password,
+  .checkbox-label input,
+  .login-submit,
+  .toast-close {
+    transition: none;
+    transform: none;
+  }
+  
+  .brand-icon:hover {
+    transform: none;
+  }
+  
+  .feature:hover {
+    transform: none;
+  }
+  
+  .feature:hover svg {
+    transform: none;
+  }
+  
+  .checkbox-label input:checked {
+    transform: none;
+  }
+  
+  .field-error {
+    animation: none;
+  }
 }
 
-.field-error::before {
-  content: '⚠';
-  font-size: 12px;
-}
-
-.input-icon.has-error .email-icon,
-.input-icon.has-error .lock-icon {
-  color: #dc3545;
-}
-
-.input-icon.has-error input {
-  border-color: #dc3545;
-}
-
-.input-icon.has-error input:focus {
-  border-color: #dc3545;
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
-}
-
-.error-input {
-  border-color: #dc3545 !important;
+/* Add to Login.css - Logo Image Styles */
+.brand-logo-img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-bottom: 20px;
+  border: 3px solid #ffd700;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.1);
 }

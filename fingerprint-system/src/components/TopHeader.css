@@ -1,15 +1,19 @@
 /* TopHeader.css - Full Width Professional Design with Hide on Scroll */
 
 .top-header {
-  background: linear-gradient(135deg, #0f1423 0%, #1a1a2e 100%);
+  background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
   color: #fff;
   padding: 10px 0;
   font-size: 13px;
   width: 100%;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1001;
   overflow: hidden;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  will-change: transform;
 }
 
 /* Hide on scroll */
@@ -48,10 +52,27 @@
   gap: 8px;
   white-space: nowrap;
   transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.contact-info span::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #ffffff;
+  transition: width 0.3s ease;
+}
+
+.contact-info span:hover::after {
+  width: 100%;
 }
 
 .contact-info span:hover {
-  color: #00b4d8;
+  color: #ffd700;
   transform: translateY(-1px);
 }
 
@@ -91,15 +112,34 @@
   justify-content: center;
   padding: 5px;
   border-radius: 50%;
+  position: relative;
+}
+
+.social-links a::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.social-links a:hover::before {
+  width: 30px;
+  height: 30px;
 }
 
 .social-links a:hover {
-  color: #00b4d8;
+  color: #ffd700;
   transform: translateY(-2px);
 }
 
 .social-links a:hover .social-icon {
-  stroke: #00b4d8;
+  stroke: #ffd700;
 }
 
 /* Toast Notification */
@@ -161,6 +201,7 @@
 
 .toast-close:hover {
   color: #333;
+  transform: scale(1.1);
 }
 
 @keyframes slideIn {
@@ -303,6 +344,7 @@
     background: #fff;
     color: #000;
     border-bottom: 1px solid #ccc;
+    position: relative;
   }
   
   .social-links a {
@@ -318,7 +360,9 @@
 @media (prefers-reduced-motion: reduce) {
   .top-header,
   .social-links a,
-  .contact-info span {
+  .contact-info span,
+  .social-links a::before,
+  .contact-info span::after {
     transition: none;
   }
   
@@ -329,12 +373,17 @@
   .contact-info span:hover {
     transform: none;
   }
+  
+  .social-links a:hover::before {
+    width: 0;
+    height: 0;
+  }
 }
 
 /* High contrast mode */
 @media (prefers-contrast: high) {
   .top-header {
-    background: #000;
+    background: #0000ff;
   }
   
   .social-links a:hover {
@@ -354,10 +403,20 @@
   }
   
   .social-links a:active {
-    color: #00b4d8;
+    color: #ffd700;
+    transform: scale(0.95);
   }
   
   .contact-info span:active {
-    color: #00b4d8;
+    color: #ffd700;
+    transform: scale(0.98);
+  }
+}
+
+/* Scroll performance optimization */
+@media (min-width: 769px) {
+  .top-header {
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
   }
 }

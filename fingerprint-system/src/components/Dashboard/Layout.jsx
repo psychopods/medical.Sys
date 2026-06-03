@@ -50,7 +50,7 @@ const Layout = ({ children, user, onLogout }) => {
       path: '/dashboard', 
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
@@ -174,14 +174,16 @@ const Layout = ({ children, user, onLogout }) => {
         <div className="sidebar-header">
           <div className="logo-section">
             <div className="logo-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12" stroke="#667eea" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18" stroke="#667eea" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14" stroke="#667eea" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M18 12C18 8.69 15.31 6 12 6" stroke="#667eea" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <img 
+                src="/trhm.jpg" 
+                alt="TRHM Logo" 
+                className="sidebar-logo-img"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
             </div>
-            {isSidebarOpen && <span className="logo-text">Fingerprint System</span>}
+            {isSidebarOpen && <span className="logo-text">TRHM System</span>}
           </div>
           <button className="toggle-btn" onClick={toggleSidebar}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -208,17 +210,7 @@ const Layout = ({ children, user, onLogout }) => {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="user-info">
-            <div className="user-avatar">
-              {getUserInitial()}
-            </div>
-            {isSidebarOpen && (
-              <div className="user-details">
-                <p className="user-name">{getUserDisplayName()}</p>
-                <p className="user-role">{getUserRoleDisplay()}</p>
-              </div>
-            )}
-          </div>
+          {/* Avatar and user details completely removed */}
           <button className="logout-btn-sidebar" onClick={handleLogout}>
             <span className="nav-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -237,8 +229,6 @@ const Layout = ({ children, user, onLogout }) => {
         <div className="main-header">
           <h1>{getPageTitle(location.pathname)}</h1>
           <div className="header-actions">
-            {/* Date removed - only user info remains */}
-            
             {/* User Info in Right Corner */}
             <div className="user-menu-container" ref={userMenuRef}>
               <button 

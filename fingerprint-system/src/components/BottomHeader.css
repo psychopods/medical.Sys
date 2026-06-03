@@ -10,7 +10,7 @@
 
 /* Sticky state */
 .bb-nav-main.bb-sticky {
-  position: fixed;
+  position: fixed !important;
   left: 0;
   right: 0;
   animation: bbSlideDown 0.3s ease;
@@ -52,9 +52,21 @@
 }
 
 .bb-logo-icon-wrapper {
-  background: rgba(0, 180, 216, 0.15);
-  padding: 8px;
-  border-radius: 12px;
+  background: transparent;
+  padding: 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.bb-logo-img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .bb-logo-icon {
@@ -242,6 +254,100 @@
   cursor: pointer;
 }
 
+/* Toast Notification Styles */
+.bb-toast-notification {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  min-width: 320px;
+  background: white;
+  border-radius: 12px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  animation: bbSlideIn 0.3s ease;
+  border-left: 4px solid;
+}
+
+.bb-toast-notification.info {
+  border-left-color: #17a2b8;
+  background: linear-gradient(135deg, #e8f7f9 0%, #ffffff 100%);
+}
+
+.bb-toast-notification.info .bb-toast-content svg {
+  color: #17a2b8;
+}
+
+.bb-toast-notification.success {
+  border-left-color: #28a745;
+  background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%);
+}
+
+.bb-toast-notification.success .bb-toast-content svg {
+  color: #28a745;
+}
+
+.bb-toast-notification.error {
+  border-left-color: #dc3545;
+  background: linear-gradient(135deg, #fef3f2 0%, #ffffff 100%);
+}
+
+.bb-toast-notification.error .bb-toast-content svg {
+  color: #dc3545;
+}
+
+.bb-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.bb-toast-content svg {
+  flex-shrink: 0;
+}
+
+.bb-toast-content span {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.bb-toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+}
+
+.bb-toast-close:hover {
+  color: #333;
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.1);
+}
+
+@keyframes bbSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 @media (max-width: 768px) {
   .bb-nav-links {
     display: none;
@@ -257,5 +363,97 @@
   
   .bb-nav-container {
     padding: 0.7rem 5%;
+  }
+  
+  .bb-toast-notification {
+    top: 80px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+  }
+  
+  .bb-logo-img {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .bb-logo-title {
+    font-size: 1rem;
+  }
+  
+  .bb-logo-subtitle {
+    font-size: 0.6rem;
+  }
+  
+  .bb-logo-icon-wrapper {
+    border-width: 2px;
+    padding: 4px;
+  }
+}
+
+/* Ensure body has padding when headers are fixed */
+body {
+  padding-top: 0;
+  margin: 0;
+}
+
+/* Mobile Menu Close Button - White */
+.bb-mobile-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.bb-mobile-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(90deg);
+}
+
+.bb-mobile-close svg {
+  width: 20px;
+  height: 20px;
+  stroke: white;
+  stroke-width: 2;
+}
+
+/* Adjust mobile menu padding */
+.bb-mobile-menu {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 80%;
+  max-width: 350px;
+  height: 100vh;
+  background: linear-gradient(135deg, #0f1423 0%, #16213e 100%);
+  z-index: 9998;
+  padding: 80px 30px 40px;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+@media (max-width: 480px) {
+  .bb-mobile-close {
+    top: 15px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+  }
+  
+  .bb-mobile-close svg {
+    width: 18px;
+    height: 18px;
   }
 }

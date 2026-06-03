@@ -658,3 +658,23 @@
     border-radius: 12px 12px 0 0;
   }
 }
+
+/* Add to Layout.css - Sidebar Logo Image Styles */
+.sidebar-logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

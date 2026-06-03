@@ -3,9 +3,49 @@ import './HeroSection.css';
 
 const HeroSection = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [transformY, setTransformY] = useState(0);
 
   useEffect(() => {
     setIsVisible(true);
+    
+    const handleScroll = () => {
+      const topHeader = document.querySelector('.top-header');
+      const bottomHeader = document.querySelector('.bb-nav-main');
+      
+      if (!topHeader || !bottomHeader) return;
+      
+      const bottomHeaderRect = bottomHeader.getBoundingClientRect();
+      const topHeaderHeight = topHeader.offsetHeight;
+      const isTopHeaderHidden = topHeader.classList.contains('hidden');
+      
+      let yOffset = 0;
+      
+      if (isTopHeaderHidden && bottomHeaderRect.top <= 0) {
+        yOffset = -topHeaderHeight;
+      } else if (bottomHeaderRect.top <= topHeaderHeight) {
+        const scrollAmount = Math.min(topHeaderHeight, Math.abs(bottomHeaderRect.top));
+        yOffset = -scrollAmount;
+      }
+      
+      setTransformY(yOffset);
+    };
+    
+    handleScroll();
+    
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+    
+    const observer = new MutationObserver(handleScroll);
+    const topHeader = document.querySelector('.top-header');
+    if (topHeader) {
+      observer.observe(topHeader, { attributes: true, attributeFilter: ['class'] });
+    }
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      observer.disconnect();
+    };
   }, []);
 
   return (
@@ -15,7 +55,8 @@ const HeroSection = () => {
         backgroundImage: `url('/image2.png')`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
+        backgroundRepeat: 'no-repeat',
+        transform: `translateY(${transformY}px)`
       }}
     >
       <div className="hero-overlay"></div>
@@ -23,41 +64,18 @@ const HeroSection = () => {
       <div className="hero-container">
         <div className={`hero-content ${isVisible ? 'fade-in' : ''}`}>
           <h1 className="hero-title">
-            BB Medical Center <span className="highlight">Cares</span>
+            Tanzania Rural Health Movement <span className="highlight">(TRHM)</span>
           </h1>
           <p className="hero-subtitle">
-            Providing essential care—medicine, food, clothing, and shoes—to street children. 
-            Our secure fingerprint system ensures every child receives continuous, dignified support.
+            Delivering healthcare and support directly to vulnerable children living on the streets.
           </p>
           <div className="hero-description">
             <p className="description-text">
-              Every day, countless street children face unimaginable challenges—hunger, illness, exposure to harsh weather, 
-              and lack of access to basic healthcare. At BB Medical Center, we believe that no child should be left behind.
+              We bring medical care, health screening, mental health support, and social services to children who cannot easily access hospitals.
             </p>
             <p className="description-text">
-              Through our innovative fingerprint registration system, we create a unique digital identity for each child, 
-              allowing us to track their medical history, ensure regular health checkups, provide nutritious meals during visits, 
-              and supply proper clothing and footwear based on their recorded size and needs.
+              Our outreach team provides emergency care, health education, and helps children reintegrate into society with dignity and proper support.
             </p>
-            <p className="description-text">
-              Our compassionate team of healthcare professionals, social workers, and volunteers work tirelessly to restore 
-              dignity and hope to these vulnerable children. With each fingerprint scan, we reaffirm our commitment to 
-              providing consistent, respectful, and life-changing support.
-            </p>
-          </div>
-          <div className="hero-stats">
-            <div className="stat">
-              <h3>5,000+</h3>
-              <p>Children Helped</p>
-            </div>
-            <div className="stat">
-              <h3>24/7</h3>
-              <p>Care Available</p>
-            </div>
-            <div className="stat">
-              <h3>1-Touch</h3>
-              <p>Fingerprint Access</p>
-            </div>
           </div>
         </div>
         <div className={`hero-image ${isVisible ? 'slide-in' : ''}`}>

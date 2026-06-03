@@ -1,0 +1,436 @@
+/* Volunteer Support Page Styles */
+.volunteer-page {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Hero Section */
+.volunteer-hero {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background-image: url('/image2.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.volunteer-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 102, 204, 0.8);
+}
+
+.volunteer-hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  color: white;
+}
+
+.volunteer-hero-content h1 {
+  font-size: 56px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #ffd700;
+  letter-spacing: 2px;
+  animation: fadeInUp 0.8s ease;
+}
+
+.volunteer-hero-content p {
+  font-size: 20px;
+  opacity: 0.95;
+  animation: fadeInUp 0.8s ease 0.2s both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Support Options Section */
+.support-options-section {
+  padding: 80px 0;
+  background: #ffffff;
+}
+
+.support-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 30px;
+}
+
+.support-card {
+  text-align: center;
+  padding: 30px 20px;
+  border-bottom: 2px solid #e0e8f0;
+  transition: all 0.3s ease;
+}
+
+.support-card:hover {
+  border-bottom-color: #0066cc;
+}
+
+.support-icon {
+  margin-bottom: 20px;
+}
+
+.support-card h3 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 15px;
+}
+
+.support-card p {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.support-btn {
+  display: inline-block;
+  padding: 10px 24px;
+  background: transparent;
+  color: #0066cc;
+  border: 1px solid #0066cc;
+  border-radius: 30px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.support-btn:hover {
+  background: #0066cc;
+  color: white;
+}
+
+/* Volunteer Form Section */
+.volunteer-form-section {
+  padding: 80px 0;
+  background: #f5f9ff;
+}
+
+.volunteer-form-wrapper {
+  display: flex;
+  gap: 60px;
+  flex-wrap: wrap;
+}
+
+.volunteer-form-left {
+  flex: 1;
+  min-width: 280px;
+}
+
+.volunteer-form-left h2 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0066cc;
+  margin-bottom: 20px;
+  position: relative;
+  display: inline-block;
+}
+
+.volunteer-form-left h2::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: #0066cc;
+  border-radius: 2px;
+}
+
+.volunteer-form-left p {
+  font-size: 16px;
+  color: #444;
+  line-height: 1.7;
+  margin-bottom: 30px;
+  margin-top: 20px;
+}
+
+.volunteer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 0;
+  border-bottom: 1px solid #e0e8f0;
+}
+
+.info-item h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 5px;
+}
+
+.info-item p {
+  font-size: 13px;
+  color: #666;
+  margin: 0;
+}
+
+.volunteer-form-right {
+  flex: 1;
+  min-width: 300px;
+}
+
+.volunteer-form-card {
+  background: #ffffff;
+  padding: 40px;
+  border-bottom: 2px solid #0066cc;
+}
+
+.volunteer-form {
+  padding: 0;
+  background: transparent;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.required {
+  color: #dc3545;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e0e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  background: #ffffff;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #0066cc;
+}
+
+.form-group input.error,
+.form-group select.error,
+.form-group textarea.error {
+  border-color: #dc3545;
+  background: #fff5f5;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.char-counter {
+  text-align: right;
+  font-size: 11px;
+  color: #888;
+  margin-top: 6px;
+}
+
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #0052a3;
+  transform: translateY(-2px);
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  min-width: 280px;
+  background: #fff;
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 10001;
+  animation: slideIn 0.3s ease;
+  border-left: 3px solid #10b981;
+  border-top: 1px solid #e0e8f0;
+  border-right: 1px solid #e0e8f0;
+  border-bottom: 1px solid #e0e8f0;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #999;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .volunteer-hero {
+    height: 300px;
+    background-attachment: scroll;
+  }
+  
+  .volunteer-hero-content h1 {
+    font-size: 36px;
+  }
+  
+  .volunteer-hero-content p {
+    font-size: 16px;
+  }
+  
+  .support-options-section {
+    padding: 60px 0;
+  }
+  
+  .volunteer-form-section {
+    padding: 60px 0;
+  }
+  
+  .volunteer-form-wrapper {
+    flex-direction: column;
+    gap: 40px;
+  }
+  
+  .volunteer-form-left {
+    text-align: center;
+  }
+  
+  .volunteer-form-left h2::after {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .volunteer-info {
+    align-items: center;
+  }
+  
+  .info-item {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .volunteer-form-card {
+    padding: 30px;
+  }
+  
+  .toast-notification {
+    top: 70px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .volunteer-hero {
+    height: 250px;
+  }
+  
+  .volunteer-hero-content h1 {
+    font-size: 28px;
+  }
+  
+  .volunteer-hero-content p {
+    font-size: 14px;
+  }
+  
+  .support-card {
+    padding: 20px;
+  }
+  
+  .volunteer-form-card {
+    padding: 20px;
+  }
+}
+
+/* Add to the existing CSS */
+
+.support-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0066cc;
+  text-align: center;
+  margin-bottom: 50px;
+  position: relative;
+}
+
+.support-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: #0066cc;
+  border-radius: 2px;
+}
+
+.support-options-section {
+  padding: 80px 0;
+  background: #ffffff;
+}

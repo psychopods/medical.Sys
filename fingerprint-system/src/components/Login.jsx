@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import './Login.css';
 
 const API_BASE_URL = 'http://localhost:9865';
@@ -12,7 +12,6 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   
-  // Field error states
   const [identifierError, setIdentifierError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   
@@ -25,7 +24,6 @@ const Login = () => {
     }, 3000);
   };
 
-  // Validate identifier (email or username)
   const validateIdentifier = (value) => {
     if (!value.trim()) {
       setIdentifierError('Email or username is required');
@@ -46,7 +44,6 @@ const Login = () => {
     }
   };
 
-  // Validate password
   const validatePassword = (value) => {
     if (!value.trim()) {
       setPasswordError('Password is required');
@@ -92,16 +89,11 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Determine if identifier is email or username
-      const isEmail = identifier.includes('@') && identifier.includes('.');
-      
-      // Prepare login data - backend expects usernameOrEmail
       const loginData = {
-        usernameOrEmail: identifier,  // Backend expects this field name
+        usernameOrEmail: identifier,
         password: password
       };
       
-      // Make API call to login endpoint
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -113,15 +105,11 @@ const Login = () => {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        // Store token based on remember me preference
-        // Backend returns both 'accessToken' and 'token' - use either
         const tokenToStore = data.accessToken || data.token;
         
         if (rememberMe) {
           localStorage.setItem('token', tokenToStore);
-          // Store user data - backend returns user object with snake_case
           localStorage.setItem('user', JSON.stringify(data.user));
-          // Also store session for offline capabilities
           if (data.session) {
             localStorage.setItem('session', JSON.stringify(data.session));
           }
@@ -133,19 +121,11 @@ const Login = () => {
           }
         }
         
-        // Display welcome message using snake_case fields from user object
         const userName = data.user?.first_name || data.user?.username || 'User';
-        showToast(`Welcome ${userName}! Redirecting to dashboard...`, 'success');
-        
-        // Redirect to dashboard after successful login
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1500);
+        showToast(`Welcome ${userName}!`, 'success');
+        navigate('/dashboard');
       } else {
-        // Handle login error
         showToast(data.message || 'Invalid credentials. Please try again.', 'error');
-        
-        // Clear password field
         setPassword('');
         setPasswordError('Invalid credentials');
       }
@@ -159,8 +139,7 @@ const Login = () => {
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
-    // Password reset not implemented yet
-    showToast('Password reset feature coming soon. Please contact system administrator.', 'info');
+    navigate('/forgot-password');
   };
 
   return (
@@ -169,7 +148,7 @@ const Login = () => {
       <div className="login-hero">
         <div className="login-hero-content">
           <h1>Welcome Back</h1>
-          <p>Secure access to your Fingerprint System account</p>
+          <p>Secure access to TRHM Fingerprint System</p>
         </div>
       </div>
 
@@ -208,20 +187,22 @@ const Login = () => {
       <div className="login-wrapper">
         <div className="login-left">
           <div className="login-brand">
-            <svg className="brand-icon" width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M18 12C18 8.69 15.31 6 12 6" stroke="#00b4d8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <h2>Fingerprint System</h2>
+            <img 
+              src="/trhm.jpg" 
+              alt="TRHM Logo" 
+              className="brand-logo-img"
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
+            <h2>TRHM System</h2>
             <p>Secure Biometric Authentication</p>
           </div>
           <div className="login-features">
             <div className="feature">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M22 4L12 14.01L9 11.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999" stroke="#ffd700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M22 4L12 14.01L9 11.01" stroke="#ffd700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <div>
                 <h4>High Security</h4>
@@ -230,8 +211,8 @@ const Login = () => {
             </div>
             <div className="feature">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="10" stroke="#ffd700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 6V12L16 14" stroke="#ffd700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <div>
                 <h4>Fast Access</h4>
@@ -240,9 +221,9 @@ const Login = () => {
             </div>
             <div className="feature">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 16V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M12 8H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#ffd700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 16V12" stroke="#ffd700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 8H12.01" stroke="#ffd700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <div>
                 <h4>24/7 Support</h4>
@@ -332,7 +313,9 @@ const Login = () => {
                   />
                   <span>Remember me</span>
                 </label>
-                <a href="#" onClick={handleForgotPassword} className="forgot-password">Forgot Password?</a>
+                <Link to="/forgot-password" className="forgot-password">
+                  Forgot Password?
+                </Link>
               </div>
               
               <button type="submit" className="login-submit" disabled={isLoading}>

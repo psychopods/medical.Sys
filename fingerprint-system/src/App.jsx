@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import TopHeader from './components/TopHeader';
 import BottomHeader from './components/BottomHeader';
 import HeroSection from './components/HeroSection';
+import MessageBar from './components/MessageBar';
 import Footer from './components/Footer';
 import Login from './components/Login';
 import Services from './components/Services';
@@ -10,6 +11,11 @@ import About from './components/About';
 import Contact from './components/Contact';
 import Partners from './components/Partners';
 import Mission from './components/Mission';
+import Staff from './components/Staff';
+import Gallery from './components/Gallery';
+import VolunteerSupport from './components/VolunteerSupport';
+import ReportsImpact from './components/ReportsImpact';
+import StreetMedicine from './components/StreetMedicine';
 import ForgotPassword from './components/ForgotPassword';
 import Dashboard from './components/Dashboard/Dashboard';
 import UserManagement from './components/Dashboard/UserManagement';
@@ -26,6 +32,7 @@ const PublicLayout = ({ children }) => {
     <>
       <TopHeader />
       <BottomHeader />
+      <MessageBar />
       {children}
       <Footer />
     </>
@@ -47,6 +54,7 @@ function App() {
             <PublicLayout>
               <HeroSection />
               <Mission />
+              <Staff />
               <Partners />
             </PublicLayout>
           } />
@@ -83,6 +91,31 @@ function App() {
           <Route path="/mission" element={
             <PublicLayout>
               <Mission />
+            </PublicLayout>
+          } />
+          <Route path="/gallery" element={
+            <PublicLayout>
+              <Gallery />
+            </PublicLayout>
+          } />
+          <Route path="/support" element={
+            <PublicLayout>
+              <VolunteerSupport />
+            </PublicLayout>
+          } />
+          <Route path="/reports" element={
+            <PublicLayout>
+              <ReportsImpact />
+            </PublicLayout>
+          } />
+          <Route path="/street-medicine" element={
+            <PublicLayout>
+              <StreetMedicine />
+            </PublicLayout>
+          } />
+          <Route path="/staff" element={
+            <PublicLayout>
+              <Staff />
             </PublicLayout>
           } />
           

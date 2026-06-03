@@ -12,18 +12,12 @@ const Partners = () => {
   };
 
   const partners = [
-    { id: 1, name: 'Teneo', logo: '/react.svg' },
-    { id: 2, name: 'UWE Bristol', logo: '/react.svg' },
-    { id: 3, name: 'VISA', logo: '/react.svg' },
-    { id: 4, name: 'CITY ROAD', logo: '/react.svg' },
-    { id: 5, name: 'Qatar Foundation', logo: '/react.svg' },
-    { id: 6, name: 'BLACK TUSK', logo: '/react.svg' },
-    { id: 7, name: 'EtonBridge', logo: '/react.svg' },
-    { id: 8, name: 'iSP', logo: '/react.svg' }
+    { id: 1, name: 'TRHM', logo: '/trhm.jpg' },
+    { id: 2, name: 'Mwanza EV', logo: '/mwanza_ev.jpg' }
   ];
 
   // Duplicate partners for seamless looping
-  const duplicatedPartners = [...partners, ...partners, ...partners];
+  const duplicatedPartners = [...partners, ...partners, ...partners, ...partners, ...partners];
 
   return (
     <div className="partners-page">
