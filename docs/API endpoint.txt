@@ -146,6 +146,36 @@ SECTION 2: STAFF AUTHENTICATION & SESSION MANAGEMENT (/api/auth)
          }
      }
 
+5. POST /api/auth/forgot-password
+   - Description: Triggers a password reset flow by sending/queueing a reset link.
+   - Authentication: None.
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "email": "string" (Required - User's registered email or username)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "If the account exists, a password reset link has been sent to the registered email address."
+     }
+
+6. POST /api/auth/reset-password
+   - Description: Resets a staff user's password using a valid reset token.
+   - Authentication: None.
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (snake_case exception):
+     {
+         "token": "string" (Required - Verification token),
+         "new_password": "string" (Required - Minimum 6 characters),
+         "confirm_password": "string" (Required - Must match new_password)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Password reset successfully."
+     }
+
 --------------------------------------------------------------------------------
 STAFF USER MANAGEMENT CRUD OPERATIONS (Protected)
 --------------------------------------------------------------------------------
@@ -247,6 +277,48 @@ STAFF USER MANAGEMENT CRUD OPERATIONS (Protected)
    - Response Payload Example:
      {
          "message": "Staff user deleted successfully."
+     }
+
+6. GET /api/auth/online-count
+   - Description: Retrieves the total count of active online staff members.
+   - Authentication: Protected (Requires 'admin:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     {
+         "activeOnlineCount": 3
+     }
+
+7. GET /api/auth/online_users
+   - Description: Retrieves the count of online staff members (legacy/alternative format).
+   - Authentication: Protected (Requires 'admin:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     {
+         "count": 3
+     }
+
+8. POST /api/auth/send_credentials
+   - Description: Sends/queues a password reset link for a staff user.
+   - Authentication: Protected (Requires 'admin:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "toEmail": "string" (Required - Target staff user email or username)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Password reset link queued for droidgrim@gmail.com."
+     }
+
+9. POST /api/auth/users/:id/password-reset-link
+   - Description: Generates a password reset link for a specific staff user ID.
+   - Authentication: Protected (Requires 'admin:update' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Password reset link queued for droidgrim@gmail.com."
      }
 
 ================================================================================
@@ -572,8 +644,10 @@ SECTION 4: CHILD REGISTRATION MODULE (/api/children)
      }
 
 2. GET /api/children
-   - Description: Lists child profiles.
+   - Description: Lists child profiles (optionally filtered by registration date).
    - Authentication: Protected (Requires 'children:read' permission slug).
+   - Query Parameters (camelCase):
+     registrationDate: "string" (Optional - YYYY-MM-DD format to filter profiles by registration date)
    - Response Payload Example:
      {
          "children": [
@@ -812,4 +886,91 @@ Outbound messages:
 Purpose:
   Keeps sync off the UI thread, queues pending records, pushes on reconnect,
   then fetches server delta snapshots for local SQLite application.
+
+================================================================================
+SECTION 8: OUTREACH LOCATIONS MODULE (/api/locations)
+================================================================================
+
+1. POST /api/locations
+   - Description: Registers a new outreach location.
+   - Authentication: Protected (Requires 'locations:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "name": "string" (Required - Unique location name),
+         "description": "string|null" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Location created successfully.",
+         "location": {
+             "id": "d8e32e68-df50-469f-b0ea-218d8fa7c47a",
+             "name": "Kibera Clinic",
+             "description": "Main outreach site in Kibera",
+             "version": 1,
+             "lastModifiedAt": "2026-05-26T12:00:00.000Z"
+         }
+     }
+
+2. GET /api/locations
+   - Description: Lists all registered outreach locations ordered by name.
+   - Authentication: Protected (Requires 'locations:read' permission slug).
+   - Response Payload Example:
+     {
+         "locations": [
+             {
+                 "id": "d8e32e68-df50-469f-b0ea-218d8fa7c47a",
+                 "name": "Kibera Clinic",
+                 "description": "Main outreach site in Kibera",
+                 "version": 1,
+                 "lastModifiedAt": "2026-05-26T12:00:00.000Z"
+             }
+         ]
+     }
+
+3. GET /api/locations/:id
+   - Description: Retrieves details of a specific outreach location.
+   - Authentication: Protected (Requires 'locations:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "location": {
+             "id": "d8e32e68-df50-469f-b0ea-218d8fa7c47a",
+             "name": "Kibera Clinic",
+             "description": "Main outreach site in Kibera",
+             "version": 1,
+             "lastModifiedAt": "2026-05-26T12:00:00.000Z"
+         }
+     }
+
+4. PUT /api/locations/:id
+   - Description: Updates an existing outreach location's name and description.
+   - Authentication: Protected (Requires 'locations:update' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "name": "string" (Required - Unique location name),
+         "description": "string|null" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Location updated successfully.",
+         "location": {
+             "id": "d8e32e68-df50-469f-b0ea-218d8fa7c47a",
+             "name": "Kibera Clinic Updated",
+             "description": "Updated main outreach site description",
+             "version": 2,
+             "lastModifiedAt": "2026-05-26T12:05:00.000Z"
+         }
+     }
+
+5. DELETE /api/locations/:id
+   - Description: Deletes an outreach location (blocks deletion if assigned to any children).
+   - Authentication: Protected (Requires 'locations:delete' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Location deleted successfully."
+     }
 ================================================================================
