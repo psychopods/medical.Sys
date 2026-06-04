@@ -915,7 +915,7 @@ SECTION 8: OUTREACH LOCATIONS MODULE (/api/locations)
 
 2. GET /api/locations
    - Description: Lists all registered outreach locations ordered by name.
-   - Authentication: Protected (Requires 'locations:read' permission slug).
+   - Authentication: None.
    - Response Payload Example:
      {
          "locations": [
@@ -972,5 +972,593 @@ SECTION 8: OUTREACH LOCATIONS MODULE (/api/locations)
    - Response Payload Example:
      {
          "message": "Location deleted successfully."
+     }
+================================================================================
+SECTION 9: NOTIFICATIONS MODULE (/api/notifications)
+================================================================================
+
+1. POST /api/notifications
+   - Description: Registers a new system, announcement, or event notification.
+   - Authentication: Protected (Requires 'notifications:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "type": "string" (Required - 'SYSTEM' | 'ANNOUNCEMENT' | 'EVENT'),
+         "title": "string" (Required - non-empty),
+         "message": "string" (Required - non-empty),
+         "targetType": "string" (Required - 'ALL' | 'ROLE' | 'USER'),
+         "targetRoleId": "string|null" (Required if targetType is ROLE),
+         "targetUserId": "string|null" (Required if targetType is USER),
+         "expiresAt": "string|null" (Optional - ISO datetime string)
+     }
+   - Response Payload Example:
+     {
+         "message": "Notification created successfully.",
+         "notification": {
+             "id": "c8e32e68-df50-469f-b0ea-218d8fa7c47b",
+             "type": "ANNOUNCEMENT",
+             "title": "System Update",
+             "message": "We will have maintenance on Saturday.",
+             "targetType": "ALL",
+             "targetRoleId": null,
+             "targetUserId": null,
+             "createdByStaffId": "staff-admin-001",
+             "expiresAt": "2026-06-10T12:00:00.000Z",
+             "version": 1,
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+2. GET /api/notifications
+   - Description: Retrieves active notifications targeted at the authenticated user or their role.
+   - Authentication: Protected (Requires 'notifications:read' permission slug).
+   - Query Parameters:
+     includeRead (Optional - boolean 'true' to also list already read notifications)
+   - Response Payload Example:
+     [
+         {
+             "id": "c8e32e68-df50-469f-b0ea-218d8fa7c47b",
+             "type": "ANNOUNCEMENT",
+             "title": "System Update",
+             "message": "We will have maintenance on Saturday.",
+             "targetType": "ALL",
+             "targetRoleId": null,
+             "targetUserId": null,
+             "createdByStaffId": "staff-admin-001",
+             "expiresAt": "2026-06-10T12:00:00.000Z",
+             "version": 1,
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z",
+             "isRead": false
+         }
+     ]
+
+3. PUT /api/notifications/:id/read
+   - Description: Marks a notification as read for the authenticated staff user.
+   - Authentication: Protected (Requires 'notifications:update' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Notification marked as read."
+     }
+
+4. DELETE /api/notifications/:id
+   - Description: Deletes a notification from the system.
+   - Authentication: Protected (Requires 'notifications:delete' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Notification deleted successfully."
+     }
+
+================================================================================
+SECTION 10: WEBSITE CONTENT MANAGEMENT MODULES (Gallery, Reports, Support)
+================================================================================
+
+--------------------------------------------------------------------------------
+10.1 GALLERY MODULE (/api/gallery)
+--------------------------------------------------------------------------------
+
+1. GET /api/gallery/categories
+   - Description: Lists all gallery categories.
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "success": true,
+         "categories": [
+             {
+                 "categoryKey": "outreach",
+                 "categoryName": "Outreach",
+                 "categoryIcon": "outreach"
+             }
+         ]
+     }
+
+2. GET /api/gallery/items
+   - Description: Lists all gallery items, optionally filtered by category.
+   - Authentication: None.
+   - Query Parameters:
+     category (Optional - category key slug filter)
+   - Response Payload Example:
+     {
+         "success": true,
+         "items": [
+             {
+                 "id": "a0000000-0000-4000-8000-000000000001",
+                 "mediaType": "image",
+                 "categoryKey": "outreach",
+                 "title": "Nyegezi Outreach Drive",
+                 "description": "Providing medical assistance...",
+                 "imageUrl": "https://img.url",
+                 "thumbnailUrl": null,
+                 "videoUrl": null,
+                 "createdAt": "2026-06-04T12:00:00.000Z",
+                 "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+             }
+         ]
+     }
+
+3. POST /api/gallery/categories
+   - Description: Creates a new gallery category.
+   - Authentication: Protected (Requires 'gallery:create' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "categoryKey": "string" (Required - Unique alphanumeric key/slug),
+         "categoryName": "string" (Required - Display name),
+         "categoryIcon": "string" (Required - Icon slug name)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Category created successfully.",
+         "category": {
+             "categoryKey": "medical",
+             "categoryName": "Medical Care",
+             "categoryIcon": "medical"
+         }
+     }
+
+4. PUT /api/gallery/categories/:categoryKey
+   - Description: Updates an existing gallery category name and icon.
+   - Authentication: Protected (Requires 'gallery:update' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "categoryName": "string" (Required - Display name),
+         "categoryIcon": "string" (Required - Icon slug name)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Category updated successfully.",
+         "category": {
+             "categoryKey": "medical",
+             "categoryName": "Medical Outreach Clinic",
+             "categoryIcon": "outreach"
+         }
+     }
+
+5. DELETE /api/gallery/categories/:categoryKey
+   - Description: Deletes a gallery category. Blocks deletion if it is assigned to any items.
+   - Authentication: Protected (Requires 'gallery:delete' permission slug).
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Category deleted successfully."
+     }
+
+6. POST /api/gallery/items
+   - Description: Creates a new gallery media item.
+   - Authentication: Protected (Requires 'gallery:create' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "mediaType": "string" (Required - 'image' | 'video'),
+         "categoryKey": "string" (Required - Key of an existing category),
+         "title": "string" (Required),
+         "description": "string" (Required),
+         "imageUrl": "string|null" (Optional),
+         "thumbnailUrl": "string|null" (Optional),
+         "videoUrl": "string|null" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Gallery item created successfully.",
+         "item": {
+             "id": "a0000000-0000-4000-8000-000000000002",
+             "mediaType": "video",
+             "categoryKey": "outreach",
+             "title": "Clinical Team Drive",
+             "description": "Medical teams on field...",
+             "imageUrl": null,
+             "thumbnailUrl": "https://thumb.url",
+             "videoUrl": "https://video.url",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+7. PUT /api/gallery/items/:id
+   - Description: Updates an existing gallery media item.
+   - Authentication: Protected (Requires 'gallery:update' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "mediaType": "string" (Required - 'image' | 'video'),
+         "categoryKey": "string" (Required - Key of an existing category),
+         "title": "string" (Required),
+         "description": "string" (Required),
+         "imageUrl": "string|null" (Optional),
+         "thumbnailUrl": "string|null" (Optional),
+         "videoUrl": "string|null" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Gallery item updated successfully.",
+         "item": { ... }
+     }
+
+8. DELETE /api/gallery/items/:id
+   - Description: Deletes a gallery media item.
+   - Authentication: Protected (Requires 'gallery:delete' permission slug).
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Gallery item deleted successfully."
+     }
+
+--------------------------------------------------------------------------------
+10.2 REPORTS MODULE (/api/reports)
+--------------------------------------------------------------------------------
+
+1. GET /api/reports/impact-data
+   - Description: Fetches quarterly performance metrics formatted for public charts.
+   - Authentication: None.
+   - Query Parameters:
+     year (Optional - Defaults to current calendar year)
+   - Response Payload Example:
+     {
+         "success": true,
+         "title": "Quarterly Performance 2026",
+         "labels": ["Q1", "Q2", "Q3", "Q4"],
+         "datasets": [
+             {
+                 "label": "Children Served",
+                 "values": [340, 450, 600, 750],
+                 "color": "#0066cc"
+             }
+         ]
+     }
+
+2. GET /api/reports/annual
+   - Description: Lists all annual PDF reports.
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "success": true,
+         "reports": [
+             {
+                 "year": 2025,
+                 "title": "Annual Impact Report 2025",
+                 "description": "Detailed layout...",
+                 "file_size": "2.4 MB",
+                 "page_count": 24,
+                 "download_url": "https://example.com/report.pdf"
+             }
+         ]
+     }
+
+3. GET /api/reports/quarterly
+   - Description: Lists all quarterly progress PDF reports.
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "success": true,
+         "reports": [
+             {
+                 "quarter": "Q1 2026",
+                 "title": "Quarter 1 Progress Report 2026",
+                 "period": "January - March 2026",
+                 "description": "Progress updates...",
+                 "file_size": "1.1 MB",
+                 "download_url": "https://example.com/q1.pdf"
+             }
+         ]
+     }
+
+4. GET /api/reports/success-stories
+   - Description: Lists success stories.
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "success": true,
+         "stories": [
+             {
+                 "id": "d0000000-0000-4000-8000-000000000001",
+                 "title": "John's Recovery Journey",
+                 "description": "John received critical care...",
+                 "impact": "Reintegrated into school",
+                 "date": "May 12, 2026",
+                 "category": "healthcare"
+             }
+         ]
+     }
+
+5. POST /api/reports/annual
+   - Description: Publishes a new annual report.
+   - Authentication: Protected (Requires 'reports:create' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - UUIDv4),
+         "year": "number" (Required - Unique calendar year),
+         "title": "string" (Required),
+         "description": "string" (Required),
+         "fileSize": "string" (Required - e.g. '2.4 MB'),
+         "pageCount": "number" (Required),
+         "downloadUrl": "string" (Required - URL to PDF file)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Annual report created successfully.",
+         "report": { ... }
+     }
+
+6. PUT /api/reports/annual/:id
+   - Description: Updates an annual report.
+   - Authentication: Protected (Requires 'reports:update' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "year": "number" (Required),
+         "title": "string" (Required),
+         "description": "string" (Required),
+         "fileSize": "string" (Required),
+         "pageCount": "number" (Required),
+         "downloadUrl": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Annual report updated successfully.",
+         "report": { ... }
+     }
+
+7. DELETE /api/reports/annual/:id
+   - Description: Deletes an annual report entry.
+   - Authentication: Protected (Requires 'reports:delete' permission slug).
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Annual report deleted successfully."
+     }
+
+8. POST /api/reports/quarterly
+   - Description: Publishes a new quarterly progress report.
+   - Authentication: Protected (Requires 'reports:create' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - UUIDv4),
+         "quarter": "string" (Required - e.g. 'Q1 2026'),
+         "title": "string" (Required),
+         "period": "string" (Required - e.g. 'January - March 2026'),
+         "description": "string" (Required),
+         "fileSize": "string" (Required),
+         "downloadUrl": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Quarterly report created successfully.",
+         "report": { ... }
+     }
+
+9. PUT /api/reports/quarterly/:id
+   - Description: Updates a quarterly progress report.
+   - Authentication: Protected (Requires 'reports:update' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "quarter": "string" (Required),
+         "title": "string" (Required),
+         "period": "string" (Required),
+         "description": "string" (Required),
+         "fileSize": "string" (Required),
+         "downloadUrl": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Quarterly report updated successfully.",
+         "report": { ... }
+     }
+
+10. DELETE /api/reports/quarterly/:id
+    - Description: Deletes a quarterly report entry.
+    - Authentication: Protected (Requires 'reports:delete' permission slug).
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Quarterly report deleted successfully."
+      }
+
+11. POST /api/reports/success-stories
+    - Description: Publishes a new success story.
+    - Authentication: Protected (Requires 'reports:create' permission slug).
+    - Request Body Parameters (camelCase):
+      {
+          "id": "string" (Required - UUIDv4),
+          "title": "string" (Required),
+          "description": "string" (Required),
+          "impact": "string" (Required),
+          "date": "string" (Required),
+          "category": "string" (Required - 'education' | 'healthcare' | 'social' | 'nutrition')
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Success story created successfully.",
+          "story": { ... }
+      }
+
+12. PUT /api/reports/success-stories/:id
+    - Description: Updates a success story.
+    - Authentication: Protected (Requires 'reports:update' permission slug).
+    - Request Body Parameters (camelCase):
+      {
+          "title": "string" (Required),
+          "description": "string" (Required),
+          "impact": "string" (Required),
+          "date": "string" (Required),
+          "category": "string" (Required - 'education' | 'healthcare' | 'social' | 'nutrition')
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Success story updated successfully.",
+          "story": { ... }
+      }
+
+13. DELETE /api/reports/success-stories/:id
+    - Description: Deletes a success story entry.
+    - Authentication: Protected (Requires 'reports:delete' permission slug).
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Success story deleted successfully."
+      }
+
+14. GET /api/reports/metrics
+    - Description: Lists all raw impact metrics configured for the charts.
+    - Authentication: Protected (Requires 'reports:read' permission slug).
+    - Query Parameters:
+      year (Optional - filter by year)
+    - Response Payload Example:
+      {
+          "success": true,
+          "metrics": [
+              {
+                  "id": "e0000000-0000-4000-8000-000000000001",
+                  "label": "Children Served",
+                  "q1Value": 340,
+                  "q2Value": 450,
+                  "q3Value": 600,
+                  "q4Value": 750,
+                  "color": "#0066cc",
+                  "year": 2026,
+                  "createdAt": "2026-06-04T12:00:00.000Z",
+                  "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+              }
+          ]
+      }
+
+15. POST /api/reports/metrics
+    - Description: Creates a new quarterly chart metric category.
+    - Authentication: Protected (Requires 'reports:create' permission slug).
+    - Request Body Parameters (camelCase):
+      {
+          "id": "string" (Required - UUIDv4),
+          "label": "string" (Required),
+          "q1Value": "number" (Required),
+          "q2Value": "number" (Required),
+          "q3Value": "number" (Required),
+          "q4Value": "number" (Required),
+          "color": "string" (Required - hex color string or color name),
+          "year": "number" (Required)
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Impact metric created successfully.",
+          "metric": { ... }
+      }
+
+16. PUT /api/reports/metrics/:id
+    - Description: Updates a quarterly chart metric.
+    - Authentication: Protected (Requires 'reports:update' permission slug).
+    - Request Body Parameters (camelCase):
+      {
+          "label": "string" (Required),
+          "q1Value": "number" (Required),
+          "q2Value": "number" (Required),
+          "q3Value": "number" (Required),
+          "q4Value": "number" (Required),
+          "color": "string" (Required),
+          "year": "number" (Required)
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Impact metric updated successfully.",
+          "metric": { ... }
+      }
+
+17. DELETE /api/reports/metrics/:id
+    - Description: Deletes a quarterly chart metric.
+    - Authentication: Protected (Requires 'reports:delete' permission slug).
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Impact metric deleted successfully."
+      }
+
+--------------------------------------------------------------------------------
+10.3 VOLUNTEER & SUPPORT MODULE (/api/volunteer)
+--------------------------------------------------------------------------------
+
+1. POST /api/volunteer/submit
+   - Description: Submits a volunteer registration application.
+   - Authentication: None (Publicly open).
+   - Request Body Parameters (snake_case exception to match web form):
+     {
+         "full_name": "string" (Required - non-empty),
+         "email_address": "string" (Required - valid email structure),
+         "phone_number": "string" (Required),
+         "volunteer_type": "string" (Required - 'medical' | 'outreach' | 'education' | 'admin' | 'fundraising' | 'other'),
+         "message": "string" (Required - minimum 10 characters)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Volunteer application submitted successfully.",
+         "application": {
+             "id": "f8e32e68-df50-469f-b0ea-218d8fa7c47d",
+             "fullName": "Jane Doe",
+             "emailAddress": "jane@example.com",
+             "phoneNumber": "+255111222333",
+             "volunteerType": "medical",
+             "message": "I want to volunteer...",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+2. GET /api/volunteer/applications
+   - Description: Retrieves all submitted volunteer applications.
+   - Authentication: Protected (Requires 'support:read' permission slug).
+   - Response Payload Example:
+     {
+         "success": true,
+         "applications": [
+             {
+                 "id": "f8e32e68-df50-469f-b0ea-218d8fa7c47d",
+                 "fullName": "Jane Doe",
+                 "emailAddress": "jane@example.com",
+                 "phoneNumber": "+255111222333",
+                 "volunteerType": "medical",
+                 "message": "I want to volunteer...",
+                 "createdAt": "2026-06-04T12:00:00.000Z",
+                 "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+             }
+         ]
+     }
+
+3. DELETE /api/volunteer/applications/:id
+   - Description: Purges a volunteer application entry from the system database.
+   - Authentication: Protected (Requires 'support:delete' permission slug).
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Volunteer application deleted successfully."
      }
 ================================================================================

@@ -120,3 +120,127 @@ CREATE INDEX IF NOT EXISTS idx_local_auth_active_expires_at ON local_auth_sessio
 CREATE INDEX IF NOT EXISTS idx_lite_child_name ON children_profiles (full_name); 
 CREATE INDEX IF NOT EXISTS idx_lite_child_serial ON children_profiles (custom_serial_id); 
 CREATE INDEX IF NOT EXISTS idx_lite_child_loc ON children_profiles (primary_location_id);
+
+CREATE TABLE IF NOT EXISTS notifications ( 
+    id TEXT PRIMARY KEY NOT NULL, 
+    type TEXT NOT NULL, 
+    title TEXT NOT NULL, 
+    message TEXT NOT NULL, 
+    target_type TEXT NOT NULL CHECK (target_type IN ('ALL', 'ROLE', 'USER')), 
+    target_role_id TEXT NULL, 
+    target_user_id TEXT NULL, 
+    created_by_staff_id TEXT NULL, 
+    expires_at TEXT NULL, 
+    version INTEGER NOT NULL DEFAULT 1, 
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (target_role_id) REFERENCES roles (id) ON DELETE CASCADE,
+    FOREIGN KEY (target_user_id) REFERENCES staff_users (id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by_staff_id) REFERENCES staff_users (id) ON DELETE SET NULL
+); 
+
+CREATE TABLE IF NOT EXISTS notification_reads ( 
+    notification_id TEXT NOT NULL, 
+    staff_user_id TEXT NOT NULL, 
+    read_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    PRIMARY KEY (notification_id, staff_user_id), 
+    FOREIGN KEY (notification_id) REFERENCES notifications (id) ON DELETE CASCADE, 
+    FOREIGN KEY (staff_user_id) REFERENCES staff_users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_lite_notifications_last_modified ON notifications (last_modified_at);
+
+CREATE TABLE IF NOT EXISTS gallery_categories (
+    category_key TEXT PRIMARY KEY NOT NULL,
+    category_name TEXT NOT NULL,
+    category_icon TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS gallery_items (
+    id TEXT PRIMARY KEY NOT NULL,
+    media_type TEXT NOT NULL CHECK(media_type IN ('image', 'video')),
+    category_key TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    image_url TEXT,
+    thumbnail_url TEXT,
+    video_url TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_key) REFERENCES gallery_categories (category_key) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS reports_annual (
+    id TEXT PRIMARY KEY NOT NULL,
+    year INTEGER NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    file_size TEXT NOT NULL,
+    page_count INTEGER NOT NULL,
+    download_url TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS reports_quarterly (
+    id TEXT PRIMARY KEY NOT NULL,
+    quarter TEXT NOT NULL,
+    title TEXT NOT NULL,
+    period TEXT NOT NULL,
+    description TEXT NOT NULL,
+    file_size TEXT NOT NULL,
+    download_url TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS reports_success_stories (
+    id TEXT PRIMARY KEY NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    impact TEXT NOT NULL,
+    date TEXT NOT NULL,
+    category TEXT NOT NULL CHECK(category IN ('education', 'healthcare', 'social', 'nutrition')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS reports_impact_metrics (
+    id TEXT PRIMARY KEY NOT NULL,
+    label TEXT NOT NULL,
+    q1_value INTEGER NOT NULL,
+    q2_value INTEGER NOT NULL,
+    q3_value INTEGER NOT NULL,
+    q4_value INTEGER NOT NULL,
+    color TEXT NOT NULL,
+    year INTEGER NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS volunteer_applications (
+    id TEXT PRIMARY KEY NOT NULL,
+    full_name TEXT NOT NULL,
+    email_address TEXT NOT NULL,
+    phone_number TEXT NOT NULL,
+    volunteer_type TEXT NOT NULL CHECK(volunteer_type IN ('medical', 'outreach', 'education', 'admin', 'fundraising', 'other')),
+    message TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS contact_submissions (
+    id TEXT PRIMARY KEY NOT NULL,
+    full_name TEXT NOT NULL,
+    email_address TEXT NOT NULL,
+    message_subject TEXT NOT NULL,
+    message_content TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

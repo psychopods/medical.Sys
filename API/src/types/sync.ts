@@ -24,9 +24,30 @@ export interface SyncBiometricPayload {
     lastModifiedAt?: string;
 }
 
+export interface SyncNotificationPayload {
+    id: string;
+    type: 'SYSTEM' | 'ANNOUNCEMENT' | 'EVENT';
+    title: string;
+    message: string;
+    targetType: 'ALL' | 'ROLE' | 'USER';
+    targetRoleId: string | null;
+    targetUserId: string | null;
+    createdByStaffId: string | null;
+    expiresAt: string | null;
+    version: number;
+    lastModifiedAt?: string;
+}
+
+export interface SyncNotificationReadPayload {
+    notificationId: string;
+    staffUserId: string;
+    readAt: string;
+}
+
 export interface SyncPushRequestBody {
     childrenProfiles?: SyncChildProfilePayload[];
     biometricFingerprints?: SyncBiometricPayload[];
+    notificationReads?: SyncNotificationReadPayload[];
 }
 
 export interface SyncDeltaQuery {
@@ -34,7 +55,8 @@ export interface SyncDeltaQuery {
 }
 
 export interface SyncConflict {
-    domain: 'children_profiles' | 'biometric_fingerprints';
+    domain: 'children_profiles' | 'biometric_fingerprints' | 'notification_reads';
     id: string;
     reason: string;
 }
+

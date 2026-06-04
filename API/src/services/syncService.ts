@@ -4,7 +4,9 @@ import type {
     SyncBiometricPayload,
     SyncChildProfilePayload,
     SyncConflict,
-    SyncPushRequestBody
+    SyncPushRequestBody,
+    SyncNotificationPayload,
+    SyncNotificationReadPayload
 } from '../types/sync.ts';
 
 function validateUUIDv4(id: string, fieldName: string): void {
@@ -44,6 +46,7 @@ function parseSinceTimestamp(since?: string): Date {
 export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): Promise<{ conflicts: SyncConflict[] }> {
     const children = payload.childrenProfiles ?? [];
     const biometrics = payload.biometricFingerprints ?? [];
+    const notificationReads = payload.notificationReads ?? [];
     const conflicts: SyncConflict[] = [];
 
     const connection = await pool.getConnection();
@@ -220,6 +223,35 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
             }
         }
 
+        let readIdx = 0;
+        for (const read of notificationReads) {
+            readIdx++;
+            const savepointName = `read_savepoint_${readIdx}`;
+            await connection.execute(`SAVEPOINT ${savepointName}`);
+            try {
+                validateUUIDv4(read.notificationId, 'notification ID');
+                validateUUIDv4(read.staffUserId, 'staff user ID');
+
+                const mysqlReadAt = read.readAt 
+                    ? new Date(read.readAt).toISOString().slice(0, 19).replace('T', ' ')
+                    : new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+                await connection.execute(
+                    `INSERT IGNORE INTO notification_reads (notification_id, staff_user_id, read_at)
+                     VALUES (?, ?, ?)`,
+                    [read.notificationId, read.staffUserId, mysqlReadAt]
+                );
+                await connection.execute(`RELEASE SAVEPOINT ${savepointName}`);
+            } catch (err: any) {
+                await connection.execute(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+                conflicts.push({
+                    domain: 'notification_reads',
+                    id: `${read.notificationId}:${read.staffUserId}`,
+                    reason: err.message || 'Database error during notification read sync.'
+                });
+            }
+        }
+
         await connection.commit();
         return { conflicts };
     } catch (error) {
@@ -234,6 +266,7 @@ export async function getSyncDelta(pool: Pool, since?: string): Promise<{
     serverTime: string;
     childrenProfiles: SyncChildProfilePayload[];
     biometricFingerprints: SyncBiometricPayload[];
+    notifications: SyncNotificationPayload[];
 }> {
     const sinceDate = parseSinceTimestamp(since);
 
@@ -248,6 +281,14 @@ export async function getSyncDelta(pool: Pool, since?: string): Promise<{
     const [biometricRows] = await pool.execute<RowDataPacket[]>(
         `SELECT id, child_id, finger_index, template_data, quality_score, status, version, last_modified_at
          FROM biometric_fingerprints
+         WHERE last_modified_at > ?
+         ORDER BY last_modified_at ASC`,
+        [sinceDate]
+    );
+
+    const [notificationRows] = await pool.execute<RowDataPacket[]>(
+        `SELECT id, type, title, message, target_type, target_role_id, target_user_id, created_by_staff_id, expires_at, version, last_modified_at
+         FROM notifications
          WHERE last_modified_at > ?
          ORDER BY last_modified_at ASC`,
         [sinceDate]
@@ -276,6 +317,19 @@ export async function getSyncDelta(pool: Pool, since?: string): Promise<{
             templateBase64: Buffer.from(row.template_data as Buffer).toString('base64'),
             qualityScore: row.quality_score,
             status: row.status,
+            version: row.version,
+            lastModifiedAt: row.last_modified_at ? new Date(row.last_modified_at).toISOString() : undefined
+        })),
+        notifications: notificationRows.map((row) => ({
+            id: row.id,
+            type: row.type,
+            title: row.title,
+            message: row.message,
+            targetType: row.target_type,
+            targetRoleId: row.target_role_id,
+            targetUserId: row.target_user_id,
+            createdByStaffId: row.created_by_staff_id,
+            expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null,
             version: row.version,
             lastModifiedAt: row.last_modified_at ? new Date(row.last_modified_at).toISOString() : undefined
         }))

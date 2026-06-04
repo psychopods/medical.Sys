@@ -13,16 +13,12 @@ type StaffUserLookup = RowDataPacket & {
 
 const RESET_TOKEN_TTL_MINUTES = 60;
 
-function getFrontendBaseUrl(): string {
-    return process.env.APP_PUBLIC_URL?.trim() || 'http://localhost:5173';
-}
-
 function hashToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
 }
 
-function createResetToken(): string {
-    return randomBytes(32).toString('base64url');
+function createResetOtp(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 async function loadStaffUserByIdentifier(pool: Pool, identifier: string): Promise<StaffUserLookup | null> {
@@ -67,26 +63,121 @@ export async function requestPasswordResetLink(
         return { sent: true };
     }
 
-    const token = createResetToken();
-    await storeResetToken(pool, staffUser.id, token, requestedByStaffId);
+    // Invalidate any active password reset tokens for this user first to prevent hash collisions
+    await pool.execute(
+        'UPDATE password_reset_tokens SET used_at = NOW(), last_modified_at = NOW() WHERE staff_user_id = ? AND used_at IS NULL',
+        [staffUser.id]
+    );
 
-    const resetLink = `${getFrontendBaseUrl()}/forgot-password?token=${encodeURIComponent(token)}&email=${encodeURIComponent(staffUser.email)}`;
+    const otp = createResetOtp();
+    await storeResetToken(pool, staffUser.id, otp, requestedByStaffId);
+
     const recipientName = `${staffUser.first_name || ''} ${staffUser.last_name || ''}`.trim() || staffUser.username;
 
     await sendEmail({
         to: staffUser.email,
-        subject: 'Password reset link',
-        text: `Hello ${recipientName},\n\nUse this link to reset your password: ${resetLink}\n\nThis link expires in ${RESET_TOKEN_TTL_MINUTES} minutes.\nIf you did not request this, you can ignore this email.`,
+        subject: 'Your Password Reset Verification Code',
+        text: `Hello ${recipientName},\n\nYour 6-digit verification code is: ${otp}\n\nThis code expires in ${RESET_TOKEN_TTL_MINUTES} minutes.\nIf you did not request this, you can ignore this email.`,
         html: `
             <p>Hello ${recipientName},</p>
-            <p>Use this link to reset your password:</p>
-            <p><a href="${resetLink}">${resetLink}</a></p>
-            <p>This link expires in ${RESET_TOKEN_TTL_MINUTES} minutes.</p>
+            <p>Your 6-digit verification code is:</p>
+            <h2 style="font-size: 24px; letter-spacing: 2px; color: #0066cc; margin: 20px 0;">${otp}</h2>
+            <p>This code expires in ${RESET_TOKEN_TTL_MINUTES} minutes.</p>
             <p>If you did not request this, you can ignore this email.</p>
         `
     });
 
     return { sent: true };
+}
+
+export async function verifyPasswordResetOtp(
+    pool: Pool,
+    email: string,
+    otp: string
+): Promise<void> {
+    const staffUser = await loadStaffUserByIdentifier(pool, email);
+    if (!staffUser) {
+        throw new HttpError(400, 'Invalid or expired OTP.');
+    }
+
+    const otpHash = hashToken(otp.trim());
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `
+            SELECT id, expires_at, used_at
+            FROM password_reset_tokens
+            WHERE staff_user_id = ? AND token_hash = ?
+            LIMIT 1
+        `,
+        [staffUser.id, otpHash]
+    );
+
+    const resetRow = rows[0];
+    if (!resetRow) {
+        throw new HttpError(400, 'Invalid or expired OTP.');
+    }
+
+    if (resetRow.used_at) {
+        throw new HttpError(400, 'This OTP has already been used.');
+    }
+
+    const expiresAt = new Date(resetRow.expires_at);
+    if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() < Date.now()) {
+        throw new HttpError(400, 'This OTP has expired.');
+    }
+}
+
+export async function resetPasswordWithOtp(
+    pool: Pool,
+    email: string,
+    otp: string,
+    newPassword: string
+): Promise<void> {
+    if (newPassword.length < 6) {
+        throw new HttpError(400, 'Password must be at least 6 characters long.');
+    }
+
+    const staffUser = await loadStaffUserByIdentifier(pool, email);
+    if (!staffUser) {
+        throw new HttpError(400, 'Invalid or expired OTP.');
+    }
+
+    const otpHash = hashToken(otp.trim());
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `
+            SELECT id, expires_at, used_at
+            FROM password_reset_tokens
+            WHERE staff_user_id = ? AND token_hash = ?
+            LIMIT 1
+        `,
+        [staffUser.id, otpHash]
+    );
+
+    const resetRow = rows[0];
+    if (!resetRow) {
+        throw new HttpError(400, 'Invalid or expired OTP.');
+    }
+
+    if (resetRow.used_at) {
+        throw new HttpError(400, 'This OTP has already been used.');
+    }
+
+    const expiresAt = new Date(resetRow.expires_at);
+    if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() < Date.now()) {
+        throw new HttpError(400, 'This OTP has expired.');
+    }
+
+    const bcrypt = await import('bcrypt');
+    const passwordHash = await bcrypt.default.hash(newPassword, 10);
+
+    await pool.execute(
+        'UPDATE staff_users SET password_hash = ?, version = version + 1, last_modified_at = NOW() WHERE id = ?',
+        [passwordHash, staffUser.id]
+    );
+
+    await pool.execute(
+        'UPDATE password_reset_tokens SET used_at = NOW(), last_modified_at = NOW() WHERE id = ?',
+        [resetRow.id]
+    );
 }
 
 export async function resetPasswordWithToken(
@@ -126,6 +217,7 @@ export async function resetPasswordWithToken(
     const bcrypt = await import('bcrypt');
     const passwordHash = await bcrypt.default.hash(newPassword, 10);
 
-    await pool.execute('UPDATE staff_users SET password_hash = ? WHERE id = ?', [passwordHash, resetRow.staff_user_id]);
+    await pool.execute('UPDATE staff_users SET password_hash = ?, version = version + 1, last_modified_at = NOW() WHERE id = ?', [passwordHash, resetRow.staff_user_id]);
     await pool.execute('UPDATE password_reset_tokens SET used_at = NOW(), last_modified_at = NOW() WHERE id = ?', [resetRow.id]);
 }
+

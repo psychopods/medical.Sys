@@ -9,7 +9,7 @@ import {
     deleteStaffUser,
     getActiveOnlineStaffCount
 } from '../services/authService.ts';
-import { requestPasswordResetLink, resetPasswordWithToken } from '../services/passwordResetService.ts';
+import { requestPasswordResetLink, resetPasswordWithToken, verifyPasswordResetOtp, resetPasswordWithOtp } from '../services/passwordResetService.ts';
 import { requireAuthenticated, requirePermission } from '../middleware/auth.ts';
 import type { LoginRequestBody, LoginResponseBody, SignupRequestBody, SignupResponseBody } from '../types/auth.ts';
 import { HttpError, toHttpError } from '../utils/httpError.ts';
@@ -122,23 +122,63 @@ export function createAuthRouter(pool: Pool): Router {
         }
     });
 
-    router.post('/reset-password', async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    router.post('/verify-otp', async (request: Request, response: Response, next: NextFunction): Promise<void> => {
         try {
-            const token = requireString(request.body?.token, 'token');
-            const newPassword = requireString(request.body?.new_password, 'new_password');
-            const confirmPassword = requireString(request.body?.confirm_password, 'confirm_password');
-
-            if (newPassword !== confirmPassword) {
-                response.status(400).json({ success: false, message: 'Passwords do not match.' });
-                return;
-            }
-
-            await resetPasswordWithToken(pool, token, newPassword);
-
+            const email = requireString(request.body?.email, 'email');
+            const otp = requireString(request.body?.otp, 'otp');
+            await verifyPasswordResetOtp(pool, email, otp);
             response.status(200).json({
                 success: true,
-                message: 'Password reset successfully.'
+                message: 'OTP verified successfully.'
             });
+        } catch (error) {
+            next(toHttpError(error));
+        }
+    });
+
+    router.post('/resend-otp', async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+        try {
+            const email = requireString(request.body?.email, 'email');
+            await requestPasswordResetLink(pool, email);
+            response.status(200).json({
+                success: true,
+                message: 'OTP resent successfully.'
+            });
+        } catch (error) {
+            next(toHttpError(error));
+        }
+    });
+
+    router.post('/reset-password', async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+        try {
+            const otp = request.body?.otp;
+            if (otp !== undefined) {
+                // OTP reset flow
+                const email = requireString(request.body?.email, 'email');
+                const newPassword = requireString(request.body?.new_password || request.body?.newPassword, 'new_password');
+                await resetPasswordWithOtp(pool, email, otp, newPassword);
+                response.status(200).json({
+                    success: true,
+                    message: 'Password reset successfully.'
+                });
+            } else {
+                // Token-based fallback flow
+                const token = requireString(request.body?.token, 'token');
+                const newPassword = requireString(request.body?.new_password, 'new_password');
+                const confirmPassword = requireString(request.body?.confirm_password, 'confirm_password');
+
+                if (newPassword !== confirmPassword) {
+                    response.status(400).json({ success: false, message: 'Passwords do not match.' });
+                    return;
+                }
+
+                await resetPasswordWithToken(pool, token, newPassword);
+
+                response.status(200).json({
+                    success: true,
+                    message: 'Password reset successfully.'
+                });
+            }
         } catch (error) {
             next(toHttpError(error));
         }
@@ -219,6 +259,36 @@ export function createAuthRouter(pool: Pool): Router {
                 response.status(200).json({
                     success: true,
                     message: `Password reset link queued for ${target.email}.`
+                });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.post(
+        '/users/:id/reset-password',
+        requirePermission(pool, 'admin:update'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const newPassword = requireString(request.body.password, 'password');
+
+                if (newPassword.length < 6) {
+                    throw new HttpError(400, 'Password must be at least 6 characters long.');
+                }
+
+                const bcrypt = await import('bcrypt');
+                const passwordHash = await bcrypt.default.hash(newPassword, 10);
+
+                await pool.execute(
+                    'UPDATE staff_users SET password_hash = ?, version = version + 1, last_modified_at = NOW() WHERE id = ?',
+                    [passwordHash, id]
+                );
+
+                response.status(200).json({
+                    success: true,
+                    message: 'Staff user password reset successfully.'
                 });
             } catch (error) {
                 next(toHttpError(error));

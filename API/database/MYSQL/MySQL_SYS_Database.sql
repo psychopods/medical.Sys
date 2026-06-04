@@ -3,6 +3,8 @@ CREATE DATABASE MySQL_SYS_Database;
 USE MySQL_SYS_Database;
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `notification_reads`;
+DROP TABLE IF EXISTS `notifications`;
 DROP TABLE IF EXISTS `biometric_fingerprints`;
 DROP TABLE IF EXISTS `children_profiles`;
 DROP TABLE IF EXISTS `child_locations`;
@@ -13,6 +15,14 @@ DROP TABLE IF EXISTS `role_permissions`;
 DROP TABLE IF EXISTS `permissions`;
 DROP TABLE IF EXISTS `permission_categories`;
 DROP TABLE IF EXISTS `roles`;
+DROP TABLE IF EXISTS `gallery_items`;
+DROP TABLE IF EXISTS `gallery_categories`;
+DROP TABLE IF EXISTS `reports_annual`;
+DROP TABLE IF EXISTS `reports_quarterly`;
+DROP TABLE IF EXISTS `reports_success_stories`;
+DROP TABLE IF EXISTS `reports_impact_metrics`;
+DROP TABLE IF EXISTS `volunteer_applications`;
+DROP TABLE IF EXISTS `contact_submissions`;
 SET FOREIGN_KEY_CHECKS = 1;
 
 CREATE TABLE `roles` (
@@ -142,3 +152,133 @@ CREATE TABLE `biometric_fingerprints` (
     UNIQUE KEY `uq_child_finger` (`child_id`, `finger_index`),
     INDEX `idx_bio_last_modified` (`last_modified_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `notifications` (
+    `id` CHAR(36) NOT NULL,
+    `type` VARCHAR(50) NOT NULL, -- 'SYSTEM', 'ANNOUNCEMENT', 'EVENT'
+    `title` VARCHAR(100) NOT NULL,
+    `message` TEXT NOT NULL,
+    `target_type` VARCHAR(10) NOT NULL CHECK (`target_type` IN ('ALL', 'ROLE', 'USER')),
+    `target_role_id` VARCHAR(36) NULL,
+    `target_user_id` VARCHAR(36) NULL,
+    `created_by_staff_id` VARCHAR(36) NULL,
+    `expires_at` TIMESTAMP NULL,
+    `version` INT NOT NULL DEFAULT 1,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_notifications_role` FOREIGN KEY (`target_role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_notifications_user` FOREIGN KEY (`target_user_id`) REFERENCES `staff_users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_notifications_creator` FOREIGN KEY (`created_by_staff_id`) REFERENCES `staff_users` (`id`) ON DELETE SET NULL,
+    INDEX `idx_notifications_last_modified` (`last_modified_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `notification_reads` (
+    `notification_id` CHAR(36) NOT NULL,
+    `staff_user_id` CHAR(36) NOT NULL,
+    `read_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`notification_id`, `staff_user_id`),
+    CONSTRAINT `fk_reads_notification` FOREIGN KEY (`notification_id`) REFERENCES `notifications` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_reads_staff` FOREIGN KEY (`staff_user_id`) REFERENCES `staff_users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `gallery_categories` (
+    `category_key` VARCHAR(50) NOT NULL UNIQUE,
+    `category_name` VARCHAR(100) NOT NULL,
+    `category_icon` VARCHAR(50) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`category_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `gallery_items` (
+    `id` CHAR(36) NOT NULL,
+    `media_type` VARCHAR(10) NOT NULL,
+    `category_key` VARCHAR(50) NOT NULL,
+    `title` VARCHAR(150) NOT NULL,
+    `description` TEXT NOT NULL,
+    `image_url` VARCHAR(255) NULL,
+    `thumbnail_url` VARCHAR(255) NULL,
+    `video_url` VARCHAR(255) NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_gallery_cat` FOREIGN KEY (`category_key`) REFERENCES `gallery_categories` (`category_key`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `reports_annual` (
+    `id` CHAR(36) NOT NULL,
+    `year` INT NOT NULL UNIQUE,
+    `title` VARCHAR(150) NOT NULL,
+    `description` TEXT NOT NULL,
+    `file_size` VARCHAR(20) NOT NULL,
+    `page_count` INT NOT NULL,
+    `download_url` VARCHAR(255) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `reports_quarterly` (
+    `id` CHAR(36) NOT NULL,
+    `quarter` VARCHAR(20) NOT NULL,
+    `title` VARCHAR(150) NOT NULL,
+    `period` VARCHAR(50) NOT NULL,
+    `description` TEXT NOT NULL,
+    `file_size` VARCHAR(20) NOT NULL,
+    `download_url` VARCHAR(255) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `reports_success_stories` (
+    `id` CHAR(36) NOT NULL,
+    `title` VARCHAR(150) NOT NULL,
+    `description` TEXT NOT NULL,
+    `impact` VARCHAR(150) NOT NULL,
+    `date` VARCHAR(50) NOT NULL,
+    `category` VARCHAR(20) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `reports_impact_metrics` (
+    `id` CHAR(36) NOT NULL,
+    `label` VARCHAR(100) NOT NULL,
+    `q1_value` INT NOT NULL,
+    `q2_value` INT NOT NULL,
+    `q3_value` INT NOT NULL,
+    `q4_value` INT NOT NULL,
+    `color` VARCHAR(20) NOT NULL,
+    `year` INT NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `volunteer_applications` (
+    `id` CHAR(36) NOT NULL,
+    `full_name` VARCHAR(100) NOT NULL,
+    `email_address` VARCHAR(150) NOT NULL,
+    `phone_number` VARCHAR(20) NOT NULL,
+    `volunteer_type` VARCHAR(50) NOT NULL,
+    `message` TEXT NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `contact_submissions` (
+    `id` CHAR(36) NOT NULL,
+    `full_name` VARCHAR(100) NOT NULL,
+    `email_address` VARCHAR(150) NOT NULL,
+    `message_subject` VARCHAR(150) NOT NULL,
+    `message_content` TEXT NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+

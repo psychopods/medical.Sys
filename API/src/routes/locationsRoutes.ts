@@ -50,7 +50,6 @@ export function createLocationsRouter(pool: Pool): Router {
 
     router.get(
         '/',
-        requirePermission(pool, 'locations:read'),
         async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
             try {
                 const locations = await locationsService.listLocations(pool);
