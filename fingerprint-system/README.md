@@ -49,6 +49,9 @@ A comprehensive web-based application for managing child registrations with biom
 - install  Install Frontend Dependencies(npm install)
 - Run the project(npm run dev)
 
+## Prerequisites
+- Every page we create should wrap with the layout in the admin dashboard
+
 ### 1. Clone the repository
 
 ```bash
@@ -56,52 +59,4 @@ git clone https://github.com/psychopods/medical.Sys.git
 cd medical.Sys
 
 ###  System APIs
-
-# Authentication
-POST /api/auth/login
-POST /api/auth/forgot-password
-POST /api/auth/verify-otp
-POST /api/auth/resend-otp
-POST /api/auth/reset-password
-
-# Categories
-GET    /api/permission_categories
-POST   /api/permission_categories
-PUT    /api/permission_categories/{id}
-DELETE /api/permission_categories/{id}
-
-# Permissions
-GET    /api/permissions
-POST   /api/permissions
-PUT    /api/permissions/{id}
-DELETE /api/permissions/{id}
-
-# Roles
-GET    /api/roles
-POST   /api/roles
-PUT    /api/roles/{id}
-DELETE /api/roles/{id}
-
-# Role Permissions
-GET    /api/roles/{roleId}/permissions
-POST   /api/roles/{roleId}/permissions
-DELETE /api/roles/{roleId}/permissions/{permissionId}
-
-# Staff Users
-GET    /api/staff_users
-POST   /api/staff_users
-PUT    /api/staff_users/{id}
-DELETE /api/staff_users/{id}
-GET    /api/staff_users/generate_username
-
-# Other
-GET    /api/online_users
-GET    /api/audit_logs
-POST   /api/send_credentials
-
-# Child Management
-GET    /api/child_locations
-GET    /api/children_profiles
-POST   /api/children_profiles ------ register new child
-GET    /api/children_profiles/generate_id
-GET    /api/biometric_fingerprints
+-- entering into mysqlclient: mysql -u root -proot12345

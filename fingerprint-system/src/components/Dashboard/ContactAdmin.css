@@ -1,0 +1,413 @@
+.contact-admin {
+  padding: 24px;
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+.ca-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.ca-page-full {
+  width: 100%;
+}
+
+.ca-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 16px;
+}
+
+.ca-header h2 {
+  margin: 12px 0 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.ca-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.ca-back-btn:hover {
+  color: #0066cc;
+}
+
+.ca-header-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ca-dashboard-header {
+  margin-bottom: 32px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 16px;
+}
+
+.ca-dashboard-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 8px 0;
+}
+
+.ca-dashboard-header p {
+  color: #64748b;
+  margin: 0;
+}
+
+.ca-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.ca-stat-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.ca-stat-icon svg {
+  stroke: #0066cc;
+}
+
+.ca-stat-info h3 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px 0;
+}
+
+.ca-stat-info p {
+  color: #64748b;
+  margin: 0;
+  font-size: 14px;
+}
+
+.ca-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.ca-action-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fafbfc;
+}
+
+.ca-action-card:hover {
+  border-color: #0066cc;
+  background: #ffffff;
+}
+
+.ca-action-icon svg {
+  stroke: #0066cc;
+}
+
+.ca-action-info h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0 0 4px 0;
+}
+
+.ca-action-info p {
+  color: #64748b;
+  margin: 0;
+  font-size: 13px;
+}
+
+.ca-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+}
+
+.ca-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ca-table th,
+.ca-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+
+.ca-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.ca-table tr:hover {
+  background: #fafbfc;
+}
+
+.ca-desc-cell {
+  max-width: 250px;
+  line-height: 1.5;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ca-empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 40px !important;
+}
+
+.ca-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  margin: 0 2px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.ca-edit {
+  color: #0066cc;
+}
+
+.ca-edit:hover {
+  background: #e6f0ff;
+}
+
+.ca-delete {
+  color: #dc2626;
+}
+
+.ca-delete:hover {
+  background: #fee2e2;
+}
+
+.ca-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #0066cc;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ca-add-btn:hover {
+  background: #0052a3;
+}
+
+.ca-form-full {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 30px;
+}
+
+.ca-form {
+  width: 100%;
+}
+
+.ca-form-row {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.ca-form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ca-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #1a1a2e;
+}
+
+.ca-form-group input,
+.ca-form-group select,
+.ca-form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.ca-form-group input:focus,
+.ca-form-group select:focus,
+.ca-form-group textarea:focus {
+  outline: none;
+  border-color: #0066cc;
+}
+
+.ca-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.ca-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ca-btn-primary {
+  background: #0066cc;
+  color: white;
+}
+
+.ca-btn-primary:hover {
+  background: #0052a3;
+}
+
+.ca-btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.ca-btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.ca-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.ca-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #0066cc;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.ca-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  background: white;
+  border-radius: 4px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-left: 3px solid;
+}
+
+.ca-toast.success {
+  border-left-color: #10b981;
+}
+
+.ca-toast.error {
+  border-left-color: #ef4444;
+}
+
+.ca-toast button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .contact-admin {
+    padding: 16px;
+  }
+  
+  .ca-stats-grid,
+  .ca-actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ca-header-title {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .ca-table th,
+  .ca-table td {
+    padding: 8px 12px;
+  }
+  
+  .ca-desc-cell {
+    max-width: 150px;
+  }
+  
+  .ca-form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .ca-buttons {
+    flex-direction: column;
+  }
+  
+  .ca-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .ca-form-full {
+    padding: 20px;
+  }
+}

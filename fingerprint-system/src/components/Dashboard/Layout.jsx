@@ -115,6 +115,52 @@ const Layout = ({ children, user, onLogout }) => {
       label: 'Pharmacy', 
       roles: ['superuser', 'pharmacist'] 
     },
+    { 
+      path: '/gallery-admin', 
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="20" height="20" rx="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <circle cx="8.5" cy="8.5" r="2.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M21 15L16 10L5 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      ), 
+      label: 'Gallery Manager', 
+      roles: ['superuser', 'admin'] 
+    },
+    { 
+      path: '/reports-admin', 
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21 12H18L15 21L9 3L6 12H3" stroke="currentColor" strokeWidth="2"/>
+          <path d="M12 2L15 9H22L16 14L19 21L12 17L5 21L8 14L2 9H9L12 2Z" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+      ), 
+      label: 'Reports Manager', 
+      roles: ['superuser', 'admin'] 
+    },
+    { 
+      path: '/volunteer-admin', 
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21" stroke="currentColor" strokeWidth="2"/>
+          <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" strokeWidth="2"/>
+          <path d="M17 3.5L18.5 2L20 3.5L18.5 5L17 3.5Z" fill="currentColor" stroke="currentColor" strokeWidth="1"/>
+        </svg>
+      ), 
+      label: 'Volunteer Manager', 
+      roles: ['superuser', 'admin'] 
+    },
+    { 
+      path: '/contact-admin', 
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2"/>
+          <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+      ), 
+      label: 'Contact Manager', 
+      roles: ['superuser', 'admin'] 
+    },
   ];
 
   const filteredMenuItems = menuItems.filter(item => 
@@ -138,6 +184,10 @@ const Layout = ({ children, user, onLogout }) => {
       '/medical-examination': 'Medical Examination',
       '/laboratory': 'Laboratory',
       '/pharmacy': 'Pharmacy',
+      '/gallery-admin': 'Gallery Manager',
+      '/reports-admin': 'Reports Manager',
+      '/volunteer-admin': 'Volunteer Manager',
+      '/contact-admin': 'Contact Manager',
     };
     return titles[path] || 'Dashboard';
   };
@@ -210,7 +260,6 @@ const Layout = ({ children, user, onLogout }) => {
         </nav>
 
         <div className="sidebar-footer">
-          {/* Avatar and user details completely removed */}
           <button className="logout-btn-sidebar" onClick={handleLogout}>
             <span className="nav-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

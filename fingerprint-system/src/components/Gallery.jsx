@@ -46,16 +46,26 @@ const Gallery = () => {
       const response = await fetchWithTimeout(`${API_BASE_URL}/api/gallery/categories`);
       const data = await response.json();
       
+      console.log('Categories API response:', data);
+      
       if (response.ok && data.success) {
+        // Map the API response correctly
         const categoriesData = data.categories.map(cat => ({
-          id: cat.category_key,
-          name: cat.category_name,
-          icon: cat.category_icon
+          id: cat.categoryKey,
+          name: cat.categoryName,
+          icon: cat.categoryIcon
+        }));
+        setCategories([{ id: 'all', name: 'All', icon: 'all' }, ...categoriesData]);
+      } else if (response.ok && Array.isArray(data)) {
+        // Fallback if API returns array directly
+        const categoriesData = data.map(cat => ({
+          id: cat.categoryKey,
+          name: cat.categoryName,
+          icon: cat.categoryIcon
         }));
         setCategories([{ id: 'all', name: 'All', icon: 'all' }, ...categoriesData]);
       } else {
-        console.error('Failed to load categories:', data.message);
-        // Set default categories to avoid empty state
+        console.error('Failed to load categories:', data);
         setCategories([{ id: 'all', name: 'All', icon: 'all' }]);
       }
     } catch (error) {
@@ -66,7 +76,6 @@ const Gallery = () => {
         console.error('Error fetching categories:', error);
         showToast('Failed to connect to server', 'error');
       }
-      // Set default category so UI doesn't break
       setCategories([{ id: 'all', name: 'All', icon: 'all' }]);
     } finally {
       setLoadingCategories(false);
@@ -92,38 +101,56 @@ const Gallery = () => {
       const response = await fetchWithTimeout(url, { signal: controller.signal });
       const data = await response.json();
       
+      console.log('Gallery items API response:', data);
+      
+      let items = [];
+      
       if (response.ok && data.success) {
-        const items = data.items.map(item => ({
+        // Map the API response correctly (camelCase from API)
+        items = data.items.map(item => ({
           id: item.id,
-          type: item.media_type,
-          category: item.category_key,
+          type: item.mediaType,
+          category: item.categoryKey,
           title: item.title,
           description: item.description,
-          image: item.image_url,
-          thumbnail: item.thumbnail_url,
-          video_url: item.video_url,
-          date: new Date(item.created_at).toLocaleDateString('en-US', {
+          image: item.imageUrl,
+          thumbnail: item.thumbnailUrl,
+          video_url: item.videoUrl,
+          date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
-          }),
-          created_at: item.created_at
+          }) : 'Date not available',
+          created_at: item.createdAt
         }));
-        setGalleryItems(items);
+      } else if (response.ok && Array.isArray(data)) {
+        // Fallback if API returns array directly
+        items = data.map(item => ({
+          id: item.id,
+          type: item.mediaType,
+          category: item.categoryKey,
+          title: item.title,
+          description: item.description,
+          image: item.imageUrl,
+          thumbnail: item.thumbnailUrl,
+          video_url: item.videoUrl,
+          date: item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }) : 'Date not available',
+          created_at: item.createdAt
+        }));
       } else {
-        if (data.message !== 'AbortError') {
-          console.error('Failed to load gallery items:', data.message);
-        }
-        setGalleryItems([]);
+        console.error('Failed to load gallery items:', data);
+        items = [];
       }
+      
+      setGalleryItems(items);
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error('Error fetching gallery items:', error);
-        if (error.name === 'AbortError') {
-          console.log('Request was cancelled');
-        } else {
-          showToast('Network error. Please check your connection.', 'error');
-        }
+        showToast('Network error. Please check your connection.', 'error');
       }
       setGalleryItems([]);
     } finally {
@@ -206,7 +233,11 @@ const Gallery = () => {
           </svg>
         );
       default:
-        return null;
+        return (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+        );
     }
   };
 
@@ -310,7 +341,16 @@ const Gallery = () => {
                       </div>
                     ) : (
                       <div className="gallery-video">
-                        <img src={item.thumbnail} alt={item.title} />
+                        {item.thumbnail ? (
+                          <img src={item.thumbnail} alt={item.title} />
+                        ) : (
+                          <div className="video-placeholder">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <rect x="2" y="4" width="20" height="16" rx="2" stroke="white" strokeWidth="2"/>
+                              <polygon points="10,8 16,12 10,16" fill="white"/>
+                            </svg>
+                          </div>
+                        )}
                         <div className="video-play-btn">
                           <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
@@ -331,6 +371,7 @@ const Gallery = () => {
                       <h3>{item.title}</h3>
                       <p>{item.description}</p>
                       <span className="gallery-date">{item.date}</span>
+                      <span className="gallery-category">{item.category}</span>
                     </div>
                   </div>
                 </div>
@@ -364,23 +405,35 @@ const Gallery = () => {
               </div>
             ) : (
               <div className="modal-video">
-                <iframe
-                  src={selectedMedia.video_url}
-                  title={selectedMedia.title}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
+                {selectedMedia.video_url ? (
+                  <iframe
+                    src={selectedMedia.video_url}
+                    title={selectedMedia.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                ) : (
+                  <div className="video-placeholder-large">
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="2" y="4" width="20" height="16" rx="2" stroke="#0066cc" strokeWidth="2"/>
+                      <polygon points="10,8 16,12 10,16" fill="#0066cc"/>
+                    </svg>
+                    <p>Video URL not available</p>
+                  </div>
+                )}
               </div>
             )}
             
             <div className="modal-info">
               <h2>{selectedMedia.title}</h2>
               <p>{selectedMedia.description}</p>
-              <span className="modal-date">{selectedMedia.date}</span>
-              <span className="modal-category">
-                {categories.find(c => c.id === selectedMedia.category)?.name || selectedMedia.category}
-              </span>
+              <div className="modal-meta">
+                <span className="modal-date">{selectedMedia.date}</span>
+                <span className="modal-category">
+                  Category: {selectedMedia.category}
+                </span>
+              </div>
             </div>
           </div>
         </div>

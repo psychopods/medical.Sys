@@ -23,6 +23,10 @@ import ChildRegistration from './components/Dashboard/ChildRegistration';
 import MedicalExamination from './components/Dashboard/MedicalExamination';
 import Laboratory from './components/Dashboard/Laboratory';
 import Pharmacy from './components/Dashboard/Pharmacy';
+import GalleryAdmin from './components/Dashboard/GalleryAdmin';
+import ReportsAdmin from './components/Dashboard/ReportsAdmin';
+import VolunteerAdmin from './components/Dashboard/VolunteerAdmin';
+import ContactAdmin from './components/Dashboard/ContactAdmin';
 import { ProtectedRoute, RoleBasedRoute } from './components/ProtectedRoute';
 import './App.css';
 
@@ -165,6 +169,42 @@ function App() {
             <RoleBasedRoute allowedRoles={['superuser', 'pharmacist']}>
               <ProtectedLayout>
                 <Pharmacy />
+              </ProtectedLayout>
+            </RoleBasedRoute>
+          } />
+          
+          {/* Gallery Admin Route */}
+          <Route path="/gallery-admin" element={
+            <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
+              <ProtectedLayout>
+                <GalleryAdmin />
+              </ProtectedLayout>
+            </RoleBasedRoute>
+          } />
+          
+          {/* Reports Admin Route */}
+          <Route path="/reports-admin" element={
+            <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
+              <ProtectedLayout>
+                <ReportsAdmin />
+              </ProtectedLayout>
+            </RoleBasedRoute>
+          } />
+          
+          {/* Volunteer Admin Route */}
+          <Route path="/volunteer-admin" element={
+            <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
+              <ProtectedLayout>
+                <VolunteerAdmin />
+              </ProtectedLayout>
+            </RoleBasedRoute>
+          } />
+          
+          {/* Contact Admin Route */}
+          <Route path="/contact-admin" element={
+            <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
+              <ProtectedLayout>
+                <ContactAdmin />
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
