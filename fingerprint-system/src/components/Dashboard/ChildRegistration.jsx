@@ -1178,17 +1178,19 @@ const ChildRegistration = () => {
     }, 1500);
   };
 
-  const handleLoadExistingRecord = () => {
-    if (existingChild && existingChild.fullName) {
-      showToast(`Loading complete record for: ${existingChild.fullName}`, 'info');
-    } else {
-      showToast('No record selected', 'error');
-    }
-    setActivePage('list');
+const handleLoadExistingRecord = () => {
+  if (existingChild && existingChild.fullName) {
+    // Store child data in sessionStorage for the medical records page
+    sessionStorage.setItem('selectedChild', JSON.stringify(existingChild));
+    // Navigate to medical records page
+    navigate('/medical-records', { state: { child: existingChild } });
     setFingerprintExists(null);
     setExistingChild(null);
     setExistingChildImages(null);
-  };
+  } else {
+    showToast('No record selected', 'error');
+  }
+};
 
   const handleCompleteRegistration = async () => {
     if (!validateForm()) {
@@ -2394,7 +2396,7 @@ const ChildRegistration = () => {
               <div className="child-reg-fingerprint-status"><span className="child-reg-status-badge child-reg-status-pending">Pending</span></div>
             </div>
             <div className="child-reg-form-actions">
-              <button className="child-reg-btn-primary" onClick={handleLoadExistingRecord}>Load Full Record</button>
+              <button className="child-reg-btn-primary" onClick={handleLoadExistingRecord}>Add Records</button>
               <button className="child-reg-btn-secondary" onClick={() => { setActivePage('list'); setFingerprintExists(null); setExistingChild(null); setExistingChildImages(null); }}>Close</button>
             </div>
           </div>

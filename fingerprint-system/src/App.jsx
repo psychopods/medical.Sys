@@ -27,6 +27,7 @@ import GalleryAdmin from './components/Dashboard/GalleryAdmin';
 import ReportsAdmin from './components/Dashboard/ReportsAdmin';
 import VolunteerAdmin from './components/Dashboard/VolunteerAdmin';
 import ContactAdmin from './components/Dashboard/ContactAdmin';
+import MedicalRecords from './components/Dashboard/MedicalRecords';
 import { ProtectedRoute, RoleBasedRoute } from './components/ProtectedRoute';
 import './App.css';
 
@@ -205,6 +206,15 @@ function App() {
             <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
               <ProtectedLayout>
                 <ContactAdmin />
+              </ProtectedLayout>
+            </RoleBasedRoute>
+          } />
+          
+          {/* Medical Records Route */}
+          <Route path="/medical-records" element={
+            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse']}>
+              <ProtectedLayout>
+                <MedicalRecords />
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
