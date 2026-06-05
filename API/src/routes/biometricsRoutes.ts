@@ -195,5 +195,58 @@ export function createBiometricsRouter(pool: Pool): Router {
         }
     );
 
+    router.get(
+        '/',
+        requirePermission(pool, 'biometrics:read'),
+        async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const result = await biometricsService.listAllFingerprints(pool);
+                response.status(200).json({ success: true, fingerprints: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/:id',
+        requirePermission(pool, 'biometrics:read'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const result = await biometricsService.getFingerprint(pool, id);
+                response.status(200).json({ success: true, fingerprint: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.put(
+        '/:id',
+        requirePermission(pool, 'biometrics:update'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const fingerIndex = requireInteger(request.body.fingerIndex, 'fingerIndex');
+                const templateBase64 = requireString(request.body.templateBase64, 'templateBase64');
+                const qualityScore = optionalInteger(request.body.qualityScore, 'qualityScore');
+                const status = requireString(request.body.status, 'status') as 'PENDING' | 'VERIFIED' | 'REJECTED';
+
+                const result = await biometricsService.updateFingerprint(
+                    pool,
+                    id,
+                    fingerIndex,
+                    templateBase64,
+                    qualityScore,
+                    status
+                );
+                response.status(200).json({ success: true, message: 'Fingerprint record updated successfully.', fingerprint: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
     return router;
 }

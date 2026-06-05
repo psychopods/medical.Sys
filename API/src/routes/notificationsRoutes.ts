@@ -141,5 +141,110 @@ export function createNotificationsRouter(pool: Pool): Router {
         }
     );
 
+    router.get(
+        '/all',
+        requirePermission(pool, 'notifications:read'),
+        async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const result = await notificationsService.listAllNotifications(pool);
+                response.status(200).json({ success: true, notifications: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/reads',
+        requirePermission(pool, 'notifications:read'),
+        async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const result = await notificationsService.listAllNotificationReads(pool);
+                response.status(200).json({ success: true, reads: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.post(
+        '/reads',
+        requirePermission(pool, 'notifications:create'),
+        async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const notificationId = requireString(request.body.notificationId, 'notificationId');
+                const staffUserId = requireString(request.body.staffUserId, 'staffUserId');
+
+                await notificationsService.markNotificationAsReadManual(pool, notificationId, staffUserId);
+                response.status(201).json({ success: true, message: 'Notification read record created successfully.' });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.delete(
+        '/reads/:notificationId/:staffUserId',
+        requirePermission(pool, 'notifications:delete'),
+        async (request: Request<{ notificationId: string; staffUserId: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const notificationId = requireString(request.params.notificationId, 'notificationId');
+                const staffUserId = requireString(request.params.staffUserId, 'staffUserId');
+
+                await notificationsService.deleteNotificationRead(pool, notificationId, staffUserId);
+                response.status(200).json({ success: true, message: 'Notification read record deleted successfully.' });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/:id',
+        requirePermission(pool, 'notifications:read'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const result = await notificationsService.getNotification(pool, id);
+                response.status(200).json({ success: true, notification: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.put(
+        '/:id',
+        requirePermission(pool, 'notifications:update'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const type = requireString(request.body.type, 'type') as NotificationType;
+                const title = requireString(request.body.title, 'title');
+                const message = requireString(request.body.message, 'message');
+                const targetType = requireString(request.body.targetType, 'targetType') as TargetType;
+
+                const targetRoleId = optionalString(request.body.targetRoleId, 'targetRoleId');
+                const targetUserId = optionalString(request.body.targetUserId, 'targetUserId');
+                const expiresAt = optionalString(request.body.expiresAt, 'expiresAt');
+
+                const result = await notificationsService.updateNotification(
+                    pool,
+                    id,
+                    type,
+                    title,
+                    message,
+                    targetType,
+                    targetRoleId,
+                    targetUserId,
+                    expiresAt
+                );
+                response.status(200).json({ success: true, message: 'Notification updated successfully.', notification: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
     return router;
 }

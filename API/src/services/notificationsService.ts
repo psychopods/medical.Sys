@@ -190,3 +190,165 @@ export async function deleteNotification(pool: Pool, notificationId: string): Pr
 
     await pool.execute('DELETE FROM notifications WHERE id = ?', [notificationId]);
 }
+
+export async function getNotification(pool: Pool, id: string): Promise<Notification> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT id, type, title, message, target_type, target_role_id, target_user_id, created_by_staff_id, expires_at, version, created_at, last_modified_at
+         FROM notifications WHERE id = ? LIMIT 1`,
+        [id]
+    );
+    if (rows.length === 0) {
+        throw new HttpError(404, `Notification with ID '${id}' not found.`);
+    }
+    const row = rows[0];
+    return {
+        id: row.id,
+        type: row.type as NotificationType,
+        title: row.title,
+        message: row.message,
+        targetType: row.target_type as TargetType,
+        targetRoleId: row.target_role_id,
+        targetUserId: row.target_user_id,
+        createdByStaffId: row.created_by_staff_id,
+        expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null,
+        version: row.version,
+        createdAt: new Date(row.created_at).toISOString(),
+        lastModifiedAt: new Date(row.last_modified_at).toISOString()
+    };
+}
+
+export async function listAllNotifications(pool: Pool): Promise<Notification[]> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT id, type, title, message, target_type, target_role_id, target_user_id, created_by_staff_id, expires_at, version, created_at, last_modified_at
+         FROM notifications
+         ORDER BY created_at DESC`
+    );
+    return rows.map((row) => ({
+        id: row.id,
+        type: row.type as NotificationType,
+        title: row.title,
+        message: row.message,
+        targetType: row.target_type as TargetType,
+        targetRoleId: row.target_role_id,
+        targetUserId: row.target_user_id,
+        createdByStaffId: row.created_by_staff_id,
+        expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null,
+        version: row.version,
+        createdAt: new Date(row.created_at).toISOString(),
+        lastModifiedAt: new Date(row.last_modified_at).toISOString()
+    }));
+}
+
+export async function updateNotification(
+    pool: Pool,
+    id: string,
+    type: NotificationType,
+    title: string,
+    message: string,
+    targetType: TargetType,
+    targetRoleId: string | null,
+    targetUserId: string | null,
+    expiresAt: string | null
+): Promise<Notification> {
+    const [existing] = await pool.execute<RowDataPacket[]>(
+        'SELECT version FROM notifications WHERE id = ? LIMIT 1',
+        [id]
+    );
+    if (existing.length === 0) {
+        throw new HttpError(404, `Notification with ID '${id}' not found.`);
+    }
+
+    const trimmedTitle = title.trim();
+    const trimmedMessage = message.trim();
+    if (!trimmedTitle || !trimmedMessage) {
+        throw new HttpError(400, 'Title and Message cannot be empty.');
+    }
+
+    if (!['SYSTEM', 'ANNOUNCEMENT', 'EVENT'].includes(type)) {
+        throw new HttpError(400, 'Invalid notification type.');
+    }
+
+    if (!['ALL', 'ROLE', 'USER'].includes(targetType)) {
+        throw new HttpError(400, 'Invalid target type.');
+    }
+
+    if (targetType === 'ROLE' && !targetRoleId) {
+        throw new HttpError(400, 'targetRoleId is required for targetType ROLE.');
+    }
+
+    if (targetType === 'USER' && !targetUserId) {
+        throw new HttpError(400, 'targetUserId is required for targetType USER.');
+    }
+
+    const nextVersion = existing[0].version + 1;
+    const mysqlExpiresAt = expiresAt ? new Date(expiresAt).toISOString().slice(0, 19).replace('T', ' ') : null;
+
+    await pool.execute(
+        `UPDATE notifications
+         SET type = ?, title = ?, message = ?, target_type = ?, target_role_id = ?, target_user_id = ?, expires_at = ?, version = ?
+         WHERE id = ?`,
+        [type, trimmedTitle, trimmedMessage, targetType, targetRoleId, targetUserId, mysqlExpiresAt, nextVersion, id]
+    );
+
+    return getNotification(pool, id);
+}
+
+export async function listAllNotificationReads(pool: Pool): Promise<any[]> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT notification_id, staff_user_id, read_at
+         FROM notification_reads
+         ORDER BY read_at DESC`
+    );
+    return rows.map((row) => ({
+        notificationId: row.notification_id,
+        staffUserId: row.staff_user_id,
+        readAt: new Date(row.read_at).toISOString()
+    }));
+}
+
+export async function markNotificationAsReadManual(
+    pool: Pool,
+    notificationId: string,
+    staffUserId: string
+): Promise<void> {
+    const [check] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM notifications WHERE id = ? LIMIT 1',
+        [notificationId]
+    );
+    if (check.length === 0) {
+        throw new HttpError(404, `Notification with ID '${notificationId}' not found.`);
+    }
+
+    const [userCheck] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM staff_users WHERE id = ? LIMIT 1',
+        [staffUserId]
+    );
+    if (userCheck.length === 0) {
+        throw new HttpError(404, `Staff user with ID '${staffUserId}' not found.`);
+    }
+
+    await pool.execute(
+        'INSERT IGNORE INTO notification_reads (notification_id, staff_user_id, read_at) VALUES (?, ?, NOW())',
+        [notificationId, staffUserId]
+    );
+}
+
+export async function deleteNotificationRead(
+    pool: Pool,
+    notificationId: string,
+    staffUserId: string
+): Promise<void> {
+    const [check] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM notification_reads WHERE notification_id = ? AND staff_user_id = ? LIMIT 1',
+        [notificationId, staffUserId]
+    );
+    if (check.length === 0) {
+        throw new HttpError(404, 'Notification read record not found.');
+    }
+
+    await pool.execute(
+        'DELETE FROM notification_reads WHERE notification_id = ? AND staff_user_id = ?',
+        [notificationId, staffUserId]
+    );
+}
+

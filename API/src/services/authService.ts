@@ -489,3 +489,108 @@ export async function deleteStaffUser(pool: Pool, id: string): Promise<void> {
 
     await pool.execute('DELETE FROM staff_users WHERE id = ?', [id]);
 }
+
+export async function listSessions(pool: Pool): Promise<any[]> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT id, staff_user_id, is_active, last_accessed_at, created_at
+         FROM staff_sessions
+         ORDER BY created_at DESC`
+    );
+    return rows.map((row) => ({
+        id: row.id,
+        staffUserId: row.staff_user_id,
+        isActive: row.is_active === 1,
+        lastAccessedAt: row.last_accessed_at ? new Date(row.last_accessed_at).toISOString() : '',
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : ''
+    }));
+}
+
+export async function deleteSession(pool: Pool, sessionId: string): Promise<void> {
+    const [existing] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM staff_sessions WHERE id = ? LIMIT 1',
+        [sessionId]
+    );
+    if (existing.length === 0) {
+        throw new HttpError(404, `Session with ID '${sessionId}' not found.`);
+    }
+    await pool.execute('DELETE FROM staff_sessions WHERE id = ?', [sessionId]);
+}
+
+export async function listResetTokens(pool: Pool): Promise<any[]> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT id, staff_user_id, token_hash, requested_by_staff_id, expires_at, used_at, created_at
+         FROM password_reset_tokens
+         ORDER BY created_at DESC`
+    );
+    return rows.map((row) => ({
+        id: row.id,
+        staffUserId: row.staff_user_id,
+        tokenHash: row.token_hash,
+        requestedByStaffId: row.requested_by_staff_id,
+        expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : '',
+        usedAt: row.used_at ? new Date(row.used_at).toISOString() : null,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : ''
+    }));
+}
+
+export async function createResetTokenManual(
+    pool: Pool,
+    id: string,
+    staffUserId: string,
+    tokenHash: string,
+    requestedByStaffId: string | null,
+    expiresAt: string
+): Promise<any> {
+    const [userRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM staff_users WHERE id = ? LIMIT 1',
+        [staffUserId]
+    );
+    if (userRows.length === 0) {
+        throw new HttpError(404, `Staff user with ID '${staffUserId}' not found.`);
+    }
+
+    if (requestedByStaffId) {
+        const [reqRows] = await pool.execute<RowDataPacket[]>(
+            'SELECT 1 FROM staff_users WHERE id = ? LIMIT 1',
+            [requestedByStaffId]
+        );
+        if (reqRows.length === 0) {
+            throw new HttpError(404, `Requester staff user with ID '${requestedByStaffId}' not found.`);
+        }
+    }
+
+    await pool.execute(
+        `INSERT INTO password_reset_tokens (id, staff_user_id, token_hash, requested_by_staff_id, expires_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        [id, staffUserId, tokenHash.trim(), requestedByStaffId, new Date(expiresAt)]
+    );
+
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT id, staff_user_id, token_hash, requested_by_staff_id, expires_at, used_at, created_at
+         FROM password_reset_tokens WHERE id = ? LIMIT 1`,
+        [id]
+    );
+
+    const row = rows[0];
+    return {
+        id: row.id,
+        staffUserId: row.staff_user_id,
+        tokenHash: row.token_hash,
+        requestedByStaffId: row.requested_by_staff_id,
+        expiresAt: new Date(row.expires_at).toISOString(),
+        usedAt: row.used_at ? new Date(row.used_at).toISOString() : null,
+        createdAt: new Date(row.created_at).toISOString()
+    };
+}
+
+export async function deleteResetToken(pool: Pool, tokenId: string): Promise<void> {
+    const [existing] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM password_reset_tokens WHERE id = ? LIMIT 1',
+        [tokenId]
+    );
+    if (existing.length === 0) {
+        throw new HttpError(404, `Password reset token with ID '${tokenId}' not found.`);
+    }
+    await pool.execute('DELETE FROM password_reset_tokens WHERE id = ?', [tokenId]);
+}
+

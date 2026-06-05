@@ -287,3 +287,64 @@ export async function deleteFingerprint(pool: Pool, fingerprintId: string): Prom
 
     await pool.execute('DELETE FROM biometric_fingerprints WHERE id = ?', [fingerprintId]);
 }
+
+export async function listAllFingerprints(pool: Pool): Promise<FingerprintTemplateRecord[]> {
+    const [rows] = await pool.execute<FingerprintRow[]>(
+        `SELECT id, child_id, finger_index, quality_score, status, version, created_at, last_modified_at
+         FROM biometric_fingerprints
+         ORDER BY created_at DESC`
+    );
+    return rows.map(mapFingerprintRow);
+}
+
+export async function getFingerprint(pool: Pool, id: string): Promise<FingerprintTemplateRecord> {
+    validateUUIDv4(id, 'fingerprint ID');
+    const [rows] = await pool.execute<FingerprintRow[]>(
+        `SELECT id, child_id, finger_index, quality_score, status, version, created_at, last_modified_at
+         FROM biometric_fingerprints
+         WHERE id = ? LIMIT 1`,
+        [id]
+    );
+    if (rows.length === 0) {
+        throw new HttpError(404, `Fingerprint record with ID '${id}' not found.`);
+    }
+    return mapFingerprintRow(rows[0]);
+}
+
+export async function updateFingerprint(
+    pool: Pool,
+    id: string,
+    fingerIndex: number,
+    templateBase64: string,
+    qualityScore: number | null,
+    status: 'PENDING' | 'VERIFIED' | 'REJECTED'
+): Promise<FingerprintTemplateRecord> {
+    validateUUIDv4(id, 'fingerprint ID');
+    validateFingerIndex(fingerIndex);
+    validateOptionalQualityScore(qualityScore);
+    const templateData = decodeTemplateBase64(templateBase64);
+
+    if (!['PENDING', 'VERIFIED', 'REJECTED'].includes(status)) {
+        throw new HttpError(400, "status must be 'PENDING', 'VERIFIED', or 'REJECTED'.");
+    }
+
+    const [existing] = await pool.execute<FingerprintRow[]>(
+        'SELECT version FROM biometric_fingerprints WHERE id = ? LIMIT 1',
+        [id]
+    );
+    if (existing.length === 0) {
+        throw new HttpError(404, `Fingerprint record with ID '${id}' not found.`);
+    }
+
+    const nextVersion = existing[0].version + 1;
+
+    await pool.execute(
+        `UPDATE biometric_fingerprints
+         SET finger_index = ?, template_data = ?, quality_score = ?, status = ?, version = ?
+         WHERE id = ?`,
+        [fingerIndex, templateData, qualityScore, status, nextVersion, id]
+    );
+
+    return getFingerprint(pool, id);
+}
+

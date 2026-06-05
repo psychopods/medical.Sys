@@ -269,3 +269,21 @@ export async function deleteItem(pool: Pool, id: string): Promise<void> {
 
     await pool.execute('DELETE FROM gallery_items WHERE id = ?', [id]);
 }
+
+export async function getCategory(pool: Pool, categoryKey: string): Promise<GalleryCategory> {
+    const normalizedKey = categoryKey.trim().toLowerCase();
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        'SELECT category_key, category_name, category_icon FROM gallery_categories WHERE category_key = ? LIMIT 1',
+        [normalizedKey]
+    );
+    const row = rows[0];
+    if (!row) {
+        throw new HttpError(404, `Gallery category with key '${normalizedKey}' not found.`);
+    }
+    return {
+        categoryKey: row.category_key,
+        categoryName: row.category_name,
+        categoryIcon: row.category_icon
+    };
+}
+

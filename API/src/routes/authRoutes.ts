@@ -7,7 +7,12 @@ import {
     generateStaffUsername,
     updateStaffUser,
     deleteStaffUser,
-    getActiveOnlineStaffCount
+    getActiveOnlineStaffCount,
+    listSessions,
+    deleteSession,
+    listResetTokens,
+    createResetTokenManual,
+    deleteResetToken
 } from '../services/authService.ts';
 import { requestPasswordResetLink, resetPasswordWithToken, verifyPasswordResetOtp, resetPasswordWithOtp } from '../services/passwordResetService.ts';
 import { requireAuthenticated, requirePermission } from '../middleware/auth.ts';
@@ -403,6 +408,83 @@ export function createAuthRouter(pool: Pool): Router {
                 response.status(200).json({
                     message: 'Staff user deleted successfully.'
                 });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    // Sessions CRUD for Admin
+    router.get(
+        '/sessions',
+        requirePermission(pool, 'admin:read'),
+        async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const sessions = await listSessions(pool);
+                response.status(200).json({ success: true, sessions });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.delete(
+        '/sessions/:id',
+        requirePermission(pool, 'admin:delete'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                await deleteSession(pool, id);
+                response.status(200).json({ success: true, message: 'Session revoked successfully.' });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    // Password Reset Tokens CRUD for Admin
+    router.get(
+        '/reset-tokens',
+        requirePermission(pool, 'admin:read'),
+        async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const tokens = await listResetTokens(pool);
+                response.status(200).json({ success: true, tokens });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.post(
+        '/reset-tokens',
+        requirePermission(pool, 'admin:create'),
+        async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.body.id, 'id');
+                const staffUserId = requireString(request.body.staffUserId, 'staffUserId');
+                const tokenHash = requireString(request.body.tokenHash, 'tokenHash');
+                const requestedByStaffId = request.body.requestedByStaffId !== undefined && request.body.requestedByStaffId !== null
+                    ? requireString(request.body.requestedByStaffId, 'requestedByStaffId')
+                    : null;
+                const expiresAt = requireString(request.body.expiresAt, 'expiresAt');
+
+                const token = await createResetTokenManual(pool, id, staffUserId, tokenHash, requestedByStaffId, expiresAt);
+                response.status(201).json({ success: true, message: 'Password reset token created successfully.', token });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.delete(
+        '/reset-tokens/:id',
+        requirePermission(pool, 'admin:delete'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                await deleteResetToken(pool, id);
+                response.status(200).json({ success: true, message: 'Password reset token deleted successfully.' });
             } catch (error) {
                 next(toHttpError(error));
             }

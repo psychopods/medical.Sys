@@ -379,5 +379,61 @@ export function createReportsRouter(pool: Pool): Router {
         }
     );
 
+    router.get(
+        '/annual/:id',
+        requirePermission(pool, 'reports:read'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const result = await reportsService.getAnnualReport(pool, id);
+                response.status(200).json({ success: true, report: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/quarterly/:id',
+        requirePermission(pool, 'reports:read'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const result = await reportsService.getQuarterlyReport(pool, id);
+                response.status(200).json({ success: true, report: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/success-stories/:id',
+        requirePermission(pool, 'reports:read'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const result = await reportsService.getSuccessStory(pool, id);
+                response.status(200).json({ success: true, story: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/metrics/:id',
+        requirePermission(pool, 'reports:read'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const result = await reportsService.getImpactMetric(pool, id);
+                response.status(200).json({ success: true, metric: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
     return router;
 }

@@ -170,5 +170,33 @@ export function createGalleryRouter(pool: Pool): Router {
         }
     );
 
+    router.get(
+        '/categories/:categoryKey',
+        requirePermission(pool, 'gallery:read'),
+        async (request: Request<{ categoryKey: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const categoryKey = requireString(request.params.categoryKey, 'categoryKey');
+                const result = await galleryService.getCategory(pool, categoryKey);
+                response.status(200).json({ success: true, category: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/items/:id',
+        requirePermission(pool, 'gallery:read'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const result = await galleryService.getItem(pool, id);
+                response.status(200).json({ success: true, item: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
     return router;
 }

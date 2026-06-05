@@ -78,5 +78,71 @@ export function createContactRouter(pool: Pool): Router {
         }
     );
 
+    router.post(
+        '/submissions',
+        requirePermission(pool, 'support:create'),
+        async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.body.id, 'id');
+                const fullName = requireString(request.body.fullName || request.body.full_name, 'fullName');
+                const emailAddress = requireString(request.body.emailAddress || request.body.email_address, 'emailAddress');
+                const subject = requireString(request.body.messageSubject || request.body.message_subject, 'subject');
+                const message = requireString(request.body.messageContent || request.body.message_content, 'message');
+
+                const result = await contactService.submitContactFormWithId(
+                    pool,
+                    id,
+                    fullName,
+                    emailAddress,
+                    subject,
+                    message
+                );
+                response.status(201).json({ success: true, message: 'Contact submission created successfully.', submission: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/submissions/:id',
+        requirePermission(pool, 'support:read'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const result = await contactService.getContactSubmission(pool, id);
+                response.status(200).json({ success: true, submission: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.put(
+        '/submissions/:id',
+        requirePermission(pool, 'support:update'),
+        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const id = requireString(request.params.id, 'id');
+                const fullName = requireString(request.body.fullName || request.body.full_name, 'fullName');
+                const emailAddress = requireString(request.body.emailAddress || request.body.email_address, 'emailAddress');
+                const subject = requireString(request.body.messageSubject || request.body.message_subject, 'subject');
+                const message = requireString(request.body.messageContent || request.body.message_content, 'message');
+
+                const result = await contactService.updateContactSubmission(
+                    pool,
+                    id,
+                    fullName,
+                    emailAddress,
+                    subject,
+                    message
+                );
+                response.status(200).json({ success: true, message: 'Contact submission updated successfully.', submission: result });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
     return router;
 }

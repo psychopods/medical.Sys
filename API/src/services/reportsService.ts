@@ -608,3 +608,96 @@ export async function deleteSuccessStory(pool: Pool, id: string): Promise<void> 
 
     await pool.execute('DELETE FROM reports_success_stories WHERE id = ?', [id]);
 }
+
+export async function getAnnualReport(pool: Pool, id: string): Promise<AnnualReport> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT id, year, title, description, file_size, page_count, download_url, created_at, last_modified_at
+         FROM reports_annual WHERE id = ? LIMIT 1`,
+        [id]
+    );
+    const row = rows[0];
+    if (!row) {
+        throw new HttpError(404, `Annual report with ID '${id}' not found.`);
+    }
+    return {
+        id: row.id,
+        year: row.year,
+        title: row.title,
+        description: row.description,
+        fileSize: row.file_size,
+        pageCount: row.page_count,
+        downloadUrl: row.download_url,
+        createdAt: new Date(row.created_at).toISOString(),
+        lastModifiedAt: new Date(row.last_modified_at).toISOString()
+    };
+}
+
+export async function getQuarterlyReport(pool: Pool, id: string): Promise<QuarterlyReport> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT id, quarter, title, period, description, file_size, download_url, created_at, last_modified_at
+         FROM reports_quarterly WHERE id = ? LIMIT 1`,
+        [id]
+    );
+    const row = rows[0];
+    if (!row) {
+        throw new HttpError(404, `Quarterly report with ID '${id}' not found.`);
+    }
+    return {
+        id: row.id,
+        quarter: row.quarter,
+        title: row.title,
+        period: row.period,
+        description: row.description,
+        fileSize: row.file_size,
+        downloadUrl: row.download_url,
+        createdAt: new Date(row.created_at).toISOString(),
+        lastModifiedAt: new Date(row.last_modified_at).toISOString()
+    };
+}
+
+export async function getSuccessStory(pool: Pool, id: string): Promise<SuccessStory> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT id, title, description, impact, date, category, created_at, last_modified_at
+         FROM reports_success_stories WHERE id = ? LIMIT 1`,
+        [id]
+    );
+    const row = rows[0];
+    if (!row) {
+        throw new HttpError(404, `Success story with ID '${id}' not found.`);
+    }
+    return {
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        impact: row.impact,
+        date: row.date,
+        category: row.category as 'education' | 'healthcare' | 'social' | 'nutrition',
+        createdAt: new Date(row.created_at).toISOString(),
+        lastModifiedAt: new Date(row.last_modified_at).toISOString()
+    };
+}
+
+export async function getImpactMetric(pool: Pool, id: string): Promise<ImpactMetric> {
+    const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT id, label, q1_value, q2_value, q3_value, q4_value, color, year, created_at, last_modified_at
+         FROM reports_impact_metrics WHERE id = ? LIMIT 1`,
+        [id]
+    );
+    const row = rows[0];
+    if (!row) {
+        throw new HttpError(404, `Impact metric with ID '${id}' not found.`);
+    }
+    return {
+        id: row.id,
+        label: row.label,
+        q1Value: row.q1_value,
+        q2Value: row.q2_value,
+        q3Value: row.q3_value,
+        q4Value: row.q4_value,
+        color: row.color,
+        year: row.year,
+        createdAt: new Date(row.created_at).toISOString(),
+        lastModifiedAt: new Date(row.last_modified_at).toISOString()
+    };
+}
+
