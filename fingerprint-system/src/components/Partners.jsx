@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Partners.css';
 
 const Partners = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const [imageErrors, setImageErrors] = useState({});
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -13,8 +14,14 @@ const Partners = () => {
 
   const partners = [
     { id: 1, name: 'TRHM', logo: '/trhm.jpg' },
-    { id: 2, name: 'Mwanza EV', logo: '/mwanza_ev.jpg' }
+    { id: 2, name: 'Mwanza EV', logo: '/mwanza_ev.jpg' },
+    { id: 3, name: 'MITzKITS', logo: '/mitz-logo.png' }
   ];
+
+  // Handle image error - show placeholder with first letter
+  const handleImageError = (partnerId, partnerName) => {
+    setImageErrors(prev => ({ ...prev, [partnerId]: true }));
+  };
 
   // Duplicate partners for seamless looping
   const duplicatedPartners = [...partners, ...partners, ...partners, ...partners, ...partners];
@@ -50,13 +57,23 @@ const Partners = () => {
           <div className="partners-marquee">
             <div className="marquee-content">
               {duplicatedPartners.map((partner, index) => (
-                <div className="partner-logo-item" key={index}>
+                <div className="partner-logo-item" key={`${partner.id}-${index}`}>
                   <div className="partner-logo">
-                    <img 
-                      src={partner.logo} 
-                      alt={partner.name}
-                      className="partner-image"
-                    />
+                    {imageErrors[partner.id] ? (
+                      <div className="partner-logo-placeholder">
+                        <span className="placeholder-text">{partner.name.charAt(0)}</span>
+                      </div>
+                    ) : (
+                      <img 
+                        src={partner.logo} 
+                        alt={partner.name}
+                        className="partner-image"
+                        onError={() => handleImageError(partner.id, partner.name)}
+                      />
+                    )}
+                    <div className="partner-name-tooltip">
+                      <span>{partner.name}</span>
+                    </div>
                   </div>
                 </div>
               ))}

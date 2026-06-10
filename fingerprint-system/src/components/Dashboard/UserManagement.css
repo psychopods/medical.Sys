@@ -1459,3 +1459,145 @@
 .um-password-toggle:hover {
   background: #e0e0e0;
 }
+
+/* View Button */
+.um-view-btn {
+  color: #17a2b8;
+}
+
+.um-view-btn:hover {
+  background: #e8f7f9;
+  transform: translateY(-1px);
+}
+
+/* Action Buttons Group */
+.um-action-buttons-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* View Container */
+.um-view-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.um-view-section {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.um-view-section h3 {
+  font-size: 18px;
+  color: #1a1a2e;
+  margin: 0 0 20px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #667eea;
+}
+
+.um-view-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.um-view-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.um-view-item label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.um-view-item span {
+  font-size: 16px;
+  color: #1a1a2e;
+  font-weight: 500;
+}
+
+.um-view-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+/* Role Badge */
+.um-role-badge {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+/* Category Tag */
+.um-category-tag {
+  display: inline-block;
+  background: #e8e8ff;
+  color: #667eea;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+/* Permissions Tags */
+.um-permissions-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.um-permission-tag {
+  background: #f0f0f0;
+  color: #d63384;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+/* Permissions List View */
+.um-permissions-list-view {
+  padding: 10px 0;
+}
+
+.um-no-data {
+  color: #999;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .um-view-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .um-action-buttons-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .um-view-container {
+    padding: 10px;
+  }
+  
+  .um-view-section {
+    padding: 15px;
+  }
+}
+
+

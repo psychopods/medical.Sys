@@ -17,6 +17,12 @@ const ReportsAdmin = () => {
   const [successStories, setSuccessStories] = useState([]);
   const [impactMetrics, setImpactMetrics] = useState([]);
   
+  // View states
+  const [viewingAnnual, setViewingAnnual] = useState(null);
+  const [viewingQuarterly, setViewingQuarterly] = useState(null);
+  const [viewingStory, setViewingStory] = useState(null);
+  const [viewingMetric, setViewingMetric] = useState(null);
+  
   // Form states
   const [editingAnnual, setEditingAnnual] = useState(null);
   const [editingQuarterly, setEditingQuarterly] = useState(null);
@@ -84,6 +90,13 @@ const ReportsAdmin = () => {
     </svg>
   );
 
+  const IconView = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+
   const IconAdd = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M12 5V19" strokeWidth="2"/>
@@ -94,6 +107,14 @@ const ReportsAdmin = () => {
   const IconBack = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M15 18L9 12L15 6" strokeWidth="2"/>
+    </svg>
+  );
+
+  const IconDownload = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   );
 
@@ -109,7 +130,7 @@ const ReportsAdmin = () => {
     }, 3000);
   };
 
-  // Fetch with timeout and auth - FIXED: Add token to ALL requests
+  // Fetch with timeout and auth
   const fetchWithTimeout = async (url, options = {}, timeout = API_TIMEOUT) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -121,7 +142,6 @@ const ReportsAdmin = () => {
         ...options.headers
       };
       
-      // Add token for ALL requests (GET, POST, PUT, DELETE)
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -144,8 +164,6 @@ const ReportsAdmin = () => {
     try {
       const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/annual`);
       const data = await response.json();
-      
-      console.log('Annual reports response:', data);
       
       if (response.ok) {
         if (data.success && data.reports) {
@@ -180,8 +198,6 @@ const ReportsAdmin = () => {
       const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/quarterly`);
       const data = await response.json();
       
-      console.log('Quarterly reports response:', data);
-      
       if (response.ok) {
         if (data.success && data.reports) {
           const mappedReports = data.reports.map(report => ({
@@ -215,8 +231,6 @@ const ReportsAdmin = () => {
       const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/success-stories`);
       const data = await response.json();
       
-      console.log('Success stories response:', data);
-      
       if (response.ok) {
         if (data.success && data.stories) {
           setSuccessStories(data.stories);
@@ -240,8 +254,6 @@ const ReportsAdmin = () => {
     try {
       const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/metrics`);
       const data = await response.json();
-      
-      console.log('Impact metrics response:', data);
       
       if (response.ok) {
         if (data.success && data.metrics) {
@@ -691,6 +703,334 @@ const ReportsAdmin = () => {
     loadData();
   }, [navigate]);
 
+  // ============================================
+  // VIEW PAGES
+  // ============================================
+
+  // View Annual Report Page
+  const renderAnnualReportView = () => (
+    <div className="ra-page">
+      <div className="ra-header">
+        <button className="ra-back-btn" onClick={() => setActivePage('annual')}>
+          <IconBack /> Back to Annual Reports
+        </button>
+        <div className="ra-header-title">
+          <h2>Annual Report Details</h2>
+        </div>
+      </div>
+
+      {viewingAnnual && (
+        <div className="ra-view-container">
+          <div className="ra-view-section">
+            <div className="ra-view-info-grid">
+              <div className="ra-view-info-item">
+                <label>Year:</label>
+                <span className="ra-year-badge">{viewingAnnual.year}</span>
+              </div>
+              <div className="ra-view-info-item">
+                <label>Title:</label>
+                <span>{viewingAnnual.title}</span>
+              </div>
+              <div className="ra-view-info-item">
+                <label>File Size:</label>
+                <span>{viewingAnnual.file_size || 'N/A'}</span>
+              </div>
+              <div className="ra-view-info-item">
+                <label>Page Count:</label>
+                <span>{viewingAnnual.page_count || 'N/A'} pages</span>
+              </div>
+              <div className="ra-view-info-item full-width">
+                <label>Description:</label>
+                <p>{viewingAnnual.description}</p>
+              </div>
+              {viewingAnnual.download_url && (
+                <div className="ra-view-info-item full-width">
+                  <label>Download Link:</label>
+                  <a href={viewingAnnual.download_url} target="_blank" rel="noopener noreferrer" className="ra-download-link">
+                    <IconDownload /> Download Report
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="ra-view-actions">
+            <button 
+              className="ra-btn ra-btn-primary" 
+              onClick={() => {
+                setEditingAnnual(viewingAnnual);
+                setAnnualFormData({
+                  id: viewingAnnual.id,
+                  year: viewingAnnual.year,
+                  title: viewingAnnual.title,
+                  description: viewingAnnual.description,
+                  fileSize: viewingAnnual.file_size || '',
+                  pageCount: viewingAnnual.page_count || '',
+                  downloadUrl: viewingAnnual.download_url || ''
+                });
+                setActivePage('edit_annual');
+              }}
+            >
+              Edit Report
+            </button>
+            <button 
+              className="ra-btn ra-btn-secondary" 
+              onClick={() => setActivePage('annual')}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // View Quarterly Report Page
+  const renderQuarterlyReportView = () => (
+    <div className="ra-page">
+      <div className="ra-header">
+        <button className="ra-back-btn" onClick={() => setActivePage('quarterly')}>
+          <IconBack /> Back to Quarterly Reports
+        </button>
+        <div className="ra-header-title">
+          <h2>Quarterly Report Details</h2>
+        </div>
+      </div>
+
+      {viewingQuarterly && (
+        <div className="ra-view-container">
+          <div className="ra-view-section">
+            <div className="ra-view-info-grid">
+              <div className="ra-view-info-item">
+                <label>Quarter:</label>
+                <span className="ra-quarter-badge">{viewingQuarterly.quarter}</span>
+              </div>
+              <div className="ra-view-info-item">
+                <label>Period:</label>
+                <span>{viewingQuarterly.period}</span>
+              </div>
+              <div className="ra-view-info-item">
+                <label>Title:</label>
+                <span>{viewingQuarterly.title}</span>
+              </div>
+              <div className="ra-view-info-item">
+                <label>File Size:</label>
+                <span>{viewingQuarterly.file_size || 'N/A'}</span>
+              </div>
+              <div className="ra-view-info-item full-width">
+                <label>Description:</label>
+                <p>{viewingQuarterly.description}</p>
+              </div>
+              {viewingQuarterly.download_url && (
+                <div className="ra-view-info-item full-width">
+                  <label>Download Link:</label>
+                  <a href={viewingQuarterly.download_url} target="_blank" rel="noopener noreferrer" className="ra-download-link">
+                    <IconDownload /> Download Report
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="ra-view-actions">
+            <button 
+              className="ra-btn ra-btn-primary" 
+              onClick={() => {
+                setEditingQuarterly(viewingQuarterly);
+                setQuarterlyFormData({
+                  id: viewingQuarterly.id,
+                  quarter: viewingQuarterly.quarter,
+                  title: viewingQuarterly.title,
+                  period: viewingQuarterly.period,
+                  description: viewingQuarterly.description,
+                  fileSize: viewingQuarterly.file_size || '',
+                  downloadUrl: viewingQuarterly.download_url || ''
+                });
+                setActivePage('edit_quarterly');
+              }}
+            >
+              Edit Report
+            </button>
+            <button 
+              className="ra-btn ra-btn-secondary" 
+              onClick={() => setActivePage('quarterly')}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // View Success Story Page
+  const renderSuccessStoryView = () => (
+    <div className="ra-page">
+      <div className="ra-header">
+        <button className="ra-back-btn" onClick={() => setActivePage('stories')}>
+          <IconBack /> Back to Success Stories
+        </button>
+        <div className="ra-header-title">
+          <h2>Success Story Details</h2>
+        </div>
+      </div>
+
+      {viewingStory && (
+        <div className="ra-view-container">
+          <div className="ra-view-section">
+            <div className="ra-view-info-grid">
+              <div className="ra-view-info-item">
+                <label>Title:</label>
+                <span className="ra-story-title">{viewingStory.title}</span>
+              </div>
+              <div className="ra-view-info-item">
+                <label>Category:</label>
+                <span className="ra-category-tag">{viewingStory.category}</span>
+              </div>
+              <div className="ra-view-info-item">
+                <label>Date:</label>
+                <span>{viewingStory.date}</span>
+              </div>
+              <div className="ra-view-info-item full-width">
+                <label>Description:</label>
+                <p>{viewingStory.description}</p>
+              </div>
+              <div className="ra-view-info-item full-width">
+                <label>Impact:</label>
+                <div className="ra-impact-box">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                  <span>{viewingStory.impact}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="ra-view-actions">
+            <button 
+              className="ra-btn ra-btn-primary" 
+              onClick={() => {
+                setEditingStory(viewingStory);
+                setStoryFormData({
+                  id: viewingStory.id,
+                  title: viewingStory.title,
+                  description: viewingStory.description,
+                  impact: viewingStory.impact,
+                  date: viewingStory.date,
+                  category: viewingStory.category
+                });
+                setActivePage('edit_story');
+              }}
+            >
+              Edit Story
+            </button>
+            <button 
+              className="ra-btn ra-btn-secondary" 
+              onClick={() => setActivePage('stories')}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // View Impact Metric Page
+  const renderImpactMetricView = () => (
+    <div className="ra-page">
+      <div className="ra-header">
+        <button className="ra-back-btn" onClick={() => setActivePage('metrics')}>
+          <IconBack /> Back to Impact Metrics
+        </button>
+        <div className="ra-header-title">
+          <h2>Impact Metric Details</h2>
+        </div>
+      </div>
+
+      {viewingMetric && (
+        <div className="ra-view-container">
+          <div className="ra-view-section">
+            <div className="ra-view-info-grid">
+              <div className="ra-view-info-item">
+                <label>Label:</label>
+                <span>{viewingMetric.label}</span>
+              </div>
+              <div className="ra-view-info-item">
+                <label>Year:</label>
+                <span>{viewingMetric.year}</span>
+              </div>
+              <div className="ra-view-info-item">
+                <label>Color:</label>
+                <span className="ra-color-preview">
+                  <span style={{ backgroundColor: viewingMetric.color }}></span>
+                  {viewingMetric.color}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="ra-view-section">
+            <h3>Quarterly Values</h3>
+            <div className="ra-quarters-grid">
+              <div className="ra-quarter-card">
+                <div className="ra-quarter-label">Q1</div>
+                <div className="ra-quarter-value">{viewingMetric.q1Value}</div>
+              </div>
+              <div className="ra-quarter-card">
+                <div className="ra-quarter-label">Q2</div>
+                <div className="ra-quarter-value">{viewingMetric.q2Value}</div>
+              </div>
+              <div className="ra-quarter-card">
+                <div className="ra-quarter-label">Q3</div>
+                <div className="ra-quarter-value">{viewingMetric.q3Value}</div>
+              </div>
+              <div className="ra-quarter-card">
+                <div className="ra-quarter-label">Q4</div>
+                <div className="ra-quarter-value">{viewingMetric.q4Value}</div>
+              </div>
+            </div>
+            
+            <div className="ra-total-value">
+              <label>Total Yearly Value:</label>
+              <span>{(viewingMetric.q1Value + viewingMetric.q2Value + viewingMetric.q3Value + viewingMetric.q4Value).toLocaleString()}</span>
+            </div>
+          </div>
+
+          <div className="ra-view-actions">
+            <button 
+              className="ra-btn ra-btn-primary" 
+              onClick={() => {
+                setEditingMetric(viewingMetric);
+                setMetricFormData({
+                  id: viewingMetric.id,
+                  label: viewingMetric.label,
+                  q1Value: viewingMetric.q1Value,
+                  q2Value: viewingMetric.q2Value,
+                  q3Value: viewingMetric.q3Value,
+                  q4Value: viewingMetric.q4Value,
+                  color: viewingMetric.color,
+                  year: viewingMetric.year
+                });
+                setActivePage('edit_metric');
+              }}
+            >
+              Edit Metric
+            </button>
+            <button 
+              className="ra-btn ra-btn-secondary" 
+              onClick={() => setActivePage('metrics')}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   // Render Dashboard
   const renderDashboard = () => (
     <div className="ra-page">
@@ -759,7 +1099,7 @@ const ReportsAdmin = () => {
     </div>
   );
 
-  // Render Annual Reports List
+  // Render Annual Reports List with View Button
   const renderAnnualReports = () => (
     <div className="ra-page">
       <div className="ra-header">
@@ -783,7 +1123,7 @@ const ReportsAdmin = () => {
               <th>Description</th>
               <th>Size</th>
               <th>Pages</th>
-              <th width="100">Actions</th>
+              <th width="140">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -795,29 +1135,265 @@ const ReportsAdmin = () => {
                 <td>{report.file_size || '-'}</td>
                 <td>{report.page_count || '-'}</td>
                 <td>
-                  <button className="ra-action-btn ra-edit" onClick={() => {
-                    setEditingAnnual(report);
-                    setAnnualFormData({
-                      id: report.id,
-                      year: report.year,
-                      title: report.title,
-                      description: report.description,
-                      fileSize: report.file_size || '',
-                      pageCount: report.page_count || '',
-                      downloadUrl: report.download_url || ''
-                    });
-                    setActivePage('edit_annual');
-                  }}>
-                    <IconEdit /> Edit
-                  </button>
-                  <button className="ra-action-btn ra-delete" onClick={() => deleteAnnualReport(report.id, report.year)}>
-                    <IconDelete /> Delete
-                  </button>
+                  <div className="ra-action-buttons">
+                    <button className="ra-action-btn ra-view" onClick={() => {
+                      setViewingAnnual(report);
+                      setActivePage('view_annual');
+                    }}>
+                      <IconView /> View
+                    </button>
+                    <button className="ra-action-btn ra-edit" onClick={() => {
+                      setEditingAnnual(report);
+                      setAnnualFormData({
+                        id: report.id,
+                        year: report.year,
+                        title: report.title,
+                        description: report.description,
+                        fileSize: report.file_size || '',
+                        pageCount: report.page_count || '',
+                        downloadUrl: report.download_url || ''
+                      });
+                      setActivePage('edit_annual');
+                    }}>
+                      <IconEdit /> Edit
+                    </button>
+                    <button className="ra-action-btn ra-delete" onClick={() => deleteAnnualReport(report.id, report.year)}>
+                      <IconDelete /> Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
             {annualReports.length === 0 && (
               <tr><td colSpan="6" className="ra-empty">No annual reports found</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Render Quarterly Reports List with View Button
+  const renderQuarterlyReports = () => (
+    <div className="ra-page">
+      <div className="ra-header">
+        <button className="ra-back-btn" onClick={() => setActivePage('list')}>
+          <IconBack /> Back 
+        </button>
+        <div className="ra-header-title">
+          <h2>Quarterly Reports</h2>
+          <button className="ra-add-btn" onClick={() => { resetQuarterlyForm(); setActivePage('add_quarterly'); }}>
+            <IconAdd /> Add Report
+          </button>
+        </div>
+      </div>
+      
+      <div className="ra-table-wrapper">
+        <table className="ra-table">
+          <thead>
+            <tr>
+              <th>Quarter</th>
+              <th>Title</th>
+              <th>Period</th>
+              <th>Description</th>
+              <th>Size</th>
+              <th width="140">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {quarterlyReports.map((report) => (
+              <tr key={report.id}>
+                <td><strong>{report.quarter}</strong></td>
+                <td>{report.title}</td>
+                <td>{report.period}</td>
+                <td className="ra-desc-cell">{report.description}</td>
+                <td>{report.file_size || '-'}</td>
+                <td>
+                  <div className="ra-action-buttons">
+                    <button className="ra-action-btn ra-view" onClick={() => {
+                      setViewingQuarterly(report);
+                      setActivePage('view_quarterly');
+                    }}>
+                      <IconView /> View
+                    </button>
+                    <button className="ra-action-btn ra-edit" onClick={() => {
+                      setEditingQuarterly(report);
+                      setQuarterlyFormData({
+                        id: report.id,
+                        quarter: report.quarter,
+                        title: report.title,
+                        period: report.period,
+                        description: report.description,
+                        fileSize: report.file_size || '',
+                        downloadUrl: report.download_url || ''
+                      });
+                      setActivePage('edit_quarterly');
+                    }}>
+                      <IconEdit /> Edit
+                    </button>
+                    <button className="ra-action-btn ra-delete" onClick={() => deleteQuarterlyReport(report.id, report.quarter)}>
+                      <IconDelete /> Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {quarterlyReports.length === 0 && (
+              <tr><td colSpan="6" className="ra-empty">No quarterly reports found</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Render Success Stories List with View Button
+  const renderSuccessStories = () => (
+    <div className="ra-page">
+      <div className="ra-header">
+        <button className="ra-back-btn" onClick={() => setActivePage('list')}>
+          <IconBack /> Back
+        </button>
+        <div className="ra-header-title">
+          <h2>Success Stories</h2>
+          <button className="ra-add-btn" onClick={() => { resetStoryForm(); setActivePage('add_story'); }}>
+            <IconAdd /> Add Story
+          </button>
+        </div>
+      </div>
+      
+      <div className="ra-table-wrapper">
+        <table className="ra-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Impact</th>
+              <th>Category</th>
+              <th>Date</th>
+              <th width="140">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {successStories.map((story) => (
+              <tr key={story.id}>
+                <td><strong>{story.title}</strong></td>
+                <td className="ra-desc-cell">{story.description}</td>
+                <td>{story.impact}</td>
+                <td><span className="ra-category-tag">{story.category}</span></td>
+                <td>{story.date}</td>
+                <td>
+                  <div className="ra-action-buttons">
+                    <button className="ra-action-btn ra-view" onClick={() => {
+                      setViewingStory(story);
+                      setActivePage('view_story');
+                    }}>
+                      <IconView /> View
+                    </button>
+                    <button className="ra-action-btn ra-edit" onClick={() => {
+                      setEditingStory(story);
+                      setStoryFormData({
+                        id: story.id,
+                        title: story.title,
+                        description: story.description,
+                        impact: story.impact,
+                        date: story.date,
+                        category: story.category
+                      });
+                      setActivePage('edit_story');
+                    }}>
+                      <IconEdit /> Edit
+                    </button>
+                    <button className="ra-action-btn ra-delete" onClick={() => deleteSuccessStory(story.id, story.title)}>
+                      <IconDelete /> Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {successStories.length === 0 && (
+              <tr><td colSpan="6" className="ra-empty">No success stories found</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Render Impact Metrics List with View Button
+  const renderImpactMetrics = () => (
+    <div className="ra-page">
+      <div className="ra-header">
+        <button className="ra-back-btn" onClick={() => setActivePage('list')}>
+          <IconBack /> Back
+        </button>
+        <div className="ra-header-title">
+          <h2>Impact Metrics</h2>
+          <button className="ra-add-btn" onClick={() => { resetMetricForm(); setActivePage('add_metric'); }}>
+            <IconAdd /> Add Metric
+          </button>
+        </div>
+      </div>
+      
+      <div className="ra-table-wrapper">
+        <table className="ra-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Year</th>
+              <th>Q1</th>
+              <th>Q2</th>
+              <th>Q3</th>
+              <th>Q4</th>
+              <th>Color</th>
+              <th width="140">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {impactMetrics.map((metric) => (
+              <tr key={metric.id}>
+                <td><strong>{metric.label}</strong></td>
+                <td>{metric.year}</td>
+                <td>{metric.q1Value}</td>
+                <td>{metric.q2Value}</td>
+                <td>{metric.q3Value}</td>
+                <td>{metric.q4Value}</td>
+                <td><span className="ra-color-preview">
+                  <span style={{ backgroundColor: metric.color }}></span>
+                </span></td>
+                <td>
+                  <div className="ra-action-buttons">
+                    <button className="ra-action-btn ra-view" onClick={() => {
+                      setViewingMetric(metric);
+                      setActivePage('view_metric');
+                    }}>
+                      <IconView /> View
+                    </button>
+                    <button className="ra-action-btn ra-edit" onClick={() => {
+                      setEditingMetric(metric);
+                      setMetricFormData({
+                        id: metric.id,
+                        label: metric.label,
+                        q1Value: metric.q1Value,
+                        q2Value: metric.q2Value,
+                        q3Value: metric.q3Value,
+                        q4Value: metric.q4Value,
+                        color: metric.color,
+                        year: metric.year
+                      });
+                      setActivePage('edit_metric');
+                    }}>
+                      <IconEdit /> Edit
+                    </button>
+                    <button className="ra-action-btn ra-delete" onClick={() => deleteImpactMetric(metric.id, metric.label)}>
+                      <IconDelete /> Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {impactMetrics.length === 0 && (
+              <tr><td colSpan="8" className="ra-empty">No impact metrics found</td></tr>
             )}
           </tbody>
         </table>
@@ -884,72 +1460,6 @@ const ReportsAdmin = () => {
     </div>
   );
 
-  // Render Quarterly Reports List
-  const renderQuarterlyReports = () => (
-    <div className="ra-page">
-      <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('list')}>
-          <IconBack /> Back
-        </button>
-        <div className="ra-header-title">
-          <h2>Quarterly Reports</h2>
-          <button className="ra-add-btn" onClick={() => { resetQuarterlyForm(); setActivePage('add_quarterly'); }}>
-            <IconAdd /> Add Report
-          </button>
-        </div>
-      </div>
-      
-      <div className="ra-table-wrapper">
-        <table className="ra-table">
-          <thead>
-            <tr>
-              <th>Quarter</th>
-              <th>Title</th>
-              <th>Period</th>
-              <th>Description</th>
-              <th>Size</th>
-              <th width="100">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {quarterlyReports.map((report) => (
-              <tr key={report.id}>
-                <td><strong>{report.quarter}</strong></td>
-                <td>{report.title}</td>
-                <td>{report.period}</td>
-                <td className="ra-desc-cell">{report.description}</td>
-                <td>{report.file_size || '-'}</td>
-                <td>
-                  <button className="ra-action-btn ra-edit" onClick={() => {
-                    setEditingQuarterly(report);
-                    setQuarterlyFormData({
-                      id: report.id,
-                      quarter: report.quarter,
-                      title: report.title,
-                      period: report.period,
-                      description: report.description,
-                      fileSize: report.file_size || '',
-                      downloadUrl: report.download_url || ''
-                    });
-                    setActivePage('edit_quarterly');
-                  }}>
-                    <IconEdit /> Edit
-                  </button>
-                  <button className="ra-action-btn ra-delete" onClick={() => deleteQuarterlyReport(report.id, report.quarter)}>
-                    <IconDelete /> Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {quarterlyReports.length === 0 && (
-              <tr><td colSpan="6" className="ra-empty">No quarterly reports found</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
   // Render Quarterly Report Form
   const renderQuarterlyForm = () => (
     <div className="ra-page-full">
@@ -1009,71 +1519,6 @@ const ReportsAdmin = () => {
     </div>
   );
 
-  // Render Success Stories List
-  const renderSuccessStories = () => (
-    <div className="ra-page">
-      <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('list')}>
-          <IconBack /> Back
-        </button>
-        <div className="ra-header-title">
-          <h2>Success Stories</h2>
-          <button className="ra-add-btn" onClick={() => { resetStoryForm(); setActivePage('add_story'); }}>
-            <IconAdd /> Add Story
-          </button>
-        </div>
-      </div>
-      
-      <div className="ra-table-wrapper">
-        <table className="ra-table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Description</th>
-              <th>Impact</th>
-              <th>Category</th>
-              <th>Date</th>
-              <th width="100">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {successStories.map((story) => (
-              <tr key={story.id}>
-                <td><strong>{story.title}</strong></td>
-                <td className="ra-desc-cell">{story.description}</td>
-                <td>{story.impact}</td>
-                <td>{story.category}</td>
-                <td>{story.date}</td>
-                <td>
-                  <button className="ra-action-btn ra-edit" onClick={() => {
-                    setEditingStory(story);
-                    setStoryFormData({
-                      id: story.id,
-                      title: story.title,
-                      description: story.description,
-                      impact: story.impact,
-                      date: story.date,
-                      category: story.category
-                    });
-                    setActivePage('edit_story');
-                  }}>
-                    <IconEdit /> Edit
-                  </button>
-                  <button className="ra-action-btn ra-delete" onClick={() => deleteSuccessStory(story.id, story.title)}>
-                    <IconDelete /> Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {successStories.length === 0 && (
-              <tr><td colSpan="6" className="ra-empty">No success stories found</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
   // Render Success Story Form
   const renderStoryForm = () => (
     <div className="ra-page-full">
@@ -1127,77 +1572,6 @@ const ReportsAdmin = () => {
             <button type="submit" className="ra-btn ra-btn-primary">{editingStory ? 'Update' : 'Create'}</button>
           </div>
         </form>
-      </div>
-    </div>
-  );
-
-  // Render Impact Metrics List
-  const renderImpactMetrics = () => (
-    <div className="ra-page">
-      <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('list')}>
-          <IconBack /> Back
-        </button>
-        <div className="ra-header-title">
-          <h2>Impact Metrics</h2>
-          <button className="ra-add-btn" onClick={() => { resetMetricForm(); setActivePage('add_metric'); }}>
-            <IconAdd /> Add Metric
-          </button>
-        </div>
-      </div>
-      
-      <div className="ra-table-wrapper">
-        <table className="ra-table">
-          <thead>
-            <tr>
-              <th>Label</th>
-              <th>Year</th>
-              <th>Q1</th>
-              <th>Q2</th>
-              <th>Q3</th>
-              <th>Q4</th>
-              <th>Color</th>
-              <th width="100">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {impactMetrics.map((metric) => (
-              <tr key={metric.id}>
-                <td><strong>{metric.label}</strong></td>
-                <td>{metric.year}</td>
-                <td>{metric.q1Value}</td>
-                <td>{metric.q2Value}</td>
-                <td>{metric.q3Value}</td>
-                <td>{metric.q4Value}</td>
-                <td><span style={{display: 'inline-block', width: 30, height: 20, background: metric.color, borderRadius: 4}}></span> {metric.color}</td>
-                <td>
-                  <button className="ra-action-btn ra-edit" onClick={() => {
-                    setEditingMetric(metric);
-                    setMetricFormData({
-                      id: metric.id,
-                      label: metric.label,
-                      q1Value: metric.q1Value,
-                      q2Value: metric.q2Value,
-                      q3Value: metric.q3Value,
-                      q4Value: metric.q4Value,
-                      color: metric.color,
-                      year: metric.year
-                    });
-                    setActivePage('edit_metric');
-                  }}>
-                    <IconEdit /> Edit
-                  </button>
-                  <button className="ra-action-btn ra-delete" onClick={() => deleteImpactMetric(metric.id, metric.label)}>
-                    <IconDelete /> Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {impactMetrics.length === 0 && (
-              <tr><td colSpan="8" className="ra-empty">No impact metrics found</td></tr>
-            )}
-          </tbody>
-        </table>
       </div>
     </div>
   );
@@ -1285,15 +1659,19 @@ const ReportsAdmin = () => {
 
         {activePage === 'list' && renderDashboard()}
         {activePage === 'annual' && renderAnnualReports()}
+        {activePage === 'view_annual' && renderAnnualReportView()}
         {activePage === 'add_annual' && renderAnnualForm()}
         {activePage === 'edit_annual' && renderAnnualForm()}
         {activePage === 'quarterly' && renderQuarterlyReports()}
+        {activePage === 'view_quarterly' && renderQuarterlyReportView()}
         {activePage === 'add_quarterly' && renderQuarterlyForm()}
         {activePage === 'edit_quarterly' && renderQuarterlyForm()}
         {activePage === 'stories' && renderSuccessStories()}
+        {activePage === 'view_story' && renderSuccessStoryView()}
         {activePage === 'add_story' && renderStoryForm()}
         {activePage === 'edit_story' && renderStoryForm()}
         {activePage === 'metrics' && renderImpactMetrics()}
+        {activePage === 'view_metric' && renderImpactMetricView()}
         {activePage === 'add_metric' && renderMetricForm()}
         {activePage === 'edit_metric' && renderMetricForm()}
       </div>

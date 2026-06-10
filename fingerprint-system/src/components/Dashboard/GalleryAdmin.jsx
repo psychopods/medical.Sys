@@ -14,6 +14,8 @@ const GalleryAdmin = () => {
   const [activePage, setActivePage] = useState('list');
   const [editingItem, setEditingItem] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [viewingItem, setViewingItem] = useState(null);
+  const [viewingCategory, setViewingCategory] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [formData, setFormData] = useState({
     id: '',
@@ -47,6 +49,13 @@ const GalleryAdmin = () => {
       <path d="M14 11V17" strokeWidth="2"/>
       <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
       <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
+    </svg>
+  );
+
+  const IconView = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 
@@ -406,6 +415,17 @@ const GalleryAdmin = () => {
     navigate('/login');
   };
 
+  // Get category name by key
+  const getCategoryName = (categoryKey) => {
+    const category = categories.find(cat => cat.category_key === categoryKey);
+    return category ? category.category_name : categoryKey;
+  };
+
+  // Get item count for category
+  const getItemCountForCategory = (categoryKey) => {
+    return galleryItems.filter(item => item.category_key === categoryKey).length;
+  };
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
     if (storedUser) {
@@ -418,7 +438,222 @@ const GalleryAdmin = () => {
     fetchGalleryItems();
   }, [navigate]);
 
-  // Render Categories List Page
+  // ============================================
+  // CATEGORY VIEW PAGE
+  // ============================================
+  const renderCategoryViewPage = () => (
+    <div className="ga-page">
+      <div className="ga-header">
+        <button className="ga-back-btn" onClick={() => setActivePage('categories')}>
+          <IconBack /> Back to Categories
+        </button>
+        <div className="ga-header-title">
+          <h2>Category Details</h2>
+        </div>
+      </div>
+
+      {viewingCategory && (
+        <div className="ga-view-container">
+          <div className="ga-view-section">
+            <div className="ga-view-info-grid">
+              <div className="ga-view-info-item">
+                <label>Category Key:</label>
+                <span>{viewingCategory.category_key}</span>
+              </div>
+              <div className="ga-view-info-item">
+                <label>Category Name:</label>
+                <span>{viewingCategory.category_name}</span>
+              </div>
+              <div className="ga-view-info-item">
+                <label>Icon:</label>
+                <span>{viewingCategory.category_icon}</span>
+              </div>
+              <div className="ga-view-info-item">
+                <label>Total Items:</label>
+                <span>{getItemCountForCategory(viewingCategory.category_key)} items</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="ga-view-section">
+            <h3>Items in this Category</h3>
+            {loading ? (
+              <div className="ga-loading">Loading items...</div>
+            ) : (
+              <div className="ga-items-in-category">
+                {galleryItems.filter(item => item.category_key === viewingCategory.category_key).length === 0 ? (
+                  <p className="ga-empty-message">No items found in this category.</p>
+                ) : (
+                  <div className="ga-items-grid">
+                    {galleryItems.filter(item => item.category_key === viewingCategory.category_key).map(item => (
+                      <div key={item.id} className="ga-item-card" onClick={() => {
+                        setViewingItem(item);
+                        setActivePage('view_item');
+                      }}>
+                        {item.media_type === 'image' && item.image_url && (
+                          <img src={item.image_url} alt={item.title} />
+                        )}
+                        {item.media_type === 'video' && (
+                          <div className="ga-video-thumb">
+                            <IconVideo />
+                            <span>Video</span>
+                          </div>
+                        )}
+                        <div className="ga-item-card-info">
+                          <h4>{item.title}</h4>
+                          <p>{item.description.substring(0, 60)}...</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="ga-view-actions">
+            <button 
+              className="ga-btn ga-btn-primary" 
+              onClick={() => {
+                setEditingCategory(viewingCategory);
+                setCategoryFormData({
+                  categoryKey: viewingCategory.category_key,
+                  categoryName: viewingCategory.category_name,
+                  categoryIcon: viewingCategory.category_icon
+                });
+                setActivePage('edit_category');
+              }}
+            >
+              Edit Category
+            </button>
+            <button 
+              className="ga-btn ga-btn-secondary" 
+              onClick={() => setActivePage('categories')}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ============================================
+  // GALLERY ITEM VIEW PAGE
+  // ============================================
+  const renderGalleryItemViewPage = () => (
+    <div className="ga-page">
+      <div className="ga-header">
+        <button className="ga-back-btn" onClick={() => setActivePage('items')}>
+          <IconBack /> Back to Gallery Items
+        </button>
+        <div className="ga-header-title">
+          <h2>Gallery Item Details</h2>
+        </div>
+      </div>
+
+      {viewingItem && (
+        <div className="ga-view-container">
+          <div className="ga-view-section">
+            <div className="ga-view-media">
+              {viewingItem.media_type === 'image' && viewingItem.image_url && (
+                <img src={viewingItem.image_url} alt={viewingItem.title} className="ga-view-image" />
+              )}
+              {viewingItem.media_type === 'video' && viewingItem.video_url && (
+                <div className="ga-view-video">
+                  <iframe
+                    src={viewingItem.video_url}
+                    title={viewingItem.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="ga-view-section">
+            <div className="ga-view-info-grid">
+              <div className="ga-view-info-item">
+                <label>Title:</label>
+                <span>{viewingItem.title}</span>
+              </div>
+              <div className="ga-view-info-item">
+                <label>Media Type:</label>
+                <span className="ga-media-badge">
+                  {viewingItem.media_type === 'image' ? <IconImage /> : <IconVideo />}
+                  {viewingItem.media_type}
+                </span>
+              </div>
+              <div className="ga-view-info-item">
+                <label>Category:</label>
+                <span className="ga-category-tag">{getCategoryName(viewingItem.category_key)}</span>
+              </div>
+              <div className="ga-view-info-item">
+                <label>Created Date:</label>
+                <span>{viewingItem.created_at ? new Date(viewingItem.created_at).toLocaleString() : 'N/A'}</span>
+              </div>
+              <div className="ga-view-info-item full-width">
+                <label>Description:</label>
+                <p>{viewingItem.description}</p>
+              </div>
+              {viewingItem.thumbnail_url && (
+                <div className="ga-view-info-item">
+                  <label>Thumbnail:</label>
+                  <img src={viewingItem.thumbnail_url} alt="Thumbnail" className="ga-view-thumbnail" />
+                </div>
+              )}
+              {viewingItem.media_type === 'image' && viewingItem.image_url && (
+                <div className="ga-view-info-item">
+                  <label>Image URL:</label>
+                  <a href={viewingItem.image_url} target="_blank" rel="noopener noreferrer">{viewingItem.image_url}</a>
+                </div>
+              )}
+              {viewingItem.media_type === 'video' && viewingItem.video_url && (
+                <div className="ga-view-info-item">
+                  <label>Video URL:</label>
+                  <a href={viewingItem.video_url} target="_blank" rel="noopener noreferrer">{viewingItem.video_url}</a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="ga-view-actions">
+            <button 
+              className="ga-btn ga-btn-primary" 
+              onClick={() => {
+                setEditingItem(viewingItem);
+                setFormData({
+                  id: viewingItem.id,
+                  mediaType: viewingItem.media_type,
+                  categoryKey: viewingItem.category_key,
+                  title: viewingItem.title,
+                  description: viewingItem.description,
+                  imageUrl: viewingItem.image_url || '',
+                  thumbnailUrl: viewingItem.thumbnail_url || '',
+                  videoUrl: viewingItem.video_url || ''
+                });
+                setActivePage('edit_item');
+              }}
+            >
+              Edit Item
+            </button>
+            <button 
+              className="ga-btn ga-btn-secondary" 
+              onClick={() => setActivePage('items')}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ============================================
+  // RENDER CATEGORIES LIST WITH VIEW BUTTON
+  // ============================================
   const renderCategoriesList = () => (
     <div className="ga-page">
       <div className="ga-header">
@@ -444,7 +679,8 @@ const GalleryAdmin = () => {
               <th>Name</th>
               <th>Key</th>
               <th>Icon</th>
-              <th width="100">Actions</th>
+              <th>Items</th>
+              <th width="140">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -454,32 +690,137 @@ const GalleryAdmin = () => {
                 <td><strong>{category.category_name}</strong></td>
                 <td>{category.category_key}</td>
                 <td>{category.category_icon}</td>
+                <td>{getItemCountForCategory(category.category_key)}</td>
                 <td>
-                  <button className="ga-action-btn ga-edit" onClick={() => {
-                    setEditingCategory(category);
-                    setCategoryFormData({
-                      categoryKey: category.category_key,
-                      categoryName: category.category_name,
-                      categoryIcon: category.category_icon
-                    });
-                    setActivePage('edit_category');
-                  }}>
-                    <IconEdit /> Edit
-                  </button>
-                  <button className="ga-action-btn ga-delete" onClick={() => deleteCategory(category.category_key)}>
-                    <IconDelete /> Delete
-                  </button>
+                  <div className="ga-action-buttons">
+                    <button className="ga-action-btn ga-view" onClick={() => {
+                      setViewingCategory(category);
+                      setActivePage('view_category');
+                    }}>
+                      <IconView /> View
+                    </button>
+                    <button className="ga-action-btn ga-edit" onClick={() => {
+                      setEditingCategory(category);
+                      setCategoryFormData({
+                        categoryKey: category.category_key,
+                        categoryName: category.category_name,
+                        categoryIcon: category.category_icon
+                      });
+                      setActivePage('edit_category');
+                    }}>
+                      <IconEdit /> Edit
+                    </button>
+                    <button className="ga-action-btn ga-delete" onClick={() => deleteCategory(category.category_key)}>
+                      <IconDelete /> Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
             {categories.length === 0 && (
               <tr>
-                <td colSpan="5" className="ga-empty">No categories found</td>
+                <td colSpan="6" className="ga-empty">No categories found</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+    </div>
+  );
+
+  // ============================================
+  // RENDER GALLERY ITEMS LIST WITH VIEW BUTTON
+  // ============================================
+  const renderGalleryItemsList = () => (
+    <div className="ga-page">
+      <div className="ga-header">
+        <button className="ga-back-btn" onClick={() => setActivePage('list')}>
+          <IconBack /> Back
+        </button>
+        <div className="ga-header-title">
+          <h2>Gallery Items</h2>
+          <button className="ga-add-btn" onClick={() => {
+            resetForm();
+            setActivePage('add_item');
+          }}>
+            <IconAdd /> Add Item
+          </button>
+        </div>
+      </div>
+      
+      {loading ? (
+        <div className="ga-loading">Loading...</div>
+      ) : (
+        <div className="ga-table-wrapper">
+          <table className="ga-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Created</th>
+                <th width="160">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {galleryItems.map((item) => (
+                <tr key={item.id}>
+                  <td className="ga-type-cell">
+                    {item.media_type === 'image' ? <IconImage /> : <IconVideo />}
+                    <span>{item.media_type}</span>
+                   </td>
+                  <td className="ga-title-cell">
+                    <strong>{item.title}</strong>
+                    {item.media_type === 'image' && item.image_url && (
+                      <div className="ga-thumb-preview">
+                        <img src={item.image_url} alt={item.title} />
+                      </div>
+                    )}
+                   </td>
+                  <td className="ga-desc-cell">{item.description}</td>
+                  <td><span className="ga-category-tag">{getCategoryName(item.category_key)}</span></td>
+                  <td>{item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}</td>
+                  <td>
+                    <div className="ga-action-buttons">
+                      <button className="ga-action-btn ga-view" onClick={() => {
+                        setViewingItem(item);
+                        setActivePage('view_item');
+                      }}>
+                        <IconView /> View
+                      </button>
+                      <button className="ga-action-btn ga-edit" onClick={() => {
+                        setEditingItem(item);
+                        setFormData({
+                          id: item.id,
+                          mediaType: item.media_type,
+                          categoryKey: item.category_key,
+                          title: item.title,
+                          description: item.description,
+                          imageUrl: item.image_url || '',
+                          thumbnailUrl: item.thumbnail_url || '',
+                          videoUrl: item.video_url || ''
+                        });
+                        setActivePage('edit_item');
+                      }}>
+                        <IconEdit /> Edit
+                      </button>
+                      <button className="ga-action-btn ga-delete" onClick={() => deleteGalleryItem(item.id)}>
+                        <IconDelete /> Delete
+                      </button>
+                    </div>
+                   </td>
+                 </tr>
+              ))}
+              {galleryItems.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="ga-empty">No gallery items found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 
@@ -552,92 +893,6 @@ const GalleryAdmin = () => {
           </div>
         </form>
       </div>
-    </div>
-  );
-
-  // Render Gallery Items List Page
-  const renderGalleryItemsList = () => (
-    <div className="ga-page">
-      <div className="ga-header">
-        <button className="ga-back-btn" onClick={() => setActivePage('list')}>
-          <IconBack /> Back
-        </button>
-        <div className="ga-header-title">
-          <h2>Gallery Items</h2>
-          <button className="ga-add-btn" onClick={() => {
-            resetForm();
-            setActivePage('add_item');
-          }}>
-            <IconAdd /> Add Item
-          </button>
-        </div>
-      </div>
-      
-      {loading ? (
-        <div className="ga-loading">Loading...</div>
-      ) : (
-        <div className="ga-table-wrapper">
-          <table className="ga-table">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Title</th>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Created</th>
-                <th width="100">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {galleryItems.map((item) => (
-                <tr key={item.id}>
-                  <td className="ga-type-cell">
-                    {item.media_type === 'image' ? <IconImage /> : <IconVideo />}
-                    <span>{item.media_type}</span>
-                  </td>
-                  <td className="ga-title-cell">
-                    <strong>{item.title}</strong>
-                    {item.media_type === 'image' && item.image_url && (
-                      <div className="ga-thumb-preview">
-                        <img src={item.image_url} alt={item.title} />
-                      </div>
-                    )}
-                   </td>
-                  <td className="ga-desc-cell">{item.description}</td>
-                  <td><span className="ga-category-tag">{item.category_key}</span></td>
-                  <td>{item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}</td>
-                  <td>
-                    <button className="ga-action-btn ga-edit" onClick={() => {
-                      setEditingItem(item);
-                      setFormData({
-                        id: item.id,
-                        mediaType: item.media_type,
-                        categoryKey: item.category_key,
-                        title: item.title,
-                        description: item.description,
-                        imageUrl: item.image_url || '',
-                        thumbnailUrl: item.thumbnail_url || '',
-                        videoUrl: item.video_url || ''
-                      });
-                      setActivePage('edit_item');
-                    }}>
-                      <IconEdit /> Edit
-                    </button>
-                    <button className="ga-action-btn ga-delete" onClick={() => deleteGalleryItem(item.id)}>
-                      <IconDelete /> Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {galleryItems.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="ga-empty">No gallery items found</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 
@@ -849,9 +1104,11 @@ const GalleryAdmin = () => {
         {activePage === 'categories' && renderCategoriesList()}
         {activePage === 'add_category' && renderCategoryForm()}
         {activePage === 'edit_category' && renderCategoryForm()}
+        {activePage === 'view_category' && renderCategoryViewPage()}
         {activePage === 'items' && renderGalleryItemsList()}
         {activePage === 'add_item' && renderGalleryItemForm()}
         {activePage === 'edit_item' && renderGalleryItemForm()}
+        {activePage === 'view_item' && renderGalleryItemViewPage()}
       </div>
     </Layout>
   );

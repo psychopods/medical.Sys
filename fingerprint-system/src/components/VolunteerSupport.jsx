@@ -208,7 +208,6 @@ const VolunteerSupport = () => {
     setIsSubmitting(true);
     
     try {
-      // Prepare data with snake_case for backend
       const submitData = {
         full_name: formData.name,
         email_address: formData.email,
@@ -230,7 +229,6 @@ const VolunteerSupport = () => {
       if (response.ok && data.success) {
         showToast(data.message || 'Thank you for your interest! We will contact you soon.', 'success');
         
-        // Reset form
         setFormData({
           name: '', email: '', phone: '', volunteerType: '', message: ''
         });
@@ -248,6 +246,13 @@ const VolunteerSupport = () => {
       showToast('Network error. Please check your connection.', 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const scrollToVolunteerForm = () => {
+    const formElement = document.getElementById('volunteer-form');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -271,8 +276,29 @@ const VolunteerSupport = () => {
         </div>
       </div>
 
-      {/* Volunteer Form Section */}
-      <div className="volunteer-form-section">
+      {/* Ways to Support Section - Placed BEFORE Become a Volunteer */}
+      <div className="support-options-section">
+        <div className="container">
+          <h2 className="support-title">Ways to Support</h2>
+          <div className="support-options-grid">
+            {supportOptions.map((option, index) => (
+              <div className="support-card" key={index}>
+                <div className="support-icon">{getIcon(option.icon)}</div>
+                <h3>{option.title}</h3>
+                <p>{option.description}</p>
+                {option.icon === 'volunteer' ? (
+                  <button onClick={scrollToVolunteerForm} className="support-btn">{option.buttonText}</button>
+                ) : (
+                  <a href={option.link} className="support-btn">{option.buttonText}</a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Volunteer Form Section - Placed AFTER Ways to Support */}
+      <div id="volunteer-form" className="volunteer-form-section">
         <div className="container">
           <div className="volunteer-form-wrapper">
             <div className="volunteer-form-left">
@@ -393,23 +419,6 @@ const VolunteerSupport = () => {
                 </form>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Support Options Section */}
-      <div className="support-options-section">
-        <div className="container">
-          <h2 className="support-title">Ways to Support</h2>
-          <div className="support-options-grid">
-            {supportOptions.map((option, index) => (
-              <div className="support-card" key={index}>
-                <div className="support-icon">{getIcon(option.icon)}</div>
-                <h3>{option.title}</h3>
-                <p>{option.description}</p>
-                <a href={option.link} className="support-btn">{option.buttonText}</a>
-              </div>
-            ))}
           </div>
         </div>
       </div>

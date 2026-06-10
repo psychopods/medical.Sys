@@ -144,6 +144,21 @@ const ChildRegistration = () => {
     };
   };
 
+  // Check camera support
+  const checkCameraSupport = () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showToast('Your browser does not support camera access. Please use Chrome, Firefox, or Edge.', 'error');
+      return false;
+    }
+    
+    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      showToast('Camera access requires HTTPS. Please use HTTPS or localhost.', 'error');
+      return false;
+    }
+    
+    return true;
+  };
+
   // Fetch staff users for mapping
   const fetchStaffUsers = async () => {
     try {
@@ -855,40 +870,267 @@ const ChildRegistration = () => {
     return location ? location.name : '';
   };
 
-  const filteredAllChildren = Array.isArray(childrenData) ? childrenData.filter(child =>
-    child.fullName?.toLowerCase().includes(searchAllChildren.toLowerCase()) ||
-    child.customSerialId?.toLowerCase().includes(searchAllChildren.toLowerCase())
-  ) : [];
+  // Camera Functions
+  const startCamera = async (num) => {
+    if (!checkCameraSupport()) return;
+    
+    // Get the correct video element reference
+    let videoRef, setShowCamera;
+    if (num === 1) {
+      videoRef = videoRef1;
+      setShowCamera = setShowCamera1;
+    } else if (num === 2) {
+      videoRef = videoRef2;
+      setShowCamera = setShowCamera2;
+    } else {
+      videoRef = videoRef3;
+      setShowCamera = setShowCamera3;
+    }
+    
+    // Stop any existing camera stream
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+    }
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setShowCamera(true);
+        showToast('Camera started successfully!', 'success');
+      }
+    } catch (err) {
+      console.error('Camera error:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        showToast('Camera permission denied. Please click the camera icon in the address bar and allow access, then refresh the page.', 'error');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        showToast('No camera found on your device. Please connect a camera.', 'error');
+      } else {
+        showToast(`Unable to access camera: ${err.message || 'Please check permissions.'}`, 'error');
+      }
+    }
+  };
 
-  const filteredTodayRegistrations = Array.isArray(todayData) ? todayData.filter(child =>
-    child.fullName?.toLowerCase().includes(searchTodayReg.toLowerCase()) ||
-    child.customSerialId?.toLowerCase().includes(searchTodayReg.toLowerCase())
-  ) : [];
+  const capturePhoto = (num) => {
+    let canvas, video, setPreview, setShowCamera;
+    
+    if (num === 1) {
+      canvas = canvasRef1.current;
+      video = videoRef1.current;
+      setPreview = setPreview1;
+      setShowCamera = setShowCamera1;
+    } else if (num === 2) {
+      canvas = canvasRef2.current;
+      video = videoRef2.current;
+      setPreview = setPreview2;
+      setShowCamera = setShowCamera2;
+    } else {
+      canvas = canvasRef3.current;
+      video = videoRef3.current;
+      setPreview = setPreview3;
+      setShowCamera = setShowCamera3;
+    }
 
-  const filteredFingerprintData = Array.isArray(fingerprintData) ? fingerprintData.filter(fp =>
-    fp.childName?.toLowerCase().includes(searchFingerprints.toLowerCase()) ||
-    fp.customSerialId?.toLowerCase().includes(searchFingerprints.toLowerCase())
-  ) : [];
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      showToast('Camera not ready. Please wait and try again.', 'error');
+      return;
+    }
 
-  const filteredRecentRegistrations = Array.isArray(childrenData) ? childrenData.slice(0, 5).filter(child =>
-    child.fullName?.toLowerCase().includes(searchRecent.toLowerCase()) ||
-    getLocationName(child.primaryLocationId)?.toLowerCase().includes(searchRecent.toLowerCase())
-  ) : [];
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to data URL
+    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    
+    // Set preview and hide camera
+    setPreview(imageDataUrl);
+    setShowCamera(false);
+    
+    // Stop the camera stream
+    if (video.srcObject) {
+      video.srcObject.getTracks().forEach(track => track.stop());
+    }
+    
+    showToast(`Photo ${num} captured successfully!`, 'success');
+  };
 
-  const filteredLocations = Array.isArray(locations) ? locations.filter(location =>
-    location.name?.toLowerCase().includes(searchLocations.toLowerCase())
-  ) : [];
+  const stopCamera = (num) => {
+    let video, setShowCamera;
+    if (num === 1) {
+      video = videoRef1.current;
+      setShowCamera = setShowCamera1;
+    } else if (num === 2) {
+      video = videoRef2.current;
+      setShowCamera = setShowCamera2;
+    } else {
+      video = videoRef3.current;
+      setShowCamera = setShowCamera3;
+    }
+    
+    setShowCamera(false);
+    if (video && video.srcObject) {
+      video.srcObject.getTracks().forEach(track => track.stop());
+    }
+  };
 
-  const handlePrintClick = (dataType) => {
-    setPrintDataType(dataType);
-    setPrintFilters({ 
-      date_from: '', 
-      date_to: '', 
-      location: '', 
-      fingerprint_status: '', 
-      gender: '' 
-    });
-    setShowPrintPage(true);
+  const handleFileUpload = (num, file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (num === 1) {
+        setPreview1(reader.result);
+      } else if (num === 2) {
+        setPreview2(reader.result);
+      } else {
+        setPreview3(reader.result);
+      }
+      showToast(`Photo ${num} uploaded successfully!`, 'success');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFingerprintCapture = () => {
+    if (Math.random() > 0.2) {
+      showToast('✓ Fingerprint captured successfully!', 'success');
+      setFingerprintCaptured(true);
+      setRegistrationStep(3);
+    } else {
+      showToast('✗ Fingerprint capture failed. Please try again.', 'error');
+    }
+  };
+
+  const handleVerifyFingerprintScan = () => {
+    setIsVerifying(true);
+    setTimeout(() => {
+      const matchedChild = Array.isArray(childrenData) ? childrenData.find(child => child.customSerialId === 'KID-2024-0001') || childrenData[0] : null;
+      
+      if (matchedChild) {
+        setExistingChild({
+          id: matchedChild.id,
+          customSerialId: matchedChild.customSerialId,
+          fullName: matchedChild.fullName,
+          estimatedBirthYear: matchedChild.estimatedBirthYear,
+          age: calculateAgeFromYear(matchedChild.estimatedBirthYear),
+          gender: matchedChild.gender,
+          locationName: getLocationName(matchedChild.primaryLocationId),
+          createdAt: matchedChild.createdAt,
+          fingerprintCaptured: matchedChild.fingerprintCaptured,
+          medicalHistory: matchedChild.medicalHistory || 'No known allergies',
+          lastVisit: new Date().toLocaleDateString(),
+          registeredBy: matchedChild.createdByStaffId,
+          images: { image1: matchedChild.image1, image2: matchedChild.image2, image3: matchedChild.image3 }
+        });
+        setExistingChildImages({ 
+          image1: matchedChild.image1, 
+          image2: matchedChild.image2, 
+          image3: matchedChild.image3 
+        });
+        setFingerprintExists(true);
+        showToast('✓ Fingerprint verified! Child found in system.', 'success');
+      } else {
+        setFingerprintExists(false);
+        setExistingChild(null);
+        setExistingChildImages(null);
+        showToast('✗ Fingerprint not found. No matching record.', 'info');
+      }
+      setIsVerifying(false);
+    }, 1500);
+  };
+
+  const handleLoadExistingRecord = () => {
+    if (existingChild && existingChild.fullName) {
+      sessionStorage.setItem('selectedChild', JSON.stringify(existingChild));
+      navigate('/medical-records', { state: { child: existingChild } });
+      setFingerprintExists(null);
+      setExistingChild(null);
+      setExistingChildImages(null);
+    } else {
+      showToast('No record selected', 'error');
+    }
+  };
+
+  const handleCompleteRegistration = async () => {
+    if (!validateForm()) {
+      showToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    const newChild = {
+      fullName: formData.fullName,
+      estimatedBirthYear: formData.estimatedBirthYear,
+      gender: formData.gender,
+      primaryLocationId: formData.primaryLocationId,
+      fingerprintCaptured: fingerprintCaptured,
+      createdByStaffId: user?.id || user?.user_id
+    };
+
+    const result = await addRegistration(newChild);
+    
+    if (result) {
+      showToast(offlineMode 
+        ? `✓ Child registered in OFFLINE mode with ID: ${generatedId}. Data will sync when online.` 
+        : `✓ Child registered successfully with ID: ${generatedId}!`, 
+        'success'
+      );
+      
+      setActivePage('list');
+      setRegistrationStep(1);
+      setFingerprintCaptured(false);
+      setFormData({ fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' });
+      setFormErrors({ fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' });
+      setPreview1(null); setPreview2(null); setPreview3(null);
+      await fetchChildren();
+      await fetchTodayRegistrations();
+      await generateRegistrationId();
+    }
+  };
+
+  const handleSyncOfflineData = () => {
+    setIsSyncing(true);
+    showToast('Starting synchronization...', 'info');
+    
+    setTimeout(async () => {
+      const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
+      
+      for (const record of offlineData) {
+        try {
+          await addRegistration(record);
+        } catch (error) {
+          console.error('Error syncing record:', error);
+        }
+      }
+      
+      localStorage.removeItem('offline_registrations');
+      const isOnline = navigator.onLine;
+      setOfflineMode(!isOnline);
+      
+      showToast(`✓ Synchronization completed successfully! ${offlineData.length} records synced.`, 'success');
+      setIsSyncing(false);
+      fetchChildren();
+      fetchTodayRegistrations();
+      fetchFingerprints();
+      generateRegistrationId();
+    }, 3000);
+  };
+
+  const handleStatClick = (page, title) => {
+    showToast(`Viewing ${title}`, 'info');
+    setActivePage(page);
+  };
+
+  const handleActionClick = (action) => {
+    showToast(`Opening ${action}`, 'info');
   };
 
   const calculateAgeFromYear = (estimatedBirthYear) => {
@@ -984,7 +1226,7 @@ const ChildRegistration = () => {
                     <th>Quality</th>
                     <th>Captured By</th>
                   ` : ''}
-                </td>
+                </tr>
               </thead>
               <tbody>
                 ${dataToPrint.map((item, index) => {
@@ -1043,227 +1285,24 @@ const ChildRegistration = () => {
     showToast('Print job sent successfully!', 'success');
   };
 
-  useEffect(() => {
-    const initData = async () => {
-      const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        const userMap = await fetchStaffUsers();
-        await fetchLocations();
-        await fetchChildren(userMap);
-        await fetchTodayRegistrations(userMap);
-        await fetchFingerprints();
-        await generateRegistrationId();
-      } else {
-        navigate('/login');
-      }
-      setLoading(false);
-    };
-    initData();
-  }, [navigate]);
+  const filteredAllChildren = Array.isArray(childrenData) ? childrenData.filter(child =>
+    child.fullName?.toLowerCase().includes(searchAllChildren.toLowerCase()) ||
+    child.customSerialId?.toLowerCase().includes(searchAllChildren.toLowerCase())
+  ) : [];
 
-  useEffect(() => {
-    if (user) {
-      generateRegistrationId();
-    }
-  }, [childrenData.length, user]);
+  const filteredTodayRegistrations = Array.isArray(todayData) ? todayData.filter(child =>
+    child.fullName?.toLowerCase().includes(searchTodayReg.toLowerCase()) ||
+    child.customSerialId?.toLowerCase().includes(searchTodayReg.toLowerCase())
+  ) : [];
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('token');
-    navigate('/login');
-  };
+  const filteredFingerprintData = Array.isArray(fingerprintData) ? fingerprintData.filter(fp =>
+    fp.childName?.toLowerCase().includes(searchFingerprints.toLowerCase()) ||
+    fp.customSerialId?.toLowerCase().includes(searchFingerprints.toLowerCase())
+  ) : [];
 
-  const startCamera = async (num) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (num === 1) { videoRef1.current.srcObject = stream; setShowCamera1(true); }
-      else if (num === 2) { videoRef2.current.srcObject = stream; setShowCamera2(true); }
-      else { videoRef3.current.srcObject = stream; setShowCamera3(true); }
-    } catch (err) { showToast('Unable to access camera. Please check permissions.', 'error'); }
-  };
-
-  const capturePhoto = (num) => {
-    let canvas, video;
-    if (num === 1) { canvas = canvasRef1.current; video = videoRef1.current; }
-    else if (num === 2) { canvas = canvasRef2.current; video = videoRef2.current; }
-    else { canvas = canvasRef3.current; video = videoRef3.current; }
-
-    const ctx = canvas.getContext('2d');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-    
-    canvas.toBlob((blob) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (num === 1) { setPreview1(reader.result); setShowCamera1(false); }
-        else if (num === 2) { setPreview2(reader.result); setShowCamera2(false); }
-        else { setPreview3(reader.result); setShowCamera3(false); }
-        showToast(`Photo ${num} captured successfully!`, 'success');
-      };
-      reader.readAsDataURL(blob);
-      video.srcObject.getTracks().forEach(track => track.stop());
-    }, 'image/jpeg');
-  };
-
-  const stopCamera = (num) => {
-    let video;
-    if (num === 1) { video = videoRef1.current; setShowCamera1(false); }
-    else if (num === 2) { video = videoRef2.current; setShowCamera2(false); }
-    else { video = videoRef3.current; setShowCamera3(false); }
-    if (video && video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
-  };
-
-  const handleFileUpload = (num, file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (num === 1) { setPreview1(reader.result); }
-      else if (num === 2) { setPreview2(reader.result); }
-      else { setPreview3(reader.result); }
-      showToast(`Photo ${num} uploaded successfully!`, 'success');
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleFingerprintCapture = () => {
-    if (Math.random() > 0.2) {
-      showToast('✓ Fingerprint captured successfully!', 'success');
-      setFingerprintCaptured(true);
-      setRegistrationStep(3);
-    } else {
-      showToast('✗ Fingerprint capture failed. Please try again.', 'error');
-    }
-  };
-
-  const handleVerifyFingerprintScan = () => {
-    setIsVerifying(true);
-    setTimeout(() => {
-      const matchedChild = Array.isArray(childrenData) ? childrenData.find(child => child.customSerialId === 'KID-2024-0001') || childrenData[0] : null;
-      
-      if (matchedChild) {
-        setExistingChild({
-          id: matchedChild.id,
-          customSerialId: matchedChild.customSerialId,
-          fullName: matchedChild.fullName,
-          estimatedBirthYear: matchedChild.estimatedBirthYear,
-          age: calculateAgeFromYear(matchedChild.estimatedBirthYear),
-          gender: matchedChild.gender,
-          locationName: getLocationName(matchedChild.primaryLocationId),
-          createdAt: matchedChild.createdAt,
-          fingerprintCaptured: matchedChild.fingerprintCaptured,
-          medicalHistory: matchedChild.medicalHistory || 'No known allergies',
-          lastVisit: new Date().toLocaleDateString(),
-          registeredBy: matchedChild.createdByStaffId,
-          images: { image1: matchedChild.image1, image2: matchedChild.image2, image3: matchedChild.image3 }
-        });
-        setExistingChildImages({ 
-          image1: matchedChild.image1, 
-          image2: matchedChild.image2, 
-          image3: matchedChild.image3 
-        });
-        setFingerprintExists(true);
-        showToast('✓ Fingerprint verified! Child found in system.', 'success');
-      } else {
-        setFingerprintExists(false);
-        setExistingChild(null);
-        setExistingChildImages(null);
-        showToast('✗ Fingerprint not found. No matching record.', 'info');
-      }
-      setIsVerifying(false);
-    }, 1500);
-  };
-
-const handleLoadExistingRecord = () => {
-  if (existingChild && existingChild.fullName) {
-    // Store child data in sessionStorage for the medical records page
-    sessionStorage.setItem('selectedChild', JSON.stringify(existingChild));
-    // Navigate to medical records page
-    navigate('/medical-records', { state: { child: existingChild } });
-    setFingerprintExists(null);
-    setExistingChild(null);
-    setExistingChildImages(null);
-  } else {
-    showToast('No record selected', 'error');
-  }
-};
-
-  const handleCompleteRegistration = async () => {
-    if (!validateForm()) {
-      showToast('Please fill in all required fields', 'error');
-      return;
-    }
-
-    const newChild = {
-      fullName: formData.fullName,
-      estimatedBirthYear: formData.estimatedBirthYear,
-      gender: formData.gender,
-      primaryLocationId: formData.primaryLocationId,
-      fingerprintCaptured: fingerprintCaptured,
-      createdByStaffId: user?.id || user?.user_id
-    };
-
-    const result = await addRegistration(newChild);
-    
-    if (result) {
-      showToast(offlineMode 
-        ? `✓ Child registered in OFFLINE mode with ID: ${generatedId}. Data will sync when online.` 
-        : `✓ Child registered successfully with ID: ${generatedId}!`, 
-        'success'
-      );
-      
-      setActivePage('list');
-      setRegistrationStep(1);
-      setFingerprintCaptured(false);
-      setFormData({ fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' });
-      setFormErrors({ fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' });
-      setPreview1(null); setPreview2(null); setPreview3(null);
-      await fetchChildren();
-      await fetchTodayRegistrations();
-      await generateRegistrationId();
-    }
-  };
-
-  const handleSyncOfflineData = () => {
-    setIsSyncing(true);
-    showToast('Starting synchronization...', 'info');
-    
-    setTimeout(async () => {
-      const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
-      
-      for (const record of offlineData) {
-        try {
-          await addRegistration(record);
-        } catch (error) {
-          console.error('Error syncing record:', error);
-        }
-      }
-      
-      localStorage.removeItem('offline_registrations');
-      const isOnline = navigator.onLine;
-      setOfflineMode(!isOnline);
-      
-      showToast(`✓ Synchronization completed successfully! ${offlineData.length} records synced.`, 'success');
-      setIsSyncing(false);
-      fetchChildren();
-      fetchTodayRegistrations();
-      fetchFingerprints();
-      generateRegistrationId();
-    }, 3000);
-  };
-
-  const handleStatClick = (page, title) => {
-    showToast(`Viewing ${title}`, 'info');
-    setActivePage(page);
-  };
-
-  const handleActionClick = (action) => {
-    showToast(`Opening ${action}`, 'info');
-  };
+  const filteredLocations = Array.isArray(locations) ? locations.filter(location =>
+    location.name?.toLowerCase().includes(searchLocations.toLowerCase())
+  ) : [];
 
   const ToastNotification = () => {
     if (!toast.show) return null;
@@ -1747,8 +1786,8 @@ const handleLoadExistingRecord = () => {
                       <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2" />
                     </svg>
                   </button>
-                 </td>
-               </tr>
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
@@ -1761,7 +1800,7 @@ const handleLoadExistingRecord = () => {
     </div>
   );
 
-  // All Children List
+  // All Children List with View Button
   const renderAllChildrenList = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
@@ -1798,7 +1837,7 @@ const handleLoadExistingRecord = () => {
           <tbody>
             {filteredAllChildren.map((child, index) => (
               <tr key={child.id}>
-                <td style={{ textAlign: 'center' }}>{index + 1} </td>
+                <td style={{ textAlign: 'center' }}>{index + 1}</td>
                 <td>{child.customSerialId}</td>
                 <td>{child.fullName}</td>
                 <td>{calculateAgeFromYear(child.estimatedBirthYear)}</td>
@@ -1867,7 +1906,7 @@ const handleLoadExistingRecord = () => {
     </div>
   );
 
-  // Today's Registrations
+  // Today's Registrations with View Button
   const renderTodayRegistrations = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
@@ -1969,11 +2008,16 @@ const handleLoadExistingRecord = () => {
             ))}
           </tbody>
         </table>
+        {filteredTodayRegistrations.length === 0 && (
+          <div className="child-reg-no-data">
+            <p>No registrations today. Check back later.</p>
+          </div>
+        )}
       </div>
     </div>
   );
 
-  // Fingerprints List
+  // Fingerprints List with View Button
   const renderFingerprintsList = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
@@ -2015,6 +2059,7 @@ const handleLoadExistingRecord = () => {
               <th>Capture Date & Time</th>
               <th>Quality</th>
               <th>Captured By</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -2048,6 +2093,27 @@ const handleLoadExistingRecord = () => {
                     </span>
                   </td>
                   <td>{capturedByName}</td>
+                  <td>
+                    <div className="child-reg-action-buttons">
+                      <button 
+                        className="child-reg-action-icon-btn child-reg-view-btn" 
+                        onClick={() => {
+                          const childRecord = childrenData.find(c => c.id === fp.childId || c.customSerialId === fp.customSerialId);
+                          if (childRecord) {
+                            handleViewChild(childRecord);
+                          } else {
+                            showToast('Child record not found', 'error');
+                          }
+                        }}
+                        title="View Child Details"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               );
             })}
@@ -2061,6 +2127,52 @@ const handleLoadExistingRecord = () => {
       </div>
     </div>
   );
+
+  useEffect(() => {
+    const initData = async () => {
+      const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        const userMap = await fetchStaffUsers();
+        await fetchLocations();
+        await fetchChildren(userMap);
+        await fetchTodayRegistrations(userMap);
+        await fetchFingerprints();
+        await generateRegistrationId();
+      } else {
+        navigate('/login');
+      }
+      setLoading(false);
+    };
+    initData();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      generateRegistrationId();
+    }
+  }, [childrenData.length, user]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  const handlePrintClick = (dataType) => {
+    setPrintDataType(dataType);
+    setPrintFilters({ 
+      date_from: '', 
+      date_to: '', 
+      location: '', 
+      fingerprint_status: '', 
+      gender: '' 
+    });
+    setShowPrintPage(true);
+  };
 
   if (loading) return <div className="child-reg-dashboard-loading"><div className="child-reg-spinner"></div><p>Loading...</p></div>;
   if (!user) return null;
@@ -2240,7 +2352,13 @@ const handleLoadExistingRecord = () => {
                     </div>
                     {showCam ? (
                       <div className="child-reg-camera-preview">
-                        <video ref={videoR} autoPlay playsInline className="child-reg-camera-video" />
+                        <video 
+                          ref={videoR} 
+                          autoPlay 
+                          playsInline 
+                          className="child-reg-camera-video" 
+                          style={{ width: '100%', maxWidth: '300px', borderRadius: '8px', background: '#000' }}
+                        />
                         <canvas ref={canvasR} style={{ display: 'none' }} />
                         <div className="child-reg-camera-controls">
                           <button className="child-reg-btn-capture" onClick={() => capturePhoto(num)} title="Capture">

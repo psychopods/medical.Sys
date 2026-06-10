@@ -25,6 +25,10 @@ const NurseDashboard = ({ user, onLogout }) => {
     primaryLocationId: ''
   });
   
+  // Current time state
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [greeting, setGreeting] = useState('');
+  
   // Stats data
   const [statsData, setStatsData] = useState({
     totalChildren: 0,
@@ -57,6 +61,51 @@ const NurseDashboard = ({ user, onLogout }) => {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
+  };
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  // Get user's first name
+  const getUserFirstName = () => {
+    if (user?.firstName) return user.firstName;
+    if (user?.first_name) return user.first_name;
+    if (user?.username) return user.username;
+    return 'Nurse';
+  };
+
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+      setGreeting(getGreeting());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // Format date
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Format time
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
   };
 
   // Fetch locations for dropdown
@@ -474,6 +523,7 @@ const NurseDashboard = ({ user, onLogout }) => {
       generateRegistrationId();
     };
     initData();
+    setGreeting(getGreeting());
   }, []);
 
   // Update fingerprints when children data changes
@@ -572,10 +622,32 @@ const NurseDashboard = ({ user, onLogout }) => {
         </div>
       )}
 
-      {/* Welcome Section */}
+      {/* Welcome Section with Greeting and DateTime */}
       <div className="nurse-dashboard-welcome-section">
-        <h1>Welcome back, {user?.firstName || user?.username || 'Nurse'}!</h1>
-        <p>Track today's child registration activity and updates.</p>
+        <div className="nurse-dashboard-welcome-header">
+          <div className="nurse-dashboard-greeting">
+            <h1>{greeting}, {getUserFirstName()}!</h1>
+            <p>Welcome to Street Medicine System Dashboard</p>
+          </div>
+          <div className="nurse-dashboard-datetime">
+            <div className="nurse-dashboard-date">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2"/>
+                <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2"/>
+                <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              {formatDate(currentTime)}
+            </div>
+            <div className="nurse-dashboard-time">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <polyline points="12 6 12 12 16 14" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              {formatTime(currentTime)}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}

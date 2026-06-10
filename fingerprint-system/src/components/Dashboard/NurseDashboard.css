@@ -747,3 +747,82 @@
     width: 40px;
   }
 }
+
+
+/* Welcome Header with Greeting and DateTime */
+.nurse-dashboard-welcome-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.nurse-dashboard-greeting h1 {
+  font-size: 28px;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.nurse-dashboard-greeting p {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+.nurse-dashboard-datetime {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  background: #f8f9fa;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.nurse-dashboard-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.nurse-dashboard-date svg {
+  stroke: #667eea;
+}
+
+.nurse-dashboard-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.nurse-dashboard-time svg {
+  stroke: #667eea;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .nurse-dashboard-welcome-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .nurse-dashboard-datetime {
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .nurse-dashboard-greeting h1 {
+    font-size: 24px;
+  }
+  
+  .nurse-dashboard-time {
+    font-size: 16px;
+  }
+}

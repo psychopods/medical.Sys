@@ -148,7 +148,7 @@ const Login = () => {
       <div className="login-hero">
         <div className="login-hero-content">
           <h1>Welcome Back</h1>
-          <p>Secure access to TRHM Fingerprint System</p>
+          <p>Secure access to TRHM System</p>
         </div>
       </div>
 
@@ -196,7 +196,7 @@ const Login = () => {
               }}
             />
             <h2>TRHM System</h2>
-            <p>Secure Biometric Authentication</p>
+            <p>Secure Authentication</p>
           </div>
           <div className="login-features">
             <div className="feature">

@@ -63,22 +63,94 @@
 }
 
 .partner-logo {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   transition: all 0.3s ease;
 }
 
-.partner-image {
-  height: 150px;
+/* Circular Logo Container */
+.partner-logo {
   width: 150px;
+  height: 150px;
   border-radius: 50%;
-  object-fit: cover;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s ease;
   border: 3px solid #ffd700;
-  padding: 5px;
-  background: #ffffff;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.partner-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
+
+/* For logos that are not square - maintain aspect ratio */
+.partner-image {
+  object-fit: contain;
+  padding: 10px;
+}
+
+/* Placeholder for missing images */
+.partner-logo-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-text {
+  font-size: 48px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+}
+
+/* Tooltip on hover */
+.partner-name-tooltip {
+  position: absolute;
+  bottom: -35px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.partner-name-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  background: #1e293b;
+  transform: rotate(45deg);
+}
+
+.partner-logo:hover .partner-name-tooltip {
+  opacity: 1;
+  visibility: visible;
+  bottom: -45px;
 }
 
 .partner-logo:hover {
@@ -87,6 +159,9 @@
 
 .partner-logo:hover .partner-image {
   transform: scale(1.02);
+}
+
+.partner-logo:hover {
   border-color: #4f46e5;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
@@ -170,9 +245,13 @@
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .partner-image {
-    height: 120px;
+  .partner-logo {
     width: 120px;
+    height: 120px;
+  }
+  
+  .placeholder-text {
+    font-size: 38px;
   }
   
   .partner-logo-item {
@@ -185,9 +264,13 @@
     font-size: 28px;
   }
   
-  .partner-image {
-    height: 90px;
+  .partner-logo {
     width: 90px;
+    height: 90px;
+  }
+  
+  .placeholder-text {
+    font-size: 28px;
   }
   
   .partner-logo-item {
@@ -200,6 +283,11 @@
   
   .marquee-content {
     animation: marqueeScroll 30s linear infinite;
+  }
+  
+  .partner-name-tooltip {
+    font-size: 10px;
+    padding: 4px 8px;
   }
   
   .toast-notification {
@@ -219,19 +307,32 @@
     font-size: 24px;
   }
   
-  .partner-image {
-    height: 70px;
+  .partner-logo {
     width: 70px;
+    height: 70px;
     border-width: 2px;
-    padding: 3px;
+  }
+  
+  .placeholder-text {
+    font-size: 22px;
+  }
+  
+  .partner-logo-item {
+    padding: 0 25px;
   }
   
   .partners-marquee-section {
     padding: 20px 0 30px 0;
   }
   
-  .partner-logo-item {
-    padding: 0 25px;
+  .partner-name-tooltip {
+    bottom: -30px;
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  
+  .partner-logo:hover .partner-name-tooltip {
+    bottom: -38px;
   }
 }
 

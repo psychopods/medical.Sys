@@ -412,7 +412,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
       <div className="sd-welcome-section">
         <div className="sd-welcome-content">
           <h1>{getGreeting()}, {user?.firstName || user?.username || 'Admin'}!</h1>
-          <p>Welcome to the Field Outreach and Street Medicine System Dashboard</p>
+          <p>Welcome to Street Medicine System Dashboard</p>
         </div>
         <div className="sd-date-time">
           <div className="sd-date">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>

@@ -16,6 +16,10 @@ const UserManagement = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [activePage, setActivePage] = useState('list');
   const [editingUser, setEditingUser] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
+  const [viewingRole, setViewingRole] = useState(null);
+  const [viewingPermission, setViewingPermission] = useState(null);
+  const [viewingCategory, setViewingCategory] = useState(null);
   const [resettingUser, setResettingUser] = useState(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -998,6 +1002,26 @@ const UserManagement = () => {
     setActivePage('edit_user');
   };
 
+  const handleViewUser = (userItem) => {
+    setViewingUser(userItem);
+    setActivePage('view_user');
+  };
+
+  const handleViewRole = (role) => {
+    setViewingRole(role);
+    setActivePage('view_role');
+  };
+
+  const handleViewPermission = (permission) => {
+    setViewingPermission(permission);
+    setActivePage('view_permission');
+  };
+
+  const handleViewCategory = (category) => {
+    setViewingCategory(category);
+    setActivePage('view_category');
+  };
+
   const handleEditRole = (role) => {
     setEditingRole(role);
     setRoleFormData({
@@ -1045,7 +1069,236 @@ const UserManagement = () => {
     );
   };
 
-  // Render Users List Page with Reset Password button
+  // Render User View Page
+  const renderUserViewPage = () => (
+    <div className="um-page-content-full">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('users')}>← Back to Users</button>
+        <h1>User Details</h1>
+      </div>
+      
+      <div className="um-view-container">
+        <div className="um-view-section">
+          <h3>Personal Information</h3>
+          <div className="um-view-grid">
+            <div className="um-view-item">
+              <label>Full Name:</label>
+              <span>{viewingUser?.firstName} {viewingUser?.lastName}</span>
+            </div>
+            <div className="um-view-item">
+              <label>Username:</label>
+              <span>{viewingUser?.username}</span>
+            </div>
+            <div className="um-view-item">
+              <label>Email:</label>
+              <span>{viewingUser?.email}</span>
+            </div>
+            <div className="um-view-item">
+              <label>Phone Number:</label>
+              <span>{viewingUser?.phone || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="um-view-section">
+          <h3>Account Information</h3>
+          <div className="um-view-grid">
+            <div className="um-view-item">
+              <label>Role:</label>
+              <span className="um-role-badge">{viewingUser?.roleName || viewingUser?.role}</span>
+            </div>
+            <div className="um-view-item">
+              <label>Status:</label>
+              <span className={`um-status-badge ${viewingUser?.securityStatus === 'ACTIVE' ? 'um-status-active' : 'um-status-inactive'}`}>
+                {viewingUser?.securityStatus || 'ACTIVE'}
+              </span>
+            </div>
+            <div className="um-view-item">
+              <label>Last Active:</label>
+              <span>{viewingUser?.lastActive ? new Date(viewingUser.lastActive).toLocaleString() : 'Never'}</span>
+            </div>
+            <div className="um-view-item">
+              <label>Registration Date:</label>
+              <span>{viewingUser?.createdAt ? new Date(viewingUser.createdAt).toLocaleDateString() : 'N/A'}</span>
+            </div>
+            <div className="um-view-item">
+              <label>Version:</label>
+              <span>{viewingUser?.version || 1}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="um-view-actions">
+          <button className="um-btn-secondary" onClick={() => setActivePage('users')}>Close</button>
+          <button className="um-btn-primary" onClick={() => {
+            handleEditUser(viewingUser);
+          }}>Edit User</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Role View Page
+  const renderRoleViewPage = () => (
+    <div className="um-page-content-full">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('roles')}>← Back to Roles</button>
+        <h1>Role Details</h1>
+      </div>
+      
+      <div className="um-view-container">
+        <div className="um-view-section">
+          <h3>Role Information</h3>
+          <div className="um-view-grid">
+            <div className="um-view-item">
+              <label>Role Name:</label>
+              <span><strong>{viewingRole?.name}</strong></span>
+            </div>
+            <div className="um-view-item">
+              <label>Description:</label>
+              <span>{viewingRole?.description || 'No description provided'}</span>
+            </div>
+            <div className="um-view-item">
+              <label>Version:</label>
+              <span>{viewingRole?.version || 1}</span>
+            </div>
+            <div className="um-view-item">
+              <label>Last Modified:</label>
+              <span>{viewingRole?.lastModifiedAt ? new Date(viewingRole.lastModifiedAt).toLocaleString() : 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="um-view-section">
+          <h3>Assigned Permissions</h3>
+          <div className="um-permissions-list-view">
+            {availablePermissions.filter(p => viewingRole?.permissions?.includes(p.id)).length > 0 ? (
+              <div className="um-permissions-tags">
+                {availablePermissions.filter(p => viewingRole?.permissions?.includes(p.id)).map(perm => (
+                  <span key={perm.id} className="um-permission-tag">{perm.slug}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="um-no-data">No permissions assigned to this role.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="um-view-actions">
+          <button className="um-btn-secondary" onClick={() => setActivePage('roles')}>Close</button>
+          <button className="um-btn-primary" onClick={() => {
+            handleEditRole(viewingRole);
+          }}>Edit Role</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Permission View Page
+  const renderPermissionViewPage = () => {
+    const category = permissionCategories.find(c => c.id === viewingPermission?.categoryId);
+    return (
+      <div className="um-page-content-full">
+        <div className="um-page-header">
+          <button className="um-back-btn" onClick={() => setActivePage('permissions')}>← Back to Permissions</button>
+          <h1>Permission Details</h1>
+        </div>
+        
+        <div className="um-view-container">
+          <div className="um-view-section">
+            <h3>Permission Information</h3>
+            <div className="um-view-grid">
+              <div className="um-view-item">
+                <label>Permission Slug:</label>
+                <span><code className="um-code-tag">{viewingPermission?.slug}</code></span>
+              </div>
+              <div className="um-view-item">
+                <label>Description:</label>
+                <span>{viewingPermission?.description || 'No description provided'}</span>
+              </div>
+              <div className="um-view-item">
+                <label>Category:</label>
+                <span className="um-category-tag">{category?.name || 'Uncategorized'}</span>
+              </div>
+              <div className="um-view-item">
+                <label>Created At:</label>
+                <span>{viewingPermission?.createdAt ? new Date(viewingPermission.createdAt).toLocaleString() : 'N/A'}</span>
+              </div>
+              <div className="um-view-item">
+                <label>Last Modified:</label>
+                <span>{viewingPermission?.lastModifiedAt ? new Date(viewingPermission.lastModifiedAt).toLocaleString() : 'N/A'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="um-view-actions">
+            <button className="um-btn-secondary" onClick={() => setActivePage('permissions')}>Close</button>
+            <button className="um-btn-primary" onClick={() => {
+              handleEditPermission(viewingPermission);
+            }}>Edit Permission</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Category View Page
+  const renderCategoryViewPage = () => (
+    <div className="um-page-content-full">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('categories')}>← Back to Categories</button>
+        <h1>Category Details</h1>
+      </div>
+      
+      <div className="um-view-container">
+        <div className="um-view-section">
+          <h3>Category Information</h3>
+          <div className="um-view-grid">
+            <div className="um-view-item">
+              <label>Category Name:</label>
+              <span><strong>{viewingCategory?.name}</strong></span>
+            </div>
+            <div className="um-view-item">
+              <label>Description:</label>
+              <span>{viewingCategory?.description || 'No description provided'}</span>
+            </div>
+            <div className="um-view-item">
+              <label>Created At:</label>
+              <span>{viewingCategory?.createdAt ? new Date(viewingCategory.createdAt).toLocaleString() : 'N/A'}</span>
+            </div>
+            <div className="um-view-item">
+              <label>Last Updated:</label>
+              <span>{viewingCategory?.updatedAt ? new Date(viewingCategory.updatedAt).toLocaleString() : 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="um-view-section">
+          <h3>Permissions in this Category</h3>
+          <div className="um-permissions-list-view">
+            {availablePermissions.filter(p => p.categoryId === viewingCategory?.id).length > 0 ? (
+              <div className="um-permissions-tags">
+                {availablePermissions.filter(p => p.categoryId === viewingCategory?.id).map(perm => (
+                  <span key={perm.id} className="um-permission-tag">{perm.slug}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="um-no-data">No permissions in this category.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="um-view-actions">
+          <button className="um-btn-secondary" onClick={() => setActivePage('categories')}>Close</button>
+          <button className="um-btn-primary" onClick={() => {
+            handleEditCategory(viewingCategory);
+          }}>Edit Category</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Users List Page with View button
   const renderUsersList = () => (
     <div className="um-page-content">
       <div className="um-page-header">
@@ -1088,6 +1341,12 @@ const UserManagement = () => {
                 <td><span className="um-status-badge um-status-active">{userItem.securityStatus || 'ACTIVE'}</span></td>
                 <td>
                   <div className="um-action-buttons-group">
+                    <button className="um-action-btn um-view-btn" onClick={() => handleViewUser(userItem)} title="View Details">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
                     <button className="um-action-btn um-edit-btn" onClick={() => handleEditUser(userItem)} title="Edit User">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M17 3L21 7L7 21H3V17L17 3Z"/>
@@ -1122,7 +1381,160 @@ const UserManagement = () => {
     </div>
   );
 
-  // Reset Password Page - Designed like Add New User (no cards, no shadows, full width)
+  // Render Roles List Page with View button
+  const renderRolesList = () => (
+    <div className="um-page-content">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <div className="um-header-actions">
+          <h1>System Roles</h1>
+          <div className="um-header-buttons">
+            <button className="um-add-btn" onClick={() => setActivePage('add_role')}>Add New Role</button>
+          </div>
+        </div>
+      </div>
+      <div className="um-roles-table-container">
+        <table className="um-data-table">
+          <thead><tr><th>S/N</th><th>Role Name</th><th>Description</th><th>Actions</th></tr></thead>
+          <tbody>
+            {roles.map((role, index) => (
+              <tr key={role.id}>
+                <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                <td><strong>{role.name}</strong></td>
+                <td>{role.description}</td>
+                <td>
+                  <div className="um-action-buttons-group">
+                    <button className="um-action-btn um-view-btn" onClick={() => handleViewRole(role)} title="View Details">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
+                    <button className="um-action-btn um-permission-btn" onClick={() => handleManagePermissions(role)} title="Manage Permissions">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+                    </button>
+                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditRole(role)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
+                    </button>
+                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteRole(role.id, role.name)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Render Permissions List Page with View button
+  const renderPermissionsList = () => (
+    <div className="um-page-content">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <div className="um-header-actions">
+          <h1>System Permissions</h1>
+          <button className="um-add-btn" onClick={() => { setEditingPermission(null); resetPermissionForm(); setActivePage('add_permission'); }}>Define New Permission</button>
+        </div>
+      </div>
+      <div className="um-permissions-table-container">
+        <table className="um-data-table">
+          <thead><tr><th>Category</th><th>Permission Slug</th><th>Description</th><th>Actions</th></tr></thead>
+          <tbody>
+            {availablePermissions.map((permission) => {
+              const category = permissionCategories.find(c => c.id === permission.categoryId);
+              return (
+                <tr key={permission.id}>
+                  <td>{category ? category.name : 'Uncategorized'}</td>
+                  <td><code className="um-code-tag">{permission.slug}</code></td>
+                  <td>{permission.description}</td>
+                  <td>
+                    <div className="um-action-buttons-group">
+                      <button className="um-action-btn um-view-btn" onClick={() => handleViewPermission(permission)} title="View Details">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      </button>
+                      <button className="um-action-btn um-edit-btn" onClick={() => handleEditPermission(permission)}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
+                      </button>
+                      <button className="um-action-btn um-delete-btn" onClick={() => handleDeletePermission(permission.id, permission.slug)}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Render Categories List Page with View button
+  const renderCategoriesList = () => (
+    <div className="um-page-content">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <div className="um-header-actions">
+          <h1>Permission Categories</h1>
+          <button className="um-add-btn" onClick={() => { setEditingCategory(null); resetCategoryForm(); setActivePage('add_category'); }}>Add New Category</button>
+        </div>
+      </div>
+      <div className="um-categories-table-container">
+        <table className="um-data-table">
+          <thead>
+            <tr>
+              <th>S/N</th>
+              <th>Category Name</th>
+              <th>Description</th>
+              <th>Created At</th>
+              <th>Last Updated</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {permissionCategories.map((category, index) => (
+              <tr key={category.id}>
+                <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                <td><strong>{category.name}</strong></td>
+                <td>{category.description || '—'}</td>
+                <td>{category.createdAt ? new Date(category.createdAt).toLocaleString() : 'N/A'}</td>
+                <td>{category.updatedAt ? new Date(category.updatedAt).toLocaleString() : 'N/A'}</td>
+                <td>
+                  <div className="um-action-buttons-group">
+                    <button className="um-action-btn um-view-btn" onClick={() => handleViewCategory(category)} title="View Details">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
+                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditCategory(category)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
+                    </button>
+                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteCategory(category.id, category.name)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {permissionCategories.length === 0 && (
+          <div className="um-no-data">
+            <p>No permission categories found. Click "Add New Category" to create one.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Reset Password Page
   const renderResetPasswordPage = () => (
     <div className="um-page-content-full">
       <div className="um-page-header">
@@ -1132,7 +1544,6 @@ const UserManagement = () => {
       </div>
       
       <div className="um-form-container-full">
-        {/* User Information Section - Simple info display */}
         <div className="um-user-info-section">
           <div className="um-user-info-row">
             <div className="um-user-info-label">User:</div>
@@ -1152,7 +1563,6 @@ const UserManagement = () => {
           </div>
         </div>
 
-        {/* Password Form */}
         <div className="um-form-section">
           <div className="um-form-grid-full">
             <div className="um-form-group">
@@ -1183,7 +1593,6 @@ const UserManagement = () => {
               </div>
             </div>
 
-            {/* Password Requirements Checklist */}
             <div className="um-password-requirements">
               <div className="um-requirements-title">Password Requirements:</div>
               <div className="um-requirements-grid">
@@ -1272,46 +1681,6 @@ const UserManagement = () => {
     </div>
   );
 
-  // Render Roles List Page
-  const renderRolesList = () => (
-    <div className="um-page-content">
-      <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
-        <div className="um-header-actions">
-          <h1>System Roles</h1>
-          <div className="um-header-buttons">
-            <button className="um-add-btn" onClick={() => setActivePage('add_role')}>Add New Role</button>
-          </div>
-        </div>
-      </div>
-      <div className="um-roles-table-container">
-        <table className="um-data-table">
-          <thead><tr><th>S/N</th><th>Role Name</th><th>Description</th><th>Actions</th></tr></thead>
-          <tbody>
-            {roles.map((role, index) => (
-              <tr key={role.id}>
-                <td style={{ textAlign: 'center' }}>{index + 1}</td>
-                <td><strong>{role.name}</strong></td>
-                <td>{role.description}</td>
-                <td>
-                  <button className="um-action-btn um-permission-btn" onClick={() => handleManagePermissions(role)} title="Manage Permissions">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
-                  </button>
-                  <button className="um-action-btn um-edit-btn" onClick={() => handleEditRole(role)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
-                  </button>
-                  <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteRole(role.id, role.name)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
   // Render Add/Edit Role Page
   const renderRoleForm = () => (
     <div className="um-page-content-full">
@@ -1330,44 +1699,6 @@ const UserManagement = () => {
           <button className="um-btn-secondary" onClick={() => { setActivePage('roles'); setEditingRole(null); resetRoleForm(); }}>Cancel</button>
           <button className="um-btn-primary" onClick={editingRole ? handleUpdateRole : handleAddRole}>{editingRole ? 'Update Role' : 'Create Role'}</button>
         </div>
-      </div>
-    </div>
-  );
-
-  // Render Permissions List Page
-  const renderPermissionsList = () => (
-    <div className="um-page-content">
-      <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
-        <div className="um-header-actions">
-          <h1>System Permissions</h1>
-          <button className="um-add-btn" onClick={() => { setEditingPermission(null); resetPermissionForm(); setActivePage('add_permission'); }}>Define New Permission</button>
-        </div>
-      </div>
-      <div className="um-permissions-table-container">
-        <table className="um-data-table">
-          <thead><tr><th>Category</th><th>Permission Slug</th><th>Description</th><th>Actions</th></tr></thead>
-          <tbody>
-            {availablePermissions.map((permission) => {
-              const category = permissionCategories.find(c => c.id === permission.categoryId);
-              return (
-                <tr key={permission.id}>
-                  <td>{category ? category.name : 'Uncategorized'}</td>
-                  <td><code className="um-code-tag">{permission.slug}</code></td>
-                  <td>{permission.description}</td>
-                  <td>
-                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditPermission(permission)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
-                    </button>
-                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeletePermission(permission.id, permission.slug)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
       </div>
     </div>
   );
@@ -1391,57 +1722,6 @@ const UserManagement = () => {
           <button className="um-btn-secondary" onClick={() => { setActivePage('permissions'); setEditingPermission(null); resetPermissionForm(); }}>Cancel</button>
           <button className="um-btn-primary" onClick={editingPermission ? handleUpdatePermission : handleAddPermission}>{editingPermission ? 'Update Permission' : 'Create Permission'}</button>
         </div>
-      </div>
-    </div>
-  );
-
-  // Render Categories List Page
-  const renderCategoriesList = () => (
-    <div className="um-page-content">
-      <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
-        <div className="um-header-actions">
-          <h1>Permission Categories</h1>
-          <button className="um-add-btn" onClick={() => { setEditingCategory(null); resetCategoryForm(); setActivePage('add_category'); }}>Add New Category</button>
-        </div>
-      </div>
-      <div className="um-categories-table-container">
-        <table className="um-data-table">
-          <thead>
-            <tr>
-              <th>S/N</th>
-              <th>Category Name</th>
-              <th>Description</th>
-              <th>Created At</th>
-              <th>Last Updated</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {permissionCategories.map((category, index) => (
-              <tr key={category.id}>
-                <td style={{ textAlign: 'center' }}>{index + 1}</td>
-                <td><strong>{category.name}</strong></td>
-                <td>{category.description || '—'}</td>
-                <td>{category.createdAt ? new Date(category.createdAt).toLocaleString() : 'N/A'}</td>
-                <td>{category.updatedAt ? new Date(category.updatedAt).toLocaleString() : 'N/A'}</td>
-                <td>
-                  <button className="um-action-btn um-edit-btn" onClick={() => handleEditCategory(category)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
-                  </button>
-                  <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteCategory(category.id, category.name)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {permissionCategories.length === 0 && (
-          <div className="um-no-data">
-            <p>No permission categories found. Click "Add New Category" to create one.</p>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -1590,16 +1870,20 @@ const UserManagement = () => {
         {activePage === 'users' && renderUsersList()}
         {activePage === 'add_user' && renderUserForm()}
         {activePage === 'edit_user' && renderUserForm()}
+        {activePage === 'view_user' && renderUserViewPage()}
         {activePage === 'reset_password' && renderResetPasswordPage()}
         {activePage === 'roles' && renderRolesList()}
         {activePage === 'add_role' && renderRoleForm()}
         {activePage === 'edit_role' && renderRoleForm()}
+        {activePage === 'view_role' && renderRoleViewPage()}
         {activePage === 'permissions' && renderPermissionsList()}
         {activePage === 'add_permission' && renderPermissionForm()}
         {activePage === 'edit_permission' && renderPermissionForm()}
+        {activePage === 'view_permission' && renderPermissionViewPage()}
         {activePage === 'categories' && renderCategoriesList()}
         {activePage === 'add_category' && renderCategoryForm()}
         {activePage === 'edit_category' && renderCategoryForm()}
+        {activePage === 'view_category' && renderCategoryViewPage()}
         {activePage === 'manage_permissions' && renderManagePermissions()}
       </div>
     </Layout>

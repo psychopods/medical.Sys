@@ -171,7 +171,7 @@
   border-radius: 8px;
   font-size: 14px;
   resize: vertical;
-  font-family: inherit;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .result-form-group textarea:focus {

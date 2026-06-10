@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import AppInitializer from './components/AppInitializer';
 import TopHeader from './components/TopHeader';
 import BottomHeader from './components/BottomHeader';
 import HeroSection from './components/HeroSection';
@@ -28,6 +29,8 @@ import ReportsAdmin from './components/Dashboard/ReportsAdmin';
 import VolunteerAdmin from './components/Dashboard/VolunteerAdmin';
 import ContactAdmin from './components/Dashboard/ContactAdmin';
 import MedicalRecords from './components/Dashboard/MedicalRecords';
+import UserProfile from './components/Dashboard/UserProfile';
+import NotificationsAdmin from './components/Dashboard/NotificationsAdmin';
 import { ProtectedRoute, RoleBasedRoute } from './components/ProtectedRoute';
 import './App.css';
 
@@ -50,12 +53,28 @@ const ProtectedLayout = ({ children }) => {
 };
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleLoadingComplete = () => {
+    // Hide loading screen and show the app
+    setIsLoading(false);
+  };
+
+  // Show loading screen while isLoading is true
+  if (isLoading) {
+    return <AppInitializer onLoadingComplete={handleLoadingComplete} />;
+  }
+
+  // Show the actual app after loading is complete
   return (
     <Router>
       <div className="App">
         <Routes>
+          {/* Redirect root to home after loading */}
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          
           {/* Public Routes with headers and footer */}
-          <Route path="/" element={
+          <Route path="/home" element={
             <PublicLayout>
               <HeroSection />
               <Mission />
@@ -129,6 +148,15 @@ function App() {
             <ProtectedRoute>
               <ProtectedLayout>
                 <Dashboard />
+              </ProtectedLayout>
+            </ProtectedRoute>
+          } />
+          
+          {/* User Profile Route - Accessible to all authenticated users */}
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProtectedLayout>
+                <UserProfile />
               </ProtectedLayout>
             </ProtectedRoute>
           } />
@@ -219,8 +247,17 @@ function App() {
             </RoleBasedRoute>
           } />
           
-          {/* Catch all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Notifications Admin Route */}
+          <Route path="/notifications-admin" element={
+            <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
+              <ProtectedLayout>
+                <NotificationsAdmin />
+              </ProtectedLayout>
+            </RoleBasedRoute>
+          } />
+          
+          {/* Catch all - redirect to home */}
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </div>
     </Router>

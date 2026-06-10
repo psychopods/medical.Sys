@@ -7,17 +7,10 @@ const BottomHeader = () => {
   const [isSticky, setIsSticky] = useState(false);
   const [topHeaderHeight, setTopHeaderHeight] = useState(0);
   const [topHeaderVisible, setTopHeaderVisible] = useState(true);
-  const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  const [showJoinIndicators, setShowJoinIndicators] = useState(false);
   const headerRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const showToast = (message, type = 'info') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => {
-      setToast({ show: false, message: '', type: '' });
-    }, 3000);
-  };
 
   // Get top header height and visibility
   useEffect(() => {
@@ -106,6 +99,21 @@ const BottomHeader = () => {
     setIsMenuOpen(false);
   };
 
+  const handleJoinNowClick = () => {
+    setShowJoinIndicators(true);
+    
+    // Show indicators for 2 seconds
+    setTimeout(() => {
+      setShowJoinIndicators(false);
+    }, 2000);
+    
+    // Navigate to support page after a short delay
+    setTimeout(() => {
+      navigate('/support');
+      setIsMenuOpen(false);
+    }, 500);
+  };
+
   const handleLogoClick = () => {
     navigate('/');
     setIsMenuOpen(false);
@@ -177,6 +185,30 @@ const BottomHeader = () => {
           </div>
           
           <div className="bb-auth-buttons">
+            {/* Join Now Button - Eye-catching with fire effects */}
+            <div className="bb-join-wrapper">
+              <button 
+                className={`bb-join-btn ${showJoinIndicators ? 'bb-pulse-active' : ''}`}
+                onClick={handleJoinNowClick}
+              >
+                <svg className="bb-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L15 9H22L16 14L19 21L12 17L5 21L8 14L2 9H9L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Join Now
+                <span className="bb-fire-emoji">🔥</span>
+              </button>
+              {showJoinIndicators && (
+                <div className="bb-join-indicators">
+                  <span className="bb-indicator bb-indicator-1">✨</span>
+                  <span className="bb-indicator bb-indicator-2">💫</span>
+                  <span className="bb-indicator bb-indicator-3">⭐</span>
+                  <span className="bb-indicator bb-indicator-4">🌟</span>
+                  <span className="bb-indicator bb-indicator-5">⚡</span>
+                  <span className="bb-indicator bb-indicator-fire">🔥</span>
+                  <span className="bb-indicator bb-indicator-fire2">🔥</span>
+                </div>
+              )}
+            </div>
             <button className="bb-login-btn" onClick={handleLoginClick}>
               <svg className="bb-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -219,6 +251,12 @@ const BottomHeader = () => {
             ))}
           </div>
           <div className="bb-mobile-auth-buttons">
+            <button className="bb-mobile-join-btn" onClick={handleJoinNowClick}>
+              <svg className="bb-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L15 9H22L16 14L19 21L12 17L5 21L8 14L2 9H9L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Join Now 🔥
+            </button>
             <button className="bb-mobile-login-btn" onClick={handleLoginClick}>
               <svg className="bb-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M15 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

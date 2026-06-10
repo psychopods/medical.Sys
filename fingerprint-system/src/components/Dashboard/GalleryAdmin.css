@@ -439,3 +439,263 @@
     padding: 20px;
   }
 }
+
+/* ============================================
+   VIEW BUTTON STYLES
+   ============================================ */
+
+.ga-view {
+  color: #10b981;
+}
+
+.ga-view:hover {
+  background: #d1fae5;
+}
+
+/* Action Buttons Container */
+.ga-action-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* View Container */
+.ga-view-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* View Sections */
+.ga-view-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.ga-view-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* Info Grid */
+.ga-view-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.ga-view-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ga-view-info-item.full-width {
+  grid-column: span 2;
+}
+
+.ga-view-info-item label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ga-view-info-item span,
+.ga-view-info-item p {
+  font-size: 15px;
+  color: #1e293b;
+  margin: 0;
+}
+
+.ga-view-info-item a {
+  color: #0066cc;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.ga-view-info-item a:hover {
+  text-decoration: underline;
+}
+
+/* Media Badge */
+.ga-media-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #f1f5f9;
+  border-radius: 20px;
+  font-size: 13px;
+  width: fit-content;
+}
+
+/* View Image */
+.ga-view-image {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* View Video */
+.ga-view-video {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.ga-view-video iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* View Thumbnail */
+.ga-view-thumbnail {
+  max-width: 150px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+/* View Actions */
+.ga-view-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Items in Category Grid */
+.ga-items-in-category {
+  margin-top: 10px;
+}
+
+.ga-empty-message {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+}
+
+.ga-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.ga-item-card {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fafbfc;
+}
+
+.ga-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #0066cc;
+}
+
+.ga-item-card img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.ga-video-thumb {
+  width: 80px;
+  height: 80px;
+  background: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 4px;
+  color: #64748b;
+}
+
+.ga-video-thumb svg {
+  width: 30px;
+  height: 30px;
+}
+
+.ga-item-card-info {
+  flex: 1;
+}
+
+.ga-item-card-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.ga-item-card-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* Items Count Column */
+.ga-table th:nth-child(5),
+.ga-table td:nth-child(5) {
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ga-view-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ga-view-info-item.full-width {
+    grid-column: span 1;
+  }
+  
+  .ga-view-actions {
+    flex-direction: column;
+  }
+  
+  .ga-view-actions button {
+    width: 100%;
+  }
+  
+  .ga-items-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ga-action-buttons {
+    flex-direction: column;
+  }
+  
+  .ga-action-buttons button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .ga-table th,
+  .ga-table td {
+    padding: 8px 12px;
+  }
+}

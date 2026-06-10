@@ -324,7 +324,7 @@ const ForgotPassword = () => {
       <div className="forgot-password-hero">
         <div className="forgot-password-hero-content">
           <h1>Reset Password</h1>
-          <p>Secure account recovery for TRHM Fingerprint System</p>
+          <p>Secure account recovery for TRHM System</p>
         </div>
       </div>
 
@@ -368,7 +368,7 @@ const ForgotPassword = () => {
                 />
                 <h2>TRHM System</h2>
               </Link>
-              <p>Secure Biometric Authentication</p>
+              <p>Secure Authentication</p>
             </div>
             <div className="forgot-password-features">
               <div className="feature">

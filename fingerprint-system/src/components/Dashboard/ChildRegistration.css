@@ -1458,7 +1458,7 @@
   font-size: 14px;
   background: #ffffff;
   transition: border-color 0.3s ease;
-  font-family: inherit;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .child-reg-form-group input:focus,
@@ -1470,6 +1470,7 @@
 .child-reg-form-group textarea {
   resize: vertical;
   min-height: 80px;
+  font-family: 'Montserrat', sans-serif;
 }
 
 /* Button Styles (if not already present) */
