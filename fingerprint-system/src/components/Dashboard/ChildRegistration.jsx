@@ -11,6 +11,7 @@ const ChildRegistration = () => {
   const [loading, setLoading] = useState(true);
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
   const [activePage, setActivePage] = useState('list');
+  const [pageHistory, setPageHistory] = useState(['list']); // Navigation history
   const [fingerprintExists, setFingerprintExists] = useState(null);
   const [existingChild, setExistingChild] = useState(null);
   const [existingChildImages, setExistingChildImages] = useState(null);
@@ -114,6 +115,24 @@ const ChildRegistration = () => {
     primaryLocationId: ''
   });
   const navigate = useNavigate();
+
+  // Navigation functions with history
+  const navigateToPage = (page) => {
+    if (page !== activePage) {
+      setPageHistory(prev => [...prev, activePage]);
+      setActivePage(page);
+    }
+  };
+
+  const goBack = () => {
+    if (pageHistory.length > 0) {
+      const previousPage = pageHistory[pageHistory.length - 1];
+      setPageHistory(prev => prev.slice(0, -1));
+      setActivePage(previousPage);
+    } else {
+      setActivePage('list');
+    }
+  };
 
   // Helper function to get user display name
   const getUserDisplayName = () => {
@@ -329,10 +348,7 @@ const ChildRegistration = () => {
     }
   };
 
-  // ============================================
-  // GENERATE REGISTRATION ID FROM DATABASE
-  // ============================================
-  
+  // Generate registration ID
   const generateRegistrationId = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/children`, {
@@ -371,10 +387,7 @@ const ChildRegistration = () => {
     }
   };
 
-  // ============================================
-  // CHILD CRUD OPERATIONS
-  // ============================================
-
+  // Child CRUD Operations
   const fetchChildById = async (id) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/children/${id}`, {
@@ -435,7 +448,7 @@ const ChildRegistration = () => {
   const handleViewChild = async (child) => {
     const fullChild = await fetchChildById(child.id);
     setViewingChild(fullChild || child);
-    setActivePage('view_child');
+    navigateToPage('view_child');
   };
 
   // Edit child page
@@ -457,7 +470,7 @@ const ChildRegistration = () => {
       gender: '',
       primaryLocationId: ''
     });
-    setActivePage('edit_child');
+    navigateToPage('edit_child');
   };
 
   // Save edited child
@@ -475,7 +488,7 @@ const ChildRegistration = () => {
       await fetchChildren();
       await fetchTodayRegistrations();
       generateRegistrationId();
-      setActivePage('list');
+      goBack();
     } else {
       showToast('Failed to update child', 'error');
     }
@@ -496,15 +509,12 @@ const ChildRegistration = () => {
     }
   };
 
-  // ============================================
-  // FINGERPRINT ENROLLMENT PAGE
-  // ============================================
-
+  // Fingerprint Enrollment
   const handleEnrollFingerprint = (child) => {
     setEnrollingChild(child);
     setFingerprintQuality(null);
     setIsCapturing(false);
-    setActivePage('enroll_fingerprint');
+    navigateToPage('enroll_fingerprint');
   };
 
   const handleCaptureFingerprint = () => {
@@ -545,7 +555,7 @@ const ChildRegistration = () => {
         await fetchChildren();
         await fetchTodayRegistrations();
         await fetchFingerprints();
-        setActivePage('list');
+        goBack();
         setEnrollingChild(null);
         setFingerprintQuality(null);
       } else {
@@ -558,16 +568,13 @@ const ChildRegistration = () => {
   };
 
   const handleCancelEnrollment = () => {
-    setActivePage('list');
+    goBack();
     setEnrollingChild(null);
     setFingerprintQuality(null);
     setIsCapturing(false);
   };
 
-  // ============================================
-  // LOCATION CRUD OPERATIONS
-  // ============================================
-
+  // Location CRUD Operations
   const fetchLocations = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/locations`, {
@@ -728,10 +735,6 @@ const ChildRegistration = () => {
     }
   };
 
-  // ============================================
-  // END LOCATION CRUD OPERATIONS
-  // ============================================
-
   const fetchChildren = async (userMap = staffUserMap) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/children`, {
@@ -874,7 +877,6 @@ const ChildRegistration = () => {
   const startCamera = async (num) => {
     if (!checkCameraSupport()) return;
     
-    // Get the correct video element reference
     let videoRef, setShowCamera;
     if (num === 1) {
       videoRef = videoRef1;
@@ -887,7 +889,6 @@ const ChildRegistration = () => {
       setShowCamera = setShowCamera3;
     }
     
-    // Stop any existing camera stream
     if (videoRef.current && videoRef.current.srcObject) {
       videoRef.current.srcObject.getTracks().forEach(track => track.stop());
     }
@@ -943,21 +944,17 @@ const ChildRegistration = () => {
       return;
     }
 
-    // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Convert canvas to data URL
     const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
     
-    // Set preview and hide camera
     setPreview(imageDataUrl);
     setShowCamera(false);
     
-    // Stop the camera stream
     if (video.srcObject) {
       video.srcObject.getTracks().forEach(track => track.stop());
     }
@@ -1084,7 +1081,7 @@ const ChildRegistration = () => {
         'success'
       );
       
-      setActivePage('list');
+      goBack();
       setRegistrationStep(1);
       setFingerprintCaptured(false);
       setFormData({ fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' });
@@ -1126,7 +1123,7 @@ const ChildRegistration = () => {
 
   const handleStatClick = (page, title) => {
     showToast(`Viewing ${title}`, 'info');
-    setActivePage(page);
+    navigateToPage(page);
   };
 
   const handleActionClick = (action) => {
@@ -1138,6 +1135,26 @@ const ChildRegistration = () => {
     const currentYear = new Date().getFullYear();
     const age = currentYear - estimatedBirthYear;
     return `${age} year${age !== 1 ? 's' : ''}`;
+  };
+
+  // Handle Add Registration button click - navigates to registration page
+  const handleAddRegistrationClick = () => {
+    setRegistrationStep(1);
+    setFingerprintCaptured(false);
+    setFormData({ fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' });
+    setPreview1(null); setPreview2(null); setPreview3(null);
+    showToast('Starting new child registration', 'info');
+    navigateToPage('register');
+  };
+
+  // Handle Verify Fingerprint button click - navigates to verify page
+  const handleVerifyFingerprintClick = () => {
+    setFingerprintExists(null);
+    setExistingChild(null);
+    setExistingChildImages(null);
+    setIsVerifying(false);
+    showToast('Opening fingerprint verification', 'info');
+    navigateToPage('verify');
   };
 
   const handlePrint = () => {
@@ -1408,13 +1425,11 @@ const ChildRegistration = () => {
     );
   };
 
-  // ============================================
-  // CHILD VIEW PAGE (Full Page)
-  // ============================================
+  // Child View Page
   const renderChildViewPage = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Child Details</h1>
         </div>
@@ -1508,7 +1523,7 @@ const ChildRegistration = () => {
           </button>
           <button 
             className="child-reg-btn-secondary" 
-            onClick={() => setActivePage('list')}
+            onClick={goBack}
           >
             Close
           </button>
@@ -1517,13 +1532,11 @@ const ChildRegistration = () => {
     </div>
   );
 
-  // ============================================
-  // CHILD EDIT PAGE (Full Page)
-  // ============================================
+  // Child Edit Page
   const renderChildEditPage = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Edit Child</h1>
         </div>
@@ -1588,7 +1601,7 @@ const ChildRegistration = () => {
         </div>
 
         <div className="child-reg-form-actions">
-          <button className="child-reg-btn-secondary" onClick={() => setActivePage('list')}>Cancel</button>
+          <button className="child-reg-btn-secondary" onClick={goBack}>Cancel</button>
           <button className="child-reg-btn-primary" onClick={handleSaveChild}>Save Changes</button>
         </div>
       </div>
@@ -1598,7 +1611,7 @@ const ChildRegistration = () => {
   const renderFingerprintEnrollment = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={handleCancelEnrollment}>← Back to Dashboard</button>
+        <button className="child-reg-back-btn" onClick={handleCancelEnrollment}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Enroll Fingerprint</h1>
         </div>
@@ -1682,7 +1695,7 @@ const ChildRegistration = () => {
   const renderLocationsManagement = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Manage Locations</h1>
           <button className="child-reg-add-btn" onClick={() => {
@@ -1800,17 +1813,32 @@ const ChildRegistration = () => {
     </div>
   );
 
-  // All Children List with View Button
+  // All Children List with Add Registration and Verify Fingerprint Buttons
   const renderAllChildrenList = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">All Registered Children</h1>
-          <button className="child-reg-print-btn-page" onClick={() => handlePrintClick('children')}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V3H18V9" /><path d="M6 21H18C19.1 21 20 20.1 20 19V13C20 11.9 19.1 11 18 11H6C4.9 11 4 11.9 4 13V19C4 20.1 4.9 21 6 21Z" /><path d="M18 15H6" /></svg>
-            Print Report
-          </button>
+          <div className="child-reg-header-button-group">
+            <button className="child-reg-verify-btn-header" onClick={handleVerifyFingerprintClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
+                <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18"/>
+              </svg>
+              Verify Fingerprint
+            </button>
+            <button className="child-reg-add-registration-btn" onClick={handleAddRegistrationClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Add Registration
+            </button>
+            <button className="child-reg-print-btn-page" onClick={() => handlePrintClick('children')}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V3H18V9" /><path d="M6 21H18C19.1 21 20 20.1 20 19V13C20 11.9 19.1 11 18 11H6C4.9 11 4 11.9 4 13V19C4 20.1 4.9 21 6 21Z" /><path d="M18 15H6" /></svg>
+              Print Report
+            </button>
+          </div>
         </div>
         <p className="child-reg-page-subtitle">Total: {Array.isArray(childrenData) ? childrenData.length : 0} children registered in the system</p>
       </div>
@@ -1906,17 +1934,32 @@ const ChildRegistration = () => {
     </div>
   );
 
-  // Today's Registrations with View Button
+  // Today's Registrations with Add Registration and Verify Fingerprint Buttons
   const renderTodayRegistrations = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Today's Registrations</h1>
-          <button className="child-reg-print-btn-page" onClick={() => handlePrintClick('today')}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V3H18V9" /><path d="M6 21H18C19.1 21 20 20.1 20 19V13C20 11.9 19.1 11 18 11H6C4.9 11 4 11.9 4 13V19C4 20.1 4.9 21 6 21Z" /><path d="M18 15H6" /></svg>
-            Print Report
-          </button>
+          <div className="child-reg-header-button-group">
+            <button className="child-reg-verify-btn-header" onClick={handleVerifyFingerprintClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
+                <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18"/>
+              </svg>
+              Verify Fingerprint
+            </button>
+            <button className="child-reg-add-registration-btn" onClick={handleAddRegistrationClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Add Registration
+            </button>
+            <button className="child-reg-print-btn-page" onClick={() => handlePrintClick('today')}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V3H18V9" /><path d="M6 21H18C19.1 21 20 20.1 20 19V13C20 11.9 19.1 11 18 11H6C4.9 11 4 11.9 4 13V19C4 20.1 4.9 21 6 21Z" /><path d="M18 15H6" /></svg>
+              Print Report
+            </button>
+          </div>
         </div>
         <p className="child-reg-page-subtitle">Date: {new Date().toLocaleDateString()} | Total: {Array.isArray(todayData) ? todayData.length : 0} children registered today</p>
       </div>
@@ -2010,28 +2053,43 @@ const ChildRegistration = () => {
         </table>
         {filteredTodayRegistrations.length === 0 && (
           <div className="child-reg-no-data">
-            <p>No registrations today. Check back later.</p>
+            <p>No registrations today. Click "Add Registration" to register a new child.</p>
           </div>
         )}
       </div>
     </div>
   );
 
-  // Fingerprints List with View Button
+  // Fingerprints List with Add Registration and Verify Fingerprint Buttons
   const renderFingerprintsList = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Fingerprints Captured</h1>
-          <button className="child-reg-print-btn-page" onClick={() => handlePrintClick('fingerprints')}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 9V3H18V9" />
-              <path d="M6 21H18C19.1 21 20 20.1 20 19V13C20 11.9 19.1 11 18 11H6C4.9 11 4 11.9 4 13V19C4 20.1 4.9 21 6 21Z" />
-              <path d="M18 15H6" />
-            </svg>
-            Print Report
-          </button>
+          <div className="child-reg-header-button-group">
+            <button className="child-reg-verify-btn-header" onClick={handleVerifyFingerprintClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
+                <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18"/>
+              </svg>
+              Verify Fingerprint
+            </button>
+            <button className="child-reg-add-registration-btn" onClick={handleAddRegistrationClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Add Registration
+            </button>
+            <button className="child-reg-print-btn-page" onClick={() => handlePrintClick('fingerprints')}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 9V3H18V9" />
+                <path d="M6 21H18C19.1 21 20 20.1 20 19V13C20 11.9 19.1 11 18 11H6C4.9 11 4 11.9 4 13V19C4 20.1 4.9 21 6 21Z" />
+                <path d="M18 15H6" />
+              </svg>
+              Print Report
+            </button>
+          </div>
         </div>
         <p className="child-reg-page-subtitle">Total fingerprints captured: {Array.isArray(fingerprintData) ? fingerprintData.length : 0}</p>
       </div>
@@ -2121,7 +2179,7 @@ const ChildRegistration = () => {
         </table>
         {filteredFingerprintData.length === 0 && (
           <div className="child-reg-no-data">
-            <p>No fingerprints captured yet. Click "Add Fingerprint" to enroll a child.</p>
+            <p>No fingerprints captured yet. Click "Add Registration" to register a new child.</p>
           </div>
         )}
       </div>
@@ -2219,15 +2277,15 @@ const ChildRegistration = () => {
 
       <div className="child-reg-section-title">Quick Actions</div>
       <div className="child-reg-actions-grid">
-        <div className="child-reg-action-card" onClick={() => { handleActionClick('Register New Child'); setActivePage('register'); }}>
+        <div className="child-reg-action-card" onClick={() => { handleActionClick('Register New Child'); navigateToPage('register'); }}>
           <div className="child-reg-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M5.5 20V19C5.5 16.8 7.3 15 9.5 15H14.5C16.7 15 18.5 16.8 18.5 19V20"/></svg></div>
           <div className="child-reg-action-info"><h4>Register New Child</h4><p>Capture child information and details</p></div>
         </div>
-        <div className="child-reg-action-card" onClick={() => { handleActionClick('Verify Fingerprint'); setActivePage('verify'); }}>
+        <div className="child-reg-action-card" onClick={() => { handleActionClick('Verify Fingerprint'); handleVerifyFingerprintClick(); }}>
           <div className="child-reg-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/><path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18"/></svg></div>
           <div className="child-reg-action-info"><h4>Verify Fingerprint</h4><p>Verify existing fingerprint records</p></div>
         </div>
-        <div className="child-reg-action-card" onClick={() => { handleActionClick('Manage Locations'); setActivePage('locations'); }}>
+        <div className="child-reg-action-card" onClick={() => { handleActionClick('Manage Locations'); navigateToPage('locations'); }}>
           <div className="child-reg-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
           <div className="child-reg-action-info"><h4>Manage Locations</h4><p>Add, edit, or delete locations</p></div>
         </div>
@@ -2255,7 +2313,7 @@ const ChildRegistration = () => {
   const renderRegistrationPage = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={() => setActivePage('list')}>← Back to List</button>
+        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <h1 className="child-reg-page-title">Register New Child</h1>
         <p className="child-reg-page-subtitle">Enter child information and capture fingerprint</p>
         {generatedId && <div className="child-reg-generated-id"><strong>Registration ID:</strong> {generatedId}</div>}
@@ -2415,7 +2473,7 @@ const ChildRegistration = () => {
           </div>
 
           <div className="child-reg-form-actions">
-            <button className="child-reg-btn-secondary" onClick={() => setActivePage('list')}>Cancel</button>
+            <button className="child-reg-btn-secondary" onClick={goBack}>Cancel</button>
             <button className="child-reg-btn-primary" onClick={() => {
               if (validateForm()) {
                 setRegistrationStep(2);
@@ -2442,7 +2500,7 @@ const ChildRegistration = () => {
           </div>
           <div className="child-reg-form-actions">
             <button className="child-reg-btn-secondary" onClick={() => setRegistrationStep(1)}>Back</button>
-            <button className="child-reg-btn-secondary" onClick={() => setActivePage('list')}>Cancel</button>
+            <button className="child-reg-btn-secondary" onClick={goBack}>Cancel</button>
           </div>
         </div>
       )}
@@ -2462,7 +2520,7 @@ const ChildRegistration = () => {
   const renderVerifyPage = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={() => setActivePage('list')}>← Back to List</button>
+        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <h1 className="child-reg-page-title">Verify Fingerprint</h1>
         <p className="child-reg-page-subtitle">Verify existing child records using fingerprint</p>
       </div>
@@ -2477,7 +2535,7 @@ const ChildRegistration = () => {
             <p>Place finger on the scanner to verify</p>
             <button className="child-reg-btn-primary" onClick={handleVerifyFingerprintScan}>Verify Fingerprint</button>
           </div>
-          <button className="child-reg-btn-secondary" onClick={() => setActivePage('list')}>Cancel</button>
+          <button className="child-reg-btn-secondary" onClick={goBack}>Cancel</button>
         </div>
       )}
 
@@ -2514,8 +2572,8 @@ const ChildRegistration = () => {
               <div className="child-reg-fingerprint-status"><span className="child-reg-status-badge child-reg-status-pending">Pending</span></div>
             </div>
             <div className="child-reg-form-actions">
-              <button className="child-reg-btn-primary" onClick={handleLoadExistingRecord}>Add Records</button>
-              <button className="child-reg-btn-secondary" onClick={() => { setActivePage('list'); setFingerprintExists(null); setExistingChild(null); setExistingChildImages(null); }}>Close</button>
+              {/* <button className="child-reg-btn-primary" onClick={handleLoadExistingRecord}>Add Records</button> */}
+              <button className="child-reg-btn-secondary" onClick={() => { setFingerprintExists(null); setExistingChild(null); setExistingChildImages(null); goBack(); }}>Close</button>
             </div>
           </div>
         </div>
@@ -2528,8 +2586,8 @@ const ChildRegistration = () => {
             <p>This fingerprint does not match any existing record.</p>
             <p>Would you like to register this child as a new patient?</p>
             <div className="child-reg-form-actions">
-              <button className="child-reg-btn-primary" onClick={() => { setActivePage('register'); setFingerprintExists(null); }}>Register New Child</button>
-              <button className="child-reg-btn-secondary" onClick={() => { setActivePage('list'); setFingerprintExists(null); }}>Cancel</button>
+              <button className="child-reg-btn-primary" onClick={() => { setFingerprintExists(null); navigateToPage('register'); }}>Register New Child</button>
+              <button className="child-reg-btn-secondary" onClick={() => { setFingerprintExists(null); goBack(); }}>Cancel</button>
             </div>
           </div>
         </div>

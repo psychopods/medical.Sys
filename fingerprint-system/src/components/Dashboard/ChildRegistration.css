@@ -825,7 +825,7 @@
   object-fit: cover;
 }
 
-/* Header Actions - for title and print button on same line */
+/* Header Actions - for title and buttons on same line */
 .child-reg-header-actions {
   display: flex;
   justify-content: space-between;
@@ -839,7 +839,68 @@
   margin-bottom: 0;
 }
 
-/* Print Button inside page */
+/* Header Button Group - For multiple buttons side by side */
+.child-reg-header-button-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ============================================
+   ADD REGISTRATION BUTTON - Same style as Print Report
+   ============================================ */
+.child-reg-add-registration-btn {
+  background: none;
+  border: 1px solid #28a745;
+  color: #28a745;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.child-reg-add-registration-btn:hover {
+  background: #28a745;
+  color: #fff;
+}
+
+.child-reg-add-registration-btn svg {
+  stroke: currentColor;
+}
+
+/* ============================================
+   VERIFY FINGERPRINT BUTTON - Same style as Print Report
+   ============================================ */
+.child-reg-verify-btn-header {
+  background: none;
+  border: 1px solid #17a2b8;
+  color: #17a2b8;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.child-reg-verify-btn-header:hover {
+  background: #17a2b8;
+  color: #fff;
+}
+
+.child-reg-verify-btn-header svg {
+  stroke: currentColor;
+}
+
+/* Print Button inside page (Existing) */
 .child-reg-print-btn-page {
   background: none;
   border: 1px solid #667eea;
@@ -864,9 +925,94 @@
   stroke: currentColor;
 }
 
-/* ==================== */
-/* PRINT PAGE - FULL WIDTH, WHITE BACKGROUND */
-/* ==================== */
+/* ============================================
+   VERIFY FINGERPRINT MODAL / PAGE
+   ============================================ */
+
+/* Verify Area inside Modal */
+.child-reg-verify-area {
+  width: 100%;
+  padding: 20px 0;
+}
+
+.child-reg-fingerprint-scanner-area {
+  text-align: center;
+  padding: 50px 30px;
+  background: #f8f9fa;
+  border: 2px dashed #e0e0e0;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.child-reg-fingerprint-scanner-area svg {
+  margin-bottom: 20px;
+}
+
+.child-reg-fingerprint-scanner-area p {
+  color: #666;
+  margin-bottom: 25px;
+  font-size: 14px;
+}
+
+/* Verification Result */
+.child-reg-verification-result {
+  margin-top: 20px;
+}
+
+/* Verify Button inside modal - uses generate-btn style */
+.child-reg-verify-area .child-reg-generate-btn {
+  padding: 10px 28px;
+  background: #667eea;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
+
+.child-reg-verify-area .child-reg-generate-btn:hover {
+  background: #5a67d8;
+}
+
+/* ============================================
+   RESPONSIVE BUTTON GROUP
+   ============================================ */
+@media (max-width: 768px) {
+  .child-reg-header-button-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .child-reg-header-button-group button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .child-reg-add-registration-btn,
+  .child-reg-verify-btn-header,
+  .child-reg-print-btn-page {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .child-reg-add-registration-btn,
+  .child-reg-verify-btn-header,
+  .child-reg-print-btn-page {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .child-reg-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Print Page Styles (continued) */
 .child-reg-print-page {
   position: fixed;
   top: 0;
@@ -1332,7 +1478,7 @@
 }
 
 /* ============================================
-   LOCATIONS MANAGEMENT - CLEAN STYLES (No Cards, No Shadows)
+   LOCATIONS MANAGEMENT - CLEAN STYLES
    ============================================ */
 
 /* Add New Location Button */
@@ -1473,7 +1619,7 @@
   font-family: 'Montserrat', sans-serif;
 }
 
-/* Button Styles (if not already present) */
+/* Button Styles */
 .child-reg-btn-primary,
 .child-reg-btn-secondary {
   padding: 10px 24px;
@@ -1943,10 +2089,6 @@
   transform: none;
 }
 
-/* ============================================
-   MODAL IMPROVEMENTS
-   ============================================ */
-
 /* Modal Body Scroll */
 .child-reg-modal-body {
   padding: 20px;
@@ -1984,74 +2126,12 @@
   animation: child-reg-modal-fade-in 0.2s ease;
 }
 
-/* ============================================
-   ACTION BUTTONS IMPROVEMENTS
-   ============================================ */
-
-/* Action Buttons Container */
-.child-reg-action-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 /* Action Icon Buttons */
-.child-reg-action-icon-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
 .child-reg-action-icon-btn:hover {
   transform: scale(1.1);
 }
 
-/* View Button */
-.child-reg-view-btn {
-  color: #17a2b8;
-}
-
-.child-reg-view-btn:hover {
-  background: #e8f7f9;
-}
-
-/* Edit Button */
-.child-reg-edit-btn {
-  color: #ffc107;
-}
-
-.child-reg-edit-btn:hover {
-  background: #fff3cd;
-}
-
-/* Fingerprint Button */
-.child-reg-fingerprint-btn {
-  color: #28a745;
-}
-
-.child-reg-fingerprint-btn:hover {
-  background: #d4edda;
-}
-
-/* Delete Button */
-.child-reg-delete-btn {
-  color: #dc3545;
-}
-
-.child-reg-delete-btn:hover {
-  background: #f8d7da;
-}
-
-/* ============================================
-   TABLE ACTION COLUMN WIDTH
-   ============================================ */
-
+/* Table Action Column Width */
 .child-reg-data-table th:last-child,
 .child-reg-data-table td:last-child {
   text-align: center;
@@ -2073,15 +2153,17 @@
 /* ============================================
    PRINT STYLES (Hide Action Buttons in Print)
    ============================================ */
-
 @media print {
   .child-reg-action-buttons,
   .child-reg-action-icon-btn,
   .child-reg-print-btn-page,
+  .child-reg-add-registration-btn,
+  .child-reg-verify-btn-header,
   .child-reg-add-btn,
   .child-reg-back-btn,
   .child-reg-modal-overlay,
-  .child-reg-toast-notification {
+  .child-reg-toast-notification,
+  .child-reg-header-button-group {
     display: none !important;
   }
   
@@ -2093,19 +2175,13 @@
   }
 }
 
-/* ============================================
-   LOADING STATE FOR BUTTONS
-   ============================================ */
-
+/* Loading State for Buttons */
 .child-reg-action-icon-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* ============================================
-   TOOLTIP STYLES
-   ============================================ */
-
+/* Tooltip Styles */
 .child-reg-action-icon-btn[title]:hover::after {
   content: attr(title);
   position: absolute;
@@ -2122,10 +2198,7 @@
   pointer-events: none;
 }
 
-/* ============================================
-   RESPONSIVE ENROLLMENT PAGE
-   ============================================ */
-
+/* Responsive Enrollment Page */
 @media (max-width: 768px) {
   .child-reg-enrollment-container {
     grid-template-columns: 1fr;
@@ -2173,10 +2246,7 @@
   }
 }
 
-/* ============================================
-   QUALITY BADGE VARIATIONS
-   ============================================ */
-
+/* Quality Badge Variations */
 .child-reg-quality-excellent {
   background: #d4edda;
   color: #155724;
@@ -2197,10 +2267,7 @@
   color: #721c24;
 }
 
-/* ============================================
-   STATUS BADGE VARIATIONS
-   ============================================ */
-
+/* Status Badge Variations */
 .child-reg-status-completed {
   background: #d4edda;
   color: #155724;
@@ -2211,10 +2278,7 @@
   color: #856404;
 }
 
-/* ============================================
-   MODAL FORM GROUP SPACING
-   ============================================ */
-
+/* Modal Form Group Spacing */
 .child-reg-modal-body .child-reg-form-group {
   margin-bottom: 15px;
 }
@@ -2223,18 +2287,12 @@
   margin-bottom: 0;
 }
 
-/* ============================================
-   MODAL INFO GRID
-   ============================================ */
-
+/* Modal Info Grid */
 .child-reg-modal-body .child-reg-info-grid {
   margin-bottom: 0;
 }
 
-/* ============================================
-   SUCCESS/INFO MESSAGES IN MODAL
-   ============================================ */
-
+/* Success/Info Messages in Modal */
 .child-reg-modal-body .child-reg-success-message {
   margin: 0;
   padding: 20px;
@@ -2245,19 +2303,13 @@
   padding: 20px;
 }
 
-/* ============================================
-   FINGERPRINT AREA IN MODAL
-   ============================================ */
-
+/* Fingerprint Area in Modal */
 .child-reg-modal-body .child-reg-fingerprint-area {
   margin: 0 0 20px 0;
   padding: 30px;
 }
 
-/* ============================================
-   RESPONSIVE FINGER LIST
-   ============================================ */
-
+/* Responsive Finger List */
 @media (max-width: 480px) {
   .child-reg-finger-list {
     gap: 6px;
@@ -2283,7 +2335,6 @@
     min-width: 80px;
   }
 }
-
 
 /* ============================================
    CHILD VIEW PAGE - THREE COLUMN IMAGES
