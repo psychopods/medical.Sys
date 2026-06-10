@@ -10,7 +10,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
           <path d="M5.5 20V19C5.5 16.8 7.3 15 9.5 15H14.5C16.7 15 18.5 16.8 18.5 19V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '12', 
+      value: '0', 
       label: 'Pending Patients' 
     },
     { 
@@ -20,7 +20,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
           <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '45', 
+      value: '0', 
       label: 'Today\'s Consultations' 
     },
     { 
@@ -31,7 +31,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
           <path d="M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '28', 
+      value: '0', 
       label: 'Prescriptions Written' 
     },
     { 
@@ -41,7 +41,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
           <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '3', 
+      value: '0', 
       label: 'Hospitalized Children' 
     },
   ];
@@ -96,11 +96,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
     },
   ];
 
-  const assignedPatients = [
-    { name: 'John Doe', age: '2 years', condition: 'Fever', vitalSigns: 'Normal', status: 'pending' },
-    { name: 'Jane Smith', age: '1.5 years', condition: 'Cough', vitalSigns: 'Checked', status: 'inprogress' },
-    { name: 'Mike Johnson', age: '3 years', condition: 'Rash', vitalSigns: 'Abnormal', status: 'pending' },
-  ];
+  const assignedPatients = [];
 
   return (
     <div className="dashboard-content-wrapper">
@@ -112,7 +108,7 @@ const DoctorDashboard = ({ user, onLogout }) => {
             <div className="stat-info">
               <h3>{stat.value}</h3>
               <p>{stat.label}</p>
-              <span className="trend">+8%</span>
+              <span className="trend">+0%</span>
             </div>
           </div>
         ))}
@@ -146,15 +142,23 @@ const DoctorDashboard = ({ user, onLogout }) => {
             </tr>
           </thead>
           <tbody>
-            {assignedPatients.map((patient, index) => (
-              <tr key={index}>
-                <td>{patient.name}</td>
-                <td>{patient.age}</td>
-                <td>{patient.condition}</td>
-                <td>{patient.vitalSigns}</td>
-                <td><span className={`status-badge status-${patient.status}`}>{patient.status}</span></td>
+            {assignedPatients.length > 0 ? (
+              assignedPatients.map((patient, index) => (
+                <tr key={index}>
+                  <td>{patient.name}</td>
+                  <td>{patient.age}</td>
+                  <td>{patient.condition}</td>
+                  <td>{patient.vitalSigns}</td>
+                  <td><span className={`status-badge status-${patient.status}`}>{patient.status}</span></td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                  No assigned patients found
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

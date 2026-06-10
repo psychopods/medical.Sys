@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Login.css';
+import { login } from '../services/api.js';
 
 const API_BASE_URL = 'http://localhost:9865';
 
@@ -89,24 +90,16 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const loginData = {
-        usernameOrEmail: identifier,
-        password: password
-      };
+      const data = await login(identifier, password);
       
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(loginData)
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
+      if (data.success) {
         const tokenToStore = data.accessToken || data.token;
         
+        // Save user ID to localStorage for local writes attribution
+        if (data.user?.id) {
+          localStorage.setItem('userId', data.user.id);
+        }
+
         if (rememberMe) {
           localStorage.setItem('token', tokenToStore);
           localStorage.setItem('user', JSON.stringify(data.user));
@@ -131,7 +124,7 @@ const Login = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      showToast('Network error. Please check your connection.', 'error');
+      showToast(error.message || 'Invalid credentials or network error.', 'error');
     } finally {
       setIsLoading(false);
     }

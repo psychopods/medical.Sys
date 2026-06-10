@@ -11,7 +11,7 @@ const LabTechnicianDashboard = ({ user, onLogout }) => {
           <path d="M8 9H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '8', 
+      value: '0', 
       label: 'Pending Tests' 
     },
     { 
@@ -20,7 +20,7 @@ const LabTechnicianDashboard = ({ user, onLogout }) => {
           <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '24', 
+      value: '0', 
       label: 'Completed Today' 
     },
     { 
@@ -30,7 +30,7 @@ const LabTechnicianDashboard = ({ user, onLogout }) => {
           <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '3', 
+      value: '0', 
       label: 'In Progress' 
     },
     { 
@@ -40,7 +40,7 @@ const LabTechnicianDashboard = ({ user, onLogout }) => {
           <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '15', 
+      value: '0', 
       label: 'Results Sent' 
     },
   ];
@@ -95,11 +95,7 @@ const LabTechnicianDashboard = ({ user, onLogout }) => {
     },
   ];
 
-  const labRequests = [
-    { patient: 'John Doe', test: 'Blood Test', requestedBy: 'Dr. Smith', status: 'pending', priority: 'high' },
-    { patient: 'Jane Smith', test: 'Urine Test', requestedBy: 'Dr. Jones', status: 'inprogress', priority: 'normal' },
-    { patient: 'Mike Johnson', test: 'X-Ray', requestedBy: 'Dr. Brown', status: 'completed', priority: 'high' },
-  ];
+  const labRequests = [];
 
   return (
     <div className="dashboard-content-wrapper">
@@ -141,15 +137,23 @@ const LabTechnicianDashboard = ({ user, onLogout }) => {
             </tr>
           </thead>
           <tbody>
-            {labRequests.map((request, index) => (
-              <tr key={index}>
-                <td>{request.patient}</td>
-                <td>{request.test}</td>
-                <td>{request.requestedBy}</td>
-                <td><span className={`priority-badge priority-${request.priority}`}>{request.priority}</span></td>
-                <td><span className={`status-badge status-${request.status}`}>{request.status}</span></td>
+            {labRequests.length > 0 ? (
+              labRequests.map((request, index) => (
+                <tr key={index}>
+                  <td>{request.patient}</td>
+                  <td>{request.test}</td>
+                  <td>{request.requestedBy}</td>
+                  <td><span className={`priority-badge priority-${request.priority}`}>{request.priority}</span></td>
+                  <td><span className={`status-badge status-${request.status}`}>{request.status}</span></td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                  No laboratory requests found
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

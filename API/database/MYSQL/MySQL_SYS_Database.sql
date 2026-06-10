@@ -117,9 +117,9 @@ CREATE TABLE `children_profiles` (
     `id` CHAR(36) NOT NULL,
     `custom_serial_id` VARCHAR(20) NOT NULL UNIQUE,
     `full_name` VARCHAR(150) NOT NULL,
-    `gender` ENUM('Male', 'Female', 'Unknown') NOT NULL,
+    `gender` ENUM('Male', 'Female') NOT NULL,
     `estimated_birth_year` INT NULL,
-    `age_months_at_intake` INT NULL, -- Fixed: Restored to match registration payloads
+    `age_months_at_intake` INT NULL,
     `primary_location_id` CHAR(36) NOT NULL,
     `created_by_staff_id` CHAR(36) NOT NULL,
     `image1` MEDIUMTEXT NULL,

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SuperUserDashboard.css';
+import { getChildren } from '../../services/api.js';
 
 // API base URL
 const API_BASE_URL = 'http://localhost:9865';
@@ -127,75 +128,69 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch children data
   const fetchChildrenData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children`, {
-        headers: getAuthHeaders()
+      const children = await getChildren();
+      
+      // Calculate today's registrations
+      const today = new Date().toISOString().split('T')[0];
+      const todayRegistrations = children.filter(child => 
+        child.createdAt && child.createdAt.split('T')[0] === today
+      );
+      
+      // Calculate fingerprint status
+      const captured = children.filter(child => child.fingerprintCaptured).length;
+      const pending = children.length - captured;
+      
+      // Calculate registrations by month for chart
+      const registrationsByMonth = {};
+      const weeklyRegistrations = {};
+      const activityByHour = {};
+      
+      children.forEach(child => {
+        if (child.createdAt) {
+          const date = new Date(child.createdAt);
+          const month = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+          registrationsByMonth[month] = (registrationsByMonth[month] || 0) + 1;
+          
+          // Weekly registrations
+          const weekNum = Math.ceil(date.getDate() / 7);
+          const weekKey = `Week ${weekNum}`;
+          weeklyRegistrations[weekKey] = (weeklyRegistrations[weekKey] || 0) + 1;
+          
+          // Activity by hour
+          const hour = date.getHours();
+          activityByHour[hour] = (activityByHour[hour] || 0) + 1;
+        }
       });
-      if (response.ok) {
-        const data = await response.json();
-        const children = data.children || data;
-        
-        // Calculate today's registrations
-        const today = new Date().toISOString().split('T')[0];
-        const todayRegistrations = children.filter(child => 
-          child.createdAt && child.createdAt.split('T')[0] === today
-        );
-        
-        // Calculate fingerprint status
-        const captured = children.filter(child => child.fingerprintCaptured).length;
-        const pending = children.length - captured;
-        
-        // Calculate registrations by month for chart
-        const registrationsByMonth = {};
-        const weeklyRegistrations = {};
-        const activityByHour = {};
-        
-        children.forEach(child => {
-          if (child.createdAt) {
-            const date = new Date(child.createdAt);
-            const month = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-            registrationsByMonth[month] = (registrationsByMonth[month] || 0) + 1;
-            
-            // Weekly registrations
-            const weekNum = Math.ceil(date.getDate() / 7);
-            const weekKey = `Week ${weekNum}`;
-            weeklyRegistrations[weekKey] = (weeklyRegistrations[weekKey] || 0) + 1;
-            
-            // Activity by hour
-            const hour = date.getHours();
-            activityByHour[hour] = (activityByHour[hour] || 0) + 1;
-          }
-        });
-        
-        const chartDataMonths = Object.entries(registrationsByMonth).map(([month, count]) => ({
-          month,
-          count
-        })).slice(-6);
-        
-        const weeklyData = Object.entries(weeklyRegistrations).map(([week, count]) => ({
-          week,
-          count
-        }));
-        
-        const hourlyData = Object.entries(activityByHour).map(([hour, count]) => ({
-          hour: parseInt(hour),
-          count
-        })).sort((a, b) => a.hour - b.hour);
-        
-        setChartData(prev => ({
-          ...prev,
-          registrationsByMonth: chartDataMonths,
-          fingerprintStatus: { captured, pending },
-          weeklyRegistrations: weeklyData,
-          activityByHour: hourlyData
-        }));
-        
-        return {
-          totalChildren: children.length,
-          registeredToday: todayRegistrations.length,
-          fingerprintsCaptured: captured,
-          recentChildren: children.slice(0, 5)
-        };
-      }
+      
+      const chartDataMonths = Object.entries(registrationsByMonth).map(([month, count]) => ({
+        month,
+        count
+      })).slice(-6);
+      
+      const weeklyData = Object.entries(weeklyRegistrations).map(([week, count]) => ({
+        week,
+        count
+      }));
+      
+      const hourlyData = Object.entries(activityByHour).map(([hour, count]) => ({
+        hour: parseInt(hour),
+        count
+      })).sort((a, b) => a.hour - b.hour);
+      
+      setChartData(prev => ({
+        ...prev,
+        registrationsByMonth: chartDataMonths,
+        fingerprintStatus: { captured, pending },
+        weeklyRegistrations: weeklyData,
+        activityByHour: hourlyData
+      }));
+      
+      return {
+        totalChildren: children.length,
+        registeredToday: todayRegistrations.length,
+        fingerprintsCaptured: captured,
+        recentChildren: children.slice(0, 5)
+      };
     } catch (error) {
       console.error('Error fetching children:', error);
     }

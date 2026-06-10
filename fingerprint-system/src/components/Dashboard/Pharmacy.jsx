@@ -74,20 +74,9 @@ const Pharmacy = () => {
     }
   };
 
-  const prescriptions = [
-    { id: 1, patient: 'John Doe', medicine: 'Amoxicillin', quantity: '2', dosage: '500mg', status: 'pending', stock: 'Available', date: '2024-01-15' },
-    { id: 2, patient: 'Jane Smith', medicine: 'Paracetamol', quantity: '1', dosage: '500mg', status: 'inprogress', stock: 'Low', date: '2024-01-14' },
-    { id: 3, patient: 'Mike Johnson', medicine: 'Vitamin C', quantity: '3', dosage: '1000mg', status: 'pending', stock: 'Available', date: '2024-01-13' },
-    { id: 4, patient: 'Sarah Williams', medicine: 'Ibuprofen', quantity: '2', dosage: '200mg', status: 'completed', stock: 'Available', date: '2024-01-12' },
-    { id: 5, patient: 'Robert Brown', medicine: 'Cetirizine', quantity: '1', dosage: '10mg', status: 'pending', stock: 'Low', date: '2024-01-11' },
-  ];
+  const prescriptions = [];
 
-  const lowStockItems = [
-    { name: 'Paracetamol', currentStock: 50, reorderLevel: 100, status: 'critical' },
-    { name: 'Amoxicillin', currentStock: 30, reorderLevel: 50, status: 'low' },
-    { name: 'Vitamin C', currentStock: 25, reorderLevel: 40, status: 'low' },
-    { name: 'Ibuprofen', currentStock: 15, reorderLevel: 30, status: 'critical' },
-  ];
+  const lowStockItems = [];
 
   if (loading) {
     return (
@@ -119,9 +108,9 @@ const Pharmacy = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <h3>15</h3>
+              <h3>0</h3>
               <p>Pending Prescriptions</p>
-              <span className="trend urgent">Requires attention</span>
+              <span className="trend">No pending prescriptions</span>
             </div>
           </div>
           <div className="stat-card">
@@ -131,9 +120,9 @@ const Pharmacy = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <h3>42</h3>
+              <h3>0</h3>
               <p>Dispensed Today</p>
-              <span className="trend">+8 from yesterday</span>
+              <span className="trend">No medicines dispensed</span>
             </div>
           </div>
           <div className="stat-card">
@@ -145,9 +134,9 @@ const Pharmacy = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <h3>6</h3>
+              <h3>0</h3>
               <p>Low Stock Alerts</p>
-              <span className="trend urgent">Need reorder</span>
+              <span className="trend">Stock levels normal</span>
             </div>
           </div>
         </div>
@@ -195,30 +184,41 @@ const Pharmacy = () => {
         </div>
 
         {/* Low Stock Alerts */}
-        {lowStockItems.length > 0 && (
-          <>
-            <div className="section-title">Low Stock Alerts</div>
-            <div className="alerts-container">
-              {lowStockItems.map((item, index) => (
-                <div key={index} className={`alert-card ${item.status}`}>
-                  <div className="alert-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                      <circle cx="12" cy="16" r="1" fill="currentColor"/>
-                    </svg>
-                  </div>
-                  <div className="alert-info">
-                    <h4>{item.name}</h4>
-                    <p>Current Stock: {item.currentStock} units</p>
-                    <p>Reorder Level: {item.reorderLevel} units</p>
-                  </div>
-                  <button className="reorder-btn">Reorder Now</button>
+        <div className="section-title">Low Stock Alerts</div>
+        <div className="alerts-container">
+          {lowStockItems.length > 0 ? (
+            lowStockItems.map((item, index) => (
+              <div key={index} className={`alert-card ${item.status}`}>
+                <div className="alert-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                  </svg>
                 </div>
-              ))}
+                <div className="alert-info">
+                  <h4>{item.name}</h4>
+                  <p>Current Stock: {item.currentStock} units</p>
+                  <p>Reorder Level: {item.reorderLevel} units</p>
+                </div>
+                <button className="reorder-btn">Reorder Now</button>
+              </div>
+            ))
+          ) : (
+            <div className="alert-card normal" style={{ width: '100%', gridColumn: '1 / -1' }}>
+              <div className="alert-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className="alert-info">
+                <h4>All Items in Stock</h4>
+                <p>No low stock alerts at this time.</p>
+              </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
 
         {/* Expense Form */}
         {showExpenseForm && (
@@ -303,41 +303,49 @@ const Pharmacy = () => {
               </tr>
             </thead>
             <tbody>
-              {prescriptions.map((prescription) => (
-                <tr 
-                  key={prescription.id} 
-                  className={selectedPrescription?.id === prescription.id ? 'selected-row' : ''}
-                  onClick={() => setSelectedPrescription(prescription)}
-                >
-                  <td>{prescription.patient}</td>
-                  <td>{prescription.medicine}</td>
-                  <td>{prescription.quantity}</td>
-                  <td>{prescription.dosage}</td>
-                  <td>{prescription.date}</td>
-                  <td>
-                    <span className={`stock-badge stock-${prescription.stock.toLowerCase()}`}>
-                      {prescription.stock}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-badge status-${prescription.status}`}>
-                      {prescription.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button 
-                      className="action-btn dispense-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedPrescription(prescription);
-                        alert(`Dispensing ${prescription.medicine} to ${prescription.patient}`);
-                      }}
-                    >
-                      Dispense
-                    </button>
+              {prescriptions.length > 0 ? (
+                prescriptions.map((prescription) => (
+                  <tr 
+                    key={prescription.id} 
+                    className={selectedPrescription?.id === prescription.id ? 'selected-row' : ''}
+                    onClick={() => setSelectedPrescription(prescription)}
+                  >
+                    <td>{prescription.patient}</td>
+                    <td>{prescription.medicine}</td>
+                    <td>{prescription.quantity}</td>
+                    <td>{prescription.dosage}</td>
+                    <td>{prescription.date}</td>
+                    <td>
+                      <span className={`stock-badge stock-${prescription.stock.toLowerCase()}`}>
+                        {prescription.stock}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`status-badge status-${prescription.status}`}>
+                        {prescription.status}
+                      </span>
+                    </td>
+                    <td>
+                      <button 
+                        className="action-btn dispense-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPrescription(prescription);
+                          alert(`Dispensing ${prescription.medicine} to ${prescription.patient}`);
+                        }}
+                      >
+                        Dispense
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                    No pending prescriptions found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './VolunteerSupport.css';
+import { submitVolunteerApplication } from '../services/api.js';
 
 const API_BASE_URL = 'http://localhost:9865';
 
@@ -216,18 +217,10 @@ const VolunteerSupport = () => {
         message: formData.message
       };
       
-      const response = await fetch(`${API_BASE_URL}/api/volunteer/submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(submitData)
-      });
+      const data = await submitVolunteerApplication(submitData);
       
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
-        showToast(data.message || 'Thank you for your interest! We will contact you soon.', 'success');
+      if (data.success) {
+        showToast(data.queued ? 'Application queued offline. It will be sent when connection is restored.' : 'Thank you for your interest! We will contact you soon.', 'success');
         
         setFormData({
           name: '', email: '', phone: '', volunteerType: '', message: ''

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ReportsImpact.css';
+import { executeQuery, executeRun } from '../services/db.js';
 
 const API_BASE_URL = 'http://localhost:9865';
 const API_TIMEOUT = 10000;
@@ -67,23 +68,43 @@ const ReportsImpact = () => {
           labels: data.labels || [],
           datasets: datasets
         });
+
+        // Cache in SQLite
+        for (const ds of data.datasets) {
+          await executeRun(
+            `INSERT OR REPLACE INTO reports_impact_metrics (id, label, q1_value, q2_value, q3_value, q4_value, color, year)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [crypto.randomUUID(), ds.label, ds.values[0] || 0, ds.values[1] || 0, ds.values[2] || 0, ds.values[3] || 0, ds.color, currentYear]
+          );
+        }
       } else {
-        setBarChartData({
-          title: `Quarterly Performance ${currentYear}`,
-          labels: [],
-          datasets: []
-        });
-        if (data.message) showToast(data.message, 'info');
+        throw new Error(data.message || 'Failed to fetch impact data');
       }
     } catch (error) {
-      if (error.name !== 'AbortError') {
-        console.error('Error fetching impact data:', error);
-        setBarChartData({
-          title: `Quarterly Performance ${currentYear}`,
-          labels: [],
-          datasets: []
-        });
+      console.warn('API: Failed to fetch impact data, checking SQLite cache...', error);
+      try {
+        const localMetrics = await executeQuery('SELECT * FROM reports_impact_metrics WHERE year = ?', [currentYear]);
+        if (localMetrics.length > 0) {
+          const datasets = localMetrics.map(row => ({
+            label: row.label,
+            values: [row.q1_value, row.q2_value, row.q3_value, row.q4_value],
+            color: row.color
+          }));
+          setBarChartData({
+            title: `Quarterly Performance ${currentYear}`,
+            labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+            datasets: datasets
+          });
+          return;
+        }
+      } catch (dbError) {
+        console.error('SQLite query failed:', dbError);
       }
+      setBarChartData({
+        title: `Quarterly Performance ${currentYear}`,
+        labels: [],
+        datasets: []
+      });
     } finally {
       setLoading(false);
     }
@@ -105,15 +126,38 @@ const ReportsImpact = () => {
           download_url: report.download_url
         }));
         setYearlyReports(reports);
+
+        // Cache in SQLite
+        for (const report of data.reports) {
+          await executeRun(
+            `INSERT OR REPLACE INTO reports_annual (id, year, title, description, file_size, page_count, download_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [report.id || crypto.randomUUID(), report.year, report.title, report.description, report.file_size, report.page_count, report.download_url]
+          );
+        }
       } else {
-        setYearlyReports([]);
-        if (data.message) showToast(data.message, 'info');
+        throw new Error(data.message || 'Failed to fetch annual reports');
       }
     } catch (error) {
-      if (error.name !== 'AbortError') {
-        console.error('Error fetching annual reports:', error);
-        setYearlyReports([]);
+      console.warn('API: Failed to fetch annual reports, checking SQLite cache...', error);
+      try {
+        const localReports = await executeQuery('SELECT * FROM reports_annual ORDER BY year DESC');
+        if (localReports.length > 0) {
+          const reports = localReports.map(report => ({
+            year: report.year,
+            title: report.title,
+            description: report.description,
+            size: report.file_size,
+            pages: report.page_count,
+            download_url: report.download_url
+          }));
+          setYearlyReports(reports);
+          return;
+        }
+      } catch (dbError) {
+        console.error('SQLite query failed:', dbError);
       }
+      setYearlyReports([]);
     } finally {
       setLoadingReports(false);
     }
@@ -134,13 +178,35 @@ const ReportsImpact = () => {
           download_url: report.download_url
         }));
         setQuarterlyReports(reports);
+
+        // Cache in SQLite
+        for (const report of data.reports) {
+          await executeRun(
+            `INSERT OR REPLACE INTO reports_quarterly (id, quarter, title, period, description, file_size, download_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [report.id || crypto.randomUUID(), report.quarter, report.title, report.period, report.description, report.file_size, report.download_url]
+          );
+        }
       } else {
-        setQuarterlyReports([]);
+        throw new Error(data.message || 'Failed to fetch quarterly reports');
       }
     } catch (error) {
-      if (error.name !== 'AbortError') {
-        console.error('Error fetching quarterly reports:', error);
-        setQuarterlyReports([]);
+      console.warn('API: Failed to fetch quarterly reports, checking SQLite cache...', error);
+      try {
+        const localReports = await executeQuery('SELECT * FROM reports_quarterly ORDER BY quarter DESC');
+        if (localReports.length > 0) {
+          const reports = localReports.map(report => ({
+            quarter: report.quarter,
+            title: report.title,
+            period: report.period,
+            description: report.description,
+            size: report.file_size,
+            download_url: report.download_url
+          }));
+          setQuarterlyReports(reports);
+        }
+      } catch (dbError) {
+        console.error('SQLite query failed:', dbError);
       }
     }
   };
@@ -161,14 +227,38 @@ const ReportsImpact = () => {
           category: story.category
         }));
         setSuccessStories(stories);
+
+        // Cache in SQLite
+        for (const story of data.stories) {
+          await executeRun(
+            `INSERT OR REPLACE INTO reports_success_stories (id, title, description, impact, date, category)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [story.id, story.title, story.description, story.impact, story.date, story.category]
+          );
+        }
       } else {
-        setSuccessStories([]);
+        throw new Error(data.message || 'Failed to fetch success stories');
       }
     } catch (error) {
-      if (error.name !== 'AbortError') {
-        console.error('Error fetching success stories:', error);
-        setSuccessStories([]);
+      console.warn('API: Failed to fetch success stories, checking SQLite cache...', error);
+      try {
+        const localStories = await executeQuery('SELECT * FROM reports_success_stories ORDER BY id DESC');
+        if (localStories.length > 0) {
+          const stories = localStories.map(story => ({
+            id: story.id,
+            title: story.title,
+            description: story.description,
+            impact: story.impact,
+            date: story.date,
+            category: story.category
+          }));
+          setSuccessStories(stories);
+          return;
+        }
+      } catch (dbError) {
+        console.error('SQLite query failed:', dbError);
       }
+      setSuccessStories([]);
     } finally {
       setLoadingStories(false);
     }

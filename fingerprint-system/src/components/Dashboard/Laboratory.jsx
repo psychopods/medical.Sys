@@ -64,13 +64,7 @@ const Laboratory = () => {
     }
   };
 
-  const labRequests = [
-    { id: 1, patient: 'John Doe', test: 'Blood Test', requestedBy: 'Dr. Smith', requestedDate: '2024-01-15', priority: 'high', status: 'pending' },
-    { id: 2, patient: 'Jane Smith', test: 'Urine Test', requestedBy: 'Dr. Jones', requestedDate: '2024-01-14', priority: 'normal', status: 'in-progress' },
-    { id: 3, patient: 'Mike Johnson', test: 'X-Ray', requestedBy: 'Dr. Brown', requestedDate: '2024-01-13', priority: 'high', status: 'pending' },
-    { id: 4, patient: 'Sarah Williams', test: 'COVID-19 Test', requestedBy: 'Dr. Smith', requestedDate: '2024-01-12', priority: 'urgent', status: 'completed' },
-    { id: 5, patient: 'Robert Brown', test: 'Blood Sugar', requestedBy: 'Dr. Jones', requestedDate: '2024-01-11', priority: 'normal', status: 'in-progress' },
-  ];
+  const labRequests = [];
 
   if (loading) {
     return (
@@ -101,9 +95,9 @@ const Laboratory = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <h3>8</h3>
+              <h3>0</h3>
               <p>Pending Tests</p>
-              <span className="trend urgent">Requires attention</span>
+              <span className="trend">No pending tests</span>
             </div>
           </div>
           <div className="stat-card">
@@ -113,9 +107,9 @@ const Laboratory = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <h3>24</h3>
+              <h3>0</h3>
               <p>Completed Today</p>
-              <span className="trend">+5 from yesterday</span>
+              <span className="trend">No tests completed</span>
             </div>
           </div>
           <div className="stat-card">
@@ -126,9 +120,9 @@ const Laboratory = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <h3>15</h3>
+              <h3>0</h3>
               <p>Results Sent</p>
-              <span className="trend">To doctors</span>
+              <span className="trend">No results sent</span>
             </div>
           </div>
         </div>
@@ -220,40 +214,48 @@ const Laboratory = () => {
               </tr>
             </thead>
             <tbody>
-              {labRequests.map((request) => (
-                <tr 
-                  key={request.id} 
-                  className={selectedTest?.id === request.id ? 'selected-row' : ''}
-                  onClick={() => setSelectedTest(request)}
-                >
-                  <td>{request.patient}</td>
-                  <td>{request.test}</td>
-                  <td>{request.requestedBy}</td>
-                  <td>{request.requestedDate}</td>
-                  <td>
-                    <span className={`priority-badge priority-${request.priority}`}>
-                      {request.priority}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-badge status-${request.status}`}>
-                      {request.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button 
-                      className="action-btn process-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTest(request);
-                        setShowResultForm(true);
-                      }}
-                    >
-                      Process
-                    </button>
+              {labRequests.length > 0 ? (
+                labRequests.map((request) => (
+                  <tr 
+                    key={request.id} 
+                    className={selectedTest?.id === request.id ? 'selected-row' : ''}
+                    onClick={() => setSelectedTest(request)}
+                  >
+                    <td>{request.patient}</td>
+                    <td>{request.test}</td>
+                    <td>{request.requestedBy}</td>
+                    <td>{request.requestedDate}</td>
+                    <td>
+                      <span className={`priority-badge priority-${request.priority}`}>
+                        {request.priority}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`status-badge status-${request.status}`}>
+                        {request.status}
+                      </span>
+                    </td>
+                    <td>
+                      <button 
+                        className="action-btn process-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTest(request);
+                          setShowResultForm(true);
+                        }}
+                      >
+                        Process
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                    No laboratory requests found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

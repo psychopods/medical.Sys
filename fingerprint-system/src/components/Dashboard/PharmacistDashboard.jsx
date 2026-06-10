@@ -11,7 +11,7 @@ const PharmacistDashboard = ({ user, onLogout }) => {
           <path d="M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '15', 
+      value: '0', 
       label: 'Pending Prescriptions' 
     },
     { 
@@ -20,7 +20,7 @@ const PharmacistDashboard = ({ user, onLogout }) => {
           <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '42', 
+      value: '0', 
       label: 'Dispensed Today' 
     },
     { 
@@ -31,7 +31,7 @@ const PharmacistDashboard = ({ user, onLogout }) => {
           <circle cx="12" cy="16" r="1" fill="currentColor"/>
         </svg>
       ), 
-      value: '6', 
+      value: '0', 
       label: 'Low Stock Alerts' 
     },
     { 
@@ -41,7 +41,7 @@ const PharmacistDashboard = ({ user, onLogout }) => {
           <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '$1,234', 
+      value: '$0', 
       label: 'Today\'s Expenses' 
     },
   ];
@@ -95,11 +95,7 @@ const PharmacistDashboard = ({ user, onLogout }) => {
     },
   ];
 
-  const prescriptions = [
-    { patient: 'John Doe', medicine: 'Amoxicillin', quantity: '2', status: 'pending', stock: 'Available' },
-    { patient: 'Jane Smith', medicine: 'Paracetamol', quantity: '1', status: 'inprogress', stock: 'Low' },
-    { patient: 'Mike Johnson', medicine: 'Vitamin C', quantity: '3', status: 'pending', stock: 'Available' },
-  ];
+  const prescriptions = [];
 
   return (
     <div className="dashboard-content-wrapper">
@@ -141,23 +137,31 @@ const PharmacistDashboard = ({ user, onLogout }) => {
             </tr>
           </thead>
           <tbody>
-            {prescriptions.map((prescription, index) => (
-              <tr key={index}>
-                <td>{prescription.patient}</td>
-                <td>{prescription.medicine}</td>
-                <td>{prescription.quantity}</td>
-                <td>
-                  <span className={`stock-badge stock-${prescription.stock === 'Low' ? 'low' : 'available'}`}>
-                    {prescription.stock}
-                  </span>
-                </td>
-                <td>
-                  <span className={`status-badge status-${prescription.status}`}>
-                    {prescription.status}
-                  </span>
+            {prescriptions.length > 0 ? (
+              prescriptions.map((prescription, index) => (
+                <tr key={index}>
+                  <td>{prescription.patient}</td>
+                  <td>{prescription.medicine}</td>
+                  <td>{prescription.quantity}</td>
+                  <td>
+                    <span className={`stock-badge stock-${prescription.stock === 'Low' ? 'low' : 'available'}`}>
+                      {prescription.stock}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`status-badge status-${prescription.status}`}>
+                      {prescription.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                  No pending prescriptions found
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

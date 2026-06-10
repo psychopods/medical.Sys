@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './Contact.css';
+import { submitContactForm } from '../services/api.js';
 
 const API_BASE_URL = 'http://localhost:9865';
 
@@ -176,18 +177,10 @@ const Contact = () => {
         message_content: formData.message
       };
       
-      const response = await fetch(`${API_BASE_URL}/api/contact/submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(submitData)
-      });
+      const data = await submitContactForm(submitData);
       
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
-        showToast(data.message || 'Message sent successfully! We\'ll contact you soon.', 'success');
+      if (data.success) {
+        showToast(data.queued ? 'Message queued offline. It will be sent when connection is restored.' : 'Message sent successfully! We\'ll contact you soon.', 'success');
         
         // Reset form
         setFormData({

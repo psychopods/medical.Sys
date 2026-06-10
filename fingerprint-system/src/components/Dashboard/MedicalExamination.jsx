@@ -65,13 +65,7 @@ const MedicalExamination = () => {
     alert('Vital signs saved successfully');
   };
 
-  const patients = [
-    { id: 1, name: 'John Doe', age: '2 years', condition: 'Fever', vitalSigns: 'Normal', status: 'pending', lastVisit: '2024-01-15' },
-    { id: 2, name: 'Jane Smith', age: '1.5 years', condition: 'Cough', vitalSigns: 'Checked', status: 'inprogress', lastVisit: '2024-01-14' },
-    { id: 3, name: 'Mike Johnson', age: '3 years', condition: 'Rash', vitalSigns: 'Abnormal', status: 'pending', lastVisit: '2024-01-13' },
-    { id: 4, name: 'Sarah Williams', age: '2.5 years', condition: 'Cold', vitalSigns: 'Normal', status: 'completed', lastVisit: '2024-01-12' },
-    { id: 5, name: 'Robert Brown', age: '1 year', condition: 'Ear Infection', vitalSigns: 'Checked', status: 'inprogress', lastVisit: '2024-01-11' },
-  ];
+  const patients = [];
 
   if (loading) {
     return (
@@ -102,9 +96,9 @@ const MedicalExamination = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <h3>12</h3>
+              <h3>0</h3>
               <p>Pending Patients</p>
-              <span className="trend">Require attention</span>
+              <span className="trend">No pending patients</span>
             </div>
           </div>
           <div className="stat-card">
@@ -115,9 +109,9 @@ const MedicalExamination = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <h3>45</h3>
+              <h3>0</h3>
               <p>Today's Consultations</p>
-              <span className="trend">+8 from yesterday</span>
+              <span className="trend">+0 from yesterday</span>
             </div>
           </div>
           <div className="stat-card">
@@ -129,7 +123,7 @@ const MedicalExamination = () => {
               </svg>
             </div>
             <div className="stat-info">
-              <h3>28</h3>
+              <h3>0</h3>
               <p>Prescriptions Written</p>
               <span className="trend">This week</span>
             </div>
@@ -256,35 +250,43 @@ const MedicalExamination = () => {
               </tr>
             </thead>
             <tbody>
-              {patients.map((patient) => (
-                <tr 
-                  key={patient.id} 
-                  className={selectedPatient?.id === patient.id ? 'selected-row' : ''}
-                  onClick={() => setSelectedPatient(patient)}
-                >
-                  <td>{patient.name}</td>
-                  <td>{patient.age}</td>
-                  <td>{patient.condition}</td>
-                  <td>{patient.vitalSigns}</td>
-                  <td>{patient.lastVisit}</td>
-                  <td>
-                    <span className={`status-badge status-${patient.status}`}>
-                      {patient.status}
-                    </span>
-                  </td>
-                  <td>
-                    <button 
-                      className="action-btn examine-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        alert(`Examining ${patient.name}`);
-                      }}
-                    >
-                      Examine
-                    </button>
+              {patients.length > 0 ? (
+                patients.map((patient) => (
+                  <tr 
+                    key={patient.id} 
+                    className={selectedPatient?.id === patient.id ? 'selected-row' : ''}
+                    onClick={() => setSelectedPatient(patient)}
+                  >
+                    <td>{patient.name}</td>
+                    <td>{patient.age}</td>
+                    <td>{patient.condition}</td>
+                    <td>{patient.vitalSigns}</td>
+                    <td>{patient.lastVisit}</td>
+                    <td>
+                      <span className={`status-badge status-${patient.status}`}>
+                        {patient.status}
+                      </span>
+                    </td>
+                    <td>
+                      <button 
+                        className="action-btn examine-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          alert(`Examining ${patient.name}`);
+                        }}
+                      >
+                        Examine
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                    No assigned patients found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

@@ -10,7 +10,7 @@ const StaffDashboard = ({ user, onLogout }) => {
           <path d="M5.5 20V19C5.5 16.8 7.3 15 9.5 15H14.5C16.7 15 18.5 16.8 18.5 19V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '10', 
+      value: '0', 
       label: 'Children Supported' 
     },
     { 
@@ -20,7 +20,7 @@ const StaffDashboard = ({ user, onLogout }) => {
           <path d="M12 8V12L14 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '25', 
+      value: '0', 
       label: 'Food Supports' 
     },
     { 
@@ -31,7 +31,7 @@ const StaffDashboard = ({ user, onLogout }) => {
           <path d="M12 8V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '18', 
+      value: '0', 
       label: 'Clothes Provided' 
     },
     { 
@@ -41,7 +41,7 @@ const StaffDashboard = ({ user, onLogout }) => {
           <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '12', 
+      value: '0', 
       label: 'Education Supports' 
     },
   ];
@@ -93,11 +93,7 @@ const StaffDashboard = ({ user, onLogout }) => {
     },
   ];
 
-  const recentSupports = [
-    { child: 'John Doe', type: 'Food Support', date: '2024-01-15', status: 'completed' },
-    { child: 'Jane Smith', type: 'Clothes', date: '2024-01-14', status: 'completed' },
-    { child: 'Mike Johnson', type: 'Education', date: '2024-01-13', status: 'pending' },
-  ];
+  const recentSupports = [];
 
   return (
     <div className="dashboard-content-wrapper">
@@ -138,14 +134,22 @@ const StaffDashboard = ({ user, onLogout }) => {
             </tr>
           </thead>
           <tbody>
-            {recentSupports.map((support, index) => (
-              <tr key={index}>
-                <td>{support.child}</td>
-                <td>{support.type}</td>
-                <td>{support.date}</td>
-                <td><span className={`status-badge status-${support.status}`}>{support.status}</span></td>
+            {recentSupports.length > 0 ? (
+              recentSupports.map((support, index) => (
+                <tr key={index}>
+                  <td>{support.child}</td>
+                  <td>{support.type}</td>
+                  <td>{support.date}</td>
+                  <td><span className={`status-badge status-${support.status}`}>{support.status}</span></td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                  No social supports recorded yet
+                </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
