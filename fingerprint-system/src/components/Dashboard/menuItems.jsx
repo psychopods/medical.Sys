@@ -33,7 +33,7 @@ export const menuItems = [
         <path d="M5.5 20V19C5.5 16.8 7.3 15 9.5 15H14.5C16.7 15 18.5 16.8 18.5 19V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ), 
-    label: 'Child Registration', 
+    label: 'Patient Registration', 
     roles: ['superuser', 'nurse', 'staff'] 
   },
   // { 
@@ -133,7 +133,7 @@ export const menuItems = [
 export const pageTitles = {
   '/dashboard': 'Dashboard Overview',
   '/user-management': 'User Management',
-  '/child-registration': 'Child Registration',
+  '/child-registration': 'Patient Registration',
   '/medical-examination': 'Medical Examination',
   '/laboratory': 'Laboratory',
   '/pharmacy': 'Pharmacy',

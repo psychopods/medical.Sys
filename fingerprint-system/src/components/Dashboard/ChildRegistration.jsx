@@ -1143,7 +1143,7 @@ const ChildRegistration = () => {
     setFingerprintCaptured(false);
     setFormData({ fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' });
     setPreview1(null); setPreview2(null); setPreview3(null);
-    showToast('Starting new child registration', 'info');
+    showToast('Starting new patient registration', 'info');
     navigateToPage('register');
   };
 
@@ -2238,8 +2238,8 @@ const ChildRegistration = () => {
   const renderListPage = () => (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <h1 className="child-reg-page-title">Child Registration</h1>
-        <p className="child-reg-page-subtitle">Register new children and capture fingerprint data</p>
+        <h1 className="child-reg-page-title">Patient Registration</h1>
+        <p className="child-reg-page-subtitle">Register new Patient and capture fingerprint data</p>
         {user && (
           <div className="child-reg-user-info">
             <span>Logged in as: <strong>{getUserDisplayName()}</strong> ({user.role || 'Staff'})</span>
@@ -2251,7 +2251,7 @@ const ChildRegistration = () => {
         <div className="child-reg-stat-card" onClick={() => handleStatClick('childrenList', 'All Children')}>
           <div className="child-reg-stat-info-wrapper">
             <div className="child-reg-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M5.5 20V19C5.5 16.8 7.3 15 9.5 15H14.5C16.7 15 18.5 16.8 18.5 19V20"/></svg></div>
-            <div className="child-reg-stat-info"><h3>{Array.isArray(childrenData) ? childrenData.length : 0}</h3><p>Total Children</p></div>
+            <div className="child-reg-stat-info"><h3>{Array.isArray(childrenData) ? childrenData.length : 0}</h3><p>Total Patients</p></div>
           </div>
         </div>
         <div className="child-reg-stat-card" onClick={() => handleStatClick('todayList', 'Today\'s Registrations')}>
@@ -2279,7 +2279,7 @@ const ChildRegistration = () => {
       <div className="child-reg-actions-grid">
         <div className="child-reg-action-card" onClick={() => { handleActionClick('Register New Child'); navigateToPage('register'); }}>
           <div className="child-reg-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="4"/><path d="M5.5 20V19C5.5 16.8 7.3 15 9.5 15H14.5C16.7 15 18.5 16.8 18.5 19V20"/></svg></div>
-          <div className="child-reg-action-info"><h4>Register New Child</h4><p>Capture child information and details</p></div>
+          <div className="child-reg-action-info"><h4>Register New Patient</h4><p>Capture patient information and details</p></div>
         </div>
         <div className="child-reg-action-card" onClick={() => { handleActionClick('Verify Fingerprint'); handleVerifyFingerprintClick(); }}>
           <div className="child-reg-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/><path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18"/></svg></div>
@@ -2299,7 +2299,7 @@ const ChildRegistration = () => {
 
       <div className="child-reg-section-title">Registration Workflow</div>
       <div className="child-reg-workflow-steps">
-        <div className="child-reg-workflow-step"><div className="child-reg-step-number">1</div><div className="child-reg-step-content"><h4>Register Child</h4><p>Enter child information & optional photos</p></div></div>
+        <div className="child-reg-workflow-step"><div className="child-reg-step-number">1</div><div className="child-reg-step-content"><h4>Register Patient</h4><p>Enter patient information & optional photos</p></div></div>
         <div className="child-reg-workflow-arrow">→</div>
         <div className="child-reg-workflow-step"><div className="child-reg-step-number">2</div><div className="child-reg-step-content"><h4>Capture Fingerprint</h4><p>Scan fingerprint</p></div></div>
         <div className="child-reg-workflow-arrow">→</div>
@@ -2314,23 +2314,23 @@ const ChildRegistration = () => {
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
         <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
-        <h1 className="child-reg-page-title">Register New Child</h1>
-        <p className="child-reg-page-subtitle">Enter child information and capture fingerprint</p>
+        <h1 className="child-reg-page-title">Register New Patient</h1>
+        <p className="child-reg-page-subtitle">Enter patient information and capture fingerprint</p>
         {generatedId && <div className="child-reg-generated-id"><strong>Registration ID:</strong> {generatedId}</div>}
       </div>
 
       {registrationStep === 1 && (
         <div className="child-reg-registration-form-container">
-          <h3 className="child-reg-form-step-title">Step 1: Child Information <span style={{ color: 'red' }}>*Required fields</span></h3>
+          <h3 className="child-reg-form-step-title">Step 1: Patient Information <span style={{ color: 'red' }}>*Required fields</span></h3>
           <div className="child-reg-form-grid">
             <div className="child-reg-form-group">
-              <label>Child's Full Name *</label>
+              <label>Patient's Full Name *</label>
               <input 
                 type="text" 
                 name="fullName" 
                 value={formData.fullName} 
                 onChange={handleFormChangeWithValidation} 
-                placeholder="Enter child's name" 
+                placeholder="Enter patient's name" 
                 required 
                 className={formErrors.fullName ? 'error-input' : ''}
               />
@@ -2383,7 +2383,7 @@ const ChildRegistration = () => {
           </div>
 
           <div className="child-reg-pictures-section">
-            <h3>Child Pictures (Optional - 3 photos)</h3>
+            <h3>Patient Pictures (Optional - 3 photos)</h3>
             <p className="child-reg-optional-note">* Pictures are optional. You can skip or add later.</p>
             <div className="child-reg-pictures-grid">
               {[1, 2, 3].map(num => {
@@ -2549,7 +2549,7 @@ const ChildRegistration = () => {
             <div className="child-reg-child-details-card">
               <div className="child-reg-child-header"><h4>{existingChild.fullName}</h4><span className="child-reg-child-id">ID: {existingChild.customSerialId}</span></div>
               <div className="child-reg-verify-images">
-                <h5>Child Photos</h5>
+                <h5>Patient Photos</h5>
                 {(existingChildImages?.image1 || existingChildImages?.image2 || existingChildImages?.image3) ? (
                   <div className="child-reg-verify-images-grid">
                     {existingChildImages.image1 && <div className="child-reg-verify-image"><img src={existingChildImages.image1} alt="Child photo 1" /></div>}
@@ -2572,7 +2572,7 @@ const ChildRegistration = () => {
               <div className="child-reg-fingerprint-status"><span className="child-reg-status-badge child-reg-status-pending">Pending</span></div>
             </div>
             <div className="child-reg-form-actions">
-              {/* <button className="child-reg-btn-primary" onClick={handleLoadExistingRecord}>Add Records</button> */}
+              <button className="child-reg-btn-primary" onClick={handleLoadExistingRecord}>Add Records</button>
               <button className="child-reg-btn-secondary" onClick={() => { setFingerprintExists(null); setExistingChild(null); setExistingChildImages(null); goBack(); }}>Close</button>
             </div>
           </div>
@@ -2586,7 +2586,7 @@ const ChildRegistration = () => {
             <p>This fingerprint does not match any existing record.</p>
             <p>Would you like to register this child as a new patient?</p>
             <div className="child-reg-form-actions">
-              <button className="child-reg-btn-primary" onClick={() => { setFingerprintExists(null); navigateToPage('register'); }}>Register New Child</button>
+              <button className="child-reg-btn-primary" onClick={() => { setFingerprintExists(null); navigateToPage('register'); }}>Register New Patient</button>
               <button className="child-reg-btn-secondary" onClick={() => { setFingerprintExists(null); goBack(); }}>Cancel</button>
             </div>
           </div>
