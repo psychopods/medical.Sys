@@ -1069,6 +1069,54 @@ const UserManagement = () => {
     );
   };
 
+  // Render Quick Action Buttons Component
+  const QuickActionButtons = () => (
+    <div className="um-quick-actions-bar">
+      <button 
+        className={`um-quick-action-btn ${activePage === 'users' ? 'active' : ''}`}
+        onClick={() => setActivePage('users')}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/>
+          <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"/>
+        </svg>
+        Manage Users
+      </button>
+      <button 
+        className={`um-quick-action-btn ${activePage === 'roles' ? 'active' : ''}`}
+        onClick={() => setActivePage('roles')}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
+          <path d="M12 6V12L16 14"/>
+        </svg>
+        Manage Roles
+      </button>
+      <button 
+        className={`um-quick-action-btn ${activePage === 'permissions' ? 'active' : ''}`}
+        onClick={() => setActivePage('permissions')}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+        Define Permissions
+      </button>
+      <button 
+        className={`um-quick-action-btn ${activePage === 'categories' ? 'active' : ''}`}
+        onClick={() => setActivePage('categories')}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 4L20 4"/>
+          <path d="M4 8L20 8"/>
+          <path d="M4 12L14 12"/>
+          <rect x="2" y="2" width="20" height="20" rx="2"/>
+        </svg>
+        Manage Categories
+      </button>
+    </div>
+  );
+
   // Render User View Page
   const renderUserViewPage = () => (
     <div className="um-page-content-full">
@@ -1298,11 +1346,12 @@ const UserManagement = () => {
     </div>
   );
 
-  // Render Users List Page with View button
+  // Render Users List Page with Quick Actions
   const renderUsersList = () => (
     <div className="um-page-content">
       <div className="um-page-header">
         <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <QuickActionButtons />
         <div className="um-header-actions">
           <h1>System Users</h1>
           <button className="um-add-btn" onClick={() => setActivePage('add_user')}>
@@ -1381,11 +1430,12 @@ const UserManagement = () => {
     </div>
   );
 
-  // Render Roles List Page with View button
+  // Render Roles List Page with Quick Actions
   const renderRolesList = () => (
     <div className="um-page-content">
       <div className="um-page-header">
         <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <QuickActionButtons />
         <div className="um-header-actions">
           <h1>System Roles</h1>
           <div className="um-header-buttons">
@@ -1395,7 +1445,14 @@ const UserManagement = () => {
       </div>
       <div className="um-roles-table-container">
         <table className="um-data-table">
-          <thead><tr><th>S/N</th><th>Role Name</th><th>Description</th><th>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th>S/N</th>
+              <th>Role Name</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
           <tbody>
             {roles.map((role, index) => (
               <tr key={role.id}>
@@ -1411,13 +1468,24 @@ const UserManagement = () => {
                       </svg>
                     </button>
                     <button className="um-action-btn um-permission-btn" onClick={() => handleManagePermissions(role)} title="Manage Permissions">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                        <path d="M12 6v6l4 2"/>
+                      </svg>
                     </button>
                     <button className="um-action-btn um-edit-btn" onClick={() => handleEditRole(role)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 3L21 7L7 21H3V17L17 3Z"/>
+                      </svg>
                     </button>
                     <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteRole(role.id, role.name)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 7H20" strokeWidth="2"/>
+                        <path d="M10 11V17" strokeWidth="2"/>
+                        <path d="M14 11V17" strokeWidth="2"/>
+                        <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
+                        <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
+                      </svg>
                     </button>
                   </div>
                 </td>
@@ -1429,19 +1497,29 @@ const UserManagement = () => {
     </div>
   );
 
-  // Render Permissions List Page with View button
+  // Render Permissions List Page with Quick Actions
   const renderPermissionsList = () => (
     <div className="um-page-content">
       <div className="um-page-header">
         <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <QuickActionButtons />
         <div className="um-header-actions">
           <h1>System Permissions</h1>
-          <button className="um-add-btn" onClick={() => { setEditingPermission(null); resetPermissionForm(); setActivePage('add_permission'); }}>Define New Permission</button>
+          <button className="um-add-btn" onClick={() => { setEditingPermission(null); resetPermissionForm(); setActivePage('add_permission'); }}>
+            Define New Permission
+          </button>
         </div>
       </div>
       <div className="um-permissions-table-container">
         <table className="um-data-table">
-          <thead><tr><th>Category</th><th>Permission Slug</th><th>Description</th><th>Actions</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Permission Slug</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
           <tbody>
             {availablePermissions.map((permission) => {
               const category = permissionCategories.find(c => c.id === permission.categoryId);
@@ -1459,10 +1537,18 @@ const UserManagement = () => {
                         </svg>
                       </button>
                       <button className="um-action-btn um-edit-btn" onClick={() => handleEditPermission(permission)}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 3L21 7L7 21H3V17L17 3Z"/>
+                        </svg>
                       </button>
                       <button className="um-action-btn um-delete-btn" onClick={() => handleDeletePermission(permission.id, permission.slug)}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 7H20" strokeWidth="2"/>
+                          <path d="M10 11V17" strokeWidth="2"/>
+                          <path d="M14 11V17" strokeWidth="2"/>
+                          <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
+                          <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
+                        </svg>
                       </button>
                     </div>
                   </td>
@@ -1475,14 +1561,17 @@ const UserManagement = () => {
     </div>
   );
 
-  // Render Categories List Page with View button
+  // Render Categories List Page with Quick Actions
   const renderCategoriesList = () => (
     <div className="um-page-content">
       <div className="um-page-header">
         <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <QuickActionButtons />
         <div className="um-header-actions">
           <h1>Permission Categories</h1>
-          <button className="um-add-btn" onClick={() => { setEditingCategory(null); resetCategoryForm(); setActivePage('add_category'); }}>Add New Category</button>
+          <button className="um-add-btn" onClick={() => { setEditingCategory(null); resetCategoryForm(); setActivePage('add_category'); }}>
+            Add New Category
+          </button>
         </div>
       </div>
       <div className="um-categories-table-container">
@@ -1514,10 +1603,18 @@ const UserManagement = () => {
                       </svg>
                     </button>
                     <button className="um-action-btn um-edit-btn" onClick={() => handleEditCategory(category)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3L21 7L7 21H3V17L17 3Z"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 3L21 7L7 21H3V17L17 3Z"/>
+                      </svg>
                     </button>
                     <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteCategory(category.id, category.name)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7H20" strokeWidth="2"/><path d="M10 11V17" strokeWidth="2"/><path d="M14 11V17" strokeWidth="2"/><path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/><path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 7H20" strokeWidth="2"/>
+                        <path d="M10 11V17" strokeWidth="2"/>
+                        <path d="M14 11V17" strokeWidth="2"/>
+                        <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
+                        <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
+                      </svg>
                     </button>
                   </div>
                 </td>
@@ -1851,18 +1948,186 @@ const UserManagement = () => {
               <p>Manage system users, roles, and permissions</p>
             </div>
             <div className="um-stats-grid">
-              <div className="um-stat-card"><div className="um-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21V19C17 16.8 15.2 15 13 15H5C2.8 15 1 16.8 1 19V21"/><circle cx="9" cy="7" r="4"/><path d="M23 21V19C22.9 16.8 21.1 15 19 15"/><path d="M16 3.13C17.2 3.72 18 5.01 18 6.5C18 7.99 17.2 9.28 16 9.87"/></svg></div><div className="um-stat-info"><h3>{stats.total_users}</h3><p>Total Users</p></div></div>
-              <div className="um-stat-card"><div className="um-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/><path d="M12 6V12L16 14"/></svg></div><div className="um-stat-info"><h3>{stats.active_roles}</h3><p>Active Roles</p></div></div>
-              <div className="um-stat-card"><div className="um-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg></div><div className="um-stat-info"><h3>{stats.online_now}</h3><p>Online Now</p></div></div>
-              <div className="um-stat-card"><div className="um-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/><path d="M12 6v6l4 2"/></svg></div><div className="um-stat-info"><h3>{stats.total_permissions}</h3><p>Total Permissions</p></div></div>
-              <div className="um-stat-card"><div className="um-stat-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4L20 4"/><path d="M4 8L20 8"/><path d="M4 12L14 12"/><rect x="2" y="2" width="20" height="20" rx="2"/></svg></div><div className="um-stat-info"><h3>{stats.total_categories}</h3><p>Total Categories</p></div></div>
+              {/* Total Users Card - Clickable */}
+              <div 
+                className="um-stat-card" 
+                onClick={() => setActivePage('users')} 
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div className="um-stat-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21V19C17 16.8 15.2 15 13 15H5C2.8 15 1 16.8 1 19V21"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21V19C22.9 16.8 21.1 15 19 15"/>
+                    <path d="M16 3.13C17.2 3.72 18 5.01 18 6.5C18 7.99 17.2 9.28 16 9.87"/>
+                  </svg>
+                </div>
+                <div className="um-stat-info">
+                  <h3>{stats.total_users}</h3>
+                  <p>Total Users</p>
+                </div>
+              </div>
+
+              {/* Active Roles Card - Clickable */}
+              <div 
+                className="um-stat-card" 
+                onClick={() => setActivePage('roles')} 
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div className="um-stat-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
+                    <path d="M12 6V12L16 14"/>
+                  </svg>
+                </div>
+                <div className="um-stat-info">
+                  <h3>{stats.active_roles}</h3>
+                  <p>Active Roles</p>
+                </div>
+              </div>
+
+              {/* Online Now Card - Clickable */}
+              <div 
+                className="um-stat-card" 
+                onClick={() => setActivePage('users')} 
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div className="um-stat-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="4" fill="currentColor"/>
+                  </svg>
+                </div>
+                <div className="um-stat-info">
+                  <h3>{stats.online_now}</h3>
+                  <p>Online Now</p>
+                </div>
+              </div>
+
+              {/* Total Permissions Card - Clickable */}
+              <div 
+                className="um-stat-card" 
+                onClick={() => setActivePage('permissions')} 
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div className="um-stat-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
+                    <path d="M12 6v6l4 2"/>
+                  </svg>
+                </div>
+                <div className="um-stat-info">
+                  <h3>{stats.total_permissions}</h3>
+                  <p>Total Permissions</p>
+                </div>
+              </div>
+
+              {/* Total Categories Card - Clickable */}
+              <div 
+                className="um-stat-card" 
+                onClick={() => setActivePage('categories')} 
+                style={{ cursor: 'pointer' }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <div className="um-stat-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4L20 4"/>
+                    <path d="M4 8L20 8"/>
+                    <path d="M4 12L14 12"/>
+                    <rect x="2" y="2" width="20" height="20" rx="2"/>
+                  </svg>
+                </div>
+                <div className="um-stat-info">
+                  <h3>{stats.total_categories}</h3>
+                  <p>Total Categories</p>
+                </div>
+              </div>
             </div>
+
             <div className="um-section-title">Quick Actions</div>
             <div className="um-actions-grid">
-              <div className="um-action-card" onClick={() => setActivePage('users')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/><path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"/></svg></div><div className="um-action-info"><h4>Manage Users</h4><p>View, add, edit, or delete system users</p></div></div>
-              <div className="um-action-card" onClick={() => setActivePage('roles')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/><path d="M12 6V12L16 14"/></svg></div><div className="um-action-info"><h4>Manage Roles</h4><p>Configure roles and permissions</p></div></div>
-              <div className="um-action-card" onClick={() => setActivePage('permissions')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg></div><div className="um-action-info"><h4>Define Permissions</h4><p>Create, edit, or delete system permissions</p></div></div>
-              <div className="um-action-card" onClick={() => setActivePage('categories')}><div className="um-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4L20 4"/><path d="M4 8L20 8"/><path d="M4 12L14 12"/><rect x="2" y="2" width="20" height="20" rx="2"/></svg></div><div className="um-action-info"><h4>Manage Categories</h4><p>Create, edit, or delete permission categories</p></div></div>
+              {/* Manage Users Card - Clickable */}
+              <div 
+                className="um-action-card" 
+                onClick={() => setActivePage('users')}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="um-action-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/>
+                    <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"/>
+                  </svg>
+                </div>
+                <div className="um-action-info">
+                  <h4>Manage Users</h4>
+                  <p>View, add, edit, or delete system users</p>
+                </div>
+              </div>
+
+              {/* Manage Roles Card - Clickable */}
+              <div 
+                className="um-action-card" 
+                onClick={() => setActivePage('roles')}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="um-action-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
+                    <path d="M12 6V12L16 14"/>
+                  </svg>
+                </div>
+                <div className="um-action-info">
+                  <h4>Manage Roles</h4>
+                  <p>Configure roles and permissions</p>
+                </div>
+              </div>
+
+              {/* Define Permissions Card - Clickable */}
+              <div 
+                className="um-action-card" 
+                onClick={() => setActivePage('permissions')}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="um-action-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                    <path d="M12 6v6l4 2"/>
+                  </svg>
+                </div>
+                <div className="um-action-info">
+                  <h4>Define Permissions</h4>
+                  <p>Create, edit, or delete system permissions</p>
+                </div>
+              </div>
+
+              {/* Manage Categories Card - Clickable */}
+              <div 
+                className="um-action-card" 
+                onClick={() => setActivePage('categories')}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="um-action-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4L20 4"/>
+                    <path d="M4 8L20 8"/>
+                    <path d="M4 12L14 12"/>
+                    <rect x="2" y="2" width="20" height="20" rx="2"/>
+                  </svg>
+                </div>
+                <div className="um-action-info">
+                  <h4>Manage Categories</h4>
+                  <p>Create, edit, or delete permission categories</p>
+                </div>
+              </div>
             </div>
           </>
         )}
