@@ -1,5 +1,5 @@
 // services/notificationService.js
-const API_BASE_URL = 'http://localhost:9865';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');

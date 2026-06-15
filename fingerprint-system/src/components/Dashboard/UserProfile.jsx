@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './UserProfile.css';
 
-const API_BASE_URL = 'http://localhost:9865';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const UserProfile = () => {
   const [user, setUser] = useState(null);

@@ -4,7 +4,7 @@ import Layout from './Layout';
 import './UserManagement.css';
 
 // API base URL
-const API_BASE_URL = 'http://localhost:9865';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const UserManagement = () => {
   const [user, setUser] = useState(null);

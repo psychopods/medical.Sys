@@ -20,7 +20,7 @@ const ForgotPassword = () => {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   
   const navigate = useNavigate();
-  const API_BASE_URL = 'http://localhost:9865';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const [passwordCriteria, setPasswordCriteria] = useState({
     minLength: false,

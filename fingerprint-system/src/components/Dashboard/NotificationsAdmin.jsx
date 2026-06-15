@@ -12,7 +12,7 @@ import {
 } from '../services/notificationService';
 import './NotificationsAdmin.css';
 
-const API_BASE_URL = 'http://localhost:9865';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const NotificationsAdmin = () => {
   const [user, setUser] = useState(null);

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import "./Gallery.css";
 import { executeQuery, executeRun } from "../services/db.js";
 
-const API_BASE_URL = "http://localhost:9865";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API_TIMEOUT = 10000; // 10 seconds timeout
 
 const Gallery = () => {

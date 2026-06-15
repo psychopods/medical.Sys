@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { fetchNotifications, markNotificationAsRead } from './services/notificationService';
 import './NotificationBell.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const NotificationBell = ({ user }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -16,7 +18,7 @@ const NotificationBell = ({ user }) => {
   const fetchUsers = async () => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:9865/api/auth/users`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

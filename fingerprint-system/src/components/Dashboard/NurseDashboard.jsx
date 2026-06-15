@@ -13,7 +13,7 @@ import {
 import { executeQuery } from "../../services/db.js";
 
 // API base URL
-const API_BASE_URL = "http://localhost:9865";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const NurseDashboard = ({ user, onLogout }) => {
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
