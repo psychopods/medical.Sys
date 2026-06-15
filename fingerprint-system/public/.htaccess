@@ -1,0 +1,15 @@
+# React Single Page Application Routing Fallback
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# WebAssembly MIME Type Configuration
+<IfModule mod_mime.c>
+  AddType application/wasm .wasm
+</IfModule>
