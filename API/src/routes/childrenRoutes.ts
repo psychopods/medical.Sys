@@ -49,8 +49,13 @@ function optionalImageString(value: unknown, fieldName: string): string | null {
         throw new HttpError(400, `${fieldName} must be a string.`);
     }
     const trimmed = value.trim();
-    if (trimmed.length > 0 && !trimmed.startsWith('data:image/')) {
-        throw new HttpError(400, `${fieldName} must be a valid base64 image data URL (start with data:image/).`);
+    if (
+        trimmed.length > 0 && 
+        !trimmed.startsWith('data:image/') && 
+        !trimmed.startsWith('http://') && 
+        !trimmed.startsWith('https://')
+    ) {
+        throw new HttpError(400, `${fieldName} must be a valid base64 image data URL or HTTP/HTTPS URL.`);
     }
     return trimmed;
 }

@@ -1,6 +1,7 @@
 import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { HttpError } from '../utils/httpError.ts';
 import type { ChildProfile, Gender } from '../types/children.ts';
+import { uploadImageToCloudinary } from './cloudinaryService.ts';
 
 // Helper to validate client-side generated UUIDv4 format
 function validateUUIDv4(id: string, fieldName: string): void {
@@ -78,7 +79,12 @@ export async function createChildProfile(
         throw new HttpError(409, `Custom Serial ID '${normalizedSerial}' is already assigned to another patient.`);
     }
 
-    // 7. Insert record
+    // 7. Upload new images to Cloudinary
+    const cloudinaryImage1 = await uploadImageToCloudinary(image1);
+    const cloudinaryImage2 = await uploadImageToCloudinary(image2);
+    const cloudinaryImage3 = await uploadImageToCloudinary(image3);
+
+    // 8. Insert record
     const createdAt = new Date().toISOString();
     await pool.execute(
         `INSERT INTO children_profiles (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version)
@@ -91,9 +97,9 @@ export async function createChildProfile(
             estimatedBirthYear,
             primaryLocationId,
             createdByStaffId,
-            image1 ?? null,
-            image2 ?? null,
-            image3 ?? null
+            cloudinaryImage1 ?? null,
+            cloudinaryImage2 ?? null,
+            cloudinaryImage3 ?? null
         ]
     );
 
@@ -105,9 +111,9 @@ export async function createChildProfile(
         estimatedBirthYear,
         primaryLocationId,
         createdByStaffId,
-        image1: image1 ?? null,
-        image2: image2 ?? null,
-        image3: image3 ?? null,
+        image1: cloudinaryImage1 ?? null,
+        image2: cloudinaryImage2 ?? null,
+        image3: cloudinaryImage3 ?? null,
         version: 1,
         createdAt,
         lastModifiedAt: createdAt
@@ -241,9 +247,14 @@ export async function updateChildProfile(
     // 6. Increment version count for offline synchronization integrity tracking
     const nextVersion = existingProfile.version + 1;
 
-    const finalImage1 = image1 !== undefined ? image1 : existingProfile.image1;
-    const finalImage2 = image2 !== undefined ? image2 : existingProfile.image2;
-    const finalImage3 = image3 !== undefined ? image3 : existingProfile.image3;
+    const rawImage1 = image1 !== undefined ? image1 : existingProfile.image1;
+    const rawImage2 = image2 !== undefined ? image2 : existingProfile.image2;
+    const rawImage3 = image3 !== undefined ? image3 : existingProfile.image3;
+
+    // Upload new images to Cloudinary (will skip if already uploaded or null)
+    const finalImage1 = await uploadImageToCloudinary(rawImage1);
+    const finalImage2 = await uploadImageToCloudinary(rawImage2);
+    const finalImage3 = await uploadImageToCloudinary(rawImage3);
 
     // 7. Execute Update
     const lastModifiedAt = new Date().toISOString();

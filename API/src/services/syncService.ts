@@ -8,6 +8,7 @@ import type {
     SyncNotificationPayload,
     SyncNotificationReadPayload
 } from '../types/sync.ts';
+import { uploadImageToCloudinary } from './cloudinaryService.ts';
 
 function validateUUIDv4(id: string, fieldName: string): void {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -63,6 +64,11 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
                 validateUUIDv4(child.primaryLocationId, 'primary location ID');
                 validateUUIDv4(child.createdByStaffId, 'creator staff ID');
 
+                // Process and upload any raw base64 images in sync payload to Cloudinary
+                const image1 = await uploadImageToCloudinary(child.image1);
+                const image2 = await uploadImageToCloudinary(child.image2);
+                const image3 = await uploadImageToCloudinary(child.image3);
+
                 const [existingRows] = await connection.execute<RowDataPacket[]>(
                     'SELECT version FROM children_profiles WHERE id = ? LIMIT 1',
                     [child.id]
@@ -81,9 +87,9 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
                             child.estimatedBirthYear,
                             child.primaryLocationId,
                             child.createdByStaffId,
-                            child.image1 ?? null,
-                            child.image2 ?? null,
-                            child.image3 ?? null,
+                            image1 ?? null,
+                            image2 ?? null,
+                            image3 ?? null,
                             child.version
                         ]
                     );
@@ -118,9 +124,9 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
                         child.estimatedBirthYear,
                         child.primaryLocationId,
                         child.createdByStaffId,
-                        child.image1 ?? null,
-                        child.image2 ?? null,
-                        child.image3 ?? null,
+                        image1 ?? null,
+                        image2 ?? null,
+                        image3 ?? null,
                         child.version,
                         child.id,
                         localVersion
