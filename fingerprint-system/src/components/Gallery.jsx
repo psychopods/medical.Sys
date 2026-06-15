@@ -49,8 +49,6 @@ const Gallery = () => {
       );
       const data = await response.json();
 
-      console.log("Categories API response:", data);
-
       if (response.ok && data.success) {
         // Map the API response correctly
         const categoriesData = data.categories.map((cat) => ({
@@ -122,8 +120,6 @@ const Gallery = () => {
         signal: controller.signal,
       });
       const data = await response.json();
-
-      console.log("Gallery items API response:", data);
 
       let items = [];
 

@@ -22,7 +22,6 @@ const Dashboard = () => {
     // Check both user AND token for better security
     if (storedUser && token) {
       setUser(JSON.parse(storedUser));
-      console.log('User loaded:', JSON.parse(storedUser));
     } else {
       console.log('No user or token found, redirecting to login');
       navigate('/login');

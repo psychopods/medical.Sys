@@ -198,8 +198,6 @@ const VolunteerAdmin = () => {
       const response = await fetchWithTimeout(`${API_BASE_URL}/api/volunteer/applications`);
       const data = await response.json();
       
-      console.log('Volunteer applications response:', data);
-      
       if (response.ok) {
         if (data.success && data.applications) {
           setApplications(data.applications);

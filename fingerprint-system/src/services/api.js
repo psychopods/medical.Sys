@@ -497,6 +497,5 @@ export async function submitVolunteerApplication(form) {
 // Helper function for executeQuery (needed for offline cache)
 async function executeQuery(sql, params = []) {
   // This is a simplified version - in production, you'd have a proper SQLite implementation
-  console.log('SQL Query:', sql, params);
   return [];
 }

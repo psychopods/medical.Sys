@@ -146,8 +146,6 @@ const ContactAdmin = () => {
       const response = await fetchWithTimeout(`${API_BASE_URL}/api/contact/submissions`);
       const data = await response.json();
       
-      console.log('Contact submissions response:', data);
-      
       if (response.ok) {
         if (data.success && data.submissions) {
           setSubmissions(data.submissions);

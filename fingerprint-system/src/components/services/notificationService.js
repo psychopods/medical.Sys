@@ -22,7 +22,6 @@ export const fetchNotifications = async (includeRead = false) => {
     
     if (response.ok) {
       const data = await response.json();
-      console.log('fetchNotifications response:', data);
       
       // Handle different response formats
       if (Array.isArray(data)) {
@@ -53,7 +52,6 @@ export const fetchAllNotifications = async () => {
     
     if (response.ok) {
       const data = await response.json();
-      console.log('fetchAllNotifications response:', data);
       
       // Handle different response formats
       if (data.success && data.notifications) {
@@ -84,7 +82,6 @@ export const fetchNotificationById = async (id) => {
     
     if (response.ok) {
       const data = await response.json();
-      console.log('fetchNotificationById response:', data);
       
       if (data.success && data.notification) {
         return data.notification;
@@ -115,8 +112,6 @@ export const createNotification = async (notificationData) => {
       expiresAt: notificationData.expiresAt || null
     };
     
-    console.log('Creating notification with body:', requestBody);
-    
     const response = await fetch(`${API_BASE_URL}/api/notifications`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -124,7 +119,6 @@ export const createNotification = async (notificationData) => {
     });
     
     const data = await response.json();
-    console.log('Create notification response:', data);
     
     if (response.ok) {
       return data;
@@ -188,7 +182,6 @@ export const markNotificationAsRead = async (id) => {
     
     if (response.ok) {
       const data = await response.json();
-      console.log('Mark as read response:', data);
       return true;
     }
     console.error('Mark as read failed with status:', response.status);
@@ -208,7 +201,6 @@ export const fetchReadReceipts = async () => {
     
     if (response.ok) {
       const data = await response.json();
-      console.log('fetchReadReceipts response:', data);
       
       if (data.success && data.reads) {
         return data.reads;
