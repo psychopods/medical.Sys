@@ -1,0 +1,13 @@
+# Enable Phusion Passenger to run the Node.js application
+PassengerEnabled on
+PassengerAppType node
+PassengerStartupFile dist/server.js
+
+# Block public access to the .env file and other sensitive configuration/system files
+<FilesMatch "^\.(env|git|htaccess|project|tsconfig)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent directory listing for security
+Options -Indexes

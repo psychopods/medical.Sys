@@ -309,6 +309,22 @@ const ChildRegistration = () => {
     }
   };
 
+  const handleAgeChange = (e) => {
+    const ageVal = e.target.value;
+    const currentYear = new Date().getFullYear();
+    if (ageVal === '') {
+      setFormData({ ...formData, estimatedBirthYear: '' });
+    } else {
+      const age = parseInt(ageVal, 10);
+      if (!isNaN(age)) {
+        setFormData({ ...formData, estimatedBirthYear: (currentYear - age).toString() });
+      }
+    }
+    if (formErrors.estimatedBirthYear) {
+      setFormErrors({ ...formErrors, estimatedBirthYear: '' });
+    }
+  };
+
   // Validate child edit form
   const validateChildEditForm = () => {
     let isValid = true;
@@ -345,6 +361,22 @@ const ChildRegistration = () => {
     setChildFormData({ ...childFormData, [name]: value });
     if (childFormErrors[name]) {
       setChildFormErrors({ ...childFormErrors, [name]: '' });
+    }
+  };
+
+  const handleChildAgeChange = (e) => {
+    const ageVal = e.target.value;
+    const currentYear = new Date().getFullYear();
+    if (ageVal === '') {
+      setChildFormData({ ...childFormData, estimatedBirthYear: '' });
+    } else {
+      const age = parseInt(ageVal, 10);
+      if (!isNaN(age)) {
+        setChildFormData({ ...childFormData, estimatedBirthYear: (currentYear - age).toString() });
+      }
+    }
+    if (childFormErrors.estimatedBirthYear) {
+      setChildFormErrors({ ...childFormErrors, estimatedBirthYear: '' });
     }
   };
 
@@ -1557,16 +1589,38 @@ const ChildRegistration = () => {
             />
             {childFormErrors.fullName && <span className="error-message">{childFormErrors.fullName}</span>}
           </div>
-          <div className="child-reg-form-group">
-            <label>Estimated Birth Year *</label>
-            <input
-              type="number"
-              name="estimatedBirthYear"
-              value={childFormData.estimatedBirthYear}
-              onChange={handleChildFormChange}
-              placeholder="e.g., 2020"
-              className={childFormErrors.estimatedBirthYear ? 'error-input' : ''}
-            />
+          <div className="child-reg-form-group child-reg-age-year-group">
+            <label>Age & Birth Year *</label>
+            <div className="child-reg-age-year-row">
+              <div className="child-reg-input-with-label">
+                <input
+                  type="number"
+                  name="estimatedAge"
+                  value={childFormData.estimatedBirthYear ? (new Date().getFullYear() - parseInt(childFormData.estimatedBirthYear, 10)) : ''}
+                  onChange={handleChildAgeChange}
+                  placeholder="Age"
+                  min="0"
+                  max="120"
+                  className={childFormErrors.estimatedBirthYear ? 'error-input' : ''}
+                />
+                <span className="child-reg-input-sublabel">Estimated Age (Years)</span>
+              </div>
+              <div className="child-reg-age-year-divider">or</div>
+              <div className="child-reg-input-with-label">
+                <select
+                  name="estimatedBirthYear"
+                  value={childFormData.estimatedBirthYear || ""}
+                  onChange={handleChildFormChange}
+                  className={childFormErrors.estimatedBirthYear ? 'error-input' : ''}
+                >
+                  <option value="">Select Year</option>
+                  {Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+                <span className="child-reg-input-sublabel">Birth Year *</span>
+              </div>
+            </div>
             {childFormErrors.estimatedBirthYear && <span className="error-message">{childFormErrors.estimatedBirthYear}</span>}
           </div>
           <div className="child-reg-form-group">
@@ -2336,17 +2390,39 @@ const ChildRegistration = () => {
               />
               {formErrors.fullName && <span className="error-message">{formErrors.fullName}</span>}
             </div>
-            <div className="child-reg-form-group">
-              <label>Estimated Birth Year *</label>
-              <input 
-                type="number" 
-                name="estimatedBirthYear" 
-                value={formData.estimatedBirthYear} 
-                onChange={handleFormChangeWithValidation} 
-                placeholder="e.g., 2016" 
-                required 
-                className={formErrors.estimatedBirthYear ? 'error-input' : ''}
-              />
+            <div className="child-reg-form-group child-reg-age-year-group">
+              <label>Age & Birth Year *</label>
+              <div className="child-reg-age-year-row">
+                <div className="child-reg-input-with-label">
+                  <input 
+                    type="number" 
+                    name="estimatedAge"
+                    value={formData.estimatedBirthYear ? (new Date().getFullYear() - parseInt(formData.estimatedBirthYear, 10)) : ''} 
+                    onChange={handleAgeChange} 
+                    placeholder="Age"
+                    min="0"
+                    max="120"
+                    className={formErrors.estimatedBirthYear ? 'error-input' : ''}
+                  />
+                  <span className="child-reg-input-sublabel">Estimated Age (Years)</span>
+                </div>
+                <div className="child-reg-age-year-divider">or</div>
+                <div className="child-reg-input-with-label">
+                  <select 
+                    name="estimatedBirthYear" 
+                    value={formData.estimatedBirthYear || ""} 
+                    onChange={handleFormChangeWithValidation} 
+                    required 
+                    className={formErrors.estimatedBirthYear ? 'error-input' : ''}
+                  >
+                    <option value="">Select Year</option>
+                    {Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                  <span className="child-reg-input-sublabel">Birth Year *</span>
+                </div>
+              </div>
               {formErrors.estimatedBirthYear && <span className="error-message">{formErrors.estimatedBirthYear}</span>}
             </div>
             <div className="child-reg-form-group">
