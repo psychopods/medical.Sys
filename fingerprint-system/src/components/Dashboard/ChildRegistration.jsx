@@ -1164,7 +1164,7 @@ const ChildRegistration = () => {
     switch (printDataType) {
       case 'children':
         dataToPrint = [...filteredAllChildren];
-        title = 'All Registered Children Report';
+        title = 'All Registered Patients Report';
         break;
       case 'today':
         dataToPrint = [...filteredTodayRegistrations];
@@ -1228,7 +1228,7 @@ const ChildRegistration = () => {
                   <th>S/N</th>
                   ${printDataType === 'children' || printDataType === 'today' ? `
                     <th>ID</th>
-                    <th>Child Name</th>
+                    <th>Patient Name</th>
                     <th>Age</th>
                     <th>Gender</th>
                     <th>Location</th>
@@ -1237,8 +1237,8 @@ const ChildRegistration = () => {
                     <th>Registered By</th>
                   ` : ''}
                   ${printDataType === 'fingerprints' ? `
-                    <th>Child ID</th>
-                    <th>Child Name</th>
+                    <th>Patient ID</th>
+                    <th>Patient Name</th>
                     <th>Capture Date</th>
                     <th>Quality</th>
                     <th>Captured By</th>
@@ -1347,7 +1347,7 @@ const ChildRegistration = () => {
     
     const getTitle = () => {
       switch (printDataType) {
-        case 'children': return 'All Registered Children';
+        case 'children': return 'All Registered Patients';
         case 'today': return "Today's Registrations";
         case 'fingerprints': return 'Fingerprints Captured';
         default: return 'Print Report';
@@ -1431,13 +1431,13 @@ const ChildRegistration = () => {
       <div className="child-reg-page-header">
         <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
-          <h1 className="child-reg-page-title">Child Details</h1>
+          <h1 className="child-reg-page-title">Patient Details</h1>
         </div>
       </div>
 
       <div className="child-reg-view-container">
         <div className="child-reg-view-images-section">
-          <h3>Child Photos</h3>
+          <h3>Patient Photos</h3>
           <div className="child-reg-view-images-grid">
             {viewingChild?.image1 && (
               <div className="child-reg-view-image-card">
@@ -1459,7 +1459,7 @@ const ChildRegistration = () => {
             )}
             {!viewingChild?.image1 && !viewingChild?.image2 && !viewingChild?.image3 && (
               <div className="child-reg-no-images-message">
-                <p>No photos available for this child</p>
+                <p>No photos available for this patient</p>
               </div>
             )}
           </div>
@@ -1519,7 +1519,7 @@ const ChildRegistration = () => {
               handleEditChild(viewingChild);
             }}
           >
-            Edit Child
+            Edit Patient
           </button>
           <button 
             className="child-reg-btn-secondary" 
@@ -1538,7 +1538,7 @@ const ChildRegistration = () => {
       <div className="child-reg-page-header">
         <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
-          <h1 className="child-reg-page-title">Edit Child</h1>
+          <h1 className="child-reg-page-title">Edit Patient</h1>
         </div>
         <p>Editing: <strong>{editingChild?.fullName}</strong> (ID: {editingChild?.customSerialId})</p>
       </div>
@@ -1546,7 +1546,7 @@ const ChildRegistration = () => {
       <div className="child-reg-edit-container">
         <div className="child-reg-form-grid">
           <div className="child-reg-form-group">
-            <label>Child's Full Name *</label>
+            <label>Patient's Full Name *</label>
             <input
               type="text"
               name="fullName"
@@ -1819,7 +1819,7 @@ const ChildRegistration = () => {
       <div className="child-reg-page-header">
         <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
-          <h1 className="child-reg-page-title">All Registered Children</h1>
+          <h1 className="child-reg-page-title">All Registered Patients</h1>
           <div className="child-reg-header-button-group">
             <button className="child-reg-verify-btn-header" onClick={handleVerifyFingerprintClick}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1840,7 +1840,7 @@ const ChildRegistration = () => {
             </button>
           </div>
         </div>
-        <p className="child-reg-page-subtitle">Total: {Array.isArray(childrenData) ? childrenData.length : 0} children registered in the system</p>
+        <p className="child-reg-page-subtitle">Total: {Array.isArray(childrenData) ? childrenData.length : 0} patients registered in the system</p>
       </div>
       <div className="child-reg-search-bar">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
@@ -2522,7 +2522,7 @@ const ChildRegistration = () => {
       <div className="child-reg-page-header">
         <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <h1 className="child-reg-page-title">Verify Fingerprint</h1>
-        <p className="child-reg-page-subtitle">Verify existing child records using fingerprint</p>
+        <p className="child-reg-page-subtitle">Verify existing patient records using fingerprint</p>
       </div>
 
       {!fingerprintExists && !isVerifying && (
@@ -2545,7 +2545,7 @@ const ChildRegistration = () => {
         <div className="child-reg-verification-result">
           <div className="child-reg-success-message">
             <h3>✓ Fingerprint Found!</h3>
-            <p>Child already registered in the system.</p>
+            <p>Patient already registered in the system.</p>
             <div className="child-reg-child-details-card">
               <div className="child-reg-child-header"><h4>{existingChild.fullName}</h4><span className="child-reg-child-id">ID: {existingChild.customSerialId}</span></div>
               <div className="child-reg-verify-images">
@@ -2556,7 +2556,7 @@ const ChildRegistration = () => {
                     {existingChildImages.image2 && <div className="child-reg-verify-image"><img src={existingChildImages.image2} alt="Child photo 2" /></div>}
                     {existingChildImages.image3 && <div className="child-reg-verify-image"><img src={existingChildImages.image3} alt="Child photo 3" /></div>}
                   </div>
-                ) : (<div className="child-reg-no-images-message"><p>No photos available for this child</p></div>)}
+                ) : (<div className="child-reg-no-images-message"><p>No photos available for this patient</p></div>)}
               </div>
               <div className="child-reg-info-grid">
                 <div className="child-reg-info-item"><label>Full Name:</label><span>{existingChild.fullName}</span></div>
