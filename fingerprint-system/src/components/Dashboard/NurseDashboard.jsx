@@ -51,6 +51,8 @@ const NurseDashboard = ({ user, onLogout }) => {
     fingerprintsCaptured: 0,
     pendingFingerprints: 0,
     totalLocations: 0,
+    youngPatients: 0,
+    olderPatients: 0,
   });
 
   // Recent activities
@@ -77,6 +79,13 @@ const NurseDashboard = ({ user, onLogout }) => {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     };
+  };
+
+  // Helper function to calculate age value
+  const calculateAgeValue = (estimatedBirthYear) => {
+    if (!estimatedBirthYear) return 0;
+    const currentYear = new Date().getFullYear();
+    return currentYear - estimatedBirthYear;
   };
 
   // Get greeting based on time of day
@@ -150,10 +159,25 @@ const NurseDashboard = ({ user, onLogout }) => {
         return childDate === today;
       }).length;
 
+      // Calculate age distribution
+      let youngCount = 0;
+      let olderCount = 0;
+      
+      childrenArray.forEach(child => {
+        const age = calculateAgeValue(child.estimatedBirthYear);
+        if (age < 18) {
+          youngCount++;
+        } else {
+          olderCount++;
+        }
+      });
+
       setStatsData((prev) => ({
         ...prev,
         totalChildren: childrenArray.length,
         todayRegistrations: todayRegistrations,
+        youngPatients: youngCount,
+        olderPatients: olderCount,
       }));
 
       // Calculate location statistics
@@ -289,10 +313,10 @@ const NurseDashboard = ({ user, onLogout }) => {
     };
 
     if (!formData.fullName.trim()) {
-      errors.fullName = "Child name is required";
+      errors.fullName = "Patient name is required";
       isValid = false;
     } else if (formData.fullName.trim().length < 2) {
-      errors.fullName = "Child name must be at least 2 characters";
+      errors.fullName = "Patient name must be at least 2 characters";
       isValid = false;
     }
 
@@ -449,8 +473,8 @@ const NurseDashboard = ({ user, onLogout }) => {
 
       alert(
         offlineMode
-          ? `✓ Child registered in OFFLINE mode with ID: ${generatedId}. Data will sync when online.`
-          : `✓ Child registered successfully with ID: ${generatedId}!`,
+          ? `✓ Patient registered in OFFLINE mode with ID: ${generatedId}. Data will sync when online.`
+          : `✓ Patient registered successfully with ID: ${generatedId}!`,
       );
 
       setShowRegistrationForm(false);
@@ -560,7 +584,7 @@ const NurseDashboard = ({ user, onLogout }) => {
     }
   }, [syncState]);
 
-  // Stats cards data
+  // Stats cards data (7 stats including age distribution)
   const stats = [
     {
       icon: (
@@ -580,7 +604,59 @@ const NurseDashboard = ({ user, onLogout }) => {
         </svg>
       ),
       value: statsData.totalChildren,
-      label: "Total Children Registered",
+      label: "Total Patients Registered",
+    },
+    {
+      icon: (
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" />
+          <path
+            d="M5.5 20V19C5.5 16.8 7.3 15 9.5 15H14.5C16.7 15 18.5 16.8 18.5 19V20"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+          <path
+            d="M12 2v4M8 4l2 2M16 4l-2 2"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+        </svg>
+      ),
+      value: statsData.youngPatients,
+      label: "Young Patients",
+      subLabel: "< 18 years",
+    },
+    {
+      icon: (
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+          <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" />
+          <path
+            d="M17 3.5a4 4 0 0 1 0 7"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+        </svg>
+      ),
+      value: statsData.olderPatients,
+      label: "Older Patients",
+      subLabel: "≥ 18 years",
     },
     {
       icon: (
@@ -830,6 +906,7 @@ const NurseDashboard = ({ user, onLogout }) => {
             <div className="nurse-dashboard-stat-info">
               <h3>{stat.value}</h3>
               <p>{stat.label}</p>
+              {stat.subLabel && <small>{stat.subLabel}</small>}
             </div>
           </div>
         ))}
@@ -854,7 +931,7 @@ const NurseDashboard = ({ user, onLogout }) => {
                       {loc.location || loc.name}
                     </span>
                     <span className="nurse-dashboard-location-count">
-                      {loc.count} children
+                      {loc.count} Patients
                     </span>
                   </div>
                   <div className="nurse-dashboard-progress-bar">
@@ -941,7 +1018,7 @@ const NurseDashboard = ({ user, onLogout }) => {
         <table>
           <thead>
             <tr>
-              <th>Child Name</th>
+              <th>Patient Name</th>
               <th>Activity</th>
               <th>Date</th>
               <th>Time</th>
@@ -983,7 +1060,7 @@ const NurseDashboard = ({ user, onLogout }) => {
         <div className="nurse-dashboard-modal-overlay">
           <div className="nurse-dashboard-modal-content">
             <div className="nurse-dashboard-modal-header">
-              <h2>Register New Child</h2>
+              <h2>Register New Patient</h2>
               <button
                 className="nurse-dashboard-modal-close"
                 onClick={() => setShowRegistrationForm(false)}
@@ -997,7 +1074,7 @@ const NurseDashboard = ({ user, onLogout }) => {
                 <h3>Step 1: Child Information</h3>
                 <div className="nurse-dashboard-form-grid">
                   <div className="nurse-dashboard-form-group">
-                    <label>Child's Full Name *</label>
+                    <label>Patient's Full Name *</label>
                     <input
                       type="text"
                       name="fullName"
@@ -1207,7 +1284,7 @@ const NurseDashboard = ({ user, onLogout }) => {
               <div className="nurse-dashboard-verification-result">
                 <div className="nurse-dashboard-success-message">
                   <h3>✓ Fingerprint Found!</h3>
-                  <p>Child already registered in the system.</p>
+                  <p>Patient already registered in the system.</p>
                   <div className="nurse-dashboard-child-info">
                     <p>
                       <strong>Name:</strong> {existingChild.fullName}
@@ -1255,7 +1332,7 @@ const NurseDashboard = ({ user, onLogout }) => {
                 <div className="nurse-dashboard-info-message">
                   <h3>ℹ Fingerprint Not Found</h3>
                   <p>
-                    This child is not registered. Would you like to register
+                    This patient is not registered. Would you like to register
                     them?
                   </p>
                   <div className="nurse-dashboard-modal-actions">
@@ -1267,7 +1344,7 @@ const NurseDashboard = ({ user, onLogout }) => {
                         setFingerprintExists(null);
                       }}
                     >
-                      Register New Child
+                      Register New Patient
                     </button>
                     <button
                       className="nurse-dashboard-btn-secondary"

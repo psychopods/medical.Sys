@@ -134,7 +134,7 @@ const BottomHeader = () => {
     { path: '/about', name: 'About' },
     { path: '/gallery', name: 'Gallery' },
     { path: '/reports', name: 'Reports' },
-    { path: '/support', name: 'Support' },
+    // { path: '/support', name: 'Support' },
     { path: '/contact', name: 'Contact' }
   ];
 

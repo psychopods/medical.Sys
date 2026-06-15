@@ -826,3 +826,30 @@
     font-size: 16px;
   }
 }
+
+
+/* Age distribution stat cards */
+.nurse-dashboard-stat-card .nurse-dashboard-stat-info small {
+  display: block;
+  font-size: 10px;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* Different border colors for age cards - add to existing .nurse-dashboard-stat-card styles */
+.nurse-dashboard-stat-card:nth-child(2) {
+  border-left: 4px solid #4caf50;
+}
+
+.nurse-dashboard-stat-card:nth-child(3) {
+  border-left: 4px solid #ff9800;
+}
+
+/* Optional: Add hover effects for these cards */
+.nurse-dashboard-stat-card:nth-child(2):hover {
+  border-left-color: #45a049;
+}
+
+.nurse-dashboard-stat-card:nth-child(3):hover {
+  border-left-color: #fb8c00;
+}

@@ -2554,3 +2554,78 @@
     padding: 2px 0;
   }
 }
+
+
+/* Age Categories Styles */
+.child-reg-age-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.child-reg-age-category-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.child-reg-age-category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.child-reg-age-category-card.young-card {
+  border-left: 4px solid #4caf50;
+}
+
+.child-reg-age-category-card.older-card {
+  border-left: 4px solid #ff9800;
+}
+
+.child-reg-category-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-category-icon.young-icon {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+}
+
+.child-reg-category-icon.older-icon {
+  background: linear-gradient(135deg, #ff9800, #ffb74d);
+  color: white;
+}
+
+.child-reg-category-info {
+  flex: 1;
+}
+
+.child-reg-category-info h3 {
+  font-size: 32px;
+  margin: 0;
+  color: #1a1a2e;
+}
+
+.child-reg-category-info p {
+  margin: 5px 0;
+  font-size: 16px;
+  color: #666;
+  font-weight: 500;
+}
+
+.child-reg-category-info small {
+  font-size: 12px;
+  color: #999;
+}

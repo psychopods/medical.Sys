@@ -760,3 +760,37 @@
   font-size: 12px;
   font-weight: 600;
 }
+
+/* Young Patients Stat Card */
+.sd-stat-card.sd-young-stat-card {
+  border-left: 4px solid #4caf50;
+}
+
+.sd-stat-card.sd-young-stat-card .sd-stat-icon.sd-icon-young {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+}
+
+.sd-stat-card.sd-young-stat-card .sd-stat-info small {
+  display: block;
+  font-size: 11px;
+  color: #4caf50;
+  margin-top: 4px;
+}
+
+/* Older Patients Stat Card */
+.sd-stat-card.sd-older-stat-card {
+  border-left: 4px solid #ff9800;
+}
+
+.sd-stat-card.sd-older-stat-card .sd-stat-icon.sd-icon-older {
+  background: linear-gradient(135deg, #ff9800, #ffb74d);
+  color: white;
+}
+
+.sd-stat-card.sd-older-stat-card .sd-stat-info small {
+  display: block;
+  font-size: 11px;
+  color: #ff9800;
+  margin-top: 4px;
+}

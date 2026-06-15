@@ -11,7 +11,7 @@ const ChildRegistration = () => {
   const [loading, setLoading] = useState(true);
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
   const [activePage, setActivePage] = useState('list');
-  const [pageHistory, setPageHistory] = useState(['list']); // Navigation history
+  const [pageHistory, setPageHistory] = useState(['list']);
   const [fingerprintExists, setFingerprintExists] = useState(null);
   const [existingChild, setExistingChild] = useState(null);
   const [existingChildImages, setExistingChildImages] = useState(null);
@@ -33,6 +33,12 @@ const ChildRegistration = () => {
     gender: '',
     primaryLocationId: ''
   });
+  
+  // Age-based patient states
+  const [youngPatients, setYoungPatients] = useState([]);
+  const [olderPatients, setOlderPatients] = useState([]);
+  const [searchYoung, setSearchYoung] = useState('');
+  const [searchOlder, setSearchOlder] = useState('');
   
   // Child View/Edit Page States
   const [viewingChild, setViewingChild] = useState(null);
@@ -254,6 +260,31 @@ const ChildRegistration = () => {
     }
     
     return staffId;
+  };
+
+  // Helper function to get age as number
+  const calculateAgeValue = (estimatedBirthYear) => {
+    if (!estimatedBirthYear) return 0;
+    const currentYear = new Date().getFullYear();
+    return currentYear - estimatedBirthYear;
+  };
+
+  // Filter patients by age
+  const filterPatientsByAge = (children) => {
+    const young = [];
+    const older = [];
+    
+    children.forEach(child => {
+      const age = calculateAgeValue(child.estimatedBirthYear);
+      if (age < 18) {
+        young.push(child);
+      } else {
+        older.push(child);
+      }
+    });
+    
+    setYoungPatients(young);
+    setOlderPatients(older);
   };
 
   // Validate form
@@ -783,6 +814,7 @@ const ChildRegistration = () => {
         }));
         
         setChildrenData(Array.isArray(childrenArray) ? childrenArray : []);
+        filterPatientsByAge(Array.isArray(childrenArray) ? childrenArray : []);
       }
     } catch (error) {
       console.error('Error fetching children:', error);
@@ -1206,6 +1238,14 @@ const ChildRegistration = () => {
         dataToPrint = [...filteredFingerprintData];
         title = 'Fingerprints Captured Report';
         break;
+      case 'young':
+        dataToPrint = [...filteredYoungPatients];
+        title = 'Young Patients Report (Under 18 Years)';
+        break;
+      case 'older':
+        dataToPrint = [...filteredOlderPatients];
+        title = 'Older Patients Report (18 Years and Above)';
+        break;
       default:
         dataToPrint = [];
     }
@@ -1258,58 +1298,32 @@ const ChildRegistration = () => {
               <thead>
                 <tr>
                   <th>S/N</th>
-                  ${printDataType === 'children' || printDataType === 'today' ? `
-                    <th>ID</th>
-                    <th>Patient Name</th>
-                    <th>Age</th>
-                    <th>Gender</th>
-                    <th>Location</th>
-                    <th>Registration Date</th>
-                    <th>Fingerprint</th>
-                    <th>Registered By</th>
-                  ` : ''}
-                  ${printDataType === 'fingerprints' ? `
-                    <th>Patient ID</th>
-                    <th>Patient Name</th>
-                    <th>Capture Date</th>
-                    <th>Quality</th>
-                    <th>Captured By</th>
-                  ` : ''}
+                  <th>ID</th>
+                  <th>Patient Name</th>
+                  <th>Age</th>
+                  <th>Gender</th>
+                  <th>Location</th>
+                  <th>Registration Date</th>
+                  <th>Fingerprint</th>
+                  <th>Registered By</th>
                 </tr>
               </thead>
               <tbody>
                 ${dataToPrint.map((item, index) => {
-                  if (printDataType === 'children' || printDataType === 'today') {
-                    const age = calculateAgeFromYear(item.estimatedBirthYear);
-                    return `
-                      <tr>
-                        <td style="text-align: center;">${index + 1}</td>
-                        <td>${item.customSerialId || 'N/A'}</td>
-                        <td>${item.fullName || 'N/A'}</td>
-                        <td>${age}</td>
-                        <td>${item.gender || 'N/A'}</td>
-                        <td>${getLocationName(item.primaryLocationId) || 'N/A'}</td>
-                        <td>${item.createdAt ? item.createdAt.split('T')[0] : 'N/A'}</td>
-                        <td><span class="status-badge status-pending">Pending</span></td>
-                        <td>${item.registeredByName || 'N/A'}</td>
-                      </tr>
-                    `;
-                  } else if (printDataType === 'fingerprints') {
-                    const formattedDate = item.capturedAt ? new Date(item.capturedAt).toLocaleString() : 'N/A';
-                    const quality = item.qualityScore || 0;
-                    const capturedByName = item.capturedByName || 'N/A';
-                    return `
-                      <tr>
-                        <td style="text-align: center;">${index + 1}</td>
-                        <td>${item.customSerialId || 'N/A'}</td>
-                        <td>${item.childName || 'N/A'}</td>
-                        <td>${formattedDate}</td>
-                        <td><span class="status-badge ${quality >= 70 ? 'status-captured' : 'status-pending'}">${quality || 'Good'}%</span></td>
-                        <td>${capturedByName}</td>
-                      </tr>
-                    `;
-                  }
-                  return '';
+                  const age = calculateAgeFromYear(item.estimatedBirthYear);
+                  return `
+                    <tr>
+                      <td style="text-align: center;">${index + 1}</td>
+                      <td>${item.customSerialId || 'N/A'}</td>
+                      <td>${item.fullName || 'N/A'}</td>
+                      <td>${age}</td>
+                      <td>${item.gender || 'N/A'}</td>
+                      <td>${getLocationName(item.primaryLocationId) || 'N/A'}</td>
+                      <td>${item.createdAt ? item.createdAt.split('T')[0] : 'N/A'}</td>
+                      <td><span class="status-badge ${item.fingerprintCaptured ? 'status-captured' : 'status-pending'}">${item.fingerprintCaptured ? 'Captured' : 'Pending'}</span></td>
+                      <td>${item.registeredByName || 'N/A'}</td>
+                    </tr>
+                  `;
                 }).join('')}
               </tbody>
             </table>
@@ -1353,6 +1367,16 @@ const ChildRegistration = () => {
     location.name?.toLowerCase().includes(searchLocations.toLowerCase())
   ) : [];
 
+  const filteredYoungPatients = Array.isArray(youngPatients) ? youngPatients.filter(child =>
+    child.fullName?.toLowerCase().includes(searchYoung.toLowerCase()) ||
+    child.customSerialId?.toLowerCase().includes(searchYoung.toLowerCase())
+  ) : [];
+
+  const filteredOlderPatients = Array.isArray(olderPatients) ? olderPatients.filter(child =>
+    child.fullName?.toLowerCase().includes(searchOlder.toLowerCase()) ||
+    child.customSerialId?.toLowerCase().includes(searchOlder.toLowerCase())
+  ) : [];
+
   const ToastNotification = () => {
     if (!toast.show) return null;
     return (
@@ -1382,6 +1406,8 @@ const ChildRegistration = () => {
         case 'children': return 'All Registered Patients';
         case 'today': return "Today's Registrations";
         case 'fingerprints': return 'Fingerprints Captured';
+        case 'young': return 'Young Patients (Under 18)';
+        case 'older': return 'Older Patients (18+)';
         default: return 'Print Report';
       }
     };
@@ -1456,6 +1482,290 @@ const ChildRegistration = () => {
       </div>
     );
   };
+
+  // Young Patients List (< 18 years)
+  const renderYoungPatientsList = () => (
+    <div className="child-reg-page-content">
+      <div className="child-reg-page-header">
+        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
+        <div className="child-reg-header-actions">
+          <h1 className="child-reg-page-title">Young Patients</h1>
+          <div className="child-reg-header-button-group">
+            <button className="child-reg-verify-btn-header" onClick={handleVerifyFingerprintClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
+                <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18"/>
+              </svg>
+              Verify Fingerprint
+            </button>
+            <button className="child-reg-add-registration-btn" onClick={handleAddRegistrationClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Add Registration
+            </button>
+            <button className="child-reg-print-btn-page" onClick={() => handlePrintClick('young')}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 9V3H18V9" />
+                <path d="M6 21H18C19.1 21 20 20.1 20 19V13C20 11.9 19.1 11 18 11H6C4.9 11 4 11.9 4 13V19C4 20.1 4.9 21 6 21Z" />
+                <path d="M18 15H6" />
+              </svg>
+              Print Report
+            </button>
+          </div>
+        </div>
+        <p className="child-reg-page-subtitle">
+          Total Young Patients (Under 18 years): <strong>{youngPatients.length}</strong>
+        </p>
+      </div>
+      
+      <div className="child-reg-search-bar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input 
+          type="text" 
+          placeholder="Search young patients by name or ID..." 
+          value={searchYoung} 
+          onChange={(e) => setSearchYoung(e.target.value)} 
+        />
+      </div>
+      
+      <div className="child-reg-data-table-container">
+        <table className="child-reg-data-table">
+          <thead>
+            <tr>
+              <th>S/N</th>
+              <th>ID</th>
+              <th>Patient Name</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>Location</th>
+              <th>Registration Date</th>
+              <th>Fingerprint</th>
+              <th>Registered By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredYoungPatients.map((child, index) => (
+              <tr key={child.id}>
+                <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                <td>{child.customSerialId}</td>
+                <td>{child.fullName}</td>
+                <td>{calculateAgeFromYear(child.estimatedBirthYear)}</td>
+                <td>{child.gender}</td>
+                <td>{getLocationName(child.primaryLocationId)}</td>
+                <td>{child.createdAt ? child.createdAt.split('T')[0] : 'N/A'}</td>
+                <td>
+                  <span className={`child-reg-status-badge ${child.fingerprintCaptured ? 'child-reg-status-completed' : 'child-reg-status-pending'}`}>
+                    {child.fingerprintCaptured ? 'Captured' : 'Pending'}
+                  </span>
+                </td>
+                <td>{child.registeredByName || getStaffNameById(child.createdByStaffId) || 'N/A'}</td>
+                <td>
+                  <div className="child-reg-action-buttons">
+                    <button 
+                      className="child-reg-action-icon-btn child-reg-view-btn" 
+                      onClick={() => handleViewChild(child)}
+                      title="View Details"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
+                    <button 
+                      className="child-reg-action-icon-btn child-reg-edit-btn" 
+                      onClick={() => handleEditChild(child)}
+                      title="Edit Patient"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 3L21 7L7 21H3V17L17 3Z" />
+                      </svg>
+                    </button>
+                    {!child.fingerprintCaptured && (
+                      <button 
+                        className="child-reg-action-icon-btn child-reg-fingerprint-btn" 
+                        onClick={() => handleEnrollFingerprint(child)}
+                        title="Add Fingerprint"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+                          <path d="M12 6v6l4 2" />
+                        </svg>
+                      </button>
+                    )}
+                    <button 
+                      className="child-reg-action-icon-btn child-reg-delete-btn" 
+                      onClick={() => handleDeleteChild(child)}
+                      title="Delete Patient"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 7H20" strokeWidth="2" />
+                        <path d="M10 11V17" strokeWidth="2" />
+                        <path d="M14 11V17" strokeWidth="2" />
+                        <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2" />
+                        <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2" />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {filteredYoungPatients.length === 0 && (
+          <div className="child-reg-no-data">
+            <p>No young patients found. Click "Add Registration" to register a new patient.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Older Patients List (≥ 18 years)
+  const renderOlderPatientsList = () => (
+    <div className="child-reg-page-content">
+      <div className="child-reg-page-header">
+        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
+        <div className="child-reg-header-actions">
+          <h1 className="child-reg-page-title">Older Patients</h1>
+          <div className="child-reg-header-button-group">
+            <button className="child-reg-verify-btn-header" onClick={handleVerifyFingerprintClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
+                <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18"/>
+              </svg>
+              Verify Fingerprint
+            </button>
+            <button className="child-reg-add-registration-btn" onClick={handleAddRegistrationClick}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Add Registration
+            </button>
+            <button className="child-reg-print-btn-page" onClick={() => handlePrintClick('older')}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 9V3H18V9" />
+                <path d="M6 21H18C19.1 21 20 20.1 20 19V13C20 11.9 19.1 11 18 11H6C4.9 11 4 11.9 4 13V19C4 20.1 4.9 21 6 21Z" />
+                <path d="M18 15H6" />
+              </svg>
+              Print Report
+            </button>
+          </div>
+        </div>
+        <p className="child-reg-page-subtitle">
+          Total Older Patients (18 years and above): <strong>{olderPatients.length}</strong>
+        </p>
+      </div>
+      
+      <div className="child-reg-search-bar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input 
+          type="text" 
+          placeholder="Search older patients by name or ID..." 
+          value={searchOlder} 
+          onChange={(e) => setSearchOlder(e.target.value)} 
+        />
+      </div>
+      
+      <div className="child-reg-data-table-container">
+        <table className="child-reg-data-table">
+          <thead>
+            <tr>
+              <th>S/N</th>
+              <th>ID</th>
+              <th>Patient Name</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>Location</th>
+              <th>Registration Date</th>
+              <th>Fingerprint</th>
+              <th>Registered By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredOlderPatients.map((child, index) => (
+              <tr key={child.id}>
+                <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                <td>{child.customSerialId}</td>
+                <td>{child.fullName}</td>
+                <td>{calculateAgeFromYear(child.estimatedBirthYear)}</td>
+                <td>{child.gender}</td>
+                <td>{getLocationName(child.primaryLocationId)}</td>
+                <td>{child.createdAt ? child.createdAt.split('T')[0] : 'N/A'}</td>
+                <td>
+                  <span className={`child-reg-status-badge ${child.fingerprintCaptured ? 'child-reg-status-completed' : 'child-reg-status-pending'}`}>
+                    {child.fingerprintCaptured ? 'Captured' : 'Pending'}
+                  </span>
+                </td>
+                <td>{child.registeredByName || getStaffNameById(child.createdByStaffId) || 'N/A'}</td>
+                <td>
+                  <div className="child-reg-action-buttons">
+                    <button 
+                      className="child-reg-action-icon-btn child-reg-view-btn" 
+                      onClick={() => handleViewChild(child)}
+                      title="View Details"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    </button>
+                    <button 
+                      className="child-reg-action-icon-btn child-reg-edit-btn" 
+                      onClick={() => handleEditChild(child)}
+                      title="Edit Patient"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M17 3L21 7L7 21H3V17L17 3Z" />
+                      </svg>
+                    </button>
+                    {!child.fingerprintCaptured && (
+                      <button 
+                        className="child-reg-action-icon-btn child-reg-fingerprint-btn" 
+                        onClick={() => handleEnrollFingerprint(child)}
+                        title="Add Fingerprint"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+                          <path d="M12 6v6l4 2" />
+                        </svg>
+                      </button>
+                    )}
+                    <button 
+                      className="child-reg-action-icon-btn child-reg-delete-btn" 
+                      onClick={() => handleDeleteChild(child)}
+                      title="Delete Patient"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 7H20" strokeWidth="2" />
+                        <path d="M10 11V17" strokeWidth="2" />
+                        <path d="M14 11V17" strokeWidth="2" />
+                        <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2" />
+                        <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2" />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {filteredOlderPatients.length === 0 && (
+          <div className="child-reg-no-data">
+            <p>No older patients found. Click "Add Registration" to register a new patient.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   // Child View Page
   const renderChildViewPage = () => (
@@ -2322,6 +2632,39 @@ const ChildRegistration = () => {
         </div>
       </div>
 
+      {/* Age-based Patient Categories Section */}
+      <div className="child-reg-section-title">Patients by Age Group</div>
+      <div className="child-reg-age-categories-grid">
+        <div className="child-reg-age-category-card young-card" onClick={() => handleStatClick('youngPatients', 'Young Patients')}>
+          <div className="child-reg-category-icon young-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M5.5 20V19C5.5 16.8 7.3 15 9.5 15H14.5C16.7 15 18.5 16.8 18.5 19V20"/>
+            </svg>
+          </div>
+          <div className="child-reg-category-info">
+            <h3>{youngPatients.length}</h3>
+            <p>Young Patients</p>
+            <small>Age &lt; 18 years</small>
+          </div>
+        </div>
+        
+        <div className="child-reg-age-category-card older-card" onClick={() => handleStatClick('olderPatients', 'Older Patients')}>
+          <div className="child-reg-category-icon older-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+              <path d="M17 3.5a4 4 0 0 1 0 7"/>
+            </svg>
+          </div>
+          <div className="child-reg-category-info">
+            <h3>{olderPatients.length}</h3>
+            <p>Older Patients</p>
+            <small>Age ≥ 18 years</small>
+          </div>
+        </div>
+      </div>
+
       {offlineMode && (
         <div className="child-reg-offline-banner">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#856404" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1" fill="#856404"/></svg>
@@ -2686,6 +3029,8 @@ const ChildRegistration = () => {
         {!showPrintPage && activePage === 'enroll_fingerprint' && renderFingerprintEnrollment()}
         {!showPrintPage && activePage === 'view_child' && renderChildViewPage()}
         {!showPrintPage && activePage === 'edit_child' && renderChildEditPage()}
+        {!showPrintPage && activePage === 'youngPatients' && renderYoungPatientsList()}
+        {!showPrintPage && activePage === 'olderPatients' && renderOlderPatientsList()}
       </div>
     </Layout>
   );

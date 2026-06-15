@@ -16,7 +16,9 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     activeRoles: 0,
     totalPermissions: 0,
     totalCategories: 0,
-    onlineNow: 0
+    onlineNow: 0,
+    youngPatients: 0,
+    olderPatients: 0
   });
   const [recentChildren, setRecentChildren] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
@@ -38,7 +40,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     fingerprintStatus: { captured: 0, pending: 0 },
     usersByRole: [],
     activityByHour: [],
-    weeklyRegistrations: []
+    weeklyRegistrations: [],
+    ageDistribution: { young: 0, older: 0 }
   });
 
   // Helper function to get auth headers
@@ -48,6 +51,13 @@ const SuperUserDashboard = ({ user, onLogout }) => {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
+  };
+
+  // Helper function to calculate age
+  const calculateAgeValue = (estimatedBirthYear) => {
+    if (!estimatedBirthYear) return 0;
+    const currentYear = new Date().getFullYear();
+    return currentYear - estimatedBirthYear;
   };
 
   // Check database health - GET /health
@@ -125,7 +135,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     setApiStatus(results);
   };
 
-  // Fetch children data
+  // Fetch children data with age categorization
   const fetchChildrenData = async () => {
     try {
       const children = await getChildren();
@@ -139,6 +149,19 @@ const SuperUserDashboard = ({ user, onLogout }) => {
       // Calculate fingerprint status
       const captured = children.filter(child => child.fingerprintCaptured).length;
       const pending = children.length - captured;
+      
+      // Calculate age distribution
+      let youngCount = 0;
+      let olderCount = 0;
+      
+      children.forEach(child => {
+        const age = calculateAgeValue(child.estimatedBirthYear);
+        if (age < 18) {
+          youngCount++;
+        } else {
+          olderCount++;
+        }
+      });
       
       // Calculate registrations by month for chart
       const registrationsByMonth = {};
@@ -182,19 +205,22 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         registrationsByMonth: chartDataMonths,
         fingerprintStatus: { captured, pending },
         weeklyRegistrations: weeklyData,
-        activityByHour: hourlyData
+        activityByHour: hourlyData,
+        ageDistribution: { young: youngCount, older: olderCount }
       }));
       
       return {
         totalChildren: children.length,
         registeredToday: todayRegistrations.length,
         fingerprintsCaptured: captured,
-        recentChildren: children.slice(0, 5)
+        recentChildren: children.slice(0, 5),
+        youngPatients: youngCount,
+        olderPatients: olderCount
       };
     } catch (error) {
       console.error('Error fetching children:', error);
     }
-    return { totalChildren: 0, registeredToday: 0, fingerprintsCaptured: 0, recentChildren: [] };
+    return { totalChildren: 0, registeredToday: 0, fingerprintsCaptured: 0, recentChildren: [], youngPatients: 0, olderPatients: 0 };
   };
 
   // Fetch users data with role distribution
@@ -318,7 +344,9 @@ const SuperUserDashboard = ({ user, onLogout }) => {
       activeRoles: rolesCount,
       totalPermissions: permissionsCount,
       totalCategories: categoriesCount,
-      onlineNow: onlineCount
+      onlineNow: onlineCount,
+      youngPatients: childrenResult.youngPatients,
+      olderPatients: childrenResult.olderPatients
     });
     setRecentChildren(childrenResult.recentChildren);
     setRecentUsers(usersResult.recentUsers);
@@ -517,8 +545,9 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* Statistics Grid */}
+      {/* Statistics Grid - 12 Stats including Age Distribution */}
       <div className="sd-stats-grid">
+        {/* 1. Total Patients */}
         <div className="sd-stat-card">
           <div className="sd-stat-icon sd-icon-primary">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -528,10 +557,43 @@ const SuperUserDashboard = ({ user, onLogout }) => {
           </div>
           <div className="sd-stat-info">
             <h3>{dashboardData.totalChildren}</h3>
-            <p>Total Children</p>
+            <p>Total Patients</p>
           </div>
         </div>
 
+        {/* 2. Young Patients */}
+        <div className="sd-stat-card sd-young-stat-card">
+          <div className="sd-stat-icon sd-icon-young">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M5.5 20V19C5.5 16.8 7.3 15 9.5 15H14.5C16.7 15 18.5 16.8 18.5 19V20"/>
+              <path d="M12 2v4M8 4l2 2M16 4l-2 2"/>
+            </svg>
+          </div>
+          <div className="sd-stat-info">
+            <h3>{dashboardData.youngPatients}</h3>
+            <p>Young Patients</p>
+            <small>&lt; 18 years</small>
+          </div>
+        </div>
+
+        {/* 3. Older Patients */}
+        <div className="sd-stat-card sd-older-stat-card">
+          <div className="sd-stat-icon sd-icon-older">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+              <path d="M17 3.5a4 4 0 0 1 0 7"/>
+            </svg>
+          </div>
+          <div className="sd-stat-info">
+            <h3>{dashboardData.olderPatients}</h3>
+            <p>Older Patients</p>
+            <small>≥ 18 years</small>
+          </div>
+        </div>
+
+        {/* 4. Registered Today */}
         <div className="sd-stat-card">
           <div className="sd-stat-icon sd-icon-success">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -545,6 +607,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
           </div>
         </div>
 
+        {/* 5. Fingerprints Captured */}
         <div className="sd-stat-card">
           <div className="sd-stat-icon sd-icon-warning">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -559,6 +622,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
           </div>
         </div>
 
+        {/* 6. System Users */}
         <div className="sd-stat-card">
           <div className="sd-stat-icon sd-icon-info">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -574,6 +638,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
           </div>
         </div>
 
+        {/* 7. Active Roles */}
         <div className="sd-stat-card">
           <div className="sd-stat-icon sd-icon-secondary">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -587,6 +652,38 @@ const SuperUserDashboard = ({ user, onLogout }) => {
           </div>
         </div>
 
+        {/* 8. Total Permissions */}
+        <div className="sd-stat-card">
+          <div className="sd-stat-icon sd-icon-purple">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+              <path d="M2 17L12 22L22 17"/>
+              <path d="M2 12L12 17L22 12"/>
+            </svg>
+          </div>
+          <div className="sd-stat-info">
+            <h3>{dashboardData.totalPermissions}</h3>
+            <p>Total Permissions</p>
+          </div>
+        </div>
+
+        {/* 9. Permission Categories */}
+        <div className="sd-stat-card">
+          <div className="sd-stat-icon sd-icon-cyan">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+            </svg>
+          </div>
+          <div className="sd-stat-info">
+            <h3>{dashboardData.totalCategories}</h3>
+            <p>Permission Categories</p>
+          </div>
+        </div>
+
+        {/* 10. Online Now */}
         <div className="sd-stat-card">
           <div className="sd-stat-icon sd-icon-danger">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -806,7 +903,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
             </div>
             <div className="sd-system-stat-item">
               <div className="sd-system-stat-value">{dashboardData.totalChildren}</div>
-              <div className="sd-system-stat-label">Total Children</div>
+              <div className="sd-system-stat-label">Total Patients</div>
             </div>
             <div className="sd-system-stat-item">
               <div className="sd-system-stat-value">{dashboardData.totalUsers}</div>
@@ -820,7 +917,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
       <div className="sd-recent-grid">
         <div className="sd-recent-card">
           <div className="sd-recent-header">
-            <h3>Recently Registered Children</h3>
+            <h3>Recently Registered Patients</h3>
           </div>
           <div className="sd-recent-table-container">
             <table className="sd-recent-table">
@@ -840,7 +937,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                     </tr>
                   ))
                 ) : (
-                  <tr><td colSpan="4" className="sd-no-data">No children registered yet</td></tr>
+                  <tr><td colSpan="4" className="sd-no-data">No patients registered yet</td></tr>
                 )}
               </tbody>
             </table>
@@ -888,8 +985,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
             </svg>
           </div>
           <div className="sd-action-info">
-            <h4>Register New Child</h4>
-            <p>Capture child information and fingerprint</p>
+            <h4>Register New Patients</h4>
+            <p>Capture patient information and fingerprint</p>
           </div>
         </button>
 
