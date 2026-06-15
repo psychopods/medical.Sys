@@ -2504,3 +2504,53 @@
     width: 100%;
   }
 }
+
+/* Age & Birth Year Layout Styles */
+.child-reg-age-year-group {
+  grid-column: span 1;
+}
+
+.child-reg-age-year-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.child-reg-input-with-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.child-reg-input-sublabel {
+  font-size: 11px;
+  color: #888;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.child-reg-age-year-divider {
+  align-self: flex-start;
+  height: 44px; /* Center-aligns vertically with inputs */
+  display: flex;
+  align-items: center;
+  color: #a0aec0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+@media (max-width: 400px) {
+  .child-reg-age-year-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+  }
+  .child-reg-age-year-divider {
+    align-self: center;
+    height: auto;
+    padding: 2px 0;
+  }
+}
