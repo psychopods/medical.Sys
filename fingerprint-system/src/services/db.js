@@ -55,8 +55,9 @@ export async function getDB() {
   initPromise = (async () => {
     try {
       // 1. Initialize sql.js WebAssembly
+      const baseUrl = import.meta.env.BASE_URL || '/';
       SQL = await initSqlJs({
-        locateFile: (file) => `/sql-wasm.wasm`,
+        locateFile: (file) => `${baseUrl}sql-wasm.wasm`,
       });
 
       // 2. Load cached database from IndexedDB
@@ -71,8 +72,8 @@ export async function getDB() {
 
         // Fetch schema and seeds from public directory
         const [schemaRes, seedRes] = await Promise.all([
-          fetch('/SQLite_SYS_Database.sqlite'),
-          fetch('/sqliteSEED.sql'),
+          fetch(`${baseUrl}SQLite_SYS_Database.sqlite`),
+          fetch(`${baseUrl}sqliteSEED.sql`),
         ]);
 
         if (!schemaRes.ok || !seedRes.ok) {
@@ -81,6 +82,11 @@ export async function getDB() {
 
         const schemaSql = await schemaRes.text();
         const seedSql = await seedRes.text();
+
+        // Check if response is HTML (starts with '<'), which means rewrite rules returned the SPA index.html
+        if (schemaSql.trim().startsWith('<') || seedSql.trim().startsWith('<')) {
+          throw new Error('Database initialization scripts returned HTML instead of SQL. Please ensure SQLite_SYS_Database.sqlite and sqliteSEED.sql exist in the public directory and are not being intercepted by rewrite rules.');
+        }
 
         // Execute schema and seed data
         console.log('SQLite: Creating tables...');
