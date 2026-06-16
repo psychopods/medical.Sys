@@ -1,0 +1,12 @@
+export { default as RenderAllChildrenList } from './RenderAllChildrenList';
+export { default as RenderChildEditPage } from './RenderChildEditPage';
+export { default as RenderChildViewPage } from './RenderChildViewPage';
+export { default as RenderFingerprintEnrollment } from './RenderFingerprintEnrollment';
+export { default as RenderFingerprintsList } from './RenderFingerprintsList';
+export { default as RenderListPage } from './RenderListPage';
+export { default as RenderLocationsManagement } from './RenderLocationsManagement';
+export { default as RenderOlderPatientsList } from './RenderOlderPatientsList';
+export { default as RenderRegistrationPage } from './RenderRegistrationPage';
+export { default as RenderTodayRegistrations } from './RenderTodayRegistrations';
+export { default as RenderVerifyPage } from './RenderVerifyPage';
+export { default as RenderYoungPatientsList } from './RenderYoungPatientsList';

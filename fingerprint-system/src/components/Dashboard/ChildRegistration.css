@@ -2629,3 +2629,536 @@
   font-size: 12px;
   color: #999;
 }
+
+
+/* ============================================
+   FINGERPRINT ENROLLMENT - 10 FINGERS
+   ============================================ */
+
+/* Enrollment Container */
+.child-reg-enrollment-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  padding: 20px 0;
+}
+
+@media (max-width: 992px) {
+  .child-reg-enrollment-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Finger Grid */
+.child-reg-finger-grid {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+}
+
+.child-reg-finger-grid h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+
+.child-reg-finger-grid-buttons {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .child-reg-finger-grid-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Finger Button */
+.child-reg-finger-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 10px;
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 80px;
+}
+
+.child-reg-finger-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.child-reg-finger-btn.selected {
+  border-color: #667eea;
+  background: #eef1ff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.child-reg-finger-btn.captured {
+  border-color: #28a745;
+  background: #d4edda;
+}
+
+.child-reg-finger-btn.captured.selected {
+  border-color: #28a745;
+  background: #c3e6cb;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.child-reg-finger-icon {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.child-reg-finger-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  text-align: center;
+}
+
+.child-reg-finger-hand {
+  font-weight: 600;
+  color: #495057;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.child-reg-finger-name {
+  color: #212529;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.child-reg-finger-quality {
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* Scanner Area */
+.child-reg-fingerprint-scanner {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  min-height: 400px;
+}
+
+.child-reg-scanner-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 350px;
+  background: white;
+  border-radius: 10px;
+  padding: 30px;
+  border: 2px dashed #dee2e6;
+}
+
+.child-reg-scanner-instructions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.child-reg-scanner-instructions p {
+  margin: 10px 0;
+  color: #495057;
+}
+
+.child-reg-scanner-hint {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+/* Scanning Animation */
+.child-reg-scanning-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 15px 0;
+  width: 100%;
+}
+
+.child-reg-scan-line {
+  width: 80%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+  animation: child-reg-scan 1.5s ease-in-out infinite;
+  border-radius: 2px;
+}
+
+@keyframes child-reg-scan {
+  0% { transform: translateY(-30px); opacity: 0; }
+  50% { transform: translateY(30px); opacity: 1; }
+  100% { transform: translateY(-30px); opacity: 0; }
+}
+
+/* Capture Success */
+.child-reg-capture-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.child-reg-capture-success h3 {
+  margin: 10px 0 5px;
+  color: #28a745;
+}
+
+.child-reg-capture-success p {
+  margin: 5px 0;
+  color: #495057;
+}
+
+/* Quality Bar */
+.child-reg-quality-bar {
+  width: 100%;
+  max-width: 300px;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.child-reg-quality-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.child-reg-quality-fill.excellent {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.child-reg-quality-fill.good {
+  background: linear-gradient(90deg, #ffc107, #fd7e14);
+}
+
+.child-reg-quality-fill.poor {
+  background: linear-gradient(90deg, #dc3545, #e83e8c);
+}
+
+/* Enrollment Actions */
+.child-reg-enrollment-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.child-reg-btn-danger {
+  padding: 10px 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.child-reg-btn-danger:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Enrollment Summary */
+.child-reg-enrollment-summary {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  margin-top: 20px;
+}
+
+.child-reg-enrollment-summary h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+
+.child-reg-captured-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.child-reg-captured-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  font-size: 13px;
+}
+
+.child-reg-captured-name {
+  font-weight: 500;
+  color: #212529;
+}
+
+.child-reg-captured-quality {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.child-reg-captured-remove {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.child-reg-captured-remove:hover {
+  color: #c82333;
+}
+
+.child-reg-no-captures {
+  color: #6c757d;
+  font-size: 14px;
+  margin: 10px 0;
+}
+
+.child-reg-enrollment-summary-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+/* Enrollment Progress */
+.child-reg-enrollment-progress {
+  display: inline-block;
+  padding: 6px 14px;
+  background: #e9ecef;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.child-reg-enrollment-hint {
+  font-size: 13px;
+  color: #6c757d;
+  font-style: italic;
+  margin: 5px 0;
+}
+
+/* ============================================
+   FINGERPRINT SUMMARY IN PATIENT LIST
+   ============================================ */
+
+.child-reg-fingerprint-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.child-reg-fingerprint-count {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.child-reg-fingerprint-count.has-fingerprints {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-fingerprint-count.no-fingerprints {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.child-reg-fingerprint-dots {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.child-reg-finger-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #dee2e6;
+  display: inline-block;
+}
+
+.child-reg-finger-dot.captured {
+  background: #28a745;
+  border-color: #28a745;
+}
+
+.child-reg-finger-dot.missing {
+  background: #dc3545;
+  border-color: #dc3545;
+}
+
+/* ============================================
+   FINGERPRINT STATUS BADGE
+   ============================================ */
+
+.child-reg-status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.child-reg-status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* ============================================
+   FINGERPRINT QUALITY BADGE
+   ============================================ */
+
+.child-reg-quality-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.child-reg-quality-excellent {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-quality-good {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.child-reg-quality-fair {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.child-reg-quality-poor {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 768px) {
+  .child-reg-finger-grid-buttons {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .child-reg-enrollment-summary-actions {
+    flex-direction: column;
+  }
+  
+  .child-reg-enrollment-summary-actions button {
+    width: 100%;
+  }
+  
+  .child-reg-scanner-area {
+    min-height: 250px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .child-reg-finger-grid-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .child-reg-finger-btn {
+    padding: 10px 5px;
+    min-height: 60px;
+  }
+  
+  .child-reg-finger-icon {
+    font-size: 18px;
+  }
+  
+  .child-reg-finger-label {
+    font-size: 9px;
+  }
+  
+  .child-reg-finger-name {
+    font-size: 10px;
+  }
+  
+  .child-reg-enrollment-container {
+    gap: 15px;
+    padding: 10px 0;
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.child-reg-text-center {
+  text-align: center;
+}
+
+.child-reg-mt-10 {
+  margin-top: 10px;
+}
+
+.child-reg-mb-10 {
+  margin-bottom: 10px;
+}
+
+.child-reg-gap-10 {
+  gap: 10px;
+}
+
+.child-reg-flex-wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.child-reg-align-center {
+  align-items: center;
+}
+
+.child-reg-justify-center {
+  justify-content: center;
+}
