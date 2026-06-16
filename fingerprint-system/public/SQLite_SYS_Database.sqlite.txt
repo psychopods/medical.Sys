@@ -244,3 +244,117 @@ CREATE TABLE IF NOT EXISTS contact_submissions (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS medical_baselines (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    visit_date TEXT NOT NULL,
+    first_visit INTEGER NOT NULL DEFAULT 1,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 1,
+    sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS child_vitals (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    weight REAL NULL,
+    height REAL NULL,
+    bmi REAL NULL,
+    bmi_status TEXT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    date TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 1,
+    sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS medications_given (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    ntds_meds TEXT NULL,
+    antibiotics TEXT NULL,
+    other_meds TEXT NULL,
+    date_given TEXT NOT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 1,
+    sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS laboratory_tests (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    test_type TEXT NOT NULL,
+    result TEXT NOT NULL,
+    date TEXT NOT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 1,
+    sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS services_rendered (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    service_type TEXT NOT NULL CHECK(service_type IN ('medical', 'social', 'education')),
+    services_list TEXT NOT NULL,
+    date TEXT NOT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 1,
+    sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS symptoms_recorded (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    symptoms TEXT NULL,
+    visit_notes TEXT NULL,
+    date TEXT NOT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 1,
+    sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS clothing_provisions (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    shoes TEXT NULL,
+    clothes TEXT NULL,
+    date TEXT NOT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 1,
+    sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE
+);
