@@ -64,7 +64,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   const checkDatabaseHealth = async () => {
     const startTime = performance.now();
     try {
-      const response = await fetch(API_ENDPOINTS.login.replace("/api/auth/login", "/health"), {
+      const response = await fetch(API_BASE_URL + "/health", {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -113,7 +113,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     for (const endpoint of endpoints) {
       try {
         const startTime = performance.now();
-        const response = await fetch(API_ENDPOINTS.login.replace("/api/auth/login", "") + endpoint.url, {
+        const response = await fetch(API_BASE_URL + endpoint.url, {
           headers: getAuthHeaders()
         });
         const endTime = performance.now();

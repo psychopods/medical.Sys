@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
   resetPassword: (id) => `${buildUrl('VITE_API_PATH_USERS', '/api/auth/users')}/${id}/reset-password`,
   generateUsername: (year) => `${buildUrl('VITE_API_PATH_GENERATE_USERNAME', '/api/auth/users/generate_username')}?year=${year}`,
   sendCredentials: buildUrl('VITE_API_PATH_SEND_CREDENTIALS', '/api/auth/send_credentials'),
+  me: buildUrl('VITE_API_PATH_ME', '/api/auth/me'),
   onlineCount: buildUrl('VITE_API_PATH_ONLINE_COUNT', '/api/auth/online-count'),
   onlineUsers: buildUrl('VITE_API_PATH_ONLINE_USERS', '/api/auth/online_users'),
   forgotPassword: buildUrl('VITE_API_PATH_FORGOT_PASSWORD', '/api/auth/forgot-password'),
@@ -58,8 +59,8 @@ export const API_ENDPOINTS = {
 
   // Volunteer
   volunteerSubmit: buildUrl('VITE_API_PATH_VOLUNTEER_SUBMIT', '/api/volunteer/submit'),
-  volunteerSubmissions: buildUrl('VITE_API_PATH_VOLUNTEER_SUBMISSIONS', '/api/volunteer/submissions'),
-  volunteerSubmission: (id) => `${buildUrl('VITE_API_PATH_VOLUNTEER_SUBMISSIONS', '/api/volunteer/submissions')}/${id}`,
+  volunteerApplications: buildUrl('VITE_API_PATH_VOLUNTEER_APPLICATIONS', '/api/volunteer/applications'),
+  volunteerApplication: (id) => `${buildUrl('VITE_API_PATH_VOLUNTEER_APPLICATIONS', '/api/volunteer/applications')}/${id}`,
 
   // Gallery
   galleryCategories: buildUrl('VITE_API_PATH_GALLERY_CATEGORIES', '/api/gallery/categories'),
@@ -87,4 +88,8 @@ export const API_ENDPOINTS = {
   role: (id) => `${buildUrl('VITE_API_PATH_ROLES', '/api/roles')}/${id}`,
   rolePermissions: (roleId) => `${buildUrl('VITE_API_PATH_ROLES', '/api/roles')}/${roleId}/permissions`,
   rolePermission: (roleId, permId) => `${buildUrl('VITE_API_PATH_ROLES', '/api/roles')}/${roleId}/permissions/${permId}`,
+
+  // Notifications
+  notifications: buildUrl('VITE_API_PATH_NOTIFICATIONS', '/api/notifications'),
+  notificationRead: (id) => `${buildUrl('VITE_API_PATH_NOTIFICATIONS', '/api/notifications')}/${id}/read`,
 };

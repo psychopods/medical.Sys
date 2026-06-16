@@ -114,7 +114,7 @@ const Gallery = () => {
       const url =
         filter === "all"
           ? API_ENDPOINTS.galleryItems
-          : `${API_BASE_URL}/api/gallery/items?category=${filter}`;
+          : `${API_ENDPOINTS.galleryItems}?category=${filter}`;
 
       const response = await fetchWithTimeout(url, {
         signal: controller.signal,

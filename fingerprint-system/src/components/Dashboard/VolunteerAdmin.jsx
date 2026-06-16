@@ -195,7 +195,7 @@ const VolunteerAdmin = () => {
   const fetchApplications = async () => {
     setLoading(true);
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/volunteer/applications`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.volunteerApplications);
       const data = await response.json();
       
       if (response.ok) {
@@ -221,7 +221,7 @@ const VolunteerAdmin = () => {
   // Create volunteer application
   const createApplication = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/volunteer/applications`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.volunteerApplications, {
         method: 'POST',
         body: JSON.stringify({
           id: crypto.randomUUID(),
@@ -252,7 +252,7 @@ const VolunteerAdmin = () => {
   // Update volunteer application
   const updateApplication = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/volunteer/applications/${editingApplication.id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.volunteerApplication(editingApplication.id), {
         method: 'PUT',
         body: JSON.stringify({
           fullName: formData.fullName,
@@ -285,7 +285,7 @@ const VolunteerAdmin = () => {
     if (!window.confirm(`Delete application from "${name}"?`)) return;
     
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/volunteer/applications/${id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.volunteerApplication(id), {
         method: 'DELETE'
       });
       

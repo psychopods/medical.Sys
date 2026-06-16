@@ -130,7 +130,7 @@ const UserManagement = () => {
 
   const updateCategory = async (id, categoryData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/permission_categories/${id}`, {
+      const response = await fetch(API_ENDPOINTS.permissionCategory(id), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -149,7 +149,7 @@ const UserManagement = () => {
 
   const deleteCategory = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/permission_categories/${id}`, {
+      const response = await fetch(API_ENDPOINTS.permissionCategory(id), {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -204,7 +204,7 @@ const UserManagement = () => {
 
   const updatePermission = async (id, permissionData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/permissions/${id}`, {
+      const response = await fetch(API_ENDPOINTS.permission(id), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -224,7 +224,7 @@ const UserManagement = () => {
 
   const deletePermission = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/permissions/${id}`, {
+      const response = await fetch(API_ENDPOINTS.permission(id), {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
