@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import './Login.css';
 import { login } from '../services/api.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState('');

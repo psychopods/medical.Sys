@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './ContactAdmin.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
 const API_TIMEOUT = 10000;
 
 const ContactAdmin = () => {
@@ -143,7 +143,7 @@ const ContactAdmin = () => {
   const fetchSubmissions = async () => {
     setLoading(true);
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/contact/submissions`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.contactSubmissions);
       const data = await response.json();
       
       if (response.ok) {
@@ -169,7 +169,7 @@ const ContactAdmin = () => {
   // Create contact submission
   const createSubmission = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/contact/submissions`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.contactSubmissions, {
         method: 'POST',
         body: JSON.stringify({
           id: crypto.randomUUID(),
@@ -199,7 +199,7 @@ const ContactAdmin = () => {
   // Update contact submission
   const updateSubmission = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/contact/submissions/${editingSubmission.id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.contactSubmission(editingSubmission.id), {
         method: 'PUT',
         body: JSON.stringify({
           fullName: formData.fullName,
@@ -231,7 +231,7 @@ const ContactAdmin = () => {
     if (!window.confirm(`Delete submission from "${name}"?`)) return;
     
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/contact/submissions/${id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.contactSubmission(id), {
         method: 'DELETE'
       });
       

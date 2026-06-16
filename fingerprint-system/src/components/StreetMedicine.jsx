@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./StreetMedicine.css";
 import { executeQuery } from "../services/db.js";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 
 const StreetMedicine = () => {
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
@@ -59,7 +59,7 @@ const StreetMedicine = () => {
   const fetchLocations = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/locations`);
+      const response = await fetch(API_ENDPOINTS.locations);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

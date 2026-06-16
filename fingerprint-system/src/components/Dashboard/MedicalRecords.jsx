@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from './Layout';
 import './MedicalRecords.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
 
 const MedicalRecords = () => {
   const [user, setUser] = useState(null);
@@ -293,7 +293,7 @@ const MedicalRecords = () => {
 
   const fetchMedicalRecords = async (childId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${childId}/medical-records`, {
+      const response = await fetch(API_ENDPOINTS.medicalRecords(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -307,7 +307,7 @@ const MedicalRecords = () => {
 
   const fetchVitalsRecords = async (childId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${childId}/vitals`, {
+      const response = await fetch(API_ENDPOINTS.vitals(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -323,7 +323,7 @@ const MedicalRecords = () => {
 
   const fetchNutritionalHistory = async (childId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${childId}/nutritional-history`, {
+      const response = await fetch(API_ENDPOINTS.nutritionalHistory(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -337,7 +337,7 @@ const MedicalRecords = () => {
 
   const fetchMedicationRecords = async (childId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${childId}/medications`, {
+      const response = await fetch(API_ENDPOINTS.medications(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -350,7 +350,7 @@ const MedicalRecords = () => {
 
   const fetchTestsRecords = async (childId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${childId}/tests`, {
+      const response = await fetch(API_ENDPOINTS.tests(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -363,7 +363,7 @@ const MedicalRecords = () => {
 
   const fetchTestsHistory = async (childId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${childId}/tests-history`, {
+      const response = await fetch(API_ENDPOINTS.testsHistory(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -377,7 +377,7 @@ const MedicalRecords = () => {
 
   const fetchServicesRecords = async (childId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${childId}/services`, {
+      const response = await fetch(API_ENDPOINTS.services(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -390,7 +390,7 @@ const MedicalRecords = () => {
 
   const fetchSymptomsRecords = async (childId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${childId}/symptoms`, {
+      const response = await fetch(API_ENDPOINTS.symptoms(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -403,7 +403,7 @@ const MedicalRecords = () => {
 
   const fetchClothingRecords = async (childId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${childId}/clothing`, {
+      const response = await fetch(API_ENDPOINTS.clothing(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -416,7 +416,7 @@ const MedicalRecords = () => {
 
   const fetchEducationHistory = async (childId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${childId}/education-history`, {
+      const response = await fetch(API_ENDPOINTS.educationHistory(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -430,7 +430,7 @@ const MedicalRecords = () => {
 
   const saveBaselineInfo = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${child.id}/baseline`, {
+      const response = await fetch(API_ENDPOINTS.baseline(child.id), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -457,7 +457,7 @@ const MedicalRecords = () => {
     const bmiStatus = getBMIStatus(bmi);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${child.id}/vitals`, {
+      const response = await fetch(API_ENDPOINTS.vitals(child.id), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -491,7 +491,7 @@ const MedicalRecords = () => {
 
   const saveMedication = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${child.id}/medications`, {
+      const response = await fetch(API_ENDPOINTS.medications(child.id), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -521,7 +521,7 @@ const MedicalRecords = () => {
 
   const saveTestResult = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${child.id}/tests`, {
+      const response = await fetch(API_ENDPOINTS.tests(child.id), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -551,7 +551,7 @@ const MedicalRecords = () => {
 
   const saveMedicalServices = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${child.id}/medical-services`, {
+      const response = await fetch(API_ENDPOINTS.medicalServices(child.id), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -580,7 +580,7 @@ const MedicalRecords = () => {
 
   const saveSocialServices = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${child.id}/social-services`, {
+      const response = await fetch(API_ENDPOINTS.socialServices(child.id), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -609,7 +609,7 @@ const MedicalRecords = () => {
 
   const saveEducation = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${child.id}/education`, {
+      const response = await fetch(API_ENDPOINTS.education(child.id), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -639,7 +639,7 @@ const MedicalRecords = () => {
 
   const saveSymptoms = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${child.id}/symptoms`, {
+      const response = await fetch(API_ENDPOINTS.symptoms(child.id), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -668,7 +668,7 @@ const MedicalRecords = () => {
 
   const saveClothing = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${child.id}/clothing`, {
+      const response = await fetch(API_ENDPOINTS.clothing(child.id), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({

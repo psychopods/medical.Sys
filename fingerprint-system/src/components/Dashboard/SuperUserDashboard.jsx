@@ -4,7 +4,7 @@ import './SuperUserDashboard.css';
 import { getChildren } from '../../services/api.js';
 
 // API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
 
 const SuperUserDashboard = ({ user, onLogout }) => {
   const navigate = useNavigate();
@@ -64,7 +64,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   const checkDatabaseHealth = async () => {
     const startTime = performance.now();
     try {
-      const response = await fetch(`${API_BASE_URL}/health`, {
+      const response = await fetch(API_BASE_URL + "/health", {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -113,7 +113,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     for (const endpoint of endpoints) {
       try {
         const startTime = performance.now();
-        const response = await fetch(`${API_BASE_URL}${endpoint.url}`, {
+        const response = await fetch(API_BASE_URL + endpoint.url, {
           headers: getAuthHeaders()
         });
         const endTime = performance.now();
@@ -226,7 +226,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch users data with role distribution
   const fetchUsersData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
+      const response = await fetch(API_ENDPOINTS.users, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -263,7 +263,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch roles data
   const fetchRolesData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/roles`, {
+      const response = await fetch(API_ENDPOINTS.roles, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -279,7 +279,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch permissions data
   const fetchPermissionsData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/permissions`, {
+      const response = await fetch(API_ENDPOINTS.permissions, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -295,7 +295,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch categories data
   const fetchCategoriesData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/permission_categories`, {
+      const response = await fetch(API_ENDPOINTS.permissionCategories, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -311,7 +311,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch online users count
   const fetchOnlineUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/online_users`, {
+      const response = await fetch(API_ENDPOINTS.onlineUsers, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -738,7 +738,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                   <polyline
                     className="sd-line-path"
                     points={chartData.weeklyRegistrations.map((item, index) => {
-                      const x = (index / (chartData.weeklyRegistrations.length - 1)) * 500;
+                      const x = chartData.weeklyRegistrations.length > 1 ? (index / (chartData.weeklyRegistrations.length - 1)) * 500 : 250;
                       const y = 180 - (item.count / maxWeekly) * 160;
                       return `${x},${y}`;
                     }).join(' ')}
@@ -747,7 +747,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                     strokeWidth="2"
                   />
                   {chartData.weeklyRegistrations.map((item, index) => {
-                    const x = (index / (chartData.weeklyRegistrations.length - 1)) * 500;
+                    const x = chartData.weeklyRegistrations.length > 1 ? (index / (chartData.weeklyRegistrations.length - 1)) * 500 : 250;
                     const y = 180 - (item.count / maxWeekly) * 160;
                     return (
                       <circle key={index} cx={x} cy={y} r="4" fill="#667eea" />
@@ -788,7 +788,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                   <polygon
                     className="sd-area-polygon"
                     points={`0,180 ${chartData.activityByHour.map((item, index) => {
-                      const x = (index / (chartData.activityByHour.length - 1)) * 500;
+                      const x = chartData.activityByHour.length > 1 ? (index / (chartData.activityByHour.length - 1)) * 500 : 250;
                       const y = 180 - (item.count / maxHourly) * 160;
                       return `${x},${y}`;
                     }).join(' ')} 500,180 0,180`}
@@ -797,7 +797,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                   <polyline
                     className="sd-area-line"
                     points={chartData.activityByHour.map((item, index) => {
-                      const x = (index / (chartData.activityByHour.length - 1)) * 500;
+                      const x = chartData.activityByHour.length > 1 ? (index / (chartData.activityByHour.length - 1)) * 500 : 250;
                       const y = 180 - (item.count / maxHourly) * 160;
                       return `${x},${y}`;
                     }).join(' ')}

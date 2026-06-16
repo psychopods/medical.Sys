@@ -699,3 +699,95 @@
     padding: 8px 12px;
   }
 }
+
+/* Drag and Drop Uploader */
+.ga-upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.ga-upload-zone:hover, .ga-upload-zone.dragover {
+  border-color: #0066cc;
+  background: #f0f7ff;
+}
+
+.ga-upload-icon {
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ga-upload-zone:hover .ga-upload-icon {
+  color: #0066cc;
+}
+
+.ga-upload-text {
+  font-size: 14px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.ga-upload-hint {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.ga-upload-preview-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.ga-upload-preview {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+}
+
+.ga-upload-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ga-upload-filename {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  word-break: break-all;
+}
+
+.ga-upload-remove-btn {
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  width: fit-content;
+}
+
+.ga-upload-remove-btn:hover {
+  background: #fecaca;
+}

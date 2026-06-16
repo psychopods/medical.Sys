@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './UserProfile.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
 
 const UserProfile = () => {
   const [user, setUser] = useState(null);
@@ -118,7 +118,7 @@ const UserProfile = () => {
   const fetchUserProfile = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      const response = await fetch(API_ENDPOINTS.me, {
         headers: getAuthHeaders()
       });
       
@@ -198,7 +198,7 @@ const UserProfile = () => {
         return;
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/auth/users/${userId}`, {
+      const response = await fetch(API_ENDPOINTS.user(userId), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -267,7 +267,7 @@ const UserProfile = () => {
       }
       
       // Using the correct endpoint from the API docs: POST /api/auth/users/:id/reset-password
-      const response = await fetch(`${API_BASE_URL}/api/auth/users/${userId}/reset-password`, {
+      const response = await fetch(API_ENDPOINTS.resetPassword(userId), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({

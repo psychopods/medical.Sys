@@ -1,6 +1,8 @@
 import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { HttpError } from '../utils/httpError.ts';
 import type { GalleryCategory, GalleryItem } from '../types/gallery.ts';
+import { uploadImageToCloudinary } from './cloudinaryService.ts';
+
 
 function validateUUIDv4(id: string, fieldName: string): void {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -199,10 +201,21 @@ export async function createItem(
         throw new HttpError(400, `Category key '${categoryKey}' does not exist.`);
     }
 
+    // Upload image to Cloudinary (will skip if already a URL or null)
+    const finalImageUrl = await uploadImageToCloudinary(imageUrl);
+    const finalThumbnailUrl = await uploadImageToCloudinary(thumbnailUrl);
+
+    if (finalImageUrl && finalImageUrl.startsWith('data:')) {
+        throw new HttpError(400, 'Cloudinary upload failed for main image. Raw base64 storage is not supported for gallery items.');
+    }
+    if (finalThumbnailUrl && finalThumbnailUrl.startsWith('data:')) {
+        throw new HttpError(400, 'Cloudinary upload failed for thumbnail image. Raw base64 storage is not supported for gallery items.');
+    }
+
     await pool.execute(
         `INSERT INTO gallery_items (id, media_type, category_key, title, description, image_url, thumbnail_url, video_url)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, mediaType, categoryKey, trimmedTitle, trimmedDescription, imageUrl, thumbnailUrl, videoUrl]
+        [id, mediaType, categoryKey, trimmedTitle, trimmedDescription, finalImageUrl, finalThumbnailUrl, videoUrl]
     );
 
     return getItem(pool, id);
@@ -248,11 +261,22 @@ export async function updateItem(
         throw new HttpError(400, `Category key '${categoryKey}' does not exist.`);
     }
 
+    // Upload new image to Cloudinary (will skip if already a URL or null)
+    const finalImageUrl = await uploadImageToCloudinary(imageUrl);
+    const finalThumbnailUrl = await uploadImageToCloudinary(thumbnailUrl);
+
+    if (finalImageUrl && finalImageUrl.startsWith('data:')) {
+        throw new HttpError(400, 'Cloudinary upload failed for main image. Raw base64 storage is not supported for gallery items.');
+    }
+    if (finalThumbnailUrl && finalThumbnailUrl.startsWith('data:')) {
+        throw new HttpError(400, 'Cloudinary upload failed for thumbnail image. Raw base64 storage is not supported for gallery items.');
+    }
+
     await pool.execute(
         `UPDATE gallery_items 
          SET media_type = ?, category_key = ?, title = ?, description = ?, image_url = ?, thumbnail_url = ?, video_url = ?
          WHERE id = ?`,
-        [mediaType, categoryKey, trimmedTitle, trimmedDescription, imageUrl, thumbnailUrl, videoUrl, id]
+        [mediaType, categoryKey, trimmedTitle, trimmedDescription, finalImageUrl, finalThumbnailUrl, videoUrl, id]
     );
 
     return getItem(pool, id);

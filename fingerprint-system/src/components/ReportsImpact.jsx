@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './ReportsImpact.css';
 import { executeQuery, executeRun } from '../services/db.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS } from '../config/endpoints.js';
 const API_TIMEOUT = 10000;
 
 const ReportsImpact = () => {
@@ -53,7 +53,7 @@ const ReportsImpact = () => {
   const fetchImpactData = async () => {
     setLoading(true);
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/impact-data`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsImpactData);
       const data = await response.json();
       
       if (response.ok && data.success && data.datasets && data.datasets.length > 0) {
@@ -113,7 +113,7 @@ const ReportsImpact = () => {
   const fetchAnnualReports = async () => {
     setLoadingReports(true);
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/annual`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnual);
       const data = await response.json();
       
       if (response.ok && data.success && data.reports && data.reports.length > 0) {
@@ -165,7 +165,7 @@ const ReportsImpact = () => {
 
   const fetchQuarterlyReports = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/quarterly`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterly);
       const data = await response.json();
       
       if (response.ok && data.success && data.reports && data.reports.length > 0) {
@@ -214,7 +214,7 @@ const ReportsImpact = () => {
   const fetchSuccessStories = async () => {
     setLoadingStories(true);
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/success-stories`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStories);
       const data = await response.json();
       
       if (response.ok && data.success && data.stories && data.stories.length > 0) {

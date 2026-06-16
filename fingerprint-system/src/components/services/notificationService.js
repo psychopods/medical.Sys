@@ -1,5 +1,5 @@
 // services/notificationService.js
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS } from '../../config/endpoints.js';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -13,8 +13,8 @@ const getAuthHeaders = () => {
 export const fetchNotifications = async (includeRead = false) => {
   try {
     const url = includeRead 
-      ? `${API_BASE_URL}/api/notifications?includeRead=true`
-      : `${API_BASE_URL}/api/notifications`;
+      ? `${API_ENDPOINTS.notifications}?includeRead=true`
+      : API_ENDPOINTS.notifications;
     
     const response = await fetch(url, {
       headers: getAuthHeaders()
@@ -46,7 +46,7 @@ export const fetchNotifications = async (includeRead = false) => {
 // Fetch all notifications (admin view) - GET /api/notifications/all
 export const fetchAllNotifications = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/notifications/all`, {
+    const response = await fetch(`${API_ENDPOINTS.notifications}/all`, {
       headers: getAuthHeaders()
     });
     
@@ -76,7 +76,7 @@ export const fetchAllNotifications = async () => {
 // Fetch a single notification by ID - GET /api/notifications/:id
 export const fetchNotificationById = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
+    const response = await fetch(`${API_ENDPOINTS.notifications}/${id}`, {
       headers: getAuthHeaders()
     });
     
@@ -112,7 +112,7 @@ export const createNotification = async (notificationData) => {
       expiresAt: notificationData.expiresAt || null
     };
     
-    const response = await fetch(`${API_BASE_URL}/api/notifications`, {
+    const response = await fetch(API_ENDPOINTS.notifications, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(requestBody)
@@ -133,7 +133,7 @@ export const createNotification = async (notificationData) => {
 // Update a notification - PUT /api/notifications/:id
 export const updateNotification = async (id, notificationData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
+    const response = await fetch(`${API_ENDPOINTS.notifications}/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -160,7 +160,7 @@ export const updateNotification = async (id, notificationData) => {
 // Delete a notification - DELETE /api/notifications/:id
 export const deleteNotification = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
+    const response = await fetch(`${API_ENDPOINTS.notifications}/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -175,7 +175,7 @@ export const deleteNotification = async (id) => {
 // Mark notification as read - PUT /api/notifications/:id/read
 export const markNotificationAsRead = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
+    const response = await fetch(API_ENDPOINTS.notificationRead(id), {
       method: 'PUT',
       headers: getAuthHeaders()
     });
@@ -195,7 +195,7 @@ export const markNotificationAsRead = async (id) => {
 // Fetch all read receipts (admin) - GET /api/notifications/reads
 export const fetchReadReceipts = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/notifications/reads`, {
+    const response = await fetch(`${API_ENDPOINTS.notifications}/reads`, {
       headers: getAuthHeaders()
     });
     
@@ -223,7 +223,7 @@ export const fetchReadReceipts = async () => {
 // Manually create read receipt - POST /api/notifications/reads
 export const createReadReceipt = async (notificationId, staffUserId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/notifications/reads`, {
+    const response = await fetch(`${API_ENDPOINTS.notifications}/reads`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -245,7 +245,7 @@ export const createReadReceipt = async (notificationId, staffUserId) => {
 // Delete read receipt - DELETE /api/notifications/reads/:notificationId/:staffUserId
 export const deleteReadReceipt = async (notificationId, staffUserId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/notifications/reads/${notificationId}/${staffUserId}`, {
+    const response = await fetch(`${API_ENDPOINTS.notifications}/reads/${notificationId}/${staffUserId}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import "./Gallery.css";
 import { executeQuery, executeRun } from "../services/db.js";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 const API_TIMEOUT = 10000; // 10 seconds timeout
 
 const Gallery = () => {
@@ -45,7 +45,7 @@ const Gallery = () => {
     setLoadingCategories(true);
     try {
       const response = await fetchWithTimeout(
-        `${API_BASE_URL}/api/gallery/categories`,
+        API_ENDPOINTS.galleryCategories,
       );
       const data = await response.json();
 
@@ -113,8 +113,8 @@ const Gallery = () => {
     try {
       const url =
         filter === "all"
-          ? `${API_BASE_URL}/api/gallery/items`
-          : `${API_BASE_URL}/api/gallery/items?category=${filter}`;
+          ? API_ENDPOINTS.galleryItems
+          : `${API_ENDPOINTS.galleryItems}?category=${filter}`;
 
       const response = await fetchWithTimeout(url, {
         signal: controller.signal,

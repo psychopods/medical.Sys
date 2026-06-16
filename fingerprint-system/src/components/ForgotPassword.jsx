@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './ForgotPassword.css';
+import { API_ENDPOINTS } from '../config/endpoints.js';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -20,7 +21,6 @@ const ForgotPassword = () => {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   
   const navigate = useNavigate();
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const [passwordCriteria, setPasswordCriteria] = useState({
     minLength: false,
@@ -177,7 +177,7 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+      const response = await fetch(API_ENDPOINTS.forgotPassword, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -214,7 +214,7 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
+      const response = await fetch(API_ENDPOINTS.verifyOtp, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp })
@@ -238,7 +238,7 @@ const ForgotPassword = () => {
     if (resendTimer > 0) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/resend-otp`, {
+      const response = await fetch(API_ENDPOINTS.resendOtp, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -276,7 +276,7 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+      const response = await fetch(API_ENDPOINTS.generalResetPassword, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp, new_password: newPassword })
