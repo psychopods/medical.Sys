@@ -12,7 +12,7 @@ import {
 } from '../services/notificationService';
 import './NotificationsAdmin.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
 
 const NotificationsAdmin = () => {
   const [user, setUser] = useState(null);
@@ -55,7 +55,7 @@ const NotificationsAdmin = () => {
   // Fetch users for dropdown - using /api/auth/users endpoint
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
+      const response = await fetch(API_ENDPOINTS.users, {
         headers: getAuthHeaders()
       });
       

@@ -4,7 +4,7 @@ import Layout from './Layout';
 import './UserManagement.css';
 
 // API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
 
 const UserManagement = () => {
   const [user, setUser] = useState(null);
@@ -94,7 +94,7 @@ const UserManagement = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/permission_categories`, {
+      const response = await fetch(API_ENDPOINTS.permissionCategories, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -111,7 +111,7 @@ const UserManagement = () => {
 
   const addCategory = async (categoryData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/permission_categories`, {
+      const response = await fetch(API_ENDPOINTS.permissionCategories, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -165,7 +165,7 @@ const UserManagement = () => {
 
   const fetchAllPermissions = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/permissions`, {
+      const response = await fetch(API_ENDPOINTS.permissions, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -183,7 +183,7 @@ const UserManagement = () => {
 
   const addPermission = async (permissionData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/permissions`, {
+      const response = await fetch(API_ENDPOINTS.permissions, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -238,7 +238,7 @@ const UserManagement = () => {
   // API Calls - Roles
   const fetchRoles = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/roles`, {
+      const response = await fetch(API_ENDPOINTS.roles, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -255,7 +255,7 @@ const UserManagement = () => {
 
   const addRole = async (roleData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/roles`, {
+      const response = await fetch(API_ENDPOINTS.roles, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -275,7 +275,7 @@ const UserManagement = () => {
 
   const updateRole = async (id, roleData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/roles/${id}`, {
+      const response = await fetch(API_ENDPOINTS.role(id), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -294,7 +294,7 @@ const UserManagement = () => {
 
   const deleteRole = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/roles/${id}`, {
+      const response = await fetch(API_ENDPOINTS.role(id), {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -308,7 +308,7 @@ const UserManagement = () => {
   // API Calls - Users
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
+      const response = await fetch(API_ENDPOINTS.users, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -325,7 +325,7 @@ const UserManagement = () => {
 
   const addUser = async (userData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
+      const response = await fetch(API_ENDPOINTS.users, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -350,7 +350,7 @@ const UserManagement = () => {
 
   const updateUser = async (id, userData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users/${id}`, {
+      const response = await fetch(API_ENDPOINTS.user(id), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -373,7 +373,7 @@ const UserManagement = () => {
 
   const resetUserPassword = async (id, newPassword) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users/${id}/reset-password`, {
+      const response = await fetch(API_ENDPOINTS.resetPassword(id), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -391,7 +391,7 @@ const UserManagement = () => {
 
   const deleteUser = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users/${id}`, {
+      const response = await fetch(API_ENDPOINTS.user(id), {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -405,7 +405,7 @@ const UserManagement = () => {
   // API Calls - Role Permissions
   const fetchRolePermissions = async (roleId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}/permissions`, {
+      const response = await fetch(API_ENDPOINTS.rolePermissions(roleId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -421,7 +421,7 @@ const UserManagement = () => {
 
   const assignPermission = async (roleId, permissionId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}/permissions`, {
+      const response = await fetch(API_ENDPOINTS.rolePermissions(roleId), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ permissionId: permissionId })
@@ -435,7 +435,7 @@ const UserManagement = () => {
 
   const removePermission = async (roleId, permissionId) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}/permissions/${permissionId}`, {
+      const response = await fetch(API_ENDPOINTS.rolePermission(roleId, permissionId), {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -449,7 +449,7 @@ const UserManagement = () => {
   const generateUsername = async () => {
     try {
       const currentYear = new Date().getFullYear();
-      const response = await fetch(`${API_BASE_URL}/api/auth/users/generate_username?year=${currentYear}`, {
+      const response = await fetch(API_ENDPOINTS.generateUsername(currentYear), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -490,7 +490,7 @@ const UserManagement = () => {
 
   const sendEmailNotification = async (email, username, password, firstName, lastName) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/send_credentials`, {
+      const response = await fetch(API_ENDPOINTS.sendCredentials, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -542,7 +542,7 @@ const UserManagement = () => {
 
   const fetchOnlineUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/online_users`, {
+      const response = await fetch(API_ENDPOINTS.onlineUsers, {
         headers: getAuthHeaders()
       });
       if (response.ok) {

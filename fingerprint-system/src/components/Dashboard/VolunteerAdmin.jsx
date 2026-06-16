@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './VolunteerAdmin.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
 const API_TIMEOUT = 10000;
 
 const VolunteerAdmin = () => {

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { fetchNotifications, markNotificationAsRead } from './services/notificationService';
 import './NotificationBell.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 
 const NotificationBell = ({ user }) => {
   const [notifications, setNotifications] = useState([]);
@@ -18,7 +18,7 @@ const NotificationBell = ({ user }) => {
   const fetchUsers = async () => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
+      const response = await fetch(API_ENDPOINTS.users, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

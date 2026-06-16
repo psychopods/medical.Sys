@@ -4,7 +4,7 @@ import Layout from './Layout';
 import './ChildRegistration.css';
 
 // API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
 
 const ChildRegistration = () => {
   const [user, setUser] = useState(null);
@@ -187,7 +187,7 @@ const ChildRegistration = () => {
   // Fetch staff users for mapping
   const fetchStaffUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
+      const response = await fetch(API_ENDPOINTS.users, {
         headers: getAuthHeaders()
       });
       
@@ -414,7 +414,7 @@ const ChildRegistration = () => {
   // Generate registration ID
   const generateRegistrationId = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children`, {
+      const response = await fetch(API_ENDPOINTS.children, {
         headers: getAuthHeaders()
       });
       
@@ -453,7 +453,7 @@ const ChildRegistration = () => {
   // Child CRUD Operations
   const fetchChildById = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${id}`, {
+      const response = await fetch(API_ENDPOINTS.child(id), {
         headers: getAuthHeaders()
       });
       
@@ -469,7 +469,7 @@ const ChildRegistration = () => {
 
   const updateChild = async (id, childData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${id}`, {
+      const response = await fetch(API_ENDPOINTS.child(id), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -495,7 +495,7 @@ const ChildRegistration = () => {
 
   const deleteChild = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${id}`, {
+      const response = await fetch(API_ENDPOINTS.child(id), {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -597,7 +597,7 @@ const ChildRegistration = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/biometrics/enroll`, {
+      const response = await fetch(API_ENDPOINTS.biometricsEnroll, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -640,7 +640,7 @@ const ChildRegistration = () => {
   // Location CRUD Operations
   const fetchLocations = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/locations`, {
+      const response = await fetch(API_ENDPOINTS.locations, {
         headers: getAuthHeaders()
       });
       
@@ -668,7 +668,7 @@ const ChildRegistration = () => {
 
   const addLocation = async (locationData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/locations`, {
+      const response = await fetch(API_ENDPOINTS.locations, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -691,7 +691,7 @@ const ChildRegistration = () => {
 
   const updateLocation = async (id, locationData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/locations/${id}`, {
+      const response = await fetch(API_ENDPOINTS.location(id), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -713,7 +713,7 @@ const ChildRegistration = () => {
 
   const deleteLocation = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/locations/${id}`, {
+      const response = await fetch(API_ENDPOINTS.location(id), {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -800,7 +800,7 @@ const ChildRegistration = () => {
 
   const fetchChildren = async (userMap = staffUserMap) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children`, {
+      const response = await fetch(API_ENDPOINTS.children, {
         headers: getAuthHeaders()
       });
       
@@ -825,7 +825,7 @@ const ChildRegistration = () => {
   const fetchTodayRegistrations = async (userMap = staffUserMap) => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const response = await fetch(`${API_BASE_URL}/api/children?registrationDate=${today}`, {
+      const response = await fetch(API_ENDPOINTS.childrenByDate(today), {
         headers: getAuthHeaders()
       });
       
@@ -852,7 +852,7 @@ const ChildRegistration = () => {
       for (const child of childrenData) {
         if (child.id) {
           try {
-            const response = await fetch(`${API_BASE_URL}/api/biometrics/child/${child.id}`, {
+            const response = await fetch(API_ENDPOINTS.biometricsChild(child.id), {
               headers: getAuthHeaders()
             });
             if (response.ok) {
@@ -888,7 +888,7 @@ const ChildRegistration = () => {
   const addRegistration = async (newChild) => {
     const creatorName = getUserDisplayName();
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children`, {
+      const response = await fetch(API_ENDPOINTS.children, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({

@@ -1,7 +1,8 @@
 import { executeRun, saveDB } from './db.js';
 import bcrypt from 'bcryptjs';
+import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+export { API_BASE_URL };
 
 // Helper to get authorization headers
 export function getAuthHeaders() {
@@ -22,7 +23,7 @@ export async function login(usernameOrEmail, password) {
   if (isOnline) {
     try {
       console.log('API: Attempting online login...');
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await fetch(API_ENDPOINTS.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usernameOrEmail, password })
@@ -95,7 +96,7 @@ export async function login(usernameOrEmail, password) {
 
 export async function getLocations() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/locations`, {
+    const response = await fetch(API_ENDPOINTS.locations, {
       headers: getAuthHeaders()
     });
     
@@ -129,7 +130,7 @@ export async function getLocations() {
 
 export async function getChildren() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/children`, {
+    const response = await fetch(API_ENDPOINTS.children, {
       headers: getAuthHeaders()
     });
     
@@ -147,7 +148,7 @@ export async function getChildren() {
 
 export async function getChildById(id) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/children/${id}`, {
+    const response = await fetch(API_ENDPOINTS.child(id), {
       headers: getAuthHeaders()
     });
     
@@ -164,7 +165,7 @@ export async function getChildById(id) {
 
 export async function registerChild(childData) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/children`, {
+    const response = await fetch(API_ENDPOINTS.children, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -204,7 +205,7 @@ async function queueOfflineRegistration(childData) {
 
 export async function getBiometricsForChild(childId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/biometrics/child/${childId}`, {
+    const response = await fetch(API_ENDPOINTS.biometricsChild(childId), {
       headers: getAuthHeaders()
     });
     
@@ -222,7 +223,7 @@ export async function getBiometricsForChild(childId) {
 
 export async function enrollBiometric(bioData) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/biometrics/enroll`, {
+    const response = await fetch(API_ENDPOINTS.biometricsEnroll, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -253,8 +254,8 @@ export async function enrollBiometric(bioData) {
 export async function getDashboardStats() {
   try {
     const [childrenRes, onlineRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/api/children`, { headers: getAuthHeaders() }),
-      fetch(`${API_BASE_URL}/api/auth/online-count`, { headers: getAuthHeaders() })
+      fetch(API_ENDPOINTS.children, { headers: getAuthHeaders() }),
+      fetch(API_ENDPOINTS.onlineCount, { headers: getAuthHeaders() })
     ]);
     
     let totalChildren = 0;
@@ -295,7 +296,7 @@ export async function getDashboardStats() {
 
 export async function getLocationStats() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/children`, {
+    const response = await fetch(API_ENDPOINTS.children, {
       headers: getAuthHeaders()
     });
     
@@ -332,7 +333,7 @@ export async function getLocationStats() {
 
 export async function getMonthlyRegistrations() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/children`, {
+    const response = await fetch(API_ENDPOINTS.children, {
       headers: getAuthHeaders()
     });
     
@@ -365,7 +366,7 @@ export async function getMonthlyRegistrations() {
 
 export async function getRecentActivities(limit = 10) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/children`, {
+    const response = await fetch(API_ENDPOINTS.children, {
       headers: getAuthHeaders()
     });
     
@@ -449,7 +450,7 @@ export async function triggerSync() {
 
 export async function submitContactForm(form) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/contact/submit`, {
+    const response = await fetch(API_ENDPOINTS.contactSubmit, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -472,7 +473,7 @@ export async function submitContactForm(form) {
 
 export async function submitVolunteerApplication(form) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/volunteer/submit`, {
+    const response = await fetch(API_ENDPOINTS.volunteerSubmit, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './VolunteerSupport.css';
 import { submitVolunteerApplication } from '../services/api.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 
 const VolunteerSupport = () => {
   const [formData, setFormData] = useState({

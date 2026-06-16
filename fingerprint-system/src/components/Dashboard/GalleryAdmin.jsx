@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './GalleryAdmin.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS } from '../../config/endpoints.js';
 const API_TIMEOUT = 10000;
 
 const GalleryAdmin = () => {
@@ -17,6 +17,53 @@ const GalleryAdmin = () => {
   const [viewingItem, setViewingItem] = useState(null);
   const [viewingCategory, setViewingCategory] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  
+  // Drag and drop / file uploader states & refs
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+  const thumbnailInputRef = useRef(null);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e, targetField) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      processImageFile(files[0], targetField);
+    }
+  };
+
+  const processImageFile = (file, targetField) => {
+    if (!file.type.startsWith('image/')) {
+      showToastMessage('Please upload an image file.', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (targetField === 'mainImage') {
+        setFormData(prev => ({
+          ...prev,
+          imageUrl: event.target.result,
+          thumbnailUrl: prev.thumbnailUrl || event.target.result // Auto-fill thumbnail with same image
+        }));
+      } else if (targetField === 'videoThumbnail') {
+        setFormData(prev => ({
+          ...prev,
+          thumbnailUrl: event.target.result
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const [formData, setFormData] = useState({
     id: '',
     mediaType: 'image',
@@ -131,7 +178,7 @@ const GalleryAdmin = () => {
   // Fetch categories
   const fetchCategories = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/gallery/categories`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.galleryCategories);
       const data = await response.json();
       
       if (response.ok && data.success) {
@@ -151,7 +198,7 @@ const GalleryAdmin = () => {
   const fetchGalleryItems = async () => {
     setLoading(true);
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/gallery/items`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.galleryItems);
       const data = await response.json();
       
       if (response.ok && data.success) {
@@ -179,7 +226,7 @@ const GalleryAdmin = () => {
   // Create new gallery item
   const createGalleryItem = async (itemData) => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/gallery/items`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.galleryItems, {
         method: 'POST',
         body: JSON.stringify(itemData)
       });
@@ -205,7 +252,7 @@ const GalleryAdmin = () => {
   // Update gallery item
   const updateGalleryItem = async (id, itemData) => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/gallery/items/${id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.galleryItem(id), {
         method: 'PUT',
         body: JSON.stringify(itemData)
       });
@@ -235,7 +282,7 @@ const GalleryAdmin = () => {
     }
     
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/gallery/items/${id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.galleryItem(id), {
         method: 'DELETE'
       });
       
@@ -261,7 +308,7 @@ const GalleryAdmin = () => {
     }
     
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/gallery/categories`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.galleryCategories, {
         method: 'POST',
         body: JSON.stringify({
           categoryKey: categoryFormData.categoryKey.toLowerCase().replace(/\s/g, '_'),
@@ -294,7 +341,7 @@ const GalleryAdmin = () => {
     }
     
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/gallery/categories/${editingCategory.category_key}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.galleryCategory(editingCategory.category_key), {
         method: 'PUT',
         body: JSON.stringify({
           categoryName: categoryFormData.categoryName,
@@ -326,7 +373,7 @@ const GalleryAdmin = () => {
     }
     
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/gallery/categories/${categoryKey}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.galleryCategory(categoryKey), {
         method: 'DELETE'
       });
       
@@ -355,7 +402,7 @@ const GalleryAdmin = () => {
     }
     
     if (formData.mediaType === 'image' && !formData.imageUrl) {
-      showToastMessage('Image URL is required for images', 'error');
+      showToastMessage('An image upload is required for images', 'error');
       return;
     }
     
@@ -968,39 +1015,57 @@ const GalleryAdmin = () => {
           </div>
           
           {formData.mediaType === 'image' && (
-            <>
-              <div className="ga-form-row">
-                <div className="ga-form-group">
-                  <label>Image URL</label>
-                  <input
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    required
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-                
-                <div className="ga-form-group">
-                  <label>Thumbnail URL (Optional)</label>
-                  <input
-                    type="url"
-                    value={formData.thumbnailUrl}
-                    onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                    placeholder="https://example.com/thumbnail.jpg"
-                  />
-                </div>
-              </div>
-              
-              {formData.imageUrl && (
-                <div className="ga-form-row">
-                  <div className="ga-preview">
-                    <label>Preview:</label>
-                    <img src={formData.imageUrl} alt="Preview" />
+            <div className="ga-form-row">
+              <div className="ga-form-group">
+                <label>Image Upload</label>
+                {!formData.imageUrl ? (
+                  <div 
+                    className={`ga-upload-zone ${isDragging ? 'dragover' : ''}`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, 'mainImage')}
+                    onClick={() => fileInputRef.current.click()}
+                  >
+                    <div className="ga-upload-icon">
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                      </svg>
+                    </div>
+                    <span className="ga-upload-text">Drag & Drop Image here or Click to Browse</span>
+                    <span className="ga-upload-hint">Supports PNG, JPG, JPEG</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      style={{ display: 'none' }} 
+                      ref={fileInputRef} 
+                      onChange={(e) => { if (e.target.files?.[0]) processImageFile(e.target.files[0], 'mainImage'); }}
+                    />
                   </div>
-                </div>
-              )}
-            </>
+                ) : (
+                  <div className="ga-upload-preview-container">
+                    <img 
+                      src={formData.imageUrl} 
+                      alt="Uploaded preview" 
+                      className="ga-upload-preview" 
+                    />
+                    <div className="ga-upload-details">
+                      <span className="ga-upload-filename">
+                        {formData.imageUrl.startsWith('data:') ? 'New Image Selected' : 'Existing Image'}
+                      </span>
+                      <button 
+                        type="button" 
+                        className="ga-upload-remove-btn"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, imageUrl: '', thumbnailUrl: '' }));
+                        }}
+                      >
+                        Remove Image
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
           
           {formData.mediaType === 'video' && (
@@ -1017,15 +1082,57 @@ const GalleryAdmin = () => {
                   />
                   <small>Use embed URL from YouTube or Vimeo</small>
                 </div>
-                
+              </div>
+
+              <div className="ga-form-row">
                 <div className="ga-form-group">
-                  <label>Thumbnail URL (Optional)</label>
-                  <input
-                    type="url"
-                    value={formData.thumbnailUrl}
-                    onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                    placeholder="https://example.com/thumbnail.jpg"
-                  />
+                  <label>Video Thumbnail Image (Optional)</label>
+                  {!formData.thumbnailUrl ? (
+                    <div 
+                      className={`ga-upload-zone ${isDragging ? 'dragover' : ''}`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, 'videoThumbnail')}
+                      onClick={() => thumbnailInputRef.current.click()}
+                    >
+                      <div className="ga-upload-icon">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                        </svg>
+                      </div>
+                      <span className="ga-upload-text">Drag & Drop Thumbnail here or Click to Browse</span>
+                      <span className="ga-upload-hint">Supports PNG, JPG, JPEG</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        style={{ display: 'none' }} 
+                        ref={thumbnailInputRef} 
+                        onChange={(e) => { if (e.target.files?.[0]) processImageFile(e.target.files[0], 'videoThumbnail'); }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="ga-upload-preview-container">
+                      <img 
+                        src={formData.thumbnailUrl} 
+                        alt="Thumbnail preview" 
+                        className="ga-upload-preview" 
+                      />
+                      <div className="ga-upload-details">
+                        <span className="ga-upload-filename">
+                          {formData.thumbnailUrl.startsWith('data:') ? 'New Thumbnail Selected' : 'Existing Thumbnail'}
+                        </span>
+                        <button 
+                          type="button" 
+                          className="ga-upload-remove-btn"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, thumbnailUrl: '' }));
+                          }}
+                        >
+                          Remove Thumbnail
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </>

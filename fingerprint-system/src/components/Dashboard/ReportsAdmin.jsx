@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './ReportsAdmin.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
 const API_TIMEOUT = 10000;
 
 const ReportsAdmin = () => {
@@ -162,7 +162,7 @@ const ReportsAdmin = () => {
   // Fetch Annual Reports
   const fetchAnnualReports = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/annual`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnual);
       const data = await response.json();
       
       if (response.ok) {
@@ -195,7 +195,7 @@ const ReportsAdmin = () => {
   // Fetch Quarterly Reports
   const fetchQuarterlyReports = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/quarterly`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterly);
       const data = await response.json();
       
       if (response.ok) {
@@ -228,7 +228,7 @@ const ReportsAdmin = () => {
   // Fetch Success Stories
   const fetchSuccessStories = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/success-stories`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStories);
       const data = await response.json();
       
       if (response.ok) {
@@ -252,7 +252,7 @@ const ReportsAdmin = () => {
   // Fetch Impact Metrics
   const fetchImpactMetrics = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/metrics`);
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsMetrics);
       const data = await response.json();
       
       if (response.ok) {
@@ -276,7 +276,7 @@ const ReportsAdmin = () => {
   // Create Annual Report
   const createAnnualReport = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/annual`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnual, {
         method: 'POST',
         body: JSON.stringify({
           id: crypto.randomUUID(),
@@ -308,7 +308,7 @@ const ReportsAdmin = () => {
   // Update Annual Report
   const updateAnnualReport = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/annual/${editingAnnual.id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnualId(editingAnnual.id), {
         method: 'PUT',
         body: JSON.stringify({
           year: parseInt(annualFormData.year),
@@ -342,7 +342,7 @@ const ReportsAdmin = () => {
     if (!window.confirm(`Delete annual report for ${year}?`)) return;
     
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/annual/${id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnualId(id), {
         method: 'DELETE'
       });
       
@@ -363,7 +363,7 @@ const ReportsAdmin = () => {
   // Create Quarterly Report
   const createQuarterlyReport = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/quarterly`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterly, {
         method: 'POST',
         body: JSON.stringify({
           id: crypto.randomUUID(),
@@ -395,7 +395,7 @@ const ReportsAdmin = () => {
   // Update Quarterly Report
   const updateQuarterlyReport = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/quarterly/${editingQuarterly.id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterlyId(editingQuarterly.id), {
         method: 'PUT',
         body: JSON.stringify({
           quarter: quarterlyFormData.quarter,
@@ -429,7 +429,7 @@ const ReportsAdmin = () => {
     if (!window.confirm(`Delete ${quarter} report?`)) return;
     
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/quarterly/${id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterlyId(id), {
         method: 'DELETE'
       });
       
@@ -450,7 +450,7 @@ const ReportsAdmin = () => {
   // Create Success Story
   const createSuccessStory = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/success-stories`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStories, {
         method: 'POST',
         body: JSON.stringify({
           id: crypto.randomUUID(),
@@ -481,7 +481,7 @@ const ReportsAdmin = () => {
   // Update Success Story
   const updateSuccessStory = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/success-stories/${editingStory.id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStoriesId(editingStory.id), {
         method: 'PUT',
         body: JSON.stringify({
           title: storyFormData.title,
@@ -514,7 +514,7 @@ const ReportsAdmin = () => {
     if (!window.confirm(`Delete story "${title}"?`)) return;
     
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/success-stories/${id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStoriesId(id), {
         method: 'DELETE'
       });
       
@@ -535,7 +535,7 @@ const ReportsAdmin = () => {
   // Create Impact Metric
   const createImpactMetric = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/metrics`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsMetrics, {
         method: 'POST',
         body: JSON.stringify({
           id: crypto.randomUUID(),
@@ -568,7 +568,7 @@ const ReportsAdmin = () => {
   // Update Impact Metric
   const updateImpactMetric = async () => {
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/metrics/${editingMetric.id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsMetricsId(editingMetric.id), {
         method: 'PUT',
         body: JSON.stringify({
           label: metricFormData.label,
@@ -603,7 +603,7 @@ const ReportsAdmin = () => {
     if (!window.confirm(`Delete metric "${label}"?`)) return;
     
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/reports/metrics/${id}`, {
+      const response = await fetchWithTimeout(API_ENDPOINTS.reportsMetricsId(id), {
         method: 'DELETE'
       });
       
