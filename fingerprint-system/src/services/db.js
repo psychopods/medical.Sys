@@ -72,8 +72,8 @@ export async function getDB() {
 
         // Fetch schema and seeds from public directory
         const [schemaRes, seedRes] = await Promise.all([
-          fetch(`${baseUrl}SQLite_SYS_Database.sqlite`),
-          fetch(`${baseUrl}sqliteSEED.sql`),
+          fetch(`${baseUrl}SQLite_SYS_Database.sqlite.txt`),
+          fetch(`${baseUrl}sqliteSEED.sql.txt`),
         ]);
 
         if (!schemaRes.ok || !seedRes.ok) {
@@ -85,7 +85,7 @@ export async function getDB() {
 
         // Check if response is HTML (starts with '<'), which means rewrite rules returned the SPA index.html
         if (schemaSql.trim().startsWith('<') || seedSql.trim().startsWith('<')) {
-          throw new Error('Database initialization scripts returned HTML instead of SQL. Please ensure SQLite_SYS_Database.sqlite and sqliteSEED.sql exist in the public directory and are not being intercepted by rewrite rules.');
+          throw new Error('Database initialization scripts returned HTML instead of SQL. Please ensure SQLite_SYS_Database.sqlite.txt and sqliteSEED.sql.txt exist in the public directory and are not being intercepted by rewrite rules.');
         }
 
         // Execute schema and seed data
