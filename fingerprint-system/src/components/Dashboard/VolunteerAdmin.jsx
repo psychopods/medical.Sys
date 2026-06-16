@@ -4,6 +4,7 @@ import Layout from './Layout';
 import './VolunteerAdmin.css';
 
 import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
+import { executeQuery, executeRun } from '../../services/db.js';
 const API_TIMEOUT = 10000;
 
 const VolunteerAdmin = () => {
@@ -198,21 +199,57 @@ const VolunteerAdmin = () => {
       const response = await fetchWithTimeout(API_ENDPOINTS.volunteerApplications);
       const data = await response.json();
       
+      let apps = [];
       if (response.ok) {
         if (data.success && data.applications) {
-          setApplications(data.applications);
+          apps = data.applications;
         } else if (Array.isArray(data)) {
-          setApplications(data);
-        } else {
-          setApplications([]);
+          apps = data;
+        }
+      }
+
+      if (apps.length > 0) {
+        setApplications(apps);
+        // Cache in SQLite
+        for (const app of apps) {
+          await executeRun(
+            `INSERT OR REPLACE INTO volunteer_applications (id, full_name, email_address, phone_number, volunteer_type, message, created_at, last_modified_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              app.id,
+              app.fullName || app.full_name || '',
+              app.emailAddress || app.email_address || '',
+              app.phoneNumber || app.phone_number || '',
+              app.volunteerType || app.volunteer_type || 'other',
+              app.message || '',
+              app.createdAt || app.created_at || new Date().toISOString(),
+              app.lastModifiedAt || app.last_modified_at || new Date().toISOString()
+            ]
+          );
         }
       } else {
         console.error('Failed to fetch applications:', data.message);
         setApplications([]);
       }
     } catch (error) {
-      console.error('Error fetching applications:', error);
-      setApplications([]);
+      console.warn('API: Failed to fetch volunteer applications, falling back to local SQLite...', error);
+      try {
+        const localApps = await executeQuery("SELECT * FROM volunteer_applications ORDER BY created_at DESC");
+        const mapped = localApps.map(app => ({
+          id: app.id,
+          fullName: app.full_name,
+          emailAddress: app.email_address,
+          phoneNumber: app.phone_number,
+          volunteerType: app.volunteer_type,
+          message: app.message,
+          createdAt: app.created_at,
+          lastModifiedAt: app.last_modified_at
+        }));
+        setApplications(mapped);
+      } catch (dbError) {
+        console.error('Local SQLite volunteer query failed:', dbError);
+        setApplications([]);
+      }
     } finally {
       setLoading(false);
     }

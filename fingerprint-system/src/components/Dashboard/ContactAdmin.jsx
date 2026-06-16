@@ -4,6 +4,7 @@ import Layout from './Layout';
 import './ContactAdmin.css';
 
 import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
+import { executeQuery, executeRun } from '../../services/db.js';
 const API_TIMEOUT = 10000;
 
 const ContactAdmin = () => {
@@ -146,21 +147,55 @@ const ContactAdmin = () => {
       const response = await fetchWithTimeout(API_ENDPOINTS.contactSubmissions);
       const data = await response.json();
       
+      let subs = [];
       if (response.ok) {
         if (data.success && data.submissions) {
-          setSubmissions(data.submissions);
+          subs = data.submissions;
         } else if (Array.isArray(data)) {
-          setSubmissions(data);
-        } else {
-          setSubmissions([]);
+          subs = data;
+        }
+      }
+
+      if (subs.length > 0) {
+        setSubmissions(subs);
+        // Cache in SQLite
+        for (const sub of subs) {
+          await executeRun(
+            `INSERT OR REPLACE INTO contact_submissions (id, full_name, email_address, message_subject, message_content, created_at, last_modified_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+              sub.id,
+              sub.fullName || sub.full_name || '',
+              sub.emailAddress || sub.email_address || '',
+              sub.messageSubject || sub.message_subject || '',
+              sub.messageContent || sub.message_content || '',
+              sub.createdAt || sub.created_at || new Date().toISOString(),
+              sub.lastModifiedAt || sub.last_modified_at || new Date().toISOString()
+            ]
+          );
         }
       } else {
         console.error('Failed to fetch submissions:', data.message);
         setSubmissions([]);
       }
     } catch (error) {
-      console.error('Error fetching submissions:', error);
-      setSubmissions([]);
+      console.warn('API: Failed to fetch contact submissions, falling back to local SQLite...', error);
+      try {
+        const localSubs = await executeQuery("SELECT * FROM contact_submissions ORDER BY created_at DESC");
+        const mapped = localSubs.map(sub => ({
+          id: sub.id,
+          fullName: sub.full_name,
+          emailAddress: sub.email_address,
+          messageSubject: sub.message_subject,
+          messageContent: sub.message_content,
+          createdAt: sub.created_at,
+          lastModifiedAt: sub.last_modified_at
+        }));
+        setSubmissions(mapped);
+      } catch (dbError) {
+        console.error('Local SQLite contact query failed:', dbError);
+        setSubmissions([]);
+      }
     } finally {
       setLoading(false);
     }

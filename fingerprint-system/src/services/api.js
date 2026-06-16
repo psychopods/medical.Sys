@@ -1,4 +1,4 @@
-import { executeRun, saveDB } from './db.js';
+import { executeRun, executeQuery, saveDB } from './db.js';
 import bcrypt from 'bcryptjs';
 import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 
@@ -129,19 +129,69 @@ export async function getLocations() {
    ========================================== */
 
 export async function getChildren() {
-  try {
-    const response = await fetch(API_ENDPOINTS.children, {
-      headers: getAuthHeaders()
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      const children = data.children || data;
-      return children;
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.children, {
+        headers: getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const children = data.children || data;
+        
+        // Cache to local SQLite
+        for (const child of children) {
+          if (child && child.id) {
+            await executeRun(
+              `INSERT OR REPLACE INTO children_profiles 
+              (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced', ?)`,
+              [
+                child.id,
+                child.customSerialId || '',
+                child.fullName || '',
+                child.gender || 'Unknown',
+                child.estimatedBirthYear || null,
+                child.primaryLocationId || '',
+                child.createdByStaffId || '',
+                child.image1 || null,
+                child.image2 || null,
+                child.image3 || null,
+                child.version || 1,
+                child.createdAt || new Date().toISOString()
+              ]
+            );
+          }
+        }
+        await saveDB();
+        return children;
+      }
+    } catch (error) {
+      console.warn('API: Failed to fetch children online, using cache.', error);
     }
-    return [];
-  } catch (error) {
-    console.error('API: Error fetching children:', error);
+  }
+
+  // Fallback to SQLite cache
+  try {
+    const cachedChildren = await executeQuery('SELECT * FROM children_profiles ORDER BY created_at DESC');
+    return cachedChildren.map(child => ({
+      id: child.id,
+      customSerialId: child.custom_serial_id,
+      fullName: child.full_name,
+      gender: child.gender,
+      estimatedBirthYear: child.estimated_birth_year,
+      primaryLocationId: child.primary_location_id,
+      createdByStaffId: child.created_by_staff_id,
+      image1: child.image1,
+      image2: child.image2,
+      image3: child.image3,
+      version: child.version,
+      syncStatus: child.sync_status,
+      createdAt: child.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching children from SQLite:', err);
     return [];
   }
 }
@@ -164,34 +214,211 @@ export async function getChildById(id) {
 }
 
 export async function registerChild(childData) {
-  try {
-    const response = await fetch(API_ENDPOINTS.children, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        id: crypto.randomUUID(),
-        customSerialId: childData.customSerialId,
-        fullName: childData.fullName,
-        gender: childData.gender,
-        estimatedBirthYear: parseInt(childData.estimatedBirthYear),
-        primaryLocationId: childData.primaryLocationId,
-        image1: childData.image1 || null,
-        image2: childData.image2 || null,
-        image3: childData.image3 || null
-      })
-    });
-    
-    if (response.ok) {
-      return await response.json();
+  const isOnline = navigator.onLine;
+  const childId = childData.id || crypto.randomUUID();
+  const customSerialId = childData.customSerialId;
+  const fullName = childData.fullName;
+  const gender = childData.gender;
+  const estimatedBirthYear = parseInt(childData.estimatedBirthYear);
+  const primaryLocationId = childData.primaryLocationId;
+  const image1 = childData.image1 || null;
+  const image2 = childData.image2 || null;
+  const image3 = childData.image3 || null;
+  const createdByStaffId = childData.createdByStaffId || '';
+  const createdAt = childData.createdAt || new Date().toISOString();
+
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.children, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          id: childId,
+          customSerialId,
+          fullName,
+          gender,
+          estimatedBirthYear,
+          primaryLocationId,
+          image1,
+          image2,
+          image3,
+          createdByStaffId
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        // Cache to local SQLite as synced
+        await executeRun(
+          `INSERT OR REPLACE INTO children_profiles 
+          (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 'synced', ?)`,
+          [childId, customSerialId, fullName, gender, estimatedBirthYear, primaryLocationId, createdByStaffId, image1, image2, image3, createdAt]
+        );
+        await saveDB();
+        return result;
+      }
+    } catch (error) {
+      console.warn('API: Failed to register child online, caching locally...', error);
     }
-    return null;
-  } catch (error) {
-    console.error('API: Error registering child:', error);
-    // Queue for offline sync
-    await queueOfflineRegistration(childData);
-    throw error;
+  }
+
+  // Offline or network error: cache locally as local_created
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO children_profiles 
+      (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 'local_created', ?)`,
+      [childId, customSerialId, fullName, gender, estimatedBirthYear, primaryLocationId, createdByStaffId, image1, image2, image3, createdAt]
+    );
+    await saveDB();
+    
+    // Also add to localStorage queue to preserve compatibility with existing sync processes
+    await queueOfflineRegistration({
+      id: childId,
+      customSerialId,
+      fullName,
+      gender,
+      estimatedBirthYear,
+      primaryLocationId,
+      image1,
+      image2,
+      image3,
+      createdByStaffId,
+      createdAt
+    });
+
+    return {
+      success: true,
+      message: "Patient registered offline.",
+      child: {
+        id: childId,
+        customSerialId,
+        fullName,
+        gender,
+        estimatedBirthYear,
+        primaryLocationId,
+        image1: image1,
+        image2: image2,
+        image3: image3,
+        createdByStaffId,
+        createdAt
+      }
+    };
+  } catch (err) {
+    console.error('API: Error storing child offline in SQLite:', err);
+    throw err;
   }
 }
+
+export async function updateChild(id, childData) {
+  const isOnline = navigator.onLine;
+  const customSerialId = childData.customSerialId;
+  const fullName = childData.fullName;
+  const gender = childData.gender;
+  const estimatedBirthYear = parseInt(childData.estimatedBirthYear);
+  const primaryLocationId = childData.primaryLocationId;
+  const image1 = childData.image1 || null;
+  const image2 = childData.image2 || null;
+  const image3 = childData.image3 || null;
+
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.child(id), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          customSerialId,
+          fullName,
+          gender,
+          estimatedBirthYear,
+          primaryLocationId,
+          image1,
+          image2,
+          image3
+        })
+      });
+      if (response.ok) {
+        const result = await response.json();
+        // Update local SQLite as synced
+        await executeRun(
+          `INSERT OR REPLACE INTO children_profiles 
+          (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced', ?)`,
+          [id, customSerialId, fullName, gender, estimatedBirthYear, primaryLocationId, childData.createdByStaffId || '', image1, image2, image3, childData.version || 1, childData.createdAt || new Date().toISOString()]
+        );
+        await saveDB();
+        return result;
+      }
+    } catch (error) {
+      console.warn('API: Failed to update child online, caching locally...', error);
+    }
+  }
+
+  // Offline or network error: cache locally as local_updated
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO children_profiles 
+      (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_updated', ?)`,
+      [id, customSerialId, fullName, gender, estimatedBirthYear, primaryLocationId, childData.createdByStaffId || '', image1, image2, image3, (childData.version || 1) + 1, childData.createdAt || new Date().toISOString()]
+    );
+    await saveDB();
+    return {
+      success: true,
+      message: "Patient updated offline.",
+      child: {
+        id,
+        customSerialId,
+        fullName,
+        gender,
+        estimatedBirthYear,
+        primaryLocationId,
+        image1,
+        image2,
+        image3,
+        createdByStaffId: childData.createdByStaffId,
+        createdAt: childData.createdAt
+      }
+    };
+  } catch (err) {
+    console.error('API: Error updating child offline in SQLite:', err);
+    throw err;
+  }
+}
+
+export async function deleteChild(id) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.child(id), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        // Delete locally
+        await executeRun('DELETE FROM children_profiles WHERE id = ?', [id]);
+        await executeRun('DELETE FROM biometric_fingerprints WHERE child_id = ?', [id]);
+        await saveDB();
+        return true;
+      }
+    } catch (error) {
+      console.error('API: Error deleting child online:', error);
+    }
+  } else {
+    // Offline delete: since we don't have a deleted queue, we can just delete from SQLite
+    try {
+      await executeRun('DELETE FROM children_profiles WHERE id = ?', [id]);
+      await executeRun('DELETE FROM biometric_fingerprints WHERE child_id = ?', [id]);
+      await saveDB();
+      return true;
+    } catch (err) {
+      console.error('API: Error deleting child offline:', err);
+    }
+  }
+  return false;
+}
+
 
 async function queueOfflineRegistration(childData) {
   const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
@@ -204,46 +431,134 @@ async function queueOfflineRegistration(childData) {
    ========================================== */
 
 export async function getBiometricsForChild(childId) {
-  try {
-    const response = await fetch(API_ENDPOINTS.biometricsChild(childId), {
-      headers: getAuthHeaders()
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      const fingerprints = Array.isArray(data) ? data : (data.fingerprints || [data]);
-      return fingerprints;
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.biometricsChild(childId), {
+        headers: getAuthHeaders()
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const fingerprints = Array.isArray(data) ? data : (data.fingerprints || [data]);
+        
+        // Cache in SQLite
+        for (const fp of fingerprints) {
+          if (fp && fp.id) {
+            await executeRun(
+              `INSERT OR REPLACE INTO biometric_fingerprints 
+              (id, child_id, finger_index, template_data, quality_score, status, version, is_dirty, sync_status, created_at) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'synced', ?)`,
+              [
+                fp.id,
+                fp.childId || childId,
+                fp.fingerIndex || 1,
+                fp.templateBase64 || fp.templateData || '',
+                fp.qualityScore || 80,
+                fp.status || 'PENDING',
+                fp.version || 1,
+                fp.createdAt || new Date().toISOString()
+              ]
+            );
+          }
+        }
+        await saveDB();
+        return fingerprints;
+      }
+    } catch (error) {
+      console.warn('API: Failed to fetch biometrics online, using cache.', error);
     }
-    return [];
-  } catch (error) {
-    console.error('API: Error fetching biometrics:', error);
+  }
+
+  // Fallback to SQLite cache
+  try {
+    const rows = await executeQuery('SELECT * FROM biometric_fingerprints WHERE child_id = ?', [childId]);
+    return rows.map(fp => ({
+      id: fp.id,
+      childId: fp.child_id,
+      fingerIndex: fp.finger_index,
+      templateBase64: fp.template_data,
+      templateData: fp.template_data,
+      qualityScore: fp.quality_score,
+      status: fp.status,
+      version: fp.version,
+      syncStatus: fp.sync_status,
+      createdAt: fp.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching biometrics from SQLite:', err);
     return [];
   }
 }
 
 export async function enrollBiometric(bioData) {
-  try {
-    const response = await fetch(API_ENDPOINTS.biometricsEnroll, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        id: crypto.randomUUID(),
-        childId: bioData.childId,
-        fingerIndex: bioData.fingerIndex || 1,
-        templateBase64: bioData.templateBase64,
-        qualityScore: bioData.qualityScore || 80,
-        capturedAt: new Date().toISOString(),
-        matcherVersion: "1.0"
-      })
-    });
-    
-    if (response.ok) {
-      return await response.json();
+  const isOnline = navigator.onLine;
+  const bioId = bioData.id || crypto.randomUUID();
+  const template = bioData.templateBase64 || bioData.templateData || '';
+  const quality = bioData.qualityScore || 80;
+  const fingerIndex = bioData.fingerIndex || 1;
+  const status = bioData.status || 'PENDING';
+  const childId = bioData.childId;
+  const createdAt = bioData.createdAt || new Date().toISOString();
+
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.biometricsEnroll, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          id: bioId,
+          childId: childId,
+          fingerIndex: fingerIndex,
+          templateBase64: template,
+          qualityScore: quality,
+          capturedAt: createdAt,
+          matcherVersion: "1.0"
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        // Cache to local SQLite as synced
+        await executeRun(
+          `INSERT OR REPLACE INTO biometric_fingerprints 
+          (id, child_id, finger_index, template_data, quality_score, status, version, is_dirty, sync_status, created_at) 
+          VALUES (?, ?, ?, ?, ?, ?, 1, 0, 'synced', ?)`,
+          [bioId, childId, fingerIndex, template, quality, status, createdAt]
+        );
+        await saveDB();
+        return result;
+      }
+    } catch (error) {
+      console.warn('API: Failed to enroll biometric online, caching locally...', error);
     }
-    return null;
-  } catch (error) {
-    console.error('API: Error enrolling biometric:', error);
-    return null;
+  }
+
+  // Offline or network error: cache locally as local_created
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO biometric_fingerprints 
+      (id, child_id, finger_index, template_data, quality_score, status, version, is_dirty, sync_status, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, 1, 1, 'local_created', ?)`,
+      [bioId, childId, fingerIndex, template, quality, status, createdAt]
+    );
+    await saveDB();
+    return {
+      success: true,
+      message: "Biometric enrolled offline.",
+      biometric: {
+        id: bioId,
+        childId: childId,
+        fingerIndex: fingerIndex,
+        templateBase64: template,
+        qualityScore: quality,
+        status: status,
+        createdAt: createdAt
+      }
+    };
+  } catch (err) {
+    console.error('API: Error storing biometric offline in SQLite:', err);
+    throw err;
   }
 }
 
@@ -426,18 +741,128 @@ export async function triggerSync() {
   updateSyncStatus('running', 'Syncing offline data...');
   
   try {
-    const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
+    // 1. Sync from SQLite dirty records first as it's the primary store
+    const dirtyChildren = await executeQuery(
+      `SELECT * FROM children_profiles WHERE sync_status IN ('local_created', 'local_updated') OR is_dirty = 1`
+    );
     
-    for (const record of offlineData) {
+    for (const row of dirtyChildren) {
       try {
-        await registerChild(record);
+        const childData = {
+          id: row.id,
+          customSerialId: row.custom_serial_id,
+          fullName: row.full_name,
+          gender: row.gender,
+          estimatedBirthYear: row.estimated_birth_year,
+          primaryLocationId: row.primary_location_id,
+          image1: row.image1,
+          image2: row.image2,
+          image3: row.image3,
+          createdByStaffId: row.created_by_staff_id,
+          createdAt: row.created_at
+        };
+        
+        const response = await fetch(API_ENDPOINTS.children, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            id: childData.id,
+            customSerialId: childData.customSerialId,
+            fullName: childData.fullName,
+            gender: childData.gender,
+            estimatedBirthYear: childData.estimatedBirthYear,
+            primaryLocationId: childData.primaryLocationId,
+            image1: childData.image1,
+            image2: childData.image2,
+            image3: childData.image3,
+            createdByStaffId: childData.createdByStaffId
+          })
+        });
+        
+        if (response.ok) {
+          await executeRun(
+            `UPDATE children_profiles SET sync_status = 'synced', is_dirty = 0 WHERE id = ?`,
+            [row.id]
+          );
+        }
       } catch (error) {
-        console.error('Error syncing record:', error);
+        console.error('Error syncing child record from SQLite:', error);
       }
     }
     
-    localStorage.removeItem('offline_registrations');
-    updateSyncStatus('idle', 'Sync completed successfully');
+    // 2. Sync dirty biometric fingerprints
+    const dirtyFingerprints = await executeQuery(
+      `SELECT * FROM biometric_fingerprints WHERE sync_status IN ('local_created', 'local_updated') OR is_dirty = 1`
+    );
+    
+    for (const row of dirtyFingerprints) {
+      try {
+        const response = await fetch(API_ENDPOINTS.biometricsEnroll, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            id: row.id,
+            childId: row.child_id,
+            fingerIndex: row.finger_index,
+            templateBase64: row.template_data,
+            qualityScore: row.quality_score,
+            capturedAt: row.created_at,
+            matcherVersion: "1.0"
+          })
+        });
+        
+        if (response.ok) {
+          await executeRun(
+            `UPDATE biometric_fingerprints SET sync_status = 'synced', is_dirty = 0 WHERE id = ?`,
+            [row.id]
+          );
+        }
+      } catch (error) {
+        console.error('Error syncing biometric record from SQLite:', error);
+      }
+    }
+    
+    // 3. Fallback: Sync any leftover items in localStorage offline_registrations
+    const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
+    const unsyncedOffline = [];
+    
+    for (const record of offlineData) {
+      try {
+        const response = await fetch(API_ENDPOINTS.children, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            id: record.id || crypto.randomUUID(),
+            customSerialId: record.customSerialId,
+            fullName: record.fullName,
+            gender: record.gender,
+            estimatedBirthYear: parseInt(record.estimatedBirthYear),
+            primaryLocationId: record.primaryLocationId,
+            image1: record.image1 || null,
+            image2: record.image2 || null,
+            image3: record.image3 || null,
+            createdByStaffId: record.createdByStaffId
+          })
+        });
+        
+        if (!response.ok) {
+          unsyncedOffline.push(record);
+        }
+      } catch (error) {
+        console.error('Error syncing record from localStorage:', error);
+        unsyncedOffline.push(record);
+      }
+    }
+    
+    if (unsyncedOffline.length > 0) {
+      localStorage.setItem('offline_registrations', JSON.stringify(unsyncedOffline));
+      updateSyncStatus('idle', `Sync completed with some failures`);
+    } else {
+      localStorage.removeItem('offline_registrations');
+      updateSyncStatus('idle', 'Sync completed successfully');
+    }
+    
+    await saveDB();
   } catch (error) {
     console.error('Sync error:', error);
     updateSyncStatus('idle', 'Sync error occurred');
@@ -495,8 +920,4 @@ export async function submitVolunteerApplication(form) {
   }
 }
 
-// Helper function for executeQuery (needed for offline cache)
-async function executeQuery(sql, params = []) {
-  // This is a simplified version - in production, you'd have a proper SQLite implementation
-  return [];
-}
+// Legacy placeholder for legacy reasons if needed

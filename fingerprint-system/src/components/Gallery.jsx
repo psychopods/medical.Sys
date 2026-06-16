@@ -49,20 +49,15 @@ const Gallery = () => {
       );
       const data = await response.json();
 
+      let categoriesList = [];
       if (response.ok && data.success) {
-        // Map the API response correctly
-        const categoriesData = data.categories.map((cat) => ({
-          id: cat.categoryKey,
-          name: cat.categoryName,
-          icon: cat.categoryIcon,
-        }));
-        setCategories([
-          { id: "all", name: "All", icon: "all" },
-          ...categoriesData,
-        ]);
+        categoriesList = data.categories || [];
       } else if (response.ok && Array.isArray(data)) {
-        // Fallback if API returns array directly
-        const categoriesData = data.map((cat) => ({
+        categoriesList = data;
+      }
+
+      if (categoriesList.length > 0) {
+        const categoriesData = categoriesList.map((cat) => ({
           id: cat.categoryKey,
           name: cat.categoryName,
           icon: cat.categoryIcon,
@@ -73,26 +68,37 @@ const Gallery = () => {
         ]);
 
         // Cache in SQLite
-        for (const cat of data.categories) {
-          await executeRun(
-            "INSERT OR REPLACE INTO gallery_categories (category_key, category_name, category_icon) VALUES (?, ?, ?)",
-            [cat.category_key, cat.category_name, cat.category_icon],
-          );
+        for (const cat of categoriesList) {
+          if (cat.categoryKey) {
+            await executeRun(
+              "INSERT OR REPLACE INTO gallery_categories (category_key, category_name, category_icon) VALUES (?, ?, ?)",
+              [cat.categoryKey, cat.categoryName, cat.categoryIcon || ''],
+            );
+          }
         }
       } else {
         console.error("Failed to load categories:", data.message);
-        // Set default categories to avoid empty state
         setCategories([{ id: "all", name: "All", icon: "all" }]);
       }
     } catch (error) {
-      if (error.name === "AbortError") {
-        console.error("Request timeout for categories");
-        showToast("Request timeout. Please check your connection.", "error");
-      } else {
-        console.error("Error fetching categories:", error);
-        showToast("Failed to connect to server", "error");
+      console.warn("API: Failed to fetch categories online, using local cache.", error);
+      try {
+        const localCats = await executeQuery("SELECT * FROM gallery_categories");
+        if (localCats.length > 0) {
+          const mapped = localCats.map(cat => ({
+            id: cat.category_key,
+            name: cat.category_name,
+            icon: cat.category_icon
+          }));
+          setCategories([
+            { id: "all", name: "All", icon: "all" },
+            ...mapped
+          ]);
+          return;
+        }
+      } catch (dbError) {
+        console.error("Local database query failed:", dbError);
       }
-      // Set default category so UI doesn't break
       setCategories([{ id: "all", name: "All", icon: "all" }]);
     } finally {
       setLoadingCategories(false);
@@ -122,30 +128,16 @@ const Gallery = () => {
       const data = await response.json();
 
       let items = [];
+      let rawItems = [];
 
       if (response.ok && data.success) {
-        // Map the API response correctly (camelCase from API)
-        items = data.items.map((item) => ({
-          id: item.id,
-          type: item.mediaType,
-          category: item.categoryKey,
-          title: item.title,
-          description: item.description,
-          image: item.imageUrl,
-          thumbnail: item.thumbnailUrl,
-          video_url: item.videoUrl,
-          date: item.createdAt
-            ? new Date(item.createdAt).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })
-            : "Date not available",
-          created_at: item.createdAt,
-        }));
+        rawItems = data.items || [];
       } else if (response.ok && Array.isArray(data)) {
-        // Fallback if API returns array directly
-        items = data.map((item) => ({
+        rawItems = data;
+      }
+
+      if (rawItems.length > 0) {
+        items = rawItems.map((item) => ({
           id: item.id,
           type: item.mediaType,
           category: item.categoryKey,
@@ -163,24 +155,64 @@ const Gallery = () => {
             : "Date not available",
           created_at: item.createdAt,
         }));
-      } else {
-        if (data.message !== "AbortError") {
-          console.error("Failed to load gallery items:", data.message);
+
+        // Cache in SQLite
+        for (const item of rawItems) {
+          await executeRun(
+            `INSERT OR REPLACE INTO gallery_items (id, media_type, category_key, title, description, image_url, thumbnail_url, video_url, created_at, last_modified_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              item.id,
+              item.mediaType,
+              item.categoryKey,
+              item.title,
+              item.description,
+              item.imageUrl || null,
+              item.thumbnailUrl || null,
+              item.videoUrl || null,
+              item.createdAt || new Date().toISOString(),
+              item.lastModifiedAt || new Date().toISOString()
+            ]
+          );
         }
-        items = [];
       }
 
       setGalleryItems(items);
     } catch (error) {
       if (error.name !== "AbortError") {
-        console.error("Error fetching gallery items:", error);
-        if (error.name === "AbortError") {
-          console.log("Request was cancelled");
-        } else {
-          showToast("Network error. Please check your connection.", "error");
+        console.warn("API: Failed to fetch gallery items, trying local SQLite fallback...", error);
+        try {
+          const sql = filter === "all" 
+            ? "SELECT * FROM gallery_items ORDER BY created_at DESC" 
+            : "SELECT * FROM gallery_items WHERE category_key = ? ORDER BY created_at DESC";
+          const params = filter === "all" ? [] : [filter];
+          
+          const localItems = await executeQuery(sql, params);
+          const mapped = localItems.map(item => ({
+            id: item.id,
+            type: item.media_type,
+            category: item.category_key,
+            title: item.title,
+            description: item.description,
+            image: item.image_url,
+            thumbnail: item.thumbnail_url,
+            video_url: item.video_url,
+            date: item.created_at
+              ? new Date(item.created_at).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              : "Date not available",
+            created_at: item.created_at
+          }));
+          setGalleryItems(mapped);
+          return;
+        } catch (dbError) {
+          console.error("Local database query for gallery items failed:", dbError);
         }
+        setGalleryItems([]);
       }
-      setGalleryItems([]);
     } finally {
       if (abortControllerRef.current === controller) {
         setLoading(false);
