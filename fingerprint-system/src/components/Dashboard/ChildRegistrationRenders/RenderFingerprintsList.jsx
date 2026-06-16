@@ -11,7 +11,8 @@ const RenderFingerprintsList = ({
   handleVerifyFingerprintClick,
   handleAddRegistrationClick,
   handlePrintClick,
-  getStaffNameById
+  getStaffNameById,
+  isLoading // Add loading prop
 }) => {
   const filteredFingerprintData = Array.isArray(fingerprintData) ? fingerprintData.filter(fp =>
     fp.childName?.toLowerCase().includes(searchFingerprints.toLowerCase()) ||
@@ -21,24 +22,36 @@ const RenderFingerprintsList = ({
   return (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
+        <button className="child-reg-back-btn" onClick={goBack} disabled={isLoading}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Fingerprints Captured</h1>
           <div className="child-reg-header-button-group">
-            <button className="child-reg-verify-btn-header" onClick={handleVerifyFingerprintClick}>
+            <button 
+              className="child-reg-verify-btn-header" 
+              onClick={handleVerifyFingerprintClick}
+              disabled={isLoading}
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
                 <path d="M12 6C8.69 6 6 8.69 6 12C6 15.31 8.69 18 12 18"/>
               </svg>
               Verify Fingerprint
             </button>
-            <button className="child-reg-add-registration-btn" onClick={handleAddRegistrationClick}>
+            <button 
+              className="child-reg-add-registration-btn" 
+              onClick={handleAddRegistrationClick}
+              disabled={isLoading}
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14" />
               </svg>
               Add Registration
             </button>
-            <button className="child-reg-print-btn-page" onClick={() => handlePrintClick('fingerprints')}>
+            <button 
+              className="child-reg-print-btn-page" 
+              onClick={() => handlePrintClick('fingerprints')}
+              disabled={isLoading}
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M6 9V3H18V9" />
                 <path d="M6 21H18C19.1 21 20 20.1 20 19V13C20 11.9 19.1 11 18 11H6C4.9 11 4 11.9 4 13V19C4 20.1 4.9 21 6 21Z" />
@@ -61,6 +74,7 @@ const RenderFingerprintsList = ({
           placeholder="Search by name or ID..." 
           value={searchFingerprints} 
           onChange={(e) => setSearchFingerprints(e.target.value)} 
+          disabled={isLoading}
         />
       </div>
       
@@ -124,11 +138,16 @@ const RenderFingerprintsList = ({
                           }
                         }}
                         title="View Child Details"
+                        disabled={isLoading}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
+                        {isLoading ? (
+                          <span className="child-reg-spinner-small"></span>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
                       </button>
                     </div>
                   </td>

@@ -19,6 +19,16 @@ const GalleryAdmin = () => {
   const [viewingCategory, setViewingCategory] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   
+  // ===== LOADING STATES =====
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [isUpdatingItem, setIsUpdatingItem] = useState(false);
+  const [isDeletingItem, setIsDeletingItem] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  
   // Drag and drop / file uploader states & refs
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
@@ -53,7 +63,7 @@ const GalleryAdmin = () => {
         setFormData(prev => ({
           ...prev,
           imageUrl: event.target.result,
-          thumbnailUrl: prev.thumbnailUrl || event.target.result // Auto-fill thumbnail with same image
+          thumbnailUrl: prev.thumbnailUrl || event.target.result
         }));
       } else if (targetField === 'videoThumbnail') {
         setFormData(prev => ({
@@ -283,6 +293,7 @@ const GalleryAdmin = () => {
 
   // Create new gallery item
   const createGalleryItem = async (itemData) => {
+    setIsAddingItem(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.galleryItems, {
         method: 'POST',
@@ -293,7 +304,7 @@ const GalleryAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Gallery item created successfully');
-        fetchGalleryItems();
+        await fetchGalleryItems();
         setActivePage('items');
         return true;
       } else {
@@ -304,11 +315,14 @@ const GalleryAdmin = () => {
       console.error('Error creating item:', error);
       showToastMessage('Network error', 'error');
       return false;
+    } finally {
+      setIsAddingItem(false);
     }
   };
 
   // Update gallery item
   const updateGalleryItem = async (id, itemData) => {
+    setIsUpdatingItem(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.galleryItem(id), {
         method: 'PUT',
@@ -319,7 +333,7 @@ const GalleryAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Gallery item updated successfully');
-        fetchGalleryItems();
+        await fetchGalleryItems();
         setActivePage('items');
         return true;
       } else {
@@ -330,6 +344,8 @@ const GalleryAdmin = () => {
       console.error('Error updating item:', error);
       showToastMessage('Network error', 'error');
       return false;
+    } finally {
+      setIsUpdatingItem(false);
     }
   };
 
@@ -339,6 +355,8 @@ const GalleryAdmin = () => {
       return;
     }
     
+    setDeletingId(id);
+    setIsDeletingItem(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.galleryItem(id), {
         method: 'DELETE'
@@ -348,13 +366,16 @@ const GalleryAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Gallery item deleted successfully');
-        fetchGalleryItems();
+        await fetchGalleryItems();
       } else {
         showToastMessage(data.message || 'Failed to delete item', 'error');
       }
     } catch (error) {
       console.error('Error deleting item:', error);
       showToastMessage('Network error', 'error');
+    } finally {
+      setIsDeletingItem(false);
+      setDeletingId(null);
     }
   };
 
@@ -365,6 +386,7 @@ const GalleryAdmin = () => {
       return;
     }
     
+    setIsAddingCategory(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.galleryCategories, {
         method: 'POST',
@@ -379,7 +401,7 @@ const GalleryAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Category created successfully');
-        fetchCategories();
+        await fetchCategories();
         setActivePage('categories');
         resetCategoryForm();
       } else {
@@ -388,6 +410,8 @@ const GalleryAdmin = () => {
     } catch (error) {
       console.error('Error creating category:', error);
       showToastMessage('Network error', 'error');
+    } finally {
+      setIsAddingCategory(false);
     }
   };
 
@@ -398,6 +422,7 @@ const GalleryAdmin = () => {
       return;
     }
     
+    setIsUpdatingCategory(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.galleryCategory(editingCategory.category_key), {
         method: 'PUT',
@@ -411,7 +436,7 @@ const GalleryAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Category updated successfully');
-        fetchCategories();
+        await fetchCategories();
         setActivePage('categories');
         setEditingCategory(null);
         resetCategoryForm();
@@ -421,6 +446,8 @@ const GalleryAdmin = () => {
     } catch (error) {
       console.error('Error updating category:', error);
       showToastMessage('Network error', 'error');
+    } finally {
+      setIsUpdatingCategory(false);
     }
   };
 
@@ -430,6 +457,8 @@ const GalleryAdmin = () => {
       return;
     }
     
+    setDeletingId(categoryKey);
+    setIsDeletingCategory(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.galleryCategory(categoryKey), {
         method: 'DELETE'
@@ -439,14 +468,17 @@ const GalleryAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Category deleted successfully');
-        fetchCategories();
-        fetchGalleryItems();
+        await fetchCategories();
+        await fetchGalleryItems();
       } else {
         showToastMessage(data.message || 'Failed to delete category', 'error');
       }
     } catch (error) {
       console.error('Error deleting category:', error);
       showToastMessage('Network error', 'error');
+    } finally {
+      setIsDeletingCategory(false);
+      setDeletingId(null);
     }
   };
 
@@ -549,7 +581,7 @@ const GalleryAdmin = () => {
   const renderCategoryViewPage = () => (
     <div className="ga-page">
       <div className="ga-header">
-        <button className="ga-back-btn" onClick={() => setActivePage('categories')}>
+        <button className="ga-back-btn" onClick={() => setActivePage('categories')} disabled={isLoading}>
           <IconBack /> Back to Categories
         </button>
         <div className="ga-header-title">
@@ -628,12 +660,14 @@ const GalleryAdmin = () => {
                 });
                 setActivePage('edit_category');
               }}
+              disabled={isLoading}
             >
               Edit Category
             </button>
             <button 
               className="ga-btn ga-btn-secondary" 
               onClick={() => setActivePage('categories')}
+              disabled={isLoading}
             >
               Close
             </button>
@@ -649,7 +683,7 @@ const GalleryAdmin = () => {
   const renderGalleryItemViewPage = () => (
     <div className="ga-page">
       <div className="ga-header">
-        <button className="ga-back-btn" onClick={() => setActivePage('items')}>
+        <button className="ga-back-btn" onClick={() => setActivePage('items')} disabled={isLoading}>
           <IconBack /> Back to Gallery Items
         </button>
         <div className="ga-header-title">
@@ -741,12 +775,14 @@ const GalleryAdmin = () => {
                 });
                 setActivePage('edit_item');
               }}
+              disabled={isLoading}
             >
               Edit Item
             </button>
             <button 
               className="ga-btn ga-btn-secondary" 
               onClick={() => setActivePage('items')}
+              disabled={isLoading}
             >
               Close
             </button>
@@ -762,7 +798,7 @@ const GalleryAdmin = () => {
   const renderCategoriesList = () => (
     <div className="ga-page">
       <div className="ga-header">
-        <button className="ga-back-btn" onClick={() => setActivePage('list')}>
+        <button className="ga-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>
           <IconBack /> Back
         </button>
         <div className="ga-header-title">
@@ -770,7 +806,7 @@ const GalleryAdmin = () => {
           <button className="ga-add-btn" onClick={() => {
             resetCategoryForm();
             setActivePage('add_category');
-          }}>
+          }} disabled={isLoading}>
             <IconAdd /> Add Category
           </button>
         </div>
@@ -801,7 +837,7 @@ const GalleryAdmin = () => {
                     <button className="ga-action-btn ga-view" onClick={() => {
                       setViewingCategory(category);
                       setActivePage('view_category');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconView /> View
                     </button>
                     <button className="ga-action-btn ga-edit" onClick={() => {
@@ -812,11 +848,17 @@ const GalleryAdmin = () => {
                         categoryIcon: category.category_icon
                       });
                       setActivePage('edit_category');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconEdit /> Edit
                     </button>
-                    <button className="ga-action-btn ga-delete" onClick={() => deleteCategory(category.category_key)}>
-                      <IconDelete /> Delete
+                    <button className="ga-action-btn ga-delete" onClick={() => deleteCategory(category.category_key)} disabled={isDeletingCategory && deletingId === category.category_key}>
+                      {isDeletingCategory && deletingId === category.category_key ? (
+                        <span className="ga-spinner-small"></span>
+                      ) : (
+                        <>
+                          <IconDelete /> Delete
+                        </>
+                      )}
                     </button>
                   </div>
                 </td>
@@ -839,7 +881,7 @@ const GalleryAdmin = () => {
   const renderGalleryItemsList = () => (
     <div className="ga-page">
       <div className="ga-header">
-        <button className="ga-back-btn" onClick={() => setActivePage('list')}>
+        <button className="ga-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>
           <IconBack /> Back
         </button>
         <div className="ga-header-title">
@@ -847,7 +889,7 @@ const GalleryAdmin = () => {
           <button className="ga-add-btn" onClick={() => {
             resetForm();
             setActivePage('add_item');
-          }}>
+          }} disabled={isLoading}>
             <IconAdd /> Add Item
           </button>
         </div>
@@ -891,7 +933,7 @@ const GalleryAdmin = () => {
                       <button className="ga-action-btn ga-view" onClick={() => {
                         setViewingItem(item);
                         setActivePage('view_item');
-                      }}>
+                      }} disabled={isLoading}>
                         <IconView /> View
                       </button>
                       <button className="ga-action-btn ga-edit" onClick={() => {
@@ -907,11 +949,17 @@ const GalleryAdmin = () => {
                           videoUrl: item.video_url || ''
                         });
                         setActivePage('edit_item');
-                      }}>
+                      }} disabled={isLoading}>
                         <IconEdit /> Edit
                       </button>
-                      <button className="ga-action-btn ga-delete" onClick={() => deleteGalleryItem(item.id)}>
-                        <IconDelete /> Delete
+                      <button className="ga-action-btn ga-delete" onClick={() => deleteGalleryItem(item.id)} disabled={isDeletingItem && deletingId === item.id}>
+                        {isDeletingItem && deletingId === item.id ? (
+                          <span className="ga-spinner-small"></span>
+                        ) : (
+                          <>
+                            <IconDelete /> Delete
+                          </>
+                        )}
                       </button>
                     </div>
                    </td>
@@ -936,7 +984,7 @@ const GalleryAdmin = () => {
         <button className="ga-back-btn" onClick={() => {
           setActivePage('categories');
           resetCategoryForm();
-        }}>
+        }} disabled={isAddingCategory || isUpdatingCategory}>
           <IconBack /> Back to Categories
         </button>
         <h2>{editingCategory ? 'Edit Category' : 'Add New Category'}</h2>
@@ -953,7 +1001,7 @@ const GalleryAdmin = () => {
                 onChange={(e) => setCategoryFormData({ ...categoryFormData, categoryKey: e.target.value.toLowerCase().replace(/\s/g, '_') })}
                 required
                 placeholder="e.g., outreach, medical"
-                disabled={editingCategory}
+                disabled={editingCategory || isAddingCategory || isUpdatingCategory}
               />
               {!editingCategory && <small>Unique identifier (lowercase, underscores for spaces)</small>}
             </div>
@@ -966,6 +1014,7 @@ const GalleryAdmin = () => {
                 onChange={(e) => setCategoryFormData({ ...categoryFormData, categoryName: e.target.value })}
                 required
                 placeholder="Display name"
+                disabled={isAddingCategory || isUpdatingCategory}
               />
             </div>
             
@@ -974,6 +1023,7 @@ const GalleryAdmin = () => {
               <select
                 value={categoryFormData.categoryIcon}
                 onChange={(e) => setCategoryFormData({ ...categoryFormData, categoryIcon: e.target.value })}
+                disabled={isAddingCategory || isUpdatingCategory}
               >
                 <option value="outreach">outreach</option>
                 <option value="medical">medical</option>
@@ -989,11 +1039,18 @@ const GalleryAdmin = () => {
             <button type="button" className="ga-btn ga-btn-secondary" onClick={() => {
               setActivePage('categories');
               resetCategoryForm();
-            }}>
+            }} disabled={isAddingCategory || isUpdatingCategory}>
               Cancel
             </button>
-            <button type="submit" className="ga-btn ga-btn-primary">
-              {editingCategory ? 'Update Category' : 'Create Category'}
+            <button type="submit" className="ga-btn ga-btn-primary" disabled={isAddingCategory || isUpdatingCategory}>
+              {isAddingCategory || isUpdatingCategory ? (
+                <>
+                  <span className="ga-spinner-small"></span>
+                  {editingCategory ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                editingCategory ? 'Update Category' : 'Create Category'
+              )}
             </button>
           </div>
         </form>
@@ -1008,7 +1065,7 @@ const GalleryAdmin = () => {
         <button className="ga-back-btn" onClick={() => {
           setActivePage('items');
           resetForm();
-        }}>
+        }} disabled={isAddingItem || isUpdatingItem}>
           <IconBack /> Back to Gallery Items
         </button>
         <h2>{editingItem ? 'Edit Gallery Item' : 'Add New Gallery Item'}</h2>
@@ -1023,6 +1080,7 @@ const GalleryAdmin = () => {
                 value={formData.mediaType}
                 onChange={(e) => setFormData({ ...formData, mediaType: e.target.value })}
                 required
+                disabled={isAddingItem || isUpdatingItem}
               >
                 <option value="image">Image</option>
                 <option value="video">Video</option>
@@ -1035,6 +1093,7 @@ const GalleryAdmin = () => {
                 value={formData.categoryKey}
                 onChange={(e) => setFormData({ ...formData, categoryKey: e.target.value })}
                 required
+                disabled={isAddingItem || isUpdatingItem}
               >
                 <option value="">Select category</option>
                 {categories.map((cat) => (
@@ -1055,6 +1114,7 @@ const GalleryAdmin = () => {
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
                 placeholder="Enter title"
+                disabled={isAddingItem || isUpdatingItem}
               />
             </div>
           </div>
@@ -1068,6 +1128,7 @@ const GalleryAdmin = () => {
                 required
                 rows="4"
                 placeholder="Enter description"
+                disabled={isAddingItem || isUpdatingItem}
               />
             </div>
           </div>
@@ -1083,6 +1144,7 @@ const GalleryAdmin = () => {
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, 'mainImage')}
                     onClick={() => fileInputRef.current.click()}
+                    style={{ cursor: (isAddingItem || isUpdatingItem) ? 'not-allowed' : 'pointer', opacity: (isAddingItem || isUpdatingItem) ? 0.6 : 1 }}
                   >
                     <div className="ga-upload-icon">
                       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -1097,6 +1159,7 @@ const GalleryAdmin = () => {
                       style={{ display: 'none' }} 
                       ref={fileInputRef} 
                       onChange={(e) => { if (e.target.files?.[0]) processImageFile(e.target.files[0], 'mainImage'); }}
+                      disabled={isAddingItem || isUpdatingItem}
                     />
                   </div>
                 ) : (
@@ -1116,6 +1179,7 @@ const GalleryAdmin = () => {
                         onClick={() => {
                           setFormData(prev => ({ ...prev, imageUrl: '', thumbnailUrl: '' }));
                         }}
+                        disabled={isAddingItem || isUpdatingItem}
                       >
                         Remove Image
                       </button>
@@ -1137,6 +1201,7 @@ const GalleryAdmin = () => {
                     onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
                     required
                     placeholder="https://www.youtube.com/embed/VIDEO_ID"
+                    disabled={isAddingItem || isUpdatingItem}
                   />
                   <small>Use embed URL from YouTube or Vimeo</small>
                 </div>
@@ -1152,6 +1217,7 @@ const GalleryAdmin = () => {
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, 'videoThumbnail')}
                       onClick={() => thumbnailInputRef.current.click()}
+                      style={{ cursor: (isAddingItem || isUpdatingItem) ? 'not-allowed' : 'pointer', opacity: (isAddingItem || isUpdatingItem) ? 0.6 : 1 }}
                     >
                       <div className="ga-upload-icon">
                         <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -1166,6 +1232,7 @@ const GalleryAdmin = () => {
                         style={{ display: 'none' }} 
                         ref={thumbnailInputRef} 
                         onChange={(e) => { if (e.target.files?.[0]) processImageFile(e.target.files[0], 'videoThumbnail'); }}
+                        disabled={isAddingItem || isUpdatingItem}
                       />
                     </div>
                   ) : (
@@ -1185,6 +1252,7 @@ const GalleryAdmin = () => {
                           onClick={() => {
                             setFormData(prev => ({ ...prev, thumbnailUrl: '' }));
                           }}
+                          disabled={isAddingItem || isUpdatingItem}
                         >
                           Remove Thumbnail
                         </button>
@@ -1200,11 +1268,18 @@ const GalleryAdmin = () => {
             <button type="button" className="ga-btn ga-btn-secondary" onClick={() => {
               setActivePage('items');
               resetForm();
-            }}>
+            }} disabled={isAddingItem || isUpdatingItem}>
               Cancel
             </button>
-            <button type="submit" className="ga-btn ga-btn-primary">
-              {editingItem ? 'Update Item' : 'Create Item'}
+            <button type="submit" className="ga-btn ga-btn-primary" disabled={isAddingItem || isUpdatingItem}>
+              {isAddingItem || isUpdatingItem ? (
+                <>
+                  <span className="ga-spinner-small"></span>
+                  {editingItem ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                editingItem ? 'Update Item' : 'Create Item'
+              )}
             </button>
           </div>
         </form>
@@ -1221,7 +1296,11 @@ const GalleryAdmin = () => {
       </div>
       
       <div className="ga-dashboard-links">
-        <div className="ga-dash-link" onClick={() => { fetchCategories(); setActivePage('categories'); }}>
+        <div 
+          className="ga-dash-link" 
+          onClick={() => { if (!isLoading) { fetchCategories(); setActivePage('categories'); } }}
+          style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+        >
           <div className="ga-dash-link-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <rect x="3" y="3" width="8" height="8" rx="1"/>
@@ -1236,7 +1315,11 @@ const GalleryAdmin = () => {
           </div>
         </div>
         
-        <div className="ga-dash-link" onClick={() => { fetchGalleryItems(); setActivePage('items'); }}>
+        <div 
+          className="ga-dash-link" 
+          onClick={() => { if (!isLoading) { fetchGalleryItems(); setActivePage('items'); } }}
+          style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+        >
           <div className="ga-dash-link-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <rect x="2" y="2" width="20" height="20" rx="2"/>

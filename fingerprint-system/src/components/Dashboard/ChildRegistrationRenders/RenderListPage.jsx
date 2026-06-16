@@ -9,6 +9,7 @@ const RenderListPage = ({
   olderPatients,
   offlineMode,
   isSyncing,
+  isLoading, // Add loading prop
   handleStatClick,
   handleActionClick,
   handleAddRegistrationClick,
@@ -30,7 +31,7 @@ const RenderListPage = ({
       </div>
       
       <div className="child-reg-stats-grid">
-        <div className="child-reg-stat-card" onClick={() => handleStatClick('childrenList', 'All Children')}>
+        <div className="child-reg-stat-card" onClick={() => !isLoading && handleStatClick('childrenList', 'All Children')} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="child-reg-stat-info-wrapper">
             <div className="child-reg-stat-icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -44,7 +45,7 @@ const RenderListPage = ({
             </div>
           </div>
         </div>
-        <div className="child-reg-stat-card" onClick={() => handleStatClick('todayList', 'Today\'s Registrations')}>
+        <div className="child-reg-stat-card" onClick={() => !isLoading && handleStatClick('todayList', 'Today\'s Registrations')} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="child-reg-stat-info-wrapper">
             <div className="child-reg-stat-icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -58,7 +59,7 @@ const RenderListPage = ({
             </div>
           </div>
         </div>
-        <div className="child-reg-stat-card" onClick={() => handleStatClick('fingerprintsList', 'Fingerprints Captured')}>
+        <div className="child-reg-stat-card" onClick={() => !isLoading && handleStatClick('fingerprintsList', 'Fingerprints Captured')} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="child-reg-stat-info-wrapper">
             <div className="child-reg-stat-icon">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -76,7 +77,7 @@ const RenderListPage = ({
 
       <div className="child-reg-section-title">Patients by Age Group</div>
       <div className="child-reg-age-categories-grid">
-        <div className="child-reg-age-category-card young-card" onClick={() => handleStatClick('youngPatients', 'Young Patients')}>
+        <div className="child-reg-age-category-card young-card" onClick={() => !isLoading && handleStatClick('youngPatients', 'Young Patients')} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="child-reg-category-icon young-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="12" cy="8" r="4"/>
@@ -90,7 +91,7 @@ const RenderListPage = ({
           </div>
         </div>
         
-        <div className="child-reg-age-category-card older-card" onClick={() => handleStatClick('olderPatients', 'Older Patients')}>
+        <div className="child-reg-age-category-card older-card" onClick={() => !isLoading && handleStatClick('olderPatients', 'Older Patients')} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="child-reg-category-icon older-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -119,7 +120,7 @@ const RenderListPage = ({
 
       <div className="child-reg-section-title">Quick Actions</div>
       <div className="child-reg-actions-grid">
-        <div className="child-reg-action-card" onClick={() => { handleActionClick('Register New Child'); navigateToPage('register'); }}>
+        <div className="child-reg-action-card" onClick={() => { if (!isLoading) { handleActionClick('Register New Child'); navigateToPage('register'); } }} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="child-reg-action-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="12" cy="8" r="4"/>
@@ -131,7 +132,7 @@ const RenderListPage = ({
             <p>Capture patient information and details</p>
           </div>
         </div>
-        <div className="child-reg-action-card" onClick={() => { handleActionClick('Verify Fingerprint'); handleVerifyFingerprintClick(); }}>
+        <div className="child-reg-action-card" onClick={() => { if (!isLoading) { handleActionClick('Verify Fingerprint'); handleVerifyFingerprintClick(); } }} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="child-reg-action-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
@@ -143,7 +144,7 @@ const RenderListPage = ({
             <p>Verify existing fingerprint records</p>
           </div>
         </div>
-        <div className="child-reg-action-card" onClick={() => { handleActionClick('Manage Locations'); navigateToPage('locations'); }}>
+        <div className="child-reg-action-card" onClick={() => { if (!isLoading) { handleActionClick('Manage Locations'); navigateToPage('locations'); } }} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="child-reg-action-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
@@ -155,7 +156,7 @@ const RenderListPage = ({
             <p>Add, edit, or delete locations</p>
           </div>
         </div>
-        <div className="child-reg-action-card" onClick={() => { if (!isSyncing) { handleActionClick('Sync Offline Data'); handleSyncOfflineData(); } }}>
+        <div className="child-reg-action-card" onClick={() => { if (!isLoading && !isSyncing) { handleActionClick('Sync Offline Data'); handleSyncOfflineData(); } }} style={{ cursor: (isLoading || isSyncing) ? 'not-allowed' : 'pointer', opacity: (isLoading || isSyncing) ? 0.6 : 1 }}>
           <div className="child-reg-action-icon">
             {isSyncing ? (
               <div className="child-reg-sync-spinner"></div>

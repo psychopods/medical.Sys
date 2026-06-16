@@ -83,14 +83,15 @@ const RenderRegistrationPage = ({
   goBack,
   setRegistrationStep,
   handleCompleteRegistration,
-  isSubmitting
+  isSubmitting,
+  isAddingChild // Add loading prop
 }) => {
   const totalCaptured = capturedFingers.length;
 
   return (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
+        <button className="child-reg-back-btn" onClick={goBack} disabled={isSubmitting || isCapturing || isSavingFingerprints || isAddingChild}>← Back</button>
         <h1 className="child-reg-page-title">Register New Patient</h1>
         <p className="child-reg-page-subtitle">Enter patient information and capture fingerprint</p>
         {generatedId && <div className="child-reg-generated-id"><strong>Registration ID:</strong> {generatedId}</div>}
@@ -110,6 +111,7 @@ const RenderRegistrationPage = ({
                 placeholder="Enter patient's name" 
                 required 
                 className={formErrors.fullName ? 'error-input' : ''}
+                disabled={isSubmitting || isAddingChild}
               />
               {formErrors.fullName && <span className="error-message">{formErrors.fullName}</span>}
             </div>
@@ -126,6 +128,7 @@ const RenderRegistrationPage = ({
                     min="0"
                     max="120"
                     className={formErrors.estimatedBirthYear ? 'error-input' : ''}
+                    disabled={isSubmitting || isAddingChild}
                   />
                   <span className="child-reg-input-sublabel">Estimated Age (Years)</span>
                 </div>
@@ -137,6 +140,7 @@ const RenderRegistrationPage = ({
                     onChange={handleFormChangeWithValidation} 
                     required 
                     className={formErrors.estimatedBirthYear ? 'error-input' : ''}
+                    disabled={isSubmitting || isAddingChild}
                   >
                     <option value="">Select Year</option>
                     {Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
@@ -156,6 +160,7 @@ const RenderRegistrationPage = ({
                 onChange={handleFormChangeWithValidation} 
                 required 
                 className={formErrors.gender ? 'error-input' : ''}
+                disabled={isSubmitting || isAddingChild}
               >
                 <option value="">Select Gender</option>
                 <option value="Male">Male</option>
@@ -171,6 +176,7 @@ const RenderRegistrationPage = ({
                 onChange={handleFormChangeWithValidation} 
                 required 
                 className={formErrors.primaryLocationId ? 'error-input' : ''}
+                disabled={isSubmitting || isAddingChild}
               >
                 <option value="">Select Location</option>
                 {Array.isArray(locations) && locations.map(loc => (
@@ -218,13 +224,23 @@ const RenderRegistrationPage = ({
                         />
                         <canvas ref={canvasR} style={{ display: 'none' }} />
                         <div className="child-reg-camera-controls">
-                          <button className="child-reg-btn-capture" onClick={() => capturePhoto(num)} title="Capture">
+                          <button 
+                            className="child-reg-btn-capture" 
+                            onClick={() => capturePhoto(num)} 
+                            title="Capture"
+                            disabled={isSubmitting || isAddingChild}
+                          >
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <circle cx="12" cy="12" r="10"/>
                               <circle cx="12" cy="12" r="3"/>
                             </svg>
                           </button>
-                          <button className="child-reg-btn-cancel" onClick={() => stopCamera(num)} title="Cancel">
+                          <button 
+                            className="child-reg-btn-cancel" 
+                            onClick={() => stopCamera(num)} 
+                            title="Cancel"
+                            disabled={isSubmitting || isAddingChild}
+                          >
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <line x1="18" y1="6" x2="6" y2="18"/>
                               <line x1="6" y1="6" x2="18" y2="18"/>
@@ -234,15 +250,25 @@ const RenderRegistrationPage = ({
                       </div>
                     ) : (
                       <div className="child-reg-upload-options">
-                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(num, e.target.files[0])} style={{ display: 'none' }} ref={fileR} />
-                        <button className="child-reg-btn-upload" onClick={() => fileR.current.click()} title="Upload Photo">
+                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(num, e.target.files[0])} style={{ display: 'none' }} ref={fileR} disabled={isSubmitting || isAddingChild} />
+                        <button 
+                          className="child-reg-btn-upload" 
+                          onClick={() => fileR.current?.click()} 
+                          title="Upload Photo"
+                          disabled={isSubmitting || isAddingChild}
+                        >
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="17 8 12 3 7 8"/>
                             <line x1="12" y1="3" x2="12" y2="15"/>
                           </svg>
                         </button>
-                        <button className="child-reg-btn-camera" onClick={() => startCamera(num)} title="Take Photo">
+                        <button 
+                          className="child-reg-btn-camera" 
+                          onClick={() => startCamera(num)} 
+                          title="Take Photo"
+                          disabled={isSubmitting || isAddingChild}
+                        >
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                             <circle cx="12" cy="13" r="4"/>
@@ -257,7 +283,7 @@ const RenderRegistrationPage = ({
                             } else { 
                               // setPreview3 null handled in parent
                             }
-                          }} title="Remove Photo">
+                          }} title="Remove Photo" disabled={isSubmitting || isAddingChild}>
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M4 7h16"/>
                               <path d="M10 11v6"/>
@@ -276,14 +302,27 @@ const RenderRegistrationPage = ({
           </div>
 
           <div className="child-reg-form-actions">
-            <button className="child-reg-btn-secondary" onClick={goBack}>Cancel</button>
-            <button className="child-reg-btn-primary" onClick={() => {
-              if (validateForm()) {
-                setRegistrationStep(2);
-              } else {
-                showToast('Please fill in all required fields', 'error');
-              }
-            }}>Next: Enroll Fingerprints</button>
+            <button className="child-reg-btn-secondary" onClick={goBack} disabled={isSubmitting || isAddingChild}>Cancel</button>
+            <button 
+              className="child-reg-btn-primary" 
+              onClick={() => {
+                if (validateForm()) {
+                  setRegistrationStep(2);
+                } else {
+                  showToast('Please fill in all required fields', 'error');
+                }
+              }}
+              disabled={isSubmitting || isAddingChild}
+            >
+              {isSubmitting || isAddingChild ? (
+                <>
+                  <span className="child-reg-spinner-small"></span>
+                  Loading...
+                </>
+              ) : (
+                'Next: Enroll Fingerprints'
+              )}
+            </button>
           </div>
         </div>
       )}
@@ -309,6 +348,7 @@ const RenderRegistrationPage = ({
                       className={`child-reg-finger-btn ${selectedFinger === fingerIndex ? 'selected' : ''} ${isCaptured ? 'captured' : ''}`}
                       onClick={() => handleSelectFinger(fingerIndex)}
                       title={`${fingerInfo.name}${isCaptured ? ` (Quality: ${quality}%)` : ''}`}
+                      disabled={isCapturing || isSavingFingerprints || isAddingChild}
                     >
                       <div className="child-reg-finger-icon">
                         {isCaptured ? (
@@ -364,9 +404,16 @@ const RenderRegistrationPage = ({
                     <button 
                       className="child-reg-btn-primary" 
                       onClick={handleCaptureFingerprint}
-                      disabled={isCapturing}
+                      disabled={isCapturing || isSavingFingerprints || isAddingChild}
                     >
-                      {isCapturing ? 'Capturing...' : `Capture ${fingerNames[selectedFinger].name}`}
+                      {isCapturing ? (
+                        <>
+                          <span className="child-reg-spinner-small"></span>
+                          Capturing...
+                        </>
+                      ) : (
+                        `Capture ${fingerNames[selectedFinger].name}`
+                      )}
                     </button>
                   </>
                 ) : selectedFinger && fingerCaptures[selectedFinger] ? (
@@ -382,10 +429,18 @@ const RenderRegistrationPage = ({
                       ></div>
                     </div>
                     <div className="child-reg-enrollment-actions">
-                      <button className="child-reg-btn-danger" onClick={() => handleRemoveFingerprint(selectedFinger)}>
+                      <button 
+                        className="child-reg-btn-danger" 
+                        onClick={() => handleRemoveFingerprint(selectedFinger)}
+                        disabled={isSavingFingerprints || isAddingChild}
+                      >
                         <RemoveIcon width={14} height={14} color="white" /> Remove
                       </button>
-                      <button className="child-reg-btn-secondary" onClick={() => handleSelectFinger(null)}>
+                      <button 
+                        className="child-reg-btn-secondary" 
+                        onClick={() => handleSelectFinger(null)}
+                        disabled={isSavingFingerprints || isAddingChild}
+                      >
                         Select Another Finger
                       </button>
                     </div>
@@ -426,6 +481,7 @@ const RenderRegistrationPage = ({
                       className="child-reg-captured-remove"
                       onClick={() => handleRemoveFingerprint(fingerIndex)}
                       title="Remove this fingerprint"
+                      disabled={isSavingFingerprints || isAddingChild}
                     >
                       <RemoveIcon width={12} height={12} color="#dc3545" />
                     </button>
@@ -438,18 +494,33 @@ const RenderRegistrationPage = ({
             
             <div className="child-reg-enrollment-summary-actions">
               <div className="child-reg-enrollment-buttons">
-                <button className="child-reg-btn-secondary" onClick={handleSkipFingerprints}>
+                <button 
+                  className="child-reg-btn-secondary" 
+                  onClick={handleSkipFingerprints}
+                  disabled={isSavingFingerprints || isAddingChild}
+                >
                   Skip (Continue without fingerprints)
                 </button>
                 <button 
                   className="child-reg-btn-primary" 
                   onClick={handleSaveFingerprints}
-                  disabled={totalCaptured === 0 || isSavingFingerprints}
+                  disabled={totalCaptured === 0 || isSavingFingerprints || isAddingChild}
                 >
-                  {isSavingFingerprints ? 'Saving...' : `Save ${totalCaptured} Fingerprint(s) & Complete`}
+                  {isSavingFingerprints ? (
+                    <>
+                      <span className="child-reg-spinner-small"></span>
+                      Saving...
+                    </>
+                  ) : (
+                    `Save ${totalCaptured} Fingerprint(s) & Complete`
+                  )}
                 </button>
               </div>
-              <button className="child-reg-btn-text" onClick={() => setRegistrationStep(1)}>
+              <button 
+                className="child-reg-btn-text" 
+                onClick={() => setRegistrationStep(1)}
+                disabled={isSavingFingerprints || isAddingChild}
+              >
                 ← Back to Patient Info
               </button>
             </div>
@@ -467,8 +538,19 @@ const RenderRegistrationPage = ({
             <p>✓ {totalCaptured} fingerprint{totalCaptured !== 1 ? 's' : ''} enrolled successfully</p>
           )}
           <div className="child-reg-form-actions">
-            <button className="child-reg-btn-primary" onClick={handleCompleteRegistration}>
-              Go to Dashboard
+            <button 
+              className="child-reg-btn-primary" 
+              onClick={handleCompleteRegistration}
+              disabled={isAddingChild}
+            >
+              {isAddingChild ? (
+                <>
+                  <span className="child-reg-spinner-small"></span>
+                  Completing...
+                </>
+              ) : (
+                'Go to Dashboard'
+              )}
             </button>
           </div>
         </div>

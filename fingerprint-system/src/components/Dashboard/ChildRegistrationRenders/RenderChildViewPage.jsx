@@ -7,7 +7,8 @@ const RenderChildViewPage = ({
   getLocationName,
   getStaffNameById,
   handleEditChild,
-  goBack
+  goBack,
+  isLoading // Add loading prop
 }) => {
   const childFingerprints = fingerprintData.filter(fp => 
     fp.childId === viewingChild?.id || fp.customSerialId === viewingChild?.customSerialId
@@ -17,7 +18,7 @@ const RenderChildViewPage = ({
   return (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
+        <button className="child-reg-back-btn" onClick={goBack} disabled={isLoading}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Patient Details</h1>
         </div>
@@ -104,12 +105,21 @@ const RenderChildViewPage = ({
             onClick={() => {
               handleEditChild(viewingChild);
             }}
+            disabled={isLoading}
           >
-            Edit Patient
+            {isLoading ? (
+              <>
+                <span className="child-reg-spinner-small"></span>
+                Loading...
+              </>
+            ) : (
+              'Edit Patient'
+            )}
           </button>
           <button 
             className="child-reg-btn-secondary" 
             onClick={goBack}
+            disabled={isLoading}
           >
             Close
           </button>

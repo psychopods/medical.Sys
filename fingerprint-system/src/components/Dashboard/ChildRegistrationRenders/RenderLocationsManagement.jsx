@@ -14,7 +14,8 @@ const RenderLocationsManagement = ({
   handleEditLocation,
   handleDeleteLocation,
   goBack,
-  setShowLocationForm  // Add this prop
+  setShowLocationForm,
+  isAddingLocation // Add loading prop
 }) => {
   const filteredLocations = Array.isArray(locations) ? locations.filter(location =>
     location.name?.toLowerCase().includes(searchLocations.toLowerCase())
@@ -32,7 +33,11 @@ const RenderLocationsManagement = ({
         <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Manage Locations</h1>
-          <button className="child-reg-add-btn" onClick={handleAddNewLocation}>
+          <button 
+            className="child-reg-add-btn" 
+            onClick={handleAddNewLocation}
+            disabled={isAddingLocation}
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 5v14M5 12h14" />
             </svg>
@@ -55,6 +60,7 @@ const RenderLocationsManagement = ({
                 onChange={handleLocationFormChange}
                 placeholder="e.g., Arusha, Dar es Salaam - Ilala, Mwanza"
                 className={locationFormErrors.name ? 'error-input' : ''}
+                disabled={isAddingLocation}
               />
               {locationFormErrors.name && <span className="error-message">{locationFormErrors.name}</span>}
             </div>
@@ -66,16 +72,34 @@ const RenderLocationsManagement = ({
                 onChange={handleLocationFormChange}
                 placeholder="Additional information about this location"
                 rows="3"
+                disabled={isAddingLocation}
               />
             </div>
           </div>
           <div className="child-reg-form-actions">
-            <button className="child-reg-btn-secondary" onClick={() => {
-              resetLocationForm();
-              setShowLocationForm(false);
-            }}>Cancel</button>
-            <button className="child-reg-btn-primary" onClick={handleSaveLocation}>
-              {editingLocation ? 'Update Location' : 'Add Location'}
+            <button 
+              className="child-reg-btn-secondary" 
+              onClick={() => {
+                resetLocationForm();
+                setShowLocationForm(false);
+              }}
+              disabled={isAddingLocation}
+            >
+              Cancel
+            </button>
+            <button 
+              className="child-reg-btn-primary" 
+              onClick={handleSaveLocation}
+              disabled={isAddingLocation}
+            >
+              {isAddingLocation ? (
+                <>
+                  <span className="child-reg-spinner-small"></span>
+                  {editingLocation ? 'Updating...' : 'Adding...'}
+                </>
+              ) : (
+                editingLocation ? 'Update Location' : 'Add Location'
+              )}
             </button>
           </div>
         </div>
@@ -91,6 +115,7 @@ const RenderLocationsManagement = ({
           placeholder="Search by location name..." 
           value={searchLocations} 
           onChange={(e) => setSearchLocations(e.target.value)} 
+          disabled={isAddingLocation}
         />
       </div>
       
@@ -115,6 +140,7 @@ const RenderLocationsManagement = ({
                     className="child-reg-action-btn child-reg-edit-btn" 
                     onClick={() => handleEditLocation(location)}
                     title="Edit Location"
+                    disabled={isAddingLocation}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M17 3L21 7L7 21H3V17L17 3Z" />
@@ -124,6 +150,7 @@ const RenderLocationsManagement = ({
                     className="child-reg-action-btn child-reg-delete-btn" 
                     onClick={() => handleDeleteLocation(location)}
                     title="Delete Location"
+                    disabled={isAddingLocation}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M4 7H20" strokeWidth="2" />

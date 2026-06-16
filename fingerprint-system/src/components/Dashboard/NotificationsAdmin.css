@@ -474,3 +474,35 @@
     font-size: 12px;
   }
 }
+
+/* Spinner for buttons */
+.na-spinner-small {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: na-spin 0.8s ease-in-out infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@keyframes na-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Disabled button styles */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Disabled input styles */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #f5f5f5;
+}

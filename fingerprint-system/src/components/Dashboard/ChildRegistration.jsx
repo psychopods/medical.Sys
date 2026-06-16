@@ -74,6 +74,14 @@ const ChildRegistration = () => {
     primaryLocationId: ''
   });
   
+  // Loading states
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [isAddingChild, setIsAddingChild] = useState(false);
+  const [isSavingChild, setIsSavingChild] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingChildId, setDeletingChildId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
   const [youngPatients, setYoungPatients] = useState([]);
   const [olderPatients, setOlderPatients] = useState([]);
   const [searchYoung, setSearchYoung] = useState('');
@@ -752,9 +760,14 @@ const ChildRegistration = () => {
 
   // ===== HANDLERS =====
   const handleViewChild = async (child) => {
-    const fullChild = await fetchChildById(child.id);
-    setViewingChild(fullChild || child);
-    navigateToPage('view_child');
+    setIsLoading(true);
+    try {
+      const fullChild = await fetchChildById(child.id);
+      setViewingChild(fullChild || child);
+      navigateToPage('view_child');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEditChild = (child) => {
@@ -777,22 +790,32 @@ const ChildRegistration = () => {
       showToast('Please fill in all required fields', 'error');
       return;
     }
-    const result = await updateChild(editingChild.id, childFormData);
-    if (result) {
-      showToast('Child updated successfully!', 'success');
-      setEditingChild(null);
-      setViewingChild(null);
-      await fetchChildren();
-      await fetchTodayRegistrations();
-      generateRegistrationId();
-      goBack();
-    } else {
-      showToast('Failed to update child', 'error');
+    setIsSavingChild(true);
+    try {
+      const result = await updateChild(editingChild.id, childFormData);
+      if (result) {
+        showToast('Child updated successfully!', 'success');
+        setEditingChild(null);
+        setViewingChild(null);
+        await fetchChildren();
+        await fetchTodayRegistrations();
+        generateRegistrationId();
+        goBack();
+      } else {
+        showToast('Failed to update child', 'error');
+      }
+    } finally {
+      setIsSavingChild(false);
     }
   };
 
   const handleDeleteChild = async (child) => {
-    if (window.confirm(`Are you sure you want to delete ${child.fullName}? This action cannot be undone.`)) {
+    if (!window.confirm(`Are you sure you want to delete ${child.fullName}? This action cannot be undone.`)) {
+      return;
+    }
+    setDeletingChildId(child.id);
+    setIsDeleting(true);
+    try {
       const success = await deleteChild(child.id);
       if (success) {
         showToast('Child deleted successfully!', 'success');
@@ -802,6 +825,9 @@ const ChildRegistration = () => {
       } else {
         showToast('Failed to delete child', 'error');
       }
+    } finally {
+      setIsDeleting(false);
+      setDeletingChildId(null);
     }
   };
 
@@ -859,35 +885,40 @@ const ChildRegistration = () => {
       goBack();
       return;
     }
+    setIsSavingFingerprints(true);
     let successCount = 0;
-    for (const fingerIndex of capturedFingers) {
-      try {
-        const result = await apiEnrollBiometric({
-          id: crypto.randomUUID(),
-          childId: enrollingChild.id,
-          fingerIndex: fingerIndex,
-          templateBase64: `fingerprint_template_${fingerIndex}_base64`,
-          qualityScore: fingerQuality[fingerIndex] || 80,
-          createdAt: new Date().toISOString(),
-          status: 'PENDING'
-        });
-        if (result) successCount++;
-      } catch (error) {
-        console.error('Error saving fingerprint:', error);
+    try {
+      for (const fingerIndex of capturedFingers) {
+        try {
+          const result = await apiEnrollBiometric({
+            id: crypto.randomUUID(),
+            childId: enrollingChild.id,
+            fingerIndex: fingerIndex,
+            templateBase64: `fingerprint_template_${fingerIndex}_base64`,
+            qualityScore: fingerQuality[fingerIndex] || 80,
+            createdAt: new Date().toISOString(),
+            status: 'PENDING'
+          });
+          if (result) successCount++;
+        } catch (error) {
+          console.error('Error saving fingerprint:', error);
+        }
       }
-    }
-    if (successCount > 0) {
-      showToast(`${successCount} fingerprint(s) enrolled successfully for ${enrollingChild.fullName}!`, 'success');
-      await fetchChildren();
-      await fetchTodayRegistrations();
-      await fetchFingerprints();
-      goBack();
-      setEnrollingChild(null);
-      setFingerCaptures({});
-      setFingerQuality({});
-      setCapturedFingers([]);
-    } else {
-      showToast('Failed to save fingerprints', 'error');
+      if (successCount > 0) {
+        showToast(`${successCount} fingerprint(s) enrolled successfully for ${enrollingChild.fullName}!`, 'success');
+        await fetchChildren();
+        await fetchTodayRegistrations();
+        await fetchFingerprints();
+        goBack();
+        setEnrollingChild(null);
+        setFingerCaptures({});
+        setFingerQuality({});
+        setCapturedFingers([]);
+      } else {
+        showToast('Failed to save fingerprints', 'error');
+      }
+    } finally {
+      setIsSavingFingerprints(false);
     }
   };
 
@@ -954,80 +985,91 @@ const ChildRegistration = () => {
     }
 
     setIsSavingFingerprints(true);
+    setIsAddingChild(true);
 
-    // First register the child
-    const newChild = {
-      fullName: formData.fullName,
-      estimatedBirthYear: formData.estimatedBirthYear,
-      gender: formData.gender,
-      primaryLocationId: formData.primaryLocationId,
-      createdByStaffId: user?.id || user?.user_id
-    };
+    try {
+      // First register the child
+      const newChild = {
+        fullName: formData.fullName,
+        estimatedBirthYear: formData.estimatedBirthYear,
+        gender: formData.gender,
+        primaryLocationId: formData.primaryLocationId,
+        createdByStaffId: user?.id || user?.user_id
+      };
 
-    const result = await addRegistration(newChild);
-    let childId = null;
-    
-    if (result && (result.child || result.id)) {
-      childId = result.child?.id || result.id;
-    }
-
-    if (childId) {
-      let successCount = 0;
-      // Save fingerprints for this child
-      for (const fingerIndex of regCapturedFingers) {
-        try {
-          const enrollResult = await apiEnrollBiometric({
-            id: crypto.randomUUID(),
-            childId: childId,
-            fingerIndex: fingerIndex,
-            templateBase64: `fingerprint_template_${fingerIndex}_base64`,
-            qualityScore: regFingerQuality[fingerIndex] || 80,
-            createdAt: new Date().toISOString(),
-            status: 'PENDING'
-          });
-          if (enrollResult) successCount++;
-        } catch (error) {
-          console.error('Error saving fingerprint:', error);
-        }
-      }
-
-      setIsSavingFingerprints(false);
+      const result = await addRegistration(newChild);
+      let childId = null;
       
-      if (successCount > 0) {
-        showToast(`✓ ${successCount} fingerprint(s) enrolled successfully!`, 'success');
-        await fetchChildren();
-        await fetchTodayRegistrations();
-        await fetchFingerprints();
-        setRegistrationStep(3);
-      } else {
-        showToast('Failed to save fingerprints. You can add them later.', 'warning');
-        setRegistrationStep(3);
+      if (result && (result.child || result.id)) {
+        childId = result.child?.id || result.id;
       }
-    } else {
+
+      if (childId) {
+        let successCount = 0;
+        // Save fingerprints for this child
+        for (const fingerIndex of regCapturedFingers) {
+          try {
+            const enrollResult = await apiEnrollBiometric({
+              id: crypto.randomUUID(),
+              childId: childId,
+              fingerIndex: fingerIndex,
+              templateBase64: `fingerprint_template_${fingerIndex}_base64`,
+              qualityScore: regFingerQuality[fingerIndex] || 80,
+              createdAt: new Date().toISOString(),
+              status: 'PENDING'
+            });
+            if (enrollResult) successCount++;
+          } catch (error) {
+            console.error('Error saving fingerprint:', error);
+          }
+        }
+        
+        if (successCount > 0) {
+          showToast(`✓ ${successCount} fingerprint(s) enrolled successfully!`, 'success');
+          await fetchChildren();
+          await fetchTodayRegistrations();
+          await fetchFingerprints();
+          setRegistrationStep(3);
+        } else {
+          showToast('Failed to save fingerprints. You can add them later.', 'warning');
+          setRegistrationStep(3);
+        }
+      } else {
+        showToast('Failed to register child. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Error saving fingerprints:', error);
+      showToast('An error occurred. Please try again.', 'error');
+    } finally {
       setIsSavingFingerprints(false);
-      showToast('Failed to register child. Please try again.', 'error');
+      setIsAddingChild(false);
     }
   };
 
   const handleRegSkipFingerprints = async () => {
-    // Register child without fingerprints
-    const newChild = {
-      fullName: formData.fullName,
-      estimatedBirthYear: formData.estimatedBirthYear,
-      gender: formData.gender,
-      primaryLocationId: formData.primaryLocationId,
-      createdByStaffId: user?.id || user?.user_id
-    };
+    setIsAddingChild(true);
+    try {
+      // Register child without fingerprints
+      const newChild = {
+        fullName: formData.fullName,
+        estimatedBirthYear: formData.estimatedBirthYear,
+        gender: formData.gender,
+        primaryLocationId: formData.primaryLocationId,
+        createdByStaffId: user?.id || user?.user_id
+      };
 
-    const result = await addRegistration(newChild);
-    if (result) {
-      showToast(`✓ Child registered successfully with ID: ${generatedId}!`, 'success');
-      await fetchChildren();
-      await fetchTodayRegistrations();
-      await generateRegistrationId();
-      setRegistrationStep(3);
-    } else {
-      showToast('Failed to register child. Please try again.', 'error');
+      const result = await addRegistration(newChild);
+      if (result) {
+        showToast(`✓ Child registered successfully with ID: ${generatedId}!`, 'success');
+        await fetchChildren();
+        await fetchTodayRegistrations();
+        await generateRegistrationId();
+        setRegistrationStep(3);
+      } else {
+        showToast('Failed to register child. Please try again.', 'error');
+      }
+    } finally {
+      setIsAddingChild(false);
     }
   };
 
@@ -1113,30 +1155,40 @@ const ChildRegistration = () => {
 
   const handleSaveLocation = async () => {
     if (!validateLocationForm()) return;
-    let result;
-    if (editingLocation) {
-      result = await updateLocation(editingLocation.id, locationFormData);
-      if (result) showToast('Location updated successfully!', 'success');
-    } else {
-      result = await addLocation(locationFormData);
-      if (result) showToast('Location added successfully!', 'success');
-    }
-    if (result) {
-      await fetchLocations();
-      resetLocationForm();
-    } else {
-      showToast('Failed to save location', 'error');
+    setIsAddingLocation(true);
+    try {
+      let result;
+      if (editingLocation) {
+        result = await updateLocation(editingLocation.id, locationFormData);
+        if (result) showToast('Location updated successfully!', 'success');
+      } else {
+        result = await addLocation(locationFormData);
+        if (result) showToast('Location added successfully!', 'success');
+      }
+      if (result) {
+        await fetchLocations();
+        resetLocationForm();
+      } else {
+        showToast('Failed to save location', 'error');
+      }
+    } finally {
+      setIsAddingLocation(false);
     }
   };
 
   const handleDeleteLocation = async (location) => {
     if (window.confirm(`Are you sure you want to delete location "${location.name}"?`)) {
-      const success = await deleteLocation(location.id);
-      if (success) {
-        await fetchLocations();
-        showToast('Location deleted successfully!', 'success');
-      } else {
-        showToast('Failed to delete location', 'error');
+      setIsAddingLocation(true);
+      try {
+        const success = await deleteLocation(location.id);
+        if (success) {
+          await fetchLocations();
+          showToast('Location deleted successfully!', 'success');
+        } else {
+          showToast('Failed to delete location', 'error');
+        }
+      } finally {
+        setIsAddingLocation(false);
       }
     }
   };
@@ -1372,6 +1424,7 @@ const ChildRegistration = () => {
             olderPatients={olderPatients}
             offlineMode={offlineMode}
             isSyncing={isSyncing}
+            isLoading={isLoading || isDeleting || isAddingChild || isSavingChild}
             handleStatClick={handleStatClick}
             handleActionClick={handleActionClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
@@ -1427,6 +1480,7 @@ const ChildRegistration = () => {
             setRegistrationStep={setRegistrationStep}
             handleCompleteRegistration={handleRegComplete}
             isSubmitting={isSavingFingerprints}
+            isAddingChild={isAddingChild}
           />
         )}
         {!showPrintPage && activePage === 'verify' && (
@@ -1463,6 +1517,8 @@ const ChildRegistration = () => {
             handleVerifyFingerprintClick={handleVerifyFingerprintClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
             handlePrintClick={handlePrintClick}
+            isDeleting={isDeleting}
+            deletingChildId={deletingChildId}
           />
         )}
         {!showPrintPage && activePage === 'todayList' && (
@@ -1482,6 +1538,9 @@ const ChildRegistration = () => {
             handleVerifyFingerprintClick={handleVerifyFingerprintClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
             handlePrintClick={handlePrintClick}
+            isLoading={isLoading || isSavingChild}
+            isDeleting={isDeleting}
+            deletingChildId={deletingChildId}
           />
         )}
         {!showPrintPage && activePage === 'fingerprintsList' && (
@@ -1497,6 +1556,7 @@ const ChildRegistration = () => {
             handleAddRegistrationClick={handleAddRegistrationClick}
             handlePrintClick={handlePrintClick}
             getStaffNameById={getStaffNameById}
+            isLoading={isLoading || isDeleting}
           />
         )}
         {!showPrintPage && activePage === 'locations' && (
@@ -1514,7 +1574,8 @@ const ChildRegistration = () => {
             handleEditLocation={handleEditLocation}
             handleDeleteLocation={handleDeleteLocation}
             goBack={goBack}
-            setShowLocationForm={setShowLocationForm} 
+            setShowLocationForm={setShowLocationForm}
+            isAddingLocation={isAddingLocation}
           />
         )}
         {!showPrintPage && activePage === 'enroll_fingerprint' && (
@@ -1532,6 +1593,7 @@ const ChildRegistration = () => {
             handleRemoveFingerprint={handleRemoveFingerprint}
             handleSkipFingerprints={handleSkipFingerprints}
             handleSaveFingerprints={handleSaveFingerprints}
+            isSavingFingerprints={isSavingFingerprints}
           />
         )}
         {!showPrintPage && activePage === 'view_child' && (
@@ -1543,6 +1605,7 @@ const ChildRegistration = () => {
             getStaffNameById={getStaffNameById}
             handleEditChild={handleEditChild}
             goBack={goBack}
+            isLoading={isLoading || isSavingChild || isDeleting}
           />
         )}
         {!showPrintPage && activePage === 'edit_child' && (
@@ -1555,6 +1618,7 @@ const ChildRegistration = () => {
             handleChildAgeChange={handleChildAgeChange}
             handleSaveChild={handleSaveChild}
             goBack={goBack}
+            isSavingChild={isSavingChild}
           />
         )}
         {!showPrintPage && activePage === 'youngPatients' && (
@@ -1574,6 +1638,9 @@ const ChildRegistration = () => {
             handleVerifyFingerprintClick={handleVerifyFingerprintClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
             handlePrintClick={handlePrintClick}
+            isLoading={isLoading || isSavingChild}
+            isDeleting={isDeleting}
+            deletingChildId={deletingChildId}
           />
         )}
         {!showPrintPage && activePage === 'olderPatients' && (
@@ -1593,6 +1660,9 @@ const ChildRegistration = () => {
             handleVerifyFingerprintClick={handleVerifyFingerprintClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
             handlePrintClick={handlePrintClick}
+            isLoading={isLoading || isSavingChild}
+            isDeleting={isDeleting}
+            deletingChildId={deletingChildId}
           />
         )}
       </div>
