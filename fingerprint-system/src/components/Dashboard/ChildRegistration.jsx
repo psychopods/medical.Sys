@@ -1534,6 +1534,7 @@ const ChildRegistration = () => {
             handleEditLocation={handleEditLocation}
             handleDeleteLocation={handleDeleteLocation}
             goBack={goBack}
+            setShowLocationForm={setShowLocationForm} 
           />
         )}
         {!showPrintPage && activePage === 'enroll_fingerprint' && (

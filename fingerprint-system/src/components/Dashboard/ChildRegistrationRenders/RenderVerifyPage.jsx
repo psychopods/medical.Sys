@@ -70,7 +70,7 @@ const RenderVerifyPage = ({
               <div className="child-reg-fingerprint-status"><span className="child-reg-status-badge child-reg-status-pending">Pending</span></div>
             </div>
             <div className="child-reg-form-actions">
-              <button className="child-reg-btn-primary" onClick={handleLoadExistingRecord}>Add Records</button>
+              {/* <button className="child-reg-btn-primary" onClick={handleLoadExistingRecord}>Add Records</button> */}
               <button className="child-reg-btn-secondary" onClick={() => { setFingerprintExists(null); setExistingChild(null); setExistingChildImages(null); goBack(); }}>Close</button>
             </div>
           </div>

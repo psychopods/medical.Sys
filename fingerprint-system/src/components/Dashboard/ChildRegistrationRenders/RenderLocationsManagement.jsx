@@ -13,11 +13,18 @@ const RenderLocationsManagement = ({
   handleSaveLocation,
   handleEditLocation,
   handleDeleteLocation,
-  goBack
+  goBack,
+  setShowLocationForm  // Add this prop
 }) => {
   const filteredLocations = Array.isArray(locations) ? locations.filter(location =>
     location.name?.toLowerCase().includes(searchLocations.toLowerCase())
   ) : [];
+
+  // Handle Add New Location click
+  const handleAddNewLocation = () => {
+    resetLocationForm();
+    setShowLocationForm(true);
+  };
 
   return (
     <div className="child-reg-page-content">
@@ -25,9 +32,7 @@ const RenderLocationsManagement = ({
         <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Manage Locations</h1>
-          <button className="child-reg-add-btn" onClick={() => {
-            resetLocationForm();
-          }}>
+          <button className="child-reg-add-btn" onClick={handleAddNewLocation}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 5v14M5 12h14" />
             </svg>
@@ -65,7 +70,10 @@ const RenderLocationsManagement = ({
             </div>
           </div>
           <div className="child-reg-form-actions">
-            <button className="child-reg-btn-secondary" onClick={resetLocationForm}>Cancel</button>
+            <button className="child-reg-btn-secondary" onClick={() => {
+              resetLocationForm();
+              setShowLocationForm(false);
+            }}>Cancel</button>
             <button className="child-reg-btn-primary" onClick={handleSaveLocation}>
               {editingLocation ? 'Update Location' : 'Add Location'}
             </button>
