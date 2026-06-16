@@ -738,7 +738,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                   <polyline
                     className="sd-line-path"
                     points={chartData.weeklyRegistrations.map((item, index) => {
-                      const x = (index / (chartData.weeklyRegistrations.length - 1)) * 500;
+                      const x = chartData.weeklyRegistrations.length > 1 ? (index / (chartData.weeklyRegistrations.length - 1)) * 500 : 250;
                       const y = 180 - (item.count / maxWeekly) * 160;
                       return `${x},${y}`;
                     }).join(' ')}
@@ -747,7 +747,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                     strokeWidth="2"
                   />
                   {chartData.weeklyRegistrations.map((item, index) => {
-                    const x = (index / (chartData.weeklyRegistrations.length - 1)) * 500;
+                    const x = chartData.weeklyRegistrations.length > 1 ? (index / (chartData.weeklyRegistrations.length - 1)) * 500 : 250;
                     const y = 180 - (item.count / maxWeekly) * 160;
                     return (
                       <circle key={index} cx={x} cy={y} r="4" fill="#667eea" />
@@ -788,7 +788,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                   <polygon
                     className="sd-area-polygon"
                     points={`0,180 ${chartData.activityByHour.map((item, index) => {
-                      const x = (index / (chartData.activityByHour.length - 1)) * 500;
+                      const x = chartData.activityByHour.length > 1 ? (index / (chartData.activityByHour.length - 1)) * 500 : 250;
                       const y = 180 - (item.count / maxHourly) * 160;
                       return `${x},${y}`;
                     }).join(' ')} 500,180 0,180`}
@@ -797,7 +797,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                   <polyline
                     className="sd-area-line"
                     points={chartData.activityByHour.map((item, index) => {
-                      const x = (index / (chartData.activityByHour.length - 1)) * 500;
+                      const x = chartData.activityByHour.length > 1 ? (index / (chartData.activityByHour.length - 1)) * 500 : 250;
                       const y = 180 - (item.count / maxHourly) * 160;
                       return `${x},${y}`;
                     }).join(' ')}
