@@ -4,6 +4,7 @@ import Layout from './Layout';
 import './GalleryAdmin.css';
 
 import { API_ENDPOINTS } from '../../config/endpoints.js';
+import { executeQuery, executeRun } from '../../services/db.js';
 const API_TIMEOUT = 10000;
 
 const GalleryAdmin = () => {
@@ -188,9 +189,30 @@ const GalleryAdmin = () => {
           category_icon: cat.categoryIcon
         }));
         setCategories(mappedCategories);
+
+        // Cache in SQLite
+        for (const cat of data.categories) {
+          if (cat.categoryKey) {
+            await executeRun(
+              "INSERT OR REPLACE INTO gallery_categories (category_key, category_name, category_icon) VALUES (?, ?, ?)",
+              [cat.categoryKey, cat.categoryName, cat.categoryIcon || '']
+            );
+          }
+        }
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.warn('API: Failed to fetch categories, falling back to local SQLite...', error);
+      try {
+        const localCats = await executeQuery("SELECT * FROM gallery_categories");
+        const mapped = localCats.map(cat => ({
+          category_key: cat.category_key,
+          category_name: cat.category_name,
+          category_icon: cat.category_icon
+        }));
+        setCategories(mapped);
+      } catch (dbError) {
+        console.error('Local SQLite category query failed:', dbError);
+      }
     }
   };
 
@@ -214,10 +236,46 @@ const GalleryAdmin = () => {
           created_at: item.createdAt
         }));
         setGalleryItems(mappedItems);
+
+        // Cache in SQLite
+        for (const item of data.items) {
+          await executeRun(
+            `INSERT OR REPLACE INTO gallery_items (id, media_type, category_key, title, description, image_url, thumbnail_url, video_url, created_at, last_modified_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              item.id,
+              item.mediaType,
+              item.categoryKey,
+              item.title,
+              item.description,
+              item.imageUrl || null,
+              item.thumbnailUrl || null,
+              item.videoUrl || null,
+              item.createdAt || new Date().toISOString(),
+              item.lastModifiedAt || new Date().toISOString()
+            ]
+          );
+        }
       }
     } catch (error) {
-      console.error('Error fetching gallery items:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('API: Failed to fetch gallery items, falling back to local SQLite...', error);
+      try {
+        const localItems = await executeQuery("SELECT * FROM gallery_items ORDER BY created_at DESC");
+        const mapped = localItems.map(item => ({
+          id: item.id,
+          media_type: item.media_type,
+          category_key: item.category_key,
+          title: item.title,
+          description: item.description,
+          image_url: item.image_url,
+          thumbnail_url: item.thumbnail_url,
+          video_url: item.video_url,
+          created_at: item.created_at
+        }));
+        setGalleryItems(mapped);
+      } catch (dbError) {
+        console.error('Local SQLite gallery items query failed:', dbError);
+      }
     } finally {
       setLoading(false);
     }

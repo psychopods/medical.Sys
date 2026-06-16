@@ -17,8 +17,19 @@ import {
   RenderYoungPatientsList
 } from './ChildRegistrationRenders';
 
-// API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// API base URL & endpoints
+import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
+import {
+  getLocations,
+  getChildren,
+  registerChild as apiRegisterChild,
+  enrollBiometric as apiEnrollBiometric,
+  getBiometricsForChild,
+  triggerSync,
+  updateChild as apiUpdateChild,
+  deleteChild as apiDeleteChild,
+  getChildById as apiGetChildById
+} from '../../services/api.js';
 
 // Finger names and hand mapping
 const fingerNames = {
@@ -259,7 +270,7 @@ const ChildRegistration = () => {
   // ===== DATA FETCHING FUNCTIONS =====
   const fetchStaffUsers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
+      const response = await fetch(API_ENDPOINTS.users, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -298,19 +309,8 @@ const ChildRegistration = () => {
 
   const fetchLocations = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/locations`, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          setLocations(data);
-        } else if (data.locations && Array.isArray(data.locations)) {
-          setLocations(data.locations);
-        } else {
-          setLocations([]);
-        }
-      }
+      const data = await getLocations();
+      setLocations(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching locations:', error);
       setLocations([]);
@@ -319,19 +319,14 @@ const ChildRegistration = () => {
 
   const fetchChildren = async (userMap = staffUserMap) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children`, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        let childrenArray = data.children || data;
-        childrenArray = childrenArray.map(child => ({
-          ...child,
-          registeredByName: getStaffNameById(child.createdByStaffId)
-        }));
-        setChildrenData(Array.isArray(childrenArray) ? childrenArray : []);
-        filterPatientsByAge(Array.isArray(childrenArray) ? childrenArray : []);
-      }
+      const data = await getChildren();
+      let childrenArray = Array.isArray(data) ? data : [];
+      childrenArray = childrenArray.map(child => ({
+        ...child,
+        registeredByName: getStaffNameById(child.createdByStaffId)
+      }));
+      setChildrenData(childrenArray);
+      filterPatientsByAge(childrenArray);
     } catch (error) {
       console.error('Error fetching children:', error);
       setChildrenData([]);
@@ -341,18 +336,15 @@ const ChildRegistration = () => {
   const fetchTodayRegistrations = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const response = await fetch(`${API_BASE_URL}/api/children?registrationDate=${today}`, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        let todayArray = data.children || data;
-        todayArray = todayArray.map(child => ({
+      const data = await getChildren();
+      const childrenArray = Array.isArray(data) ? data : [];
+      const todayArray = childrenArray
+        .filter(child => child.createdAt && child.createdAt.split('T')[0] === today)
+        .map(child => ({
           ...child,
           registeredByName: getStaffNameById(child.createdByStaffId)
         }));
-        setTodayData(Array.isArray(todayArray) ? todayArray : []);
-      }
+      setTodayData(todayArray);
     } catch (error) {
       console.error('Error fetching today registrations:', error);
       setTodayData([]);
@@ -362,30 +354,55 @@ const ChildRegistration = () => {
   const fetchFingerprints = async () => {
     try {
       const allFingerprints = [];
+      const isOnline = navigator.onLine;
+
+      if (!isOnline) {
+        try {
+          const { executeQuery } = await import('../../services/db.js');
+          const rows = await executeQuery('SELECT * FROM biometric_fingerprints');
+          rows.forEach(fp => {
+            const child = childrenData.find(c => c.id === fp.child_id);
+            allFingerprints.push({
+              id: fp.id,
+              childId: fp.child_id,
+              childName: child ? child.fullName : 'Unknown',
+              customSerialId: child ? child.customSerialId : '',
+              fingerIndex: fp.finger_index,
+              templateBase64: fp.template_data,
+              templateData: fp.template_data,
+              qualityScore: fp.quality_score,
+              status: fp.status,
+              version: fp.version,
+              syncStatus: fp.sync_status,
+              capturedAt: fp.created_at,
+              fingerName: fingerNames[fp.finger_index]?.name || `Finger ${fp.finger_index}`
+            });
+          });
+          setFingerprintData(allFingerprints);
+          return;
+        } catch (dbError) {
+          console.error('Error fetching fingerprints from SQLite:', dbError);
+        }
+      }
+
       for (const child of childrenData) {
         if (child.id) {
           try {
-            const response = await fetch(`${API_BASE_URL}/api/biometrics/child/${child.id}`, {
-              headers: getAuthHeaders()
+            const fingerprints = await getBiometricsForChild(child.id);
+            fingerprints.forEach(fp => {
+              if (fp && Object.keys(fp).length > 0) {
+                allFingerprints.push({ 
+                  ...fp, 
+                  childName: child.fullName, 
+                  childId: child.id,
+                  customSerialId: child.customSerialId,
+                  capturedAt: fp.capturedAt || fp.captured_at || fp.createdAt,
+                  qualityScore: fp.qualityScore || fp.quality,
+                  capturedByName: fp.capturedByName || getStaffNameById(fp.capturedBy),
+                  fingerName: fingerNames[fp.fingerIndex]?.name || `Finger ${fp.fingerIndex}`
+                });
+              }
             });
-            if (response.ok) {
-              const data = await response.json();
-              const fingerprints = Array.isArray(data) ? data : (data.fingerprints || [data]);
-              fingerprints.forEach(fp => {
-                if (fp && Object.keys(fp).length > 0) {
-                  allFingerprints.push({ 
-                    ...fp, 
-                    childName: child.fullName, 
-                    childId: child.id,
-                    customSerialId: child.customSerialId,
-                    capturedAt: fp.capturedAt || fp.captured_at || fp.createdAt,
-                    qualityScore: fp.qualityScore || fp.quality,
-                    capturedByName: fp.capturedByName || getStaffNameById(fp.capturedBy),
-                    fingerName: fingerNames[fp.fingerIndex]?.name || `Finger ${fp.fingerIndex}`
-                  });
-                }
-              });
-            }
           } catch (e) {
             console.error('Error fetching fingerprints for child:', e);
           }
@@ -415,27 +432,27 @@ const ChildRegistration = () => {
 
   const generateRegistrationId = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children`, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const childrenArray = data.children || data;
-        if (childrenArray && childrenArray.length > 0) {
-          const lastChild = childrenArray[childrenArray.length - 1];
-          const lastId = lastChild.customSerialId;
-          const match = lastId.match(/KID-\d+-(\d+)/);
-          if (match) {
-            const lastNumber = parseInt(match[1]);
-            const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
-            const currentYear = new Date().getFullYear();
-            setGeneratedId(`KID-${currentYear}-${nextNumber}`);
-            return;
-          }
+      const childrenArray = await getChildren();
+      if (childrenArray && childrenArray.length > 0) {
+        const matches = childrenArray
+          .map(c => c.customSerialId || c.custom_serial_id || '')
+          .filter(id => id.startsWith('KID-'))
+          .map(id => {
+            const parts = id.split('-');
+            return parts.length === 3 ? parseInt(parts[2]) : 0;
+          })
+          .filter(num => !isNaN(num) && num > 0);
+          
+        if (matches.length > 0) {
+          const lastNumber = Math.max(...matches);
+          const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
+          const currentYear = new Date().getFullYear();
+          setGeneratedId(`KID-${currentYear}-${nextNumber}`);
+          return;
         }
-        const currentYear = new Date().getFullYear();
-        setGeneratedId(`KID-${currentYear}-0001`);
       }
+      const currentYear = new Date().getFullYear();
+      setGeneratedId(`KID-${currentYear}-0001`);
     } catch (error) {
       console.error('Error generating registration ID:', error);
       const currentYear = new Date().getFullYear();
@@ -680,13 +697,8 @@ const ChildRegistration = () => {
   // ===== CHILD CRUD OPERATIONS =====
   const fetchChildById = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${id}`, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        return data.child || data;
-      }
+      const data = await apiGetChildById(id);
+      return data;
     } catch (error) {
       console.error('Error fetching child:', error);
     }
@@ -695,23 +707,11 @@ const ChildRegistration = () => {
 
   const updateChild = async (id, childData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          customSerialId: childData.customSerialId,
-          fullName: childData.fullName,
-          gender: childData.gender,
-          estimatedBirthYear: parseInt(childData.estimatedBirthYear),
-          primaryLocationId: childData.primaryLocationId,
-          image1: childData.image1 || null,
-          image2: childData.image2 || null,
-          image3: childData.image3 || null
-        })
+      const data = await apiUpdateChild(id, {
+        ...childData,
+        createdByStaffId: childData.createdByStaffId || user?.id || user?.user_id
       });
-      if (response.ok) {
-        return await response.json();
-      }
+      return data;
     } catch (error) {
       console.error('Error updating child:', error);
     }
@@ -720,11 +720,8 @@ const ChildRegistration = () => {
 
   const deleteChild = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-      return response.ok;
+      const success = await apiDeleteChild(id);
+      return success;
     } catch (error) {
       console.error('Error deleting child:', error);
       return false;
@@ -733,38 +730,23 @@ const ChildRegistration = () => {
 
   const addRegistration = async (newChild) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/children`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          id: crypto.randomUUID(),
-          customSerialId: generatedId,
-          fullName: newChild.fullName,
-          gender: newChild.gender,
-          estimatedBirthYear: parseInt(newChild.estimatedBirthYear),
-          primaryLocationId: newChild.primaryLocationId,
-          image1: preview1 || null,
-          image2: preview2 || null,
-          image3: preview3 || null,
-          createdByStaffId: user?.id || user?.user_id,
-          createdByName: getUserDisplayName(user)
-        })
+      const data = await apiRegisterChild({
+        id: newChild.id || crypto.randomUUID(),
+        customSerialId: generatedId,
+        fullName: newChild.fullName,
+        gender: newChild.gender,
+        estimatedBirthYear: parseInt(newChild.estimatedBirthYear),
+        primaryLocationId: newChild.primaryLocationId,
+        image1: preview1 || null,
+        image2: preview2 || null,
+        image3: preview3 || null,
+        createdByStaffId: user?.id || user?.user_id,
+        createdAt: new Date().toISOString()
       });
-      if (response.ok) {
-        return await response.json();
-      } else {
-        throw new Error('Failed to register child');
-      }
+      return data;
     } catch (error) {
       console.error('Error adding registration:', error);
-      const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
-      offlineData.push({
-        ...newChild,
-        createdByStaffId: user?.id || user?.user_id,
-        createdByName: getUserDisplayName(user)
-      });
-      localStorage.setItem('offline_registrations', JSON.stringify(offlineData));
-      return newChild;
+      return null;
     }
   };
 
@@ -880,22 +862,16 @@ const ChildRegistration = () => {
     let successCount = 0;
     for (const fingerIndex of capturedFingers) {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/biometrics/enroll`, {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            id: crypto.randomUUID(),
-            childId: enrollingChild.id,
-            fingerIndex: fingerIndex,
-            templateBase64: `fingerprint_template_${fingerIndex}_base64`,
-            qualityScore: fingerQuality[fingerIndex] || 80,
-            capturedAt: new Date().toISOString(),
-            capturedBy: user?.id || user?.user_id,
-            capturedByName: getUserDisplayName(user),
-            matcherVersion: "1.0"
-          })
+        const result = await apiEnrollBiometric({
+          id: crypto.randomUUID(),
+          childId: enrollingChild.id,
+          fingerIndex: fingerIndex,
+          templateBase64: `fingerprint_template_${fingerIndex}_base64`,
+          qualityScore: fingerQuality[fingerIndex] || 80,
+          createdAt: new Date().toISOString(),
+          status: 'PENDING'
         });
-        if (response.ok) successCount++;
+        if (result) successCount++;
       } catch (error) {
         console.error('Error saving fingerprint:', error);
       }
@@ -1000,22 +976,16 @@ const ChildRegistration = () => {
       // Save fingerprints for this child
       for (const fingerIndex of regCapturedFingers) {
         try {
-          const response = await fetch(`${API_BASE_URL}/api/biometrics/enroll`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-              id: crypto.randomUUID(),
-              childId: childId,
-              fingerIndex: fingerIndex,
-              templateBase64: `fingerprint_template_${fingerIndex}_base64`,
-              qualityScore: regFingerQuality[fingerIndex] || 80,
-              capturedAt: new Date().toISOString(),
-              capturedBy: user?.id || user?.user_id,
-              capturedByName: getUserDisplayName(user),
-              matcherVersion: "1.0"
-            })
+          const enrollResult = await apiEnrollBiometric({
+            id: crypto.randomUUID(),
+            childId: childId,
+            fingerIndex: fingerIndex,
+            templateBase64: `fingerprint_template_${fingerIndex}_base64`,
+            qualityScore: regFingerQuality[fingerIndex] || 80,
+            createdAt: new Date().toISOString(),
+            status: 'PENDING'
           });
-          if (response.ok) successCount++;
+          if (enrollResult) successCount++;
         } catch (error) {
           console.error('Error saving fingerprint:', error);
         }
@@ -1082,7 +1052,7 @@ const ChildRegistration = () => {
   // ===== LOCATION HANDLERS =====
   const addLocation = async (locationData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/locations`, {
+      const response = await fetch(API_ENDPOINTS.locations, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -1102,7 +1072,7 @@ const ChildRegistration = () => {
 
   const updateLocation = async (id, locationData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/locations/${id}`, {
+      const response = await fetch(API_ENDPOINTS.location(id), {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -1121,7 +1091,7 @@ const ChildRegistration = () => {
 
   const deleteLocation = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/locations/${id}`, {
+      const response = await fetch(API_ENDPOINTS.location(id), {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
@@ -1240,27 +1210,24 @@ const ChildRegistration = () => {
     navigateToPage('verify');
   };
 
-  const handleSyncOfflineData = () => {
+  const handleSyncOfflineData = async () => {
     setIsSyncing(true);
     showToast('Starting synchronization...', 'info');
-    setTimeout(async () => {
-      const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
-      for (const record of offlineData) {
-        try {
-          await addRegistration(record);
-        } catch (error) {
-          console.error('Error syncing record:', error);
-        }
-      }
-      localStorage.removeItem('offline_registrations');
-      setOfflineMode(!navigator.onLine);
-      showToast(`✓ Synchronization completed successfully! ${offlineData.length} records synced.`, 'success');
+    try {
+      await triggerSync();
+      const isOnline = navigator.onLine;
+      setOfflineMode(!isOnline);
+      showToast('✓ Synchronization completed successfully!', 'success');
+    } catch (error) {
+      console.error('Error syncing:', error);
+      showToast('Error occurred during synchronization', 'error');
+    } finally {
       setIsSyncing(false);
-      fetchChildren();
-      fetchTodayRegistrations();
-      fetchFingerprints();
-      generateRegistrationId();
-    }, 3000);
+      await fetchChildren();
+      await fetchTodayRegistrations();
+      await fetchFingerprints();
+      await generateRegistrationId();
+    }
   };
 
   const handleStatClick = (page, title) => {
@@ -1372,6 +1339,19 @@ const ChildRegistration = () => {
       generateRegistrationId();
     }
   }, [childrenData.length, user]);
+
+  useEffect(() => {
+    const handleOnline = () => setOfflineMode(false);
+    const handleOffline = () => setOfflineMode(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   if (loading) return <div className="child-reg-dashboard-loading"><div className="child-reg-spinner"></div><p>Loading...</p></div>;
   if (!user) return null;

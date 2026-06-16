@@ -5,6 +5,7 @@ import './UserManagement.css';
 
 // API base URL
 import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
+import { executeQuery, executeRun } from '../../services/db.js';
 
 const UserManagement = () => {
   const [user, setUser] = useState(null);
@@ -101,10 +102,26 @@ const UserManagement = () => {
         const data = await response.json();
         setPermissionCategories(data);
         setStats(prev => ({ ...prev, total_categories: data.length }));
+        
+        // Cache in SQLite
+        for (const cat of data) {
+          await executeRun(
+            "INSERT OR REPLACE INTO permission_categories (id, name, description) VALUES (?, ?, ?)",
+            [cat.id, cat.name, cat.description || '']
+          );
+        }
         return data;
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.warn('API: Failed to fetch categories, trying local SQLite fallback...', error);
+      try {
+        const localCats = await executeQuery("SELECT * FROM permission_categories");
+        setPermissionCategories(localCats);
+        setStats(prev => ({ ...prev, total_categories: localCats.length }));
+        return localCats;
+      } catch (dbError) {
+        console.error('Local SQLite category query failed:', dbError);
+      }
     }
     return [];
   };
@@ -173,10 +190,33 @@ const UserManagement = () => {
         setAvailablePermissions(data);
         setPermissions(data);
         setStats(prev => ({ ...prev, total_permissions: data.length }));
+        
+        // Cache in SQLite
+        for (const perm of data) {
+          await executeRun(
+            "INSERT OR REPLACE INTO permissions (id, slug, description, category_id) VALUES (?, ?, ?, ?)",
+            [perm.id, perm.slug, perm.description || '', perm.categoryId || perm.category_id || null]
+          );
+        }
         return data;
       }
     } catch (error) {
-      console.error('Error fetching permissions:', error);
+      console.warn('API: Failed to fetch permissions, trying local SQLite fallback...', error);
+      try {
+        const localPerms = await executeQuery("SELECT * FROM permissions");
+        const mapped = localPerms.map(p => ({
+          id: p.id,
+          slug: p.slug,
+          description: p.description,
+          categoryId: p.category_id
+        }));
+        setAvailablePermissions(mapped);
+        setPermissions(mapped);
+        setStats(prev => ({ ...prev, total_permissions: mapped.length }));
+        return mapped;
+      } catch (dbError) {
+        console.error('Local SQLite permissions query failed:', dbError);
+      }
     }
     return [];
   };
@@ -245,10 +285,32 @@ const UserManagement = () => {
         const data = await response.json();
         setRoles(data);
         setStats(prev => ({ ...prev, active_roles: data.length }));
+        
+        // Cache in SQLite
+        for (const role of data) {
+          await executeRun(
+            "INSERT OR REPLACE INTO roles (id, name, description, version, is_dirty, sync_status) VALUES (?, ?, ?, ?, 0, 'synced')",
+            [role.id, role.name, role.description || '', role.version || 1]
+          );
+        }
         return data;
       }
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      console.warn('API: Failed to fetch roles, trying local SQLite fallback...', error);
+      try {
+        const localRoles = await executeQuery("SELECT * FROM roles");
+        const mapped = localRoles.map(r => ({
+          id: r.id,
+          name: r.name,
+          description: r.description,
+          version: r.version
+        }));
+        setRoles(mapped);
+        setStats(prev => ({ ...prev, active_roles: mapped.length }));
+        return mapped;
+      } catch (dbError) {
+        console.error('Local SQLite roles query failed:', dbError);
+      }
     }
     return [];
   };
@@ -315,10 +377,47 @@ const UserManagement = () => {
         const data = await response.json();
         setUsers(data);
         setStats(prev => ({ ...prev, total_users: data.length }));
+        
+        // Cache in SQLite
+        for (const u of data) {
+          await executeRun(
+            `INSERT OR REPLACE INTO staff_users (id, username, email, password_hash, role_id, first_name, last_name, phone_number, version, is_dirty, sync_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
+            [
+              u.id, 
+              u.username, 
+              u.email, 
+              u.passwordHash || u.password_hash || '', 
+              u.roleId || u.role_id || '', 
+              u.firstName || u.first_name || '', 
+              u.lastName || u.last_name || '', 
+              u.phoneNumber || u.phone_number || '',
+              u.version || 1
+            ]
+          );
+        }
         return data;
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.warn('API: Failed to fetch users, trying local SQLite fallback...', error);
+      try {
+        const localUsers = await executeQuery("SELECT * FROM staff_users");
+        const mapped = localUsers.map(u => ({
+          id: u.id,
+          username: u.username,
+          email: u.email,
+          roleId: u.role_id,
+          firstName: u.first_name,
+          lastName: u.last_name,
+          phoneNumber: u.phone_number,
+          version: u.version
+        }));
+        setUsers(mapped);
+        setStats(prev => ({ ...prev, total_users: mapped.length }));
+        return mapped;
+      } catch (dbError) {
+        console.error('Local SQLite users query failed:', dbError);
+      }
     }
     return [];
   };
