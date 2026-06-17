@@ -1,14 +1,184 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SuperUserDashboard.css';
-import { getChildren, getUsers, getRoles, getPermissions, getPermissionCategories, getOnlineUsersCount } from '../../services/api.js';
+import { getChildren, getUsers, getRoles, getPermissions, getPermissionCategories } from '../../services/api.js';
 
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// ===== SVG ICONS =====
+const Icons = {
+  User: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+  ),
+  Devices: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="2" y="4" width="20" height="16" rx="2"/>
+      <line x1="8" y1="20" x2="16" y2="20"/>
+      <line x1="12" y1="16" x2="12" y2="20"/>
+    </svg>
+  ),
+  Online: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10"/>
+      <circle cx="12" cy="12" r="3" fill="currentColor"/>
+    </svg>
+  ),
+  Refresh: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M23 4v6h-6"/>
+      <path d="M1 20v-6h6"/>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+      <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
+    </svg>
+  ),
+  CurrentDevice: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M20 7h-4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+      <path d="M4 7h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/>
+      <line x1="12" y1="7" x2="12" y2="21"/>
+    </svg>
+  ),
+  Expand: () => (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  ),
+  Collapse: () => (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
+  ),
+  Warning: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 9v4"/>
+      <path d="M12 17h.01"/>
+      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+    </svg>
+  ),
+  OnlineDot: () => (
+    <span className="sd-online-dot"></span>
+  ),
+  BackArrow: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  )
+};
+
+// ===== DEVICE DETECTION FUNCTION =====
+const getDeviceInfo = () => {
+  const userAgent = navigator.userAgent;
+  let deviceType = 'Unknown Device';
+  let browser = 'Unknown Browser';
+  let os = 'Unknown OS';
+  
+  if (userAgent.indexOf('Windows') !== -1) os = 'Windows';
+  else if (userAgent.indexOf('Mac') !== -1) os = 'macOS';
+  else if (userAgent.indexOf('Linux') !== -1) os = 'Linux';
+  else if (userAgent.indexOf('Android') !== -1) os = 'Android';
+  else if (userAgent.indexOf('iOS') !== -1 || userAgent.indexOf('iPhone') !== -1) os = 'iOS';
+  else if (userAgent.indexOf('iPad') !== -1) os = 'iPadOS';
+  
+  if (userAgent.indexOf('Chrome') !== -1 && userAgent.indexOf('Edg') === -1 && userAgent.indexOf('OPR') === -1) browser = 'Chrome';
+  else if (userAgent.indexOf('Firefox') !== -1) browser = 'Firefox';
+  else if (userAgent.indexOf('Safari') !== -1 && userAgent.indexOf('Chrome') === -1 && userAgent.indexOf('CriOS') === -1) browser = 'Safari';
+  else if (userAgent.indexOf('Edg') !== -1) browser = 'Edge';
+  else if (userAgent.indexOf('Opera') !== -1 || userAgent.indexOf('OPR') !== -1) browser = 'Opera';
+  
+  if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(userAgent)) {
+    deviceType = 'Tablet';
+  } else if (/Mobile|iP(hone|od)|Android|BlackBerry|IEMobile|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(userAgent)) {
+    deviceType = 'Mobile';
+  } else {
+    deviceType = 'Desktop';
+  }
+  
+  return {
+    deviceType: `${deviceType} - ${os}`,
+    browser: browser,
+    os: os,
+    formatted: `${deviceType} (${os}) - ${browser}`
+  };
+};
+
+const storeDeviceInfo = () => {
+  const deviceInfo = getDeviceInfo();
+  localStorage.setItem('deviceInfo', JSON.stringify(deviceInfo));
+  return deviceInfo;
+};
+
+const getStoredDeviceInfo = () => {
+  try {
+    const stored = localStorage.getItem('deviceInfo');
+    if (stored) return JSON.parse(stored);
+  } catch (e) {
+    console.error('Error parsing device info:', e);
+  }
+  return null;
+};
+
+const generateDeviceName = (session, index, currentDeviceInfo, currentUserId, allSessions) => {
+  if (session.userAgent && session.userAgent !== 'Unknown' && session.userAgent !== null) {
+    return session.userAgent;
+  }
+  
+  const isCurrentUser = session.staffUserId === currentUserId;
+  
+  if (isCurrentUser && currentDeviceInfo) {
+    const sessionTime = session.createdAt ? new Date(session.createdAt) : new Date();
+    const now = new Date();
+    const timeDiff = Math.abs(now - sessionTime);
+    
+    let isLatest = false;
+    if (allSessions && allSessions.length > 0) {
+      const sortedSessions = [...allSessions].sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.lastActive || 0);
+        const dateB = new Date(b.createdAt || b.lastActive || 0);
+        return dateB - dateA;
+      });
+      if (sortedSessions.length > 0 && sortedSessions[0].id === session.id) {
+        isLatest = true;
+      }
+    }
+    
+    if (isLatest) {
+      return `Current Device - ${currentDeviceInfo.formatted}`;
+    } else {
+      const timeAgo = Math.floor(timeDiff / (60 * 1000));
+      let timeLabel = '';
+      if (timeAgo < 1) timeLabel = 'Just now';
+      else if (timeAgo < 60) timeLabel = `${timeAgo} min ago`;
+      else {
+        const hoursAgo = Math.floor(timeAgo / 60);
+        const minsAgo = timeAgo % 60;
+        timeLabel = `${hoursAgo}h ${minsAgo}m ago`;
+      }
+      
+      const shortId = session.id ? session.id.substring(0, 6) : (index + 1);
+      return `Session ${shortId} - ${currentDeviceInfo.deviceType} (${timeLabel})`;
+    }
+  }
+  
+  const sessionDate = session.createdAt ? new Date(session.createdAt) : new Date();
+  const timeStr = sessionDate.toLocaleTimeString();
+  const shortId = session.id ? session.id.substring(0, 6) : (index + 1);
+  return `Session #${shortId} (${timeStr})`;
+};
+
+const generateIpDisplay = (session) => {
+  if (session.ipAddress && session.ipAddress !== 'Unknown' && session.ipAddress !== null) {
+    return session.ipAddress;
+  }
+  return 'Local';
+};
+
 const SuperUserDashboard = ({ user, onLogout }) => {
   const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' or 'online-users'
+  const [currentView, setCurrentView] = useState('dashboard');
   const [dashboardData, setDashboardData] = useState({
     totalChildren: 0,
     registeredToday: 0,
@@ -48,6 +218,9 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // ===== ONLINE USERS STATE =====
   const [onlineUsersList, setOnlineUsersList] = useState([]);
   const [loadingOnlineUsers, setLoadingOnlineUsers] = useState(false);
+  const [onlineSessions, setOnlineSessions] = useState({});
+  const [expandedUsers, setExpandedUsers] = useState({});
+  const [currentDeviceInfo, setCurrentDeviceInfo] = useState(null);
 
   // Helper function to get auth headers
   const getAuthHeaders = () => {
@@ -145,30 +318,23 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     try {
       const children = await getChildren();
       
-      // Calculate today's registrations
       const today = new Date().toISOString().split('T')[0];
       const todayRegistrations = children.filter(child => 
         child.createdAt && child.createdAt.split('T')[0] === today
       );
       
-      // Calculate fingerprint status
       const captured = children.filter(child => child.fingerprintCaptured).length;
       const pending = children.length - captured;
       
-      // Calculate age distribution
       let youngCount = 0;
       let olderCount = 0;
       
       children.forEach(child => {
         const age = calculateAgeValue(child.estimatedBirthYear);
-        if (age < 18) {
-          youngCount++;
-        } else {
-          olderCount++;
-        }
+        if (age < 18) youngCount++;
+        else olderCount++;
       });
       
-      // Calculate registrations by month for chart
       const registrationsByMonth = {};
       const weeklyRegistrations = {};
       const activityByHour = {};
@@ -179,12 +345,10 @@ const SuperUserDashboard = ({ user, onLogout }) => {
           const month = date.toLocaleString('default', { month: 'short', year: 'numeric' });
           registrationsByMonth[month] = (registrationsByMonth[month] || 0) + 1;
           
-          // Weekly registrations
           const weekNum = Math.ceil(date.getDate() / 7);
           const weekKey = `Week ${weekNum}`;
           weeklyRegistrations[weekKey] = (weeklyRegistrations[weekKey] || 0) + 1;
           
-          // Activity by hour
           const hour = date.getHours();
           activityByHour[hour] = (activityByHour[hour] || 0) + 1;
         }
@@ -233,7 +397,6 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     try {
       const users = await getUsers();
       
-      // Calculate users by role
       const usersByRole = {};
       users.forEach(user => {
         const roleName = user.roleName || 'Unknown';
@@ -293,9 +456,68 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     return 0;
   };
 
-  // ===== FIX: Fetch online users count using consistent logic =====
+  // ===== CLEAN AND FILTER SESSIONS =====
+  const cleanSessions = (sessions) => {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    
+    return sessions.filter(session => {
+      if (session.expiresAt) {
+        const expiresAt = new Date(session.expiresAt);
+        if (expiresAt < now) return false;
+      }
+      
+      if (session.createdAt) {
+        const createdAt = new Date(session.createdAt);
+        if (createdAt < oneHourAgo) {
+          if (session.lastActive) {
+            const lastActive = new Date(session.lastActive);
+            const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+            return lastActive > fiveMinutesAgo;
+          }
+          return false;
+        }
+        return true;
+      }
+      
+      if (session.lastActive) {
+        const lastActive = new Date(session.lastActive);
+        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+        return lastActive > fiveMinutesAgo;
+      }
+      
+      return false;
+    });
+  };
+
+  // ===== FETCH ONLINE USERS COUNT WITH SESSION TRACKING =====
   const fetchOnlineUsersCount = async () => {
     try {
+      const sessionsResponse = await fetch(`${API_BASE_URL}/api/auth/sessions`, {
+        headers: getAuthHeaders()
+      });
+      
+      if (sessionsResponse.ok) {
+        const sessionsData = await sessionsResponse.json();
+        const sessions = sessionsData.sessions || sessionsData.data || [];
+        const validSessions = cleanSessions(sessions);
+        
+        const userSessions = {};
+        validSessions.forEach(session => {
+          if (session.staffUserId) {
+            if (!userSessions[session.staffUserId]) {
+              userSessions[session.staffUserId] = [];
+            }
+            userSessions[session.staffUserId].push(session);
+          }
+        });
+        
+        const uniqueUsers = Object.keys(userSessions).length;
+        setOnlineSessions(userSessions);
+        return uniqueUsers;
+      }
+      
+      // Fallback to user-based filtering if sessions API fails
       const allUsers = await getUsers();
       const now = Date.now();
       const fiveMinutesAgo = now - (5 * 60 * 1000);
@@ -314,30 +536,146 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     }
   };
 
-  // ===== FIX: Fetch detailed online users list using same logic =====
+  // ===== FETCH DETAILED ONLINE USERS LIST WITH SESSION INFO =====
   const fetchOnlineUsersList = async () => {
     setLoadingOnlineUsers(true);
     try {
-      const allUsers = await getUsers();
-      const now = Date.now();
-      const fiveMinutesAgo = now - (5 * 60 * 1000);
-      
-      const online = allUsers.filter(u => {
-        const lastActiveTime = u.lastActive || u.last_active;
-        if (!lastActiveTime) return false;
-        const lastActive = new Date(lastActiveTime).getTime();
-        return lastActive > fiveMinutesAgo;
+      // Try to get sessions from API
+      const sessionsResponse = await fetch(`${API_BASE_URL}/api/auth/sessions`, {
+        headers: getAuthHeaders()
       });
       
-      setOnlineUsersList(online);
-      // Also update dashboardData.onlineNow to match
-      setDashboardData(prev => ({ ...prev, onlineNow: online.length }));
+      const allUsers = await getUsers();
+      const deviceInfo = getStoredDeviceInfo();
+      setCurrentDeviceInfo(deviceInfo);
+      
+      let onlineUsers = [];
+      let userSessions = {};
+      
+      if (sessionsResponse.ok) {
+        const sessionsData = await sessionsResponse.json();
+        const sessions = sessionsData.sessions || sessionsData.data || [];
+        const validSessions = cleanSessions(sessions);
+        
+        // Group sessions by user ID
+        validSessions.forEach(session => {
+          if (session.staffUserId) {
+            if (!userSessions[session.staffUserId]) {
+              userSessions[session.staffUserId] = [];
+            }
+            userSessions[session.staffUserId].push(session);
+          }
+        });
+        
+        setOnlineSessions(userSessions);
+        
+        const onlineUserIds = Object.keys(userSessions);
+        onlineUsers = allUsers.filter(u => onlineUserIds.includes(u.id));
+        
+        // Add session info to each user
+        onlineUsers = onlineUsers.map(u => {
+          const sessions = userSessions[u.id] || [];
+          const sortedSessions = sessions.sort((a, b) => {
+            const dateA = new Date(a.createdAt || a.lastActive || 0);
+            const dateB = new Date(b.createdAt || b.lastActive || 0);
+            return dateB - dateA;
+          });
+          
+          const sessionsWithNames = sortedSessions.map((session, idx) => {
+            const isCurrentUser = session.staffUserId === user?.id;
+            const deviceName = generateDeviceName(session, idx, deviceInfo, user?.id, sortedSessions);
+            const ipDisplay = generateIpDisplay(session);
+            const isLatest = idx === 0;
+            
+            return {
+              ...session,
+              displayName: deviceName,
+              displayIp: ipDisplay,
+              isCurrentDevice: isCurrentUser && isLatest && deviceName.includes('Current Device')
+            };
+          });
+          
+          const displaySessions = sessionsWithNames.slice(0, 5);
+          const hasMore = sessionsWithNames.length > 5;
+          
+          return {
+            ...u,
+            sessions: sessionsWithNames,
+            displaySessions: displaySessions,
+            hasMore: hasMore,
+            deviceCount: sessionsWithNames.length,
+            isExpanded: expandedUsers[u.id] || false
+          };
+        });
+      } else {
+        // Fallback: filter users by lastActive
+        const now = Date.now();
+        const fiveMinutesAgo = now - (5 * 60 * 1000);
+        
+        onlineUsers = allUsers.filter(u => {
+          const lastActiveTime = u.lastActive || u.last_active;
+          if (!lastActiveTime) return false;
+          const lastActive = new Date(lastActiveTime).getTime();
+          return lastActive > fiveMinutesAgo;
+        });
+        
+        // Add device info for current user
+        onlineUsers = onlineUsers.map(u => {
+          const isCurrentUser = u.id === user?.id;
+          const sessions = [];
+          
+          if (isCurrentUser && deviceInfo) {
+            sessions.push({
+              id: 'current-session',
+              staffUserId: u.id,
+              displayName: `Current Device - ${deviceInfo.formatted}`,
+              displayIp: 'Local',
+              isCurrentDevice: true,
+              createdAt: new Date().toISOString()
+            });
+          }
+          
+          return {
+            ...u,
+            sessions: sessions,
+            displaySessions: sessions,
+            hasMore: false,
+            deviceCount: sessions.length || 1,
+            isExpanded: expandedUsers[u.id] || false
+          };
+        });
+      }
+      
+      setOnlineUsersList(onlineUsers);
+      setDashboardData(prev => ({ ...prev, onlineNow: onlineUsers.length }));
     } catch (error) {
       console.error('Error fetching online users list:', error);
       setOnlineUsersList([]);
     } finally {
       setLoadingOnlineUsers(false);
     }
+  };
+
+  // Toggle expanded view for a user's sessions
+  const toggleExpandUser = (userId) => {
+    setExpandedUsers(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
+    
+    setOnlineUsersList(prevList => 
+      prevList.map(user => {
+        if (user.id === userId) {
+          const isExpanded = !user.isExpanded;
+          return {
+            ...user,
+            isExpanded: isExpanded,
+            displaySessions: isExpanded ? user.sessions : user.sessions.slice(0, 5)
+          };
+        }
+        return user;
+      })
+    );
   };
 
   // Load all dashboard data
@@ -378,6 +716,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   };
 
   useEffect(() => {
+    const deviceInfo = storeDeviceInfo();
+    setCurrentDeviceInfo(deviceInfo);
     loadDashboardData();
     loadHealthData();
     const interval = setInterval(() => {
@@ -452,24 +792,32 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     <div className="sd-online-users-view">
       <div className="sd-page-header">
         <button className="sd-back-btn" onClick={handleBackToDashboard}>
-          ← Back to Dashboard
+          <Icons.BackArrow /> Back to Dashboard
         </button>
         <h1>Online Users</h1>
         <button className="sd-refresh-btn" onClick={fetchOnlineUsersList} disabled={loadingOnlineUsers}>
-          {loadingOnlineUsers ? 'Refreshing...' : '🔄 Refresh'}
+          <Icons.Refresh />
+          {loadingOnlineUsers ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
       <div className="sd-online-stats">
         <div className="sd-online-stats-card">
-          <div className="sd-online-stats-icon">👤</div>
+          <div className="sd-online-stats-icon"><Icons.User /></div>
           <div className="sd-online-stats-info">
             <h2>{onlineUsersList.length}</h2>
             <p>Users Currently Online</p>
           </div>
         </div>
         <div className="sd-online-stats-card">
-          <div className="sd-online-stats-icon">🟢</div>
+          <div className="sd-online-stats-icon"><Icons.Devices /></div>
+          <div className="sd-online-stats-info">
+            <h2>{Object.values(onlineSessions).reduce((acc, sessions) => acc + sessions.length, 0) || onlineUsersList.reduce((acc, u) => acc + (u.deviceCount || 1), 0)}</h2>
+            <p>Active Sessions</p>
+          </div>
+        </div>
+        <div className="sd-online-stats-card">
+          <div className="sd-online-stats-icon"><Icons.Online /></div>
           <div className="sd-online-stats-info">
             <h2>{dashboardData.totalUsers}</h2>
             <p>Total Registered Users</p>
@@ -486,7 +834,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         <div className="sd-online-table-container">
           {onlineUsersList.length === 0 ? (
             <div className="sd-online-empty">
-              <div className="sd-online-empty-icon">🟢</div>
+              <div className="sd-online-empty-icon"><Icons.Online /></div>
               <h3>No Users Online</h3>
               <p>There are currently no users active on the system.</p>
             </div>
@@ -499,6 +847,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                   <th>Full Name</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th>Devices</th>
                   <th>Last Active</th>
                   <th>Status</th>
                 </tr>
@@ -520,10 +869,58 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                         {user.roleName || user.role || 'User'}
                       </span>
                     </td>
+                    <td>
+                      <div className="sd-device-cell">
+                        <span 
+                          className={`sd-device-badge ${user.deviceCount > 1 ? 'sd-multiple-devices' : 'sd-single-device'}`}
+                          onClick={() => user.deviceCount > 0 && toggleExpandUser(user.id)}
+                          style={{ cursor: user.deviceCount > 0 ? 'pointer' : 'default' }}
+                        >
+                          {user.deviceCount || 0} {user.deviceCount === 1 ? 'device' : 'devices'}
+                          {user.deviceCount > 1 && (
+                            <span className="sd-device-warning" title="User is logged in on multiple devices">
+                              <Icons.Warning />
+                            </span>
+                          )}
+                          {user.deviceCount > 5 && (
+                            <span className="sd-device-expand-icon">
+                              {user.isExpanded ? <Icons.Collapse /> : <Icons.Expand />}
+                            </span>
+                          )}
+                        </span>
+                        {user.deviceCount > 0 && (
+                          <div className="sd-device-details">
+                            {(user.isExpanded ? user.sessions : user.displaySessions).map((session, idx) => (
+                              <div key={idx} className={`sd-device-info ${session.isCurrentDevice ? 'sd-current-device' : ''}`}>
+                                <span className="sd-device-agent">
+                                  {session.isCurrentDevice && (
+                                    <span className="sd-current-device-badge">
+                                      <Icons.CurrentDevice /> Current
+                                    </span>
+                                  )}
+                                  {session.displayName || 'Unknown Device'}
+                                </span>
+                                <span className="sd-device-ip">
+                                  {session.displayIp || 'Unknown IP'}
+                                </span>
+                                <span className="sd-device-time">
+                                  {session.createdAt ? new Date(session.createdAt).toLocaleString() : 'Unknown time'}
+                                </span>
+                              </div>
+                            ))}
+                            {user.hasMore && !user.isExpanded && (
+                              <div className="sd-device-show-more" onClick={() => toggleExpandUser(user.id)}>
+                                + {user.sessions.length - 5} more devices. Click to show all.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </td>
                     <td>{formatDateTime(user.lastActive)}</td>
                     <td>
                       <span className="sd-status-online">
-                        <span className="sd-online-dot"></span> Online
+                        <Icons.OnlineDot /> Online
                       </span>
                     </td>
                   </tr>
@@ -571,12 +968,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
           <div className="sd-health-header">
             <h2>System Health Monitor</h2>
             <button className="sd-refresh-btn" onClick={() => { loadHealthData(); loadDashboardData(); }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M23 4v6h-6"/>
-                <path d="M1 20v-6h6"/>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
-                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
-              </svg>
+              <Icons.Refresh />
               Refresh
             </button>
           </div>
