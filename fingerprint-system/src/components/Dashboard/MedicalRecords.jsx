@@ -14,6 +14,14 @@ const MedicalRecords = () => {
   const [activeTab, setActiveTab] = useState("baseline");
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
+  // Offline and Sync States
+  const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
+  const [syncState, setSyncState] = useState({
+    state: "idle",
+    message: "Ready",
+  });
+  const [isSyncing, setIsSyncing] = useState(false);
+
   // Baseline Information
   const [baselineData, setBaselineData] = useState({
     kidId: "",
@@ -186,6 +194,35 @@ const MedicalRecords = () => {
     "Urinalysis (normal)",
     "Urinalysis (abnormal)",
   ];
+
+  useEffect(() => {
+    const unsubscribeSync = api.registerSyncListener(setSyncState);
+    return () => {
+      unsubscribeSync();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setOfflineMode(false);
+      api.triggerSync();
+    };
+    const handleOffline = () => setOfflineMode(true);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  const handleSyncOfflineData = async () => {
+    setIsSyncing(true);
+    await api.triggerSync();
+    setIsSyncing(false);
+  };
 
   // Get child data
   useEffect(() => {
@@ -460,13 +497,8 @@ const MedicalRecords = () => {
 
   const fetchMedicalRecords = async (childId) => {
     try {
-      const response = await fetch(API_ENDPOINTS.medicalRecords(childId), {
-        headers: getAuthHeaders(),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setMedicalRecords(data.records || data || []);
-      }
+      const data = await api.apiFetchMedicalRecords(childId);
+      setMedicalRecords(data || []);
     } catch (error) {
       console.error("Error fetching medical records:", error);
     }
@@ -474,14 +506,9 @@ const MedicalRecords = () => {
 
   const fetchVitalsRecords = async (childId) => {
     try {
-      const response = await fetch(API_ENDPOINTS.vitals(childId), {
-        headers: getAuthHeaders(),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data && Array.isArray(data)) {
-          setNutritionalHistory(data);
-        }
+      const data = await api.apiFetchVitalsRecords(childId);
+      if (data && Array.isArray(data)) {
+        setNutritionalHistory(data);
       }
     } catch (error) {
       console.error("Error fetching vitals:", error);
@@ -490,7 +517,7 @@ const MedicalRecords = () => {
 
   const fetchNutritionalHistory = async (childId) => {
     try {
-      const data = await api.getVitalsHistory(childId);
+      const data = await api.apiFetchNutritionalHistory(childId);
       setNutritionalHistory(data || []);
     } catch (error) {
       console.error("Error fetching nutritional history:", error);
@@ -499,12 +526,7 @@ const MedicalRecords = () => {
 
   const fetchMedicationRecords = async (childId) => {
     try {
-      const response = await fetch(API_ENDPOINTS.medications(childId), {
-        headers: getAuthHeaders(),
-      });
-      if (response.ok) {
-        const data = await response.json();
-      }
+      await api.apiFetchMedicationRecords(childId);
     } catch (error) {
       console.error("Error fetching medications:", error);
     }
@@ -512,12 +534,7 @@ const MedicalRecords = () => {
 
   const fetchTestsRecords = async (childId) => {
     try {
-      const response = await fetch(API_ENDPOINTS.tests(childId), {
-        headers: getAuthHeaders(),
-      });
-      if (response.ok) {
-        const data = await response.json();
-      }
+      await api.apiFetchTestsRecords(childId);
     } catch (error) {
       console.error("Error fetching tests:", error);
     }
@@ -525,7 +542,7 @@ const MedicalRecords = () => {
 
   const fetchTestsHistory = async (childId) => {
     try {
-      const data = await api.getTestsHistory(childId);
+      const data = await api.apiFetchTestsHistory(childId);
       setTestsHistory(data || []);
     } catch (error) {
       console.error("Error fetching tests history:", error);
@@ -534,12 +551,7 @@ const MedicalRecords = () => {
 
   const fetchServicesRecords = async (childId) => {
     try {
-      const response = await fetch(API_ENDPOINTS.services(childId), {
-        headers: getAuthHeaders(),
-      });
-      if (response.ok) {
-        const data = await response.json();
-      }
+      await api.apiFetchServicesRecords(childId);
     } catch (error) {
       console.error("Error fetching services:", error);
     }
@@ -547,12 +559,7 @@ const MedicalRecords = () => {
 
   const fetchSymptomsRecords = async (childId) => {
     try {
-      const response = await fetch(API_ENDPOINTS.symptoms(childId), {
-        headers: getAuthHeaders(),
-      });
-      if (response.ok) {
-        const data = await response.json();
-      }
+      await api.apiFetchSymptomsRecords(childId);
     } catch (error) {
       console.error("Error fetching symptoms:", error);
     }
@@ -560,12 +567,7 @@ const MedicalRecords = () => {
 
   const fetchClothingRecords = async (childId) => {
     try {
-      const response = await fetch(API_ENDPOINTS.clothing(childId), {
-        headers: getAuthHeaders(),
-      });
-      if (response.ok) {
-        const data = await response.json();
-      }
+      await api.apiFetchClothingRecords(childId);
     } catch (error) {
       console.error("Error fetching clothing:", error);
     }
@@ -573,7 +575,7 @@ const MedicalRecords = () => {
 
   const fetchEducationHistory = async (childId) => {
     try {
-      const data = await api.getEducationHistory(childId);
+      const data = await api.apiFetchEducationHistory(childId);
       setEducationHistory(data || []);
     } catch (error) {
       console.error("Error fetching education history:", error);
@@ -871,6 +873,70 @@ const MedicalRecords = () => {
   return (
     <Layout user={user} onLogout={handleLogout}>
       <div className="medical-records-page">
+        {/* Network & Sync Status Banner */}
+        {(offlineMode ||
+          syncState.state === "running" ||
+          syncState.message.includes("complete") ||
+          syncState.message.includes("Error") ||
+          syncState.message.includes("error")) && (
+          <div
+            className="medical-records-offline-banner"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: offlineMode
+                ? "rgba(239, 68, 68, 0.15)"
+                : "rgba(16, 185, 129, 0.15)",
+              color: offlineMode ? "#ef4444" : "#10b981",
+              border: `1px solid ${offlineMode ? "rgba(239, 68, 68, 0.3)" : "rgba(16, 185, 129, 0.3)"}`,
+              padding: "12px 20px",
+              borderRadius: "12px",
+              marginBottom: "24px",
+              fontSize: "14px",
+              fontWeight: "500",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <span
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  backgroundColor: offlineMode ? "#ef4444" : "#10b981",
+                  display: "inline-block",
+                  marginRight: "10px",
+                  boxShadow: `0 0 8px ${offlineMode ? "#ef4444" : "#10b981"}`,
+                }}
+              ></span>
+              <span>
+                Network: <strong>{offlineMode ? "Offline" : "Online"}</strong> —
+                Sync: <strong>{syncState.message}</strong>
+              </span>
+            </div>
+            {!offlineMode && (
+              <button
+                className="medical-records-sync-btn"
+                onClick={handleSyncOfflineData}
+                disabled={isSyncing}
+                style={{
+                  backgroundColor: isSyncing ? "#cccccc" : "#0066cc",
+                  color: "#ffffff",
+                  border: "none",
+                  padding: "6px 14px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  fontSize: "12px",
+                  transition: "all 0.2s",
+                }}
+              >
+                Sync Offline Data
+              </button>
+            )}
+          </div>
+        )}
+
         {toast.show && (
           <div className={`mr-toast ${toast.type}`}>
             <span>{toast.message}</span>

@@ -1708,7 +1708,12 @@ export async function triggerSync() {
         } catch (error) {
           console.error('Error syncing clothing provision record from SQLite:', error);
         }
-        // 2.6 Sync dirty notifications and read receipts
+      }
+    } catch (err) {
+      console.error('Failed to query dirty clothing provisions:', err);
+    }
+
+    // 2.6 Sync dirty notifications and read receipts
         try {
           const dirtyNotifications = await executeQuery(
             `SELECT * FROM notifications WHERE sync_status IN ('local_created', 'local_updated') OR is_dirty = 1`
@@ -2754,3 +2759,204 @@ export async function submitContactForm(form) {
         throw err;
       }
     }
+
+    /* ==========================================
+       5. USERS, ROLES, PERMISSIONS API (REST + Cache)
+       ========================================== */
+
+    export async function getUsers() {
+      const isOnline = navigator.onLine;
+      if (isOnline) {
+        try {
+          const response = await fetch(API_ENDPOINTS.users, {
+            headers: getAuthHeaders()
+          });
+          if (response.ok) {
+            const users = await response.json();
+            for (const u of users) {
+              const existing = await executeQuery('SELECT password_hash FROM staff_users WHERE id = ?', [u.id]);
+              const pwdHash = existing.length > 0 ? existing[0].password_hash : '';
+              
+              await executeRun(
+                `INSERT OR REPLACE INTO staff_users 
+                (id, username, email, password_hash, role_id, first_name, last_name, phone_number, version, is_dirty, sync_status) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
+                [
+                  u.id,
+                  u.username,
+                  u.email,
+                  pwdHash,
+                  u.roleId || u.role_id || '',
+                  u.firstName || u.first_name || '',
+                  u.lastName || u.last_name || '',
+                  u.phoneNumber || u.phone_number || '',
+                  u.version || 1
+                ]
+              );
+            }
+            await saveDB();
+            return users;
+          }
+        } catch (error) {
+          console.warn('API: Failed to fetch users online, trying SQLite cache fallback...', error);
+        }
+      }
+
+      try {
+        const localUsers = await executeQuery("SELECT * FROM staff_users");
+        const localRoles = await executeQuery("SELECT * FROM roles");
+        const roleMap = {};
+        localRoles.forEach(r => {
+          roleMap[r.id] = r.name;
+        });
+
+        return localUsers.map(u => ({
+          id: u.id,
+          username: u.username,
+          email: u.email,
+          roleId: u.role_id,
+          role_id: u.role_id,
+          roleName: roleMap[u.role_id] || 'Unknown',
+          firstName: u.first_name,
+          first_name: u.first_name,
+          lastName: u.last_name,
+          last_name: u.last_name,
+          phoneNumber: u.phone_number,
+          phone_number: u.phone_number,
+          version: u.version
+        }));
+      } catch (err) {
+        console.error('API: Error fetching users from SQLite:', err);
+        return [];
+      }
+    }
+
+    export async function getRoles() {
+      const isOnline = navigator.onLine;
+      if (isOnline) {
+        try {
+          const response = await fetch(API_ENDPOINTS.roles, {
+            headers: getAuthHeaders()
+          });
+          if (response.ok) {
+            const roles = await response.json();
+            for (const role of roles) {
+              await executeRun(
+                "INSERT OR REPLACE INTO roles (id, name, description, version, is_dirty, sync_status) VALUES (?, ?, ?, ?, 0, 'synced')",
+                [role.id, role.name, role.description || '', role.version || 1]
+              );
+            }
+            await saveDB();
+            return roles;
+          }
+        } catch (error) {
+          console.warn('API: Failed to fetch roles online, trying SQLite cache fallback...', error);
+        }
+      }
+
+      try {
+        const localRoles = await executeQuery("SELECT * FROM roles");
+        return localRoles.map(r => ({
+          id: r.id,
+          name: r.name,
+          description: r.description,
+          version: r.version
+        }));
+      } catch (err) {
+        console.error('API: Error fetching roles from SQLite:', err);
+        return [];
+      }
+    }
+
+    export async function getPermissions() {
+      const isOnline = navigator.onLine;
+      if (isOnline) {
+        try {
+          const response = await fetch(API_ENDPOINTS.permissions, {
+            headers: getAuthHeaders()
+          });
+          if (response.ok) {
+            const permissions = await response.json();
+            for (const perm of permissions) {
+              await executeRun(
+                "INSERT OR REPLACE INTO permissions (id, slug, description, category_id) VALUES (?, ?, ?, ?)",
+                [perm.id, perm.slug, perm.description || '', perm.categoryId || perm.category_id || null]
+              );
+            }
+            await saveDB();
+            return permissions;
+          }
+        } catch (error) {
+          console.warn('API: Failed to fetch permissions online, trying SQLite cache fallback...', error);
+        }
+      }
+
+      try {
+        const localPerms = await executeQuery("SELECT * FROM permissions");
+        return localPerms.map(p => ({
+          id: p.id,
+          slug: p.slug,
+          description: p.description,
+          categoryId: p.category_id,
+          category_id: p.category_id
+        }));
+      } catch (err) {
+        console.error('API: Error fetching permissions from SQLite:', err);
+        return [];
+      }
+    }
+
+    export async function getPermissionCategories() {
+      const isOnline = navigator.onLine;
+      if (isOnline) {
+        try {
+          const response = await fetch(API_ENDPOINTS.permissionCategories, {
+            headers: getAuthHeaders()
+          });
+          if (response.ok) {
+            const categories = await response.json();
+            for (const cat of categories) {
+              await executeRun(
+                "INSERT OR REPLACE INTO permission_categories (id, name, description) VALUES (?, ?, ?)",
+                [cat.id, cat.name, cat.description || '']
+              );
+            }
+            await saveDB();
+            return categories;
+          }
+        } catch (error) {
+          console.warn('API: Failed to fetch permission categories online, trying SQLite cache fallback...', error);
+        }
+      }
+
+      try {
+        const localCats = await executeQuery("SELECT * FROM permission_categories");
+        return localCats.map(c => ({
+          id: c.id,
+          name: c.name,
+          description: c.description
+        }));
+      } catch (err) {
+        console.error('API: Error fetching permission categories from SQLite:', err);
+        return [];
+      }
+    }
+
+    export async function getOnlineUsersCount() {
+      const isOnline = navigator.onLine;
+      if (isOnline) {
+        try {
+          const response = await fetch(API_ENDPOINTS.onlineUsers, {
+            headers: getAuthHeaders()
+          });
+          if (response.ok) {
+            const data = await response.json();
+            return data.count || data.length || 0;
+          }
+        } catch (error) {
+          console.warn('API: Failed to fetch online users count online, defaulting to 1...', error);
+        }
+      }
+      return 1; // Default to 1 logged in user when offline
+    }
+

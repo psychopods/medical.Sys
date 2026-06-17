@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SuperUserDashboard.css';
-import { getChildren } from '../../services/api.js';
+import { getChildren, getUsers, getRoles, getPermissions, getPermissionCategories, getOnlineUsersCount } from '../../services/api.js';
 
 // API base URL
 import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
@@ -226,34 +226,29 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch users data with role distribution
   const fetchUsersData = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.users, {
-        headers: getAuthHeaders()
+      const users = await getUsers();
+      
+      // Calculate users by role
+      const usersByRole = {};
+      users.forEach(user => {
+        const roleName = user.roleName || 'Unknown';
+        usersByRole[roleName] = (usersByRole[roleName] || 0) + 1;
       });
-      if (response.ok) {
-        const users = await response.json();
-        
-        // Calculate users by role
-        const usersByRole = {};
-        users.forEach(user => {
-          const roleName = user.roleName || 'Unknown';
-          usersByRole[roleName] = (usersByRole[roleName] || 0) + 1;
-        });
-        
-        const roleData = Object.entries(usersByRole).map(([role, count]) => ({
-          role,
-          count
-        }));
-        
-        setChartData(prev => ({
-          ...prev,
-          usersByRole: roleData
-        }));
-        
-        return {
-          totalUsers: users.length,
-          recentUsers: users.slice(0, 5)
-        };
-      }
+      
+      const roleData = Object.entries(usersByRole).map(([role, count]) => ({
+        role,
+        count
+      }));
+      
+      setChartData(prev => ({
+        ...prev,
+        usersByRole: roleData
+      }));
+      
+      return {
+        totalUsers: users.length,
+        recentUsers: users.slice(0, 5)
+      };
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -263,13 +258,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch roles data
   const fetchRolesData = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.roles, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const roles = await response.json();
-        return roles.length;
-      }
+      const roles = await getRoles();
+      return roles.length;
     } catch (error) {
       console.error('Error fetching roles:', error);
     }
@@ -279,13 +269,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch permissions data
   const fetchPermissionsData = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.permissions, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const permissions = await response.json();
-        return permissions.length;
-      }
+      const permissions = await getPermissions();
+      return permissions.length;
     } catch (error) {
       console.error('Error fetching permissions:', error);
     }
@@ -295,13 +280,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch categories data
   const fetchCategoriesData = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.permissionCategories, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const categories = await response.json();
-        return categories.length;
-      }
+      const categories = await getPermissionCategories();
+      return categories.length;
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
@@ -311,13 +291,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   // Fetch online users count
   const fetchOnlineUsers = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.onlineUsers, {
-        headers: getAuthHeaders()
-      });
-      if (response.ok) {
-        const data = await response.json();
-        return data.count || data.length || 0;
-      }
+      const count = await getOnlineUsersCount();
+      return count;
     } catch (error) {
       console.error('Error fetching online users:', error);
     }
