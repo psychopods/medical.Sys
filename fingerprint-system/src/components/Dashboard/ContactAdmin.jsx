@@ -15,6 +15,13 @@ const ContactAdmin = () => {
   const [editingSubmission, setEditingSubmission] = useState(null);
   const [viewingSubmission, setViewingSubmission] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  
+  // ===== LOADING STATES =====
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  
   const [formData, setFormData] = useState({
     id: '',
     fullName: '',
@@ -203,6 +210,7 @@ const ContactAdmin = () => {
 
   // Create contact submission
   const createSubmission = async () => {
+    setIsSaving(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.contactSubmissions, {
         method: 'POST',
@@ -219,7 +227,7 @@ const ContactAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Contact submission created successfully');
-        fetchSubmissions();
+        await fetchSubmissions();
         setActivePage('submissions');
         resetForm();
       } else {
@@ -228,11 +236,14 @@ const ContactAdmin = () => {
     } catch (error) {
       console.error('Error creating submission:', error);
       showToastMessage('Network error', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // Update contact submission
   const updateSubmission = async () => {
+    setIsSaving(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.contactSubmission(editingSubmission.id), {
         method: 'PUT',
@@ -248,7 +259,7 @@ const ContactAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Contact submission updated successfully');
-        fetchSubmissions();
+        await fetchSubmissions();
         setActivePage('submissions');
         setEditingSubmission(null);
         resetForm();
@@ -258,6 +269,8 @@ const ContactAdmin = () => {
     } catch (error) {
       console.error('Error updating submission:', error);
       showToastMessage('Network error', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -265,6 +278,8 @@ const ContactAdmin = () => {
   const deleteSubmission = async (id, name) => {
     if (!window.confirm(`Delete submission from "${name}"?`)) return;
     
+    setDeletingId(id);
+    setIsDeleting(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.contactSubmission(id), {
         method: 'DELETE'
@@ -274,13 +289,16 @@ const ContactAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Contact submission deleted successfully');
-        fetchSubmissions();
+        await fetchSubmissions();
       } else {
         showToastMessage(data.message || 'Failed to delete submission', 'error');
       }
     } catch (error) {
       console.error('Error deleting submission:', error);
       showToastMessage('Network error', 'error');
+    } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
     }
   };
 
@@ -333,7 +351,7 @@ const ContactAdmin = () => {
   const renderSubmissionViewPage = () => (
     <div className="ca-page">
       <div className="ca-header">
-        <button className="ca-back-btn" onClick={() => setActivePage('submissions')}>
+        <button className="ca-back-btn" onClick={() => setActivePage('submissions')} disabled={isLoading}>
           <IconBack /> Back to Submissions
         </button>
         <div className="ca-header-title">
@@ -431,12 +449,14 @@ const ContactAdmin = () => {
                 });
                 setActivePage('edit_submission');
               }}
+              disabled={isLoading}
             >
               Edit Submission
             </button>
             <button 
               className="ca-btn ca-btn-secondary" 
               onClick={() => setActivePage('submissions')}
+              disabled={isLoading}
             >
               Close
             </button>
@@ -455,7 +475,11 @@ const ContactAdmin = () => {
       </div>
       
       <div className="ca-stats-grid">
-        <div className="ca-stat-card">
+        <div 
+          className="ca-stat-card" 
+          onClick={() => { if (!isLoading) { fetchSubmissions(); setActivePage('submissions'); } }}
+          style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+        >
           <div className="ca-stat-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z"/>
@@ -483,7 +507,11 @@ const ContactAdmin = () => {
       </div>
       
       <div className="ca-actions-grid">
-        <div className="ca-action-card" onClick={() => { fetchSubmissions(); setActivePage('submissions'); }}>
+        <div 
+          className="ca-action-card" 
+          onClick={() => { if (!isLoading) { fetchSubmissions(); setActivePage('submissions'); } }}
+          style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+        >
           <div className="ca-action-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z"/>
@@ -496,7 +524,11 @@ const ContactAdmin = () => {
           </div>
         </div>
         
-        <div className="ca-action-card" onClick={() => { resetForm(); setActivePage('add_submission'); }}>
+        <div 
+          className="ca-action-card" 
+          onClick={() => { if (!isLoading) { resetForm(); setActivePage('add_submission'); } }}
+          style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+        >
           <div className="ca-action-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12 5V19" strokeWidth="2"/>
@@ -516,12 +548,12 @@ const ContactAdmin = () => {
   const renderSubmissionsList = () => (
     <div className="ca-page">
       <div className="ca-header">
-        <button className="ca-back-btn" onClick={() => setActivePage('list')}>
+        <button className="ca-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>
           <IconBack /> Back
         </button>
         <div className="ca-header-title">
           <h2>Contact Submissions</h2>
-          <button className="ca-add-btn" onClick={() => { resetForm(); setActivePage('add_submission'); }}>
+          <button className="ca-add-btn" onClick={() => { resetForm(); setActivePage('add_submission'); }} disabled={isLoading}>
             <IconAdd /> Add Submission
           </button>
         </div>
@@ -554,7 +586,7 @@ const ContactAdmin = () => {
                     <button className="ca-action-btn ca-view" onClick={() => {
                       setViewingSubmission(sub);
                       setActivePage('view_submission');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconView /> View
                     </button>
                     <button className="ca-action-btn ca-edit" onClick={() => {
@@ -567,11 +599,15 @@ const ContactAdmin = () => {
                         messageContent: sub.messageContent
                       });
                       setActivePage('edit_submission');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconEdit /> Edit
                     </button>
-                    <button className="ca-action-btn ca-delete" onClick={() => deleteSubmission(sub.id, sub.fullName)}>
-                      <IconDelete /> Delete
+                    <button className="ca-action-btn ca-delete" onClick={() => deleteSubmission(sub.id, sub.fullName)} disabled={isDeleting && deletingId === sub.id}>
+                      {isDeleting && deletingId === sub.id ? (
+                        <span className="ca-spinner-small"></span>
+                      ) : (
+                        <><IconDelete /> Delete</>
+                      )}
                     </button>
                   </div>
                 </td>
@@ -592,7 +628,7 @@ const ContactAdmin = () => {
   const renderSubmissionForm = () => (
     <div className="ca-page-full">
       <div className="ca-header">
-        <button className="ca-back-btn" onClick={() => { setActivePage('submissions'); resetForm(); }}>
+        <button className="ca-back-btn" onClick={() => { setActivePage('submissions'); resetForm(); }} disabled={isSaving}>
           <IconBack /> Back to Submissions
         </button>
         <h2>{editingSubmission ? 'Edit Contact Submission' : 'Add Contact Submission'}</h2>
@@ -609,6 +645,7 @@ const ContactAdmin = () => {
                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                 required
                 placeholder="Enter full name"
+                disabled={isSaving}
               />
             </div>
             
@@ -620,6 +657,7 @@ const ContactAdmin = () => {
                 onChange={(e) => setFormData({...formData, emailAddress: e.target.value})}
                 required
                 placeholder="Enter email address"
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -633,6 +671,7 @@ const ContactAdmin = () => {
                 onChange={(e) => setFormData({...formData, messageSubject: e.target.value})}
                 required
                 placeholder="Enter subject"
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -646,16 +685,24 @@ const ContactAdmin = () => {
                 required
                 rows="6"
                 placeholder="Enter message content..."
+                disabled={isSaving}
               />
             </div>
           </div>
           
           <div className="ca-buttons">
-            <button type="button" className="ca-btn ca-btn-secondary" onClick={() => { setActivePage('submissions'); resetForm(); }}>
+            <button type="button" className="ca-btn ca-btn-secondary" onClick={() => { setActivePage('submissions'); resetForm(); }} disabled={isSaving}>
               Cancel
             </button>
-            <button type="submit" className="ca-btn ca-btn-primary">
-              {editingSubmission ? 'Update Submission' : 'Create Submission'}
+            <button type="submit" className="ca-btn ca-btn-primary" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <span className="ca-spinner-small"></span>
+                  {editingSubmission ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                editingSubmission ? 'Update Submission' : 'Create Submission'
+              )}
             </button>
           </div>
         </form>

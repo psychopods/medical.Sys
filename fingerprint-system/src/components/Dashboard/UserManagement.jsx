@@ -79,6 +79,28 @@ const UserManagement = () => {
     name: ''
   });
 
+  // ===== LOADING STATES =====
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [isDeletingRole, setIsDeletingRole] = useState(false);
+  const [isAddingPermission, setIsAddingPermission] = useState(false);
+  const [isUpdatingPermission, setIsUpdatingPermission] = useState(false);
+  const [isDeletingPermission, setIsDeletingPermission] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+  const [isManagingPermissions, setIsManagingPermissions] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
+  // ===== ONLINE USERS STATE =====
+  const [onlineUsersList, setOnlineUsersList] = useState([]);
+  const [loadingOnlineUsers, setLoadingOnlineUsers] = useState(false);
+
   const navigate = useNavigate();
 
   // Helper function to get auth headers
@@ -639,18 +661,114 @@ const UserManagement = () => {
     }
   }, [activePage]);
 
+  // ===== FETCH ONLINE USERS =====
   const fetchOnlineUsers = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.onlineUsers, {
+      // First, get the count of online users
+      const countResponse = await fetch(API_ENDPOINTS.onlineCount, {
         headers: getAuthHeaders()
       });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(prev => ({ ...prev, online_now: data.count || data.length || 0 }));
+      
+      let count = 0;
+      if (countResponse.ok) {
+        const data = await countResponse.json();
+        count = data.activeOnlineCount || data.count || 0;
+        setStats(prev => ({ ...prev, online_now: count }));
+      }
+
+      // If there are online users, fetch the full user list and filter active ones
+      if (count > 0) {
+        const usersResponse = await fetch(API_ENDPOINTS.users, {
+          headers: getAuthHeaders()
+        });
+        
+        if (usersResponse.ok) {
+          const allUsers = await usersResponse.json();
+          
+          // Filter users who have been active in the last 5 minutes
+          const now = Date.now();
+          const fiveMinutesAgo = now - (5 * 60 * 1000);
+          
+          const onlineUsers = allUsers.filter(user => {
+            if (!user.lastActive) return false;
+            const lastActive = new Date(user.lastActive).getTime();
+            return lastActive > fiveMinutesAgo;
+          });
+          
+          setOnlineUsersList(onlineUsers);
+          // Update count if API count doesn't match filtered count
+          if (onlineUsers.length !== count) {
+            setStats(prev => ({ ...prev, online_now: onlineUsers.length }));
+          }
+        } else {
+          // If users endpoint fails, try to get sessions
+          try {
+            const sessionsResponse = await fetch(API_ENDPOINTS.sessions, {
+              headers: getAuthHeaders()
+            });
+            
+            if (sessionsResponse.ok) {
+              const sessionsData = await sessionsResponse.json();
+              const sessions = sessionsData.sessions || sessionsData.data || [];
+              
+              // Extract unique users from sessions
+              const userMap = new Map();
+              sessions.forEach(session => {
+                if (session.staffUserId && !userMap.has(session.staffUserId)) {
+                  userMap.set(session.staffUserId, {
+                    id: session.staffUserId,
+                    username: session.username || session.staffUserId,
+                    firstName: session.firstName || '',
+                    lastName: session.lastName || '',
+                    email: session.email || '',
+                    roleName: session.role || session.roleName || 'User',
+                    lastActive: session.lastActive || session.createdAt || new Date().toISOString()
+                  });
+                }
+              });
+              
+              setOnlineUsersList(Array.from(userMap.values()));
+            } else {
+              // If all fails, try to get online count only
+              setOnlineUsersList([]);
+            }
+          } catch (sessionError) {
+            console.warn('Failed to fetch sessions:', sessionError);
+            setOnlineUsersList([]);
+          }
+        }
+      } else {
+        setOnlineUsersList([]);
       }
     } catch (error) {
       console.error('Error fetching online users:', error);
+      // On error, try to get at least the current user online
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (currentUser && currentUser.id) {
+          setOnlineUsersList([{
+            id: currentUser.id,
+            username: currentUser.username || 'admin',
+            firstName: currentUser.firstName || 'System',
+            lastName: currentUser.lastName || 'Admin',
+            email: currentUser.email || '',
+            roleName: currentUser.role || 'Super Admin',
+            lastActive: new Date().toISOString()
+          }]);
+          setStats(prev => ({ ...prev, online_now: 1 }));
+        }
+      } catch (e) {
+        setOnlineUsersList([]);
+      }
     }
+  };
+
+  // Function to handle clicking on Online Now card
+  const handleShowOnlineUsers = async () => {
+    setLoadingOnlineUsers(true);
+    setActivePage('online_users');
+    await fetchOnlineUsers();
+    setLoadingOnlineUsers(false);
   };
 
   const showToast = (message, type = 'success') => {
@@ -675,18 +793,23 @@ const UserManagement = () => {
       return;
     }
     
-    const result = await addCategory({
-      name: categoryFormData.name.trim(),
-      description: categoryFormData.description || ''
-    });
-    
-    if (result) {
-      await fetchCategories();
-      setActivePage('categories');
-      resetCategoryForm();
-      showToast('Category added successfully!', 'success');
-    } else {
-      showToast('Failed to add category', 'error');
+    setIsAddingCategory(true);
+    try {
+      const result = await addCategory({
+        name: categoryFormData.name.trim(),
+        description: categoryFormData.description || ''
+      });
+      
+      if (result) {
+        await fetchCategories();
+        setActivePage('categories');
+        resetCategoryForm();
+        showToast('Category added successfully!', 'success');
+      } else {
+        showToast('Failed to add category', 'error');
+      }
+    } finally {
+      setIsAddingCategory(false);
     }
   };
 
@@ -696,24 +819,33 @@ const UserManagement = () => {
       return;
     }
     
-    const result = await updateCategory(editingCategory.id, {
-      name: categoryFormData.name.trim(),
-      description: categoryFormData.description || ''
-    });
-    
-    if (result) {
-      await fetchCategories();
-      setActivePage('categories');
-      setEditingCategory(null);
-      resetCategoryForm();
-      showToast('Category updated successfully!', 'success');
-    } else {
-      showToast('Failed to update category', 'error');
+    setIsUpdatingCategory(true);
+    try {
+      const result = await updateCategory(editingCategory.id, {
+        name: categoryFormData.name.trim(),
+        description: categoryFormData.description || ''
+      });
+      
+      if (result) {
+        await fetchCategories();
+        setActivePage('categories');
+        setEditingCategory(null);
+        resetCategoryForm();
+        showToast('Category updated successfully!', 'success');
+      } else {
+        showToast('Failed to update category', 'error');
+      }
+    } finally {
+      setIsUpdatingCategory(false);
     }
   };
 
   const handleDeleteCategory = async (categoryId, categoryName) => {
-    if (window.confirm(`Are you sure you want to delete category "${categoryName}"?`)) {
+    if (!window.confirm(`Are you sure you want to delete category "${categoryName}"?`)) return;
+    
+    setDeletingId(categoryId);
+    setIsDeletingCategory(true);
+    try {
       const success = await deleteCategory(categoryId);
       if (success) {
         await fetchCategories();
@@ -721,6 +853,9 @@ const UserManagement = () => {
       } else {
         showToast('Failed to delete category', 'error');
       }
+    } finally {
+      setIsDeletingCategory(false);
+      setDeletingId(null);
     }
   };
 
@@ -762,44 +897,58 @@ const UserManagement = () => {
   const handleAddPermission = async () => {
     if (!validatePermissionForm()) return;
 
-    const result = await addPermission({
-      slug: permissionFormData.slug.toLowerCase(),
-      description: permissionFormData.description || '',
-      categoryId: permissionFormData.categoryId
-    });
+    setIsAddingPermission(true);
+    try {
+      const result = await addPermission({
+        slug: permissionFormData.slug.toLowerCase(),
+        description: permissionFormData.description || '',
+        categoryId: permissionFormData.categoryId
+      });
 
-    if (result) {
-      await fetchAllPermissions();
-      setActivePage('permissions');
-      resetPermissionForm();
-      showToast('Permission added successfully!', 'success');
-    } else {
-      showToast('Failed to add permission', 'error');
+      if (result) {
+        await fetchAllPermissions();
+        setActivePage('permissions');
+        resetPermissionForm();
+        showToast('Permission added successfully!', 'success');
+      } else {
+        showToast('Failed to add permission', 'error');
+      }
+    } finally {
+      setIsAddingPermission(false);
     }
   };
 
   const handleUpdatePermission = async () => {
     if (!validatePermissionForm()) return;
 
-    const result = await updatePermission(editingPermission.id, {
-      slug: permissionFormData.slug.toLowerCase(),
-      description: permissionFormData.description || '',
-      categoryId: permissionFormData.categoryId
-    });
+    setIsUpdatingPermission(true);
+    try {
+      const result = await updatePermission(editingPermission.id, {
+        slug: permissionFormData.slug.toLowerCase(),
+        description: permissionFormData.description || '',
+        categoryId: permissionFormData.categoryId
+      });
 
-    if (result) {
-      await fetchAllPermissions();
-      setActivePage('permissions');
-      setEditingPermission(null);
-      resetPermissionForm();
-      showToast('Permission updated successfully!', 'success');
-    } else {
-      showToast('Failed to update permission', 'error');
+      if (result) {
+        await fetchAllPermissions();
+        setActivePage('permissions');
+        setEditingPermission(null);
+        resetPermissionForm();
+        showToast('Permission updated successfully!', 'success');
+      } else {
+        showToast('Failed to update permission', 'error');
+      }
+    } finally {
+      setIsUpdatingPermission(false);
     }
   };
 
   const handleDeletePermission = async (permissionId, permissionSlug) => {
-    if (window.confirm(`Are you sure you want to delete permission "${permissionSlug}"?`)) {
+    if (!window.confirm(`Are you sure you want to delete permission "${permissionSlug}"?`)) return;
+    
+    setDeletingId(permissionId);
+    setIsDeletingPermission(true);
+    try {
       const success = await deletePermission(permissionId);
       if (success) {
         await fetchAllPermissions();
@@ -807,6 +956,9 @@ const UserManagement = () => {
       } else {
         showToast('Failed to delete permission', 'error');
       }
+    } finally {
+      setIsDeletingPermission(false);
+      setDeletingId(null);
     }
   };
 
@@ -831,42 +983,56 @@ const UserManagement = () => {
   const handleAddRole = async () => {
     if (!validateRoleForm()) return;
     
-    const result = await addRole({
-      name: roleFormData.name,
-      description: roleFormData.description || ''
-    });
-    
-    if (result) {
-      await fetchRoles();
-      setActivePage('roles');
-      resetRoleForm();
-      showToast('Role added successfully!', 'success');
-    } else {
-      showToast('Failed to add role', 'error');
+    setIsAddingRole(true);
+    try {
+      const result = await addRole({
+        name: roleFormData.name,
+        description: roleFormData.description || ''
+      });
+      
+      if (result) {
+        await fetchRoles();
+        setActivePage('roles');
+        resetRoleForm();
+        showToast('Role added successfully!', 'success');
+      } else {
+        showToast('Failed to add role', 'error');
+      }
+    } finally {
+      setIsAddingRole(false);
     }
   };
 
   const handleUpdateRole = async () => {
     if (!validateRoleForm()) return;
     
-    const result = await updateRole(editingRole.id, {
-      name: roleFormData.name,
-      description: roleFormData.description || ''
-    });
-    
-    if (result) {
-      await fetchRoles();
-      setActivePage('roles');
-      setEditingRole(null);
-      resetRoleForm();
-      showToast('Role updated successfully!', 'success');
-    } else {
-      showToast('Failed to update role', 'error');
+    setIsUpdatingRole(true);
+    try {
+      const result = await updateRole(editingRole.id, {
+        name: roleFormData.name,
+        description: roleFormData.description || ''
+      });
+      
+      if (result) {
+        await fetchRoles();
+        setActivePage('roles');
+        setEditingRole(null);
+        resetRoleForm();
+        showToast('Role updated successfully!', 'success');
+      } else {
+        showToast('Failed to update role', 'error');
+      }
+    } finally {
+      setIsUpdatingRole(false);
     }
   };
 
   const handleDeleteRole = async (roleId, roleName) => {
-    if (window.confirm(`Are you sure you want to delete role "${roleName}"?`)) {
+    if (!window.confirm(`Are you sure you want to delete role "${roleName}"?`)) return;
+    
+    setDeletingId(roleId);
+    setIsDeletingRole(true);
+    try {
       const success = await deleteRole(roleId);
       if (success) {
         await fetchRoles();
@@ -874,6 +1040,9 @@ const UserManagement = () => {
       } else {
         showToast('Failed to delete role', 'error');
       }
+    } finally {
+      setIsDeletingRole(false);
+      setDeletingId(null);
     }
   };
 
@@ -928,54 +1097,64 @@ const UserManagement = () => {
   const handleAddUser = async () => {
     if (!validateUserForm()) return;
     
-    const result = await addUser({
-      username: formData.username,
-      email: formData.email,
-      password: formData.password,
-      roleId: formData.roleId,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      phone: formData.phone
-    });
-    
-    if (result) {
-      await sendEmailNotification(
-        formData.email,
-        formData.username,
-        formData.password,
-        formData.firstName,
-        formData.lastName
-      );
+    setIsAddingUser(true);
+    try {
+      const result = await addUser({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        roleId: formData.roleId,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone
+      });
       
-      await fetchUsers();
-      setActivePage('users');
-      resetForm();
-      showToast('User added successfully! Credentials sent to email.', 'success');
-    } else {
-      showToast('Failed to add user', 'error');
+      if (result) {
+        await sendEmailNotification(
+          formData.email,
+          formData.username,
+          formData.password,
+          formData.firstName,
+          formData.lastName
+        );
+        
+        await fetchUsers();
+        setActivePage('users');
+        resetForm();
+        showToast('User added successfully! Credentials sent to email.', 'success');
+      } else {
+        showToast('Failed to add user', 'error');
+      }
+    } finally {
+      setIsAddingUser(false);
     }
   };
 
   const handleUpdateUser = async () => {
     if (!validateUserForm()) return;
     
-    const result = await updateUser(editingUser.id, {
-      username: formData.username,
-      email: formData.email,
-      roleId: formData.roleId,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      phone: formData.phone
-    });
-    
-    if (result) {
-      await fetchUsers();
-      setActivePage('users');
-      setEditingUser(null);
-      resetForm();
-      showToast('User updated successfully!', 'success');
-    } else {
-      showToast('Failed to update user', 'error');
+    setIsUpdatingUser(true);
+    try {
+      const result = await updateUser(editingUser.id, {
+        username: formData.username,
+        email: formData.email,
+        roleId: formData.roleId,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone
+      });
+      
+      if (result) {
+        await fetchUsers();
+        setActivePage('users');
+        setEditingUser(null);
+        resetForm();
+        showToast('User updated successfully!', 'success');
+      } else {
+        showToast('Failed to update user', 'error');
+      }
+    } finally {
+      setIsUpdatingUser(false);
     }
   };
 
@@ -1001,28 +1180,37 @@ const UserManagement = () => {
       return;
     }
 
-    const result = await resetUserPassword(resettingUser.id, newPassword);
-    
-    if (result) {
-      await sendEmailNotification(
-        resettingUser.email,
-        resettingUser.username,
-        newPassword,
-        resettingUser.firstName,
-        resettingUser.lastName
-      );
-      showToast(`Password reset successfully for ${resettingUser.username}. New credentials sent to email.`, 'success');
-      setActivePage('users');
-      setResettingUser(null);
-      setNewPassword('');
-      setConfirmPassword('');
-    } else {
-      showToast('Failed to reset password', 'error');
+    setIsResettingPassword(true);
+    try {
+      const result = await resetUserPassword(resettingUser.id, newPassword);
+      
+      if (result) {
+        await sendEmailNotification(
+          resettingUser.email,
+          resettingUser.username,
+          newPassword,
+          resettingUser.firstName,
+          resettingUser.lastName
+        );
+        showToast(`Password reset successfully for ${resettingUser.username}. New credentials sent to email.`, 'success');
+        setActivePage('users');
+        setResettingUser(null);
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        showToast('Failed to reset password', 'error');
+      }
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
   const handleDeleteUser = async (userId, userName) => {
-    if (window.confirm(`Are you sure you want to delete ${userName}?`)) {
+    if (!window.confirm(`Are you sure you want to delete ${userName}?`)) return;
+    
+    setDeletingId(userId);
+    setIsDeletingUser(true);
+    try {
       const success = await deleteUser(userId);
       if (success) {
         await fetchUsers();
@@ -1030,6 +1218,9 @@ const UserManagement = () => {
       } else {
         showToast('Failed to delete user', 'error');
       }
+    } finally {
+      setIsDeletingUser(false);
+      setDeletingId(null);
     }
   };
 
@@ -1061,23 +1252,28 @@ const UserManagement = () => {
     
     const isCurrentlyAssigned = selectedRolePermissions.includes(permissionId);
     
-    let success;
-    if (isCurrentlyAssigned) {
-      success = await removePermission(selectedRoleForPermissions.id, permissionId);
-    } else {
-      success = await assignPermission(selectedRoleForPermissions.id, permissionId);
-    }
-    
-    if (success) {
+    setIsManagingPermissions(true);
+    try {
+      let success;
       if (isCurrentlyAssigned) {
-        setSelectedRolePermissions(prev => prev.filter(id => id !== permissionId));
-        showToast('Permission removed from role', 'success');
+        success = await removePermission(selectedRoleForPermissions.id, permissionId);
       } else {
-        setSelectedRolePermissions(prev => [...prev, permissionId]);
-        showToast('Permission assigned to role', 'success');
+        success = await assignPermission(selectedRoleForPermissions.id, permissionId);
       }
-    } else {
-      showToast('Failed to update permission', 'error');
+      
+      if (success) {
+        if (isCurrentlyAssigned) {
+          setSelectedRolePermissions(prev => prev.filter(id => id !== permissionId));
+          showToast('Permission removed from role', 'success');
+        } else {
+          setSelectedRolePermissions(prev => [...prev, permissionId]);
+          showToast('Permission assigned to role', 'success');
+        }
+      } else {
+        showToast('Failed to update permission', 'error');
+      }
+    } finally {
+      setIsManagingPermissions(false);
     }
   };
 
@@ -1174,6 +1370,7 @@ const UserManagement = () => {
       <button 
         className={`um-quick-action-btn ${activePage === 'users' ? 'active' : ''}`}
         onClick={() => setActivePage('users')}
+        disabled={isLoading}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/>
@@ -1184,6 +1381,7 @@ const UserManagement = () => {
       <button 
         className={`um-quick-action-btn ${activePage === 'roles' ? 'active' : ''}`}
         onClick={() => setActivePage('roles')}
+        disabled={isLoading}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12"/>
@@ -1194,6 +1392,7 @@ const UserManagement = () => {
       <button 
         className={`um-quick-action-btn ${activePage === 'permissions' ? 'active' : ''}`}
         onClick={() => setActivePage('permissions')}
+        disabled={isLoading}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
@@ -1204,6 +1403,7 @@ const UserManagement = () => {
       <button 
         className={`um-quick-action-btn ${activePage === 'categories' ? 'active' : ''}`}
         onClick={() => setActivePage('categories')}
+        disabled={isLoading}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M4 4L20 4"/>
@@ -1216,11 +1416,131 @@ const UserManagement = () => {
     </div>
   );
 
+  // Render Online Users Page
+  const renderOnlineUsersPage = () => (
+    <div className="um-page-content">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('list')} disabled={loadingOnlineUsers}>
+          ← Back to Dashboard
+        </button>
+        <QuickActionButtons />
+        <div className="um-header-actions">
+          <h1>Online Users</h1>
+          <button 
+            className="um-refresh-btn" 
+            onClick={handleShowOnlineUsers} 
+            disabled={loadingOnlineUsers}
+          >
+            {loadingOnlineUsers ? 'Refreshing...' : '🔄 Refresh'}
+          </button>
+        </div>
+      </div>
+      
+      <div className="um-online-users-stats">
+        <div className="um-online-stats-card">
+          <div className="um-online-stats-icon" style={{ background: '#e3f2fd', color: '#1565c0' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="12" r="4" fill="currentColor"/>
+            </svg>
+          </div>
+          <div className="um-online-stats-info">
+            <h2>{onlineUsersList.length}</h2>
+            <p>Users Currently Online</p>
+          </div>
+        </div>
+        
+        <div className="um-online-stats-card">
+          <div className="um-online-stats-icon" style={{ background: '#e8f5e9', color: '#2e7d32' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/>
+              <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"/>
+            </svg>
+          </div>
+          <div className="um-online-stats-info">
+            <h2>{stats.total_users}</h2>
+            <p>Total Registered Users</p>
+          </div>
+        </div>
+      </div>
+
+      {loadingOnlineUsers ? (
+        <div className="um-online-loading">
+          <div className="um-spinner"></div>
+          <p>Loading online users...</p>
+        </div>
+      ) : (
+        <div className="um-online-users-table-container">
+          {onlineUsersList.length === 0 ? (
+            <div className="um-no-online-users">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.3"/>
+              </svg>
+              <h3>No Users Online</h3>
+              <p>There are currently no users active on the system.</p>
+            </div>
+          ) : (
+            <table className="um-data-table">
+              <thead>
+                <tr>
+                  <th>S/N</th>
+                  <th>Username</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Last Active</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {onlineUsersList.map((onlineUser, index) => {
+                  // Handle different property naming conventions
+                  const username = onlineUser.username || onlineUser.user_name || 'User';
+                  const firstName = onlineUser.firstName || onlineUser.first_name || '';
+                  const lastName = onlineUser.lastName || onlineUser.last_name || '';
+                  const email = onlineUser.email || '';
+                  const role = onlineUser.roleName || onlineUser.role || onlineUser.role_name || 'User';
+                  const lastActive = onlineUser.lastActive || onlineUser.last_active || onlineUser.updatedAt || new Date().toISOString();
+                  
+                  return (
+                    <tr key={onlineUser.id || index}>
+                      <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                      <td>
+                        <div className="um-online-user-username">
+                          <span className="um-online-indicator"></span>
+                          {username}
+                        </div>
+                      </td>
+                      <td>{firstName} {lastName}</td>
+                      <td>{email}</td>
+                      <td>
+                        <span className="um-role-badge">{role}</span>
+                      </td>
+                      <td>
+                        {new Date(lastActive).toLocaleString()}
+                      </td>
+                      <td>
+                        <span className="um-status-badge um-status-online">
+                          <span className="um-online-dot"></span> Online
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   // Render User View Page
   const renderUserViewPage = () => (
     <div className="um-page-content-full">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('users')}>← Back to Users</button>
+        <button className="um-back-btn" onClick={() => setActivePage('users')} disabled={isLoading}>← Back to Users</button>
         <h1>User Details</h1>
       </div>
       
@@ -1276,10 +1596,10 @@ const UserManagement = () => {
         </div>
 
         <div className="um-view-actions">
-          <button className="um-btn-secondary" onClick={() => setActivePage('users')}>Close</button>
+          <button className="um-btn-secondary" onClick={() => setActivePage('users')} disabled={isLoading}>Close</button>
           <button className="um-btn-primary" onClick={() => {
             handleEditUser(viewingUser);
-          }}>Edit User</button>
+          }} disabled={isLoading}>Edit User</button>
         </div>
       </div>
     </div>
@@ -1289,7 +1609,7 @@ const UserManagement = () => {
   const renderRoleViewPage = () => (
     <div className="um-page-content-full">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('roles')}>← Back to Roles</button>
+        <button className="um-back-btn" onClick={() => setActivePage('roles')} disabled={isLoading}>← Back to Roles</button>
         <h1>Role Details</h1>
       </div>
       
@@ -1332,10 +1652,10 @@ const UserManagement = () => {
         </div>
 
         <div className="um-view-actions">
-          <button className="um-btn-secondary" onClick={() => setActivePage('roles')}>Close</button>
+          <button className="um-btn-secondary" onClick={() => setActivePage('roles')} disabled={isLoading}>Close</button>
           <button className="um-btn-primary" onClick={() => {
             handleEditRole(viewingRole);
-          }}>Edit Role</button>
+          }} disabled={isLoading}>Edit Role</button>
         </div>
       </div>
     </div>
@@ -1347,7 +1667,7 @@ const UserManagement = () => {
     return (
       <div className="um-page-content-full">
         <div className="um-page-header">
-          <button className="um-back-btn" onClick={() => setActivePage('permissions')}>← Back to Permissions</button>
+          <button className="um-back-btn" onClick={() => setActivePage('permissions')} disabled={isLoading}>← Back to Permissions</button>
           <h1>Permission Details</h1>
         </div>
         
@@ -1379,10 +1699,10 @@ const UserManagement = () => {
           </div>
 
           <div className="um-view-actions">
-            <button className="um-btn-secondary" onClick={() => setActivePage('permissions')}>Close</button>
+            <button className="um-btn-secondary" onClick={() => setActivePage('permissions')} disabled={isLoading}>Close</button>
             <button className="um-btn-primary" onClick={() => {
               handleEditPermission(viewingPermission);
-            }}>Edit Permission</button>
+            }} disabled={isLoading}>Edit Permission</button>
           </div>
         </div>
       </div>
@@ -1393,7 +1713,7 @@ const UserManagement = () => {
   const renderCategoryViewPage = () => (
     <div className="um-page-content-full">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('categories')}>← Back to Categories</button>
+        <button className="um-back-btn" onClick={() => setActivePage('categories')} disabled={isLoading}>← Back to Categories</button>
         <h1>Category Details</h1>
       </div>
       
@@ -1436,10 +1756,10 @@ const UserManagement = () => {
         </div>
 
         <div className="um-view-actions">
-          <button className="um-btn-secondary" onClick={() => setActivePage('categories')}>Close</button>
+          <button className="um-btn-secondary" onClick={() => setActivePage('categories')} disabled={isLoading}>Close</button>
           <button className="um-btn-primary" onClick={() => {
             handleEditCategory(viewingCategory);
-          }}>Edit Category</button>
+          }} disabled={isLoading}>Edit Category</button>
         </div>
       </div>
     </div>
@@ -1449,11 +1769,11 @@ const UserManagement = () => {
   const renderUsersList = () => (
     <div className="um-page-content">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <button className="um-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>← Back to Dashboard</button>
         <QuickActionButtons />
         <div className="um-header-actions">
           <h1>System Users</h1>
-          <button className="um-add-btn" onClick={() => setActivePage('add_user')}>
+          <button className="um-add-btn" onClick={() => setActivePage('add_user')} disabled={isLoading}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/>
               <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"/>
@@ -1489,18 +1809,18 @@ const UserManagement = () => {
                 <td><span className="um-status-badge um-status-active">{userItem.securityStatus || 'ACTIVE'}</span></td>
                 <td>
                   <div className="um-action-buttons-group">
-                    <button className="um-action-btn um-view-btn" onClick={() => handleViewUser(userItem)} title="View Details">
+                    <button className="um-action-btn um-view-btn" onClick={() => handleViewUser(userItem)} title="View Details" disabled={isLoading}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
                     </button>
-                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditUser(userItem)} title="Edit User">
+                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditUser(userItem)} title="Edit User" disabled={isLoading}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M17 3L21 7L7 21H3V17L17 3Z"/>
                       </svg>
                     </button>
-                    <button className="um-action-btn um-reset-password-btn" onClick={() => handleResetPasswordClick(userItem)} title="Reset Password">
+                    <button className="um-action-btn um-reset-password-btn" onClick={() => handleResetPasswordClick(userItem)} title="Reset Password" disabled={isLoading}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 2L15 8" strokeWidth="2"/>
                         <path d="M21 2L15 8" strokeWidth="2" transform="translate(0, 14)"/>
@@ -1510,14 +1830,18 @@ const UserManagement = () => {
                         <circle cx="18" cy="19" r="2" fill="currentColor"/>
                       </svg>
                     </button>
-                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteUser(userItem.id, userItem.username)} title="Delete User">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 7H20" strokeWidth="2"/>
-                        <path d="M10 11V17" strokeWidth="2"/>
-                        <path d="M14 11V17" strokeWidth="2"/>
-                        <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
-                        <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
-                      </svg>
+                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteUser(userItem.id, userItem.username)} title="Delete User" disabled={isDeletingUser && deletingId === userItem.id}>
+                      {isDeletingUser && deletingId === userItem.id ? (
+                        <span className="um-spinner-small"></span>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 7H20" strokeWidth="2"/>
+                          <path d="M10 11V17" strokeWidth="2"/>
+                          <path d="M14 11V17" strokeWidth="2"/>
+                          <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
+                          <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </td>
@@ -1533,12 +1857,12 @@ const UserManagement = () => {
   const renderRolesList = () => (
     <div className="um-page-content">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <button className="um-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>← Back to Dashboard</button>
         <QuickActionButtons />
         <div className="um-header-actions">
           <h1>System Roles</h1>
           <div className="um-header-buttons">
-            <button className="um-add-btn" onClick={() => setActivePage('add_role')}>Add New Role</button>
+            <button className="um-add-btn" onClick={() => setActivePage('add_role')} disabled={isLoading}>Add New Role</button>
           </div>
         </div>
       </div>
@@ -1560,31 +1884,35 @@ const UserManagement = () => {
                 <td>{role.description}</td>
                 <td>
                   <div className="um-action-buttons-group">
-                    <button className="um-action-btn um-view-btn" onClick={() => handleViewRole(role)} title="View Details">
+                    <button className="um-action-btn um-view-btn" onClick={() => handleViewRole(role)} title="View Details" disabled={isLoading}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
                     </button>
-                    <button className="um-action-btn um-permission-btn" onClick={() => handleManagePermissions(role)} title="Manage Permissions">
+                    <button className="um-action-btn um-permission-btn" onClick={() => handleManagePermissions(role)} title="Manage Permissions" disabled={isLoading}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
                         <path d="M12 6v6l4 2"/>
                       </svg>
                     </button>
-                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditRole(role)}>
+                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditRole(role)} disabled={isLoading}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M17 3L21 7L7 21H3V17L17 3Z"/>
                       </svg>
                     </button>
-                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteRole(role.id, role.name)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 7H20" strokeWidth="2"/>
-                        <path d="M10 11V17" strokeWidth="2"/>
-                        <path d="M14 11V17" strokeWidth="2"/>
-                        <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
-                        <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
-                      </svg>
+                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteRole(role.id, role.name)} disabled={isDeletingRole && deletingId === role.id}>
+                      {isDeletingRole && deletingId === role.id ? (
+                        <span className="um-spinner-small"></span>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 7H20" strokeWidth="2"/>
+                          <path d="M10 11V17" strokeWidth="2"/>
+                          <path d="M14 11V17" strokeWidth="2"/>
+                          <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
+                          <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </td>
@@ -1600,11 +1928,11 @@ const UserManagement = () => {
   const renderPermissionsList = () => (
     <div className="um-page-content">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <button className="um-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>← Back to Dashboard</button>
         <QuickActionButtons />
         <div className="um-header-actions">
           <h1>System Permissions</h1>
-          <button className="um-add-btn" onClick={() => { setEditingPermission(null); resetPermissionForm(); setActivePage('add_permission'); }}>
+          <button className="um-add-btn" onClick={() => { setEditingPermission(null); resetPermissionForm(); setActivePage('add_permission'); }} disabled={isLoading}>
             Define New Permission
           </button>
         </div>
@@ -1629,25 +1957,29 @@ const UserManagement = () => {
                   <td>{permission.description}</td>
                   <td>
                     <div className="um-action-buttons-group">
-                      <button className="um-action-btn um-view-btn" onClick={() => handleViewPermission(permission)} title="View Details">
+                      <button className="um-action-btn um-view-btn" onClick={() => handleViewPermission(permission)} title="View Details" disabled={isLoading}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                           <circle cx="12" cy="12" r="3" />
                         </svg>
                       </button>
-                      <button className="um-action-btn um-edit-btn" onClick={() => handleEditPermission(permission)}>
+                      <button className="um-action-btn um-edit-btn" onClick={() => handleEditPermission(permission)} disabled={isLoading}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M17 3L21 7L7 21H3V17L17 3Z"/>
                         </svg>
                       </button>
-                      <button className="um-action-btn um-delete-btn" onClick={() => handleDeletePermission(permission.id, permission.slug)}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M4 7H20" strokeWidth="2"/>
-                          <path d="M10 11V17" strokeWidth="2"/>
-                          <path d="M14 11V17" strokeWidth="2"/>
-                          <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
-                          <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
-                        </svg>
+                      <button className="um-action-btn um-delete-btn" onClick={() => handleDeletePermission(permission.id, permission.slug)} disabled={isDeletingPermission && deletingId === permission.id}>
+                        {isDeletingPermission && deletingId === permission.id ? (
+                          <span className="um-spinner-small"></span>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M4 7H20" strokeWidth="2"/>
+                            <path d="M10 11V17" strokeWidth="2"/>
+                            <path d="M14 11V17" strokeWidth="2"/>
+                            <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
+                            <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
+                          </svg>
+                        )}
                       </button>
                     </div>
                   </td>
@@ -1664,11 +1996,11 @@ const UserManagement = () => {
   const renderCategoriesList = () => (
     <div className="um-page-content">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => setActivePage('list')}>← Back to Dashboard</button>
+        <button className="um-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>← Back to Dashboard</button>
         <QuickActionButtons />
         <div className="um-header-actions">
           <h1>Permission Categories</h1>
-          <button className="um-add-btn" onClick={() => { setEditingCategory(null); resetCategoryForm(); setActivePage('add_category'); }}>
+          <button className="um-add-btn" onClick={() => { setEditingCategory(null); resetCategoryForm(); setActivePage('add_category'); }} disabled={isLoading}>
             Add New Category
           </button>
         </div>
@@ -1695,25 +2027,29 @@ const UserManagement = () => {
                 <td>{category.updatedAt ? new Date(category.updatedAt).toLocaleString() : 'N/A'}</td>
                 <td>
                   <div className="um-action-buttons-group">
-                    <button className="um-action-btn um-view-btn" onClick={() => handleViewCategory(category)} title="View Details">
+                    <button className="um-action-btn um-view-btn" onClick={() => handleViewCategory(category)} title="View Details" disabled={isLoading}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
                     </button>
-                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditCategory(category)}>
+                    <button className="um-action-btn um-edit-btn" onClick={() => handleEditCategory(category)} disabled={isLoading}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M17 3L21 7L7 21H3V17L17 3Z"/>
                       </svg>
                     </button>
-                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteCategory(category.id, category.name)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 7H20" strokeWidth="2"/>
-                        <path d="M10 11V17" strokeWidth="2"/>
-                        <path d="M14 11V17" strokeWidth="2"/>
-                        <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
-                        <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
-                      </svg>
+                    <button className="um-action-btn um-delete-btn" onClick={() => handleDeleteCategory(category.id, category.name)} disabled={isDeletingCategory && deletingId === category.id}>
+                      {isDeletingCategory && deletingId === category.id ? (
+                        <span className="um-spinner-small"></span>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 7H20" strokeWidth="2"/>
+                          <path d="M10 11V17" strokeWidth="2"/>
+                          <path d="M14 11V17" strokeWidth="2"/>
+                          <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2"/>
+                          <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2"/>
+                        </svg>
+                      )}
                     </button>
                   </div>
                 </td>
@@ -1734,7 +2070,7 @@ const UserManagement = () => {
   const renderResetPasswordPage = () => (
     <div className="um-page-content-full">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => { setActivePage('users'); setResettingUser(null); setNewPassword(''); setConfirmPassword(''); }}>← Back to Users</button>
+        <button className="um-back-btn" onClick={() => { setActivePage('users'); setResettingUser(null); setNewPassword(''); setConfirmPassword(''); }} disabled={isResettingPassword}>← Back to Users</button>
         <h1>Reset User Password</h1>
         <p>Reset password for user account. New credentials will be sent via email.</p>
       </div>
@@ -1769,8 +2105,9 @@ const UserManagement = () => {
                   value={newPassword} 
                   onChange={(e) => setNewPassword(e.target.value)} 
                   placeholder="Enter new password (min 6 characters)"
+                  disabled={isResettingPassword}
                 />
-                <button type="button" className="um-password-toggle" onClick={() => setShowNewPassword(!showNewPassword)}>
+                <button type="button" className="um-password-toggle" onClick={() => setShowNewPassword(!showNewPassword)} disabled={isResettingPassword}>
                   {showNewPassword ? 'Hide' : 'Show'}
                 </button>
               </div>
@@ -1785,6 +2122,7 @@ const UserManagement = () => {
                   value={confirmPassword} 
                   onChange={(e) => setConfirmPassword(e.target.value)} 
                   placeholder="Confirm new password"
+                  disabled={isResettingPassword}
                 />
               </div>
             </div>
@@ -1822,11 +2160,18 @@ const UserManagement = () => {
         </div>
 
         <div className="um-form-actions">
-          <button className="um-btn-secondary" onClick={() => { setActivePage('users'); setResettingUser(null); setNewPassword(''); setConfirmPassword(''); }}>
+          <button className="um-btn-secondary" onClick={() => { setActivePage('users'); setResettingUser(null); setNewPassword(''); setConfirmPassword(''); }} disabled={isResettingPassword}>
             Cancel
           </button>
-          <button className="um-btn-primary" onClick={handleResetPassword}>
-            Reset Password & Send Email
+          <button className="um-btn-primary" onClick={handleResetPassword} disabled={isResettingPassword}>
+            {isResettingPassword ? (
+              <>
+                <span className="um-spinner-small"></span>
+                Resetting...
+              </>
+            ) : (
+              'Reset Password & Send Email'
+            )}
           </button>
         </div>
       </div>
@@ -1837,7 +2182,7 @@ const UserManagement = () => {
   const renderUserForm = () => (
     <div className="um-page-content-full">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => { setActivePage('users'); setEditingUser(null); resetForm(); }}>← Back to Users</button>
+        <button className="um-back-btn" onClick={() => { setActivePage('users'); setEditingUser(null); resetForm(); }} disabled={isAddingUser || isUpdatingUser}>← Back to Users</button>
         <h1>{editingUser ? 'Edit User' : 'Add New User'}</h1>
         <p>{editingUser ? 'Update user information' : 'Create a new system user account. Credentials will be sent via email.'}</p>
       </div>
@@ -1845,33 +2190,54 @@ const UserManagement = () => {
         <div className="um-form-grid-full">
           <div className="um-form-group">
             <label>Username (Auto-generated) *</label>
-            <input type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} readOnly={!editingUser} style={!editingUser ? { background: '#f0f0f0' } : {}} />
+            <input type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} readOnly={!editingUser} style={!editingUser ? { background: '#f0f0f0' } : {}} disabled={isAddingUser || isUpdatingUser} />
             {!editingUser && <span className="um-helper-text">Username automatically generated in format: ST-YYYY-XXXX</span>}
           </div>
-          <div className="um-form-group"><label>Email *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></div>
-          <div className="um-form-group"><label>First Name *</label><input type="text" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} /></div>
-          <div className="um-form-group"><label>Last Name *</label><input type="text" value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} /></div>
-          <div className="um-form-group"><label>Phone Number</label><input type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} /></div>
+          <div className="um-form-group">
+            <label>Email *</label>
+            <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} disabled={isAddingUser || isUpdatingUser} />
+          </div>
+          <div className="um-form-group">
+            <label>First Name *</label>
+            <input type="text" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} disabled={isAddingUser || isUpdatingUser} />
+          </div>
+          <div className="um-form-group">
+            <label>Last Name *</label>
+            <input type="text" value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} disabled={isAddingUser || isUpdatingUser} />
+          </div>
+          <div className="um-form-group">
+            <label>Phone Number</label>
+            <input type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} disabled={isAddingUser || isUpdatingUser} />
+          </div>
           {!editingUser && (
             <div className="um-form-group">
               <label>Temporary Password *</label>
               <div className="um-password-wrapper">
-                <input type={showPassword ? "text" : "password"} value={formData.password} readOnly style={{ background: '#f0f0f0' }} />
-                <button type="button" className="um-password-toggle" onClick={() => setShowPassword(!showPassword)}>{showPassword ? 'Hide' : 'Show'}</button>
+                <input type={showPassword ? "text" : "password"} value={formData.password} readOnly style={{ background: '#f0f0f0' }} disabled={isAddingUser || isUpdatingUser} />
+                <button type="button" className="um-password-toggle" onClick={() => setShowPassword(!showPassword)} disabled={isAddingUser || isUpdatingUser}>{showPassword ? 'Hide' : 'Show'}</button>
               </div>
             </div>
           )}
           <div className="um-form-group">
             <label>Role *</label>
-            <select value={formData.roleId} onChange={(e) => setFormData({...formData, roleId: e.target.value})}>
+            <select value={formData.roleId} onChange={(e) => setFormData({...formData, roleId: e.target.value})} disabled={isAddingUser || isUpdatingUser}>
               <option value="">Select Role</option>
               {roles.map(role => (<option key={role.id} value={role.id}>{role.name}</option>))}
             </select>
           </div>
         </div>
         <div className="um-form-actions">
-          <button className="um-btn-secondary" onClick={() => { setActivePage('users'); setEditingUser(null); resetForm(); }}>Cancel</button>
-          <button className="um-btn-primary" onClick={editingUser ? handleUpdateUser : handleAddUser}>{editingUser ? 'Update User' : 'Add User'}</button>
+          <button className="um-btn-secondary" onClick={() => { setActivePage('users'); setEditingUser(null); resetForm(); }} disabled={isAddingUser || isUpdatingUser}>Cancel</button>
+          <button className="um-btn-primary" onClick={editingUser ? handleUpdateUser : handleAddUser} disabled={isAddingUser || isUpdatingUser}>
+            {isAddingUser || isUpdatingUser ? (
+              <>
+                <span className="um-spinner-small"></span>
+                {editingUser ? 'Updating...' : 'Adding...'}
+              </>
+            ) : (
+              editingUser ? 'Update User' : 'Add User'
+            )}
+          </button>
         </div>
       </div>
     </div>
@@ -1881,19 +2247,34 @@ const UserManagement = () => {
   const renderRoleForm = () => (
     <div className="um-page-content-full">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => { setActivePage('roles'); setEditingRole(null); resetRoleForm(); }}>← Back to Roles</button>
+        <button className="um-back-btn" onClick={() => { setActivePage('roles'); setEditingRole(null); resetRoleForm(); }} disabled={isAddingRole || isUpdatingRole}>← Back to Roles</button>
         <h1>{editingRole ? 'Edit Role' : 'Add New Role'}</h1>
       </div>
       <div className="um-form-container-full">
         <div className="um-form-section">
           <div className="um-form-grid-full">
-            <div className="um-form-group"><label>Role Name *</label><input type="text" value={roleFormData.name} onChange={(e) => setRoleFormData({...roleFormData, name: e.target.value})} /></div>
-            <div className="um-form-group"><label>Description</label><textarea rows="3" value={roleFormData.description} onChange={(e) => setRoleFormData({...roleFormData, description: e.target.value})} /></div>
+            <div className="um-form-group">
+              <label>Role Name *</label>
+              <input type="text" value={roleFormData.name} onChange={(e) => setRoleFormData({...roleFormData, name: e.target.value})} disabled={isAddingRole || isUpdatingRole} />
+            </div>
+            <div className="um-form-group">
+              <label>Description</label>
+              <textarea rows="3" value={roleFormData.description} onChange={(e) => setRoleFormData({...roleFormData, description: e.target.value})} disabled={isAddingRole || isUpdatingRole} />
+            </div>
           </div>
         </div>
         <div className="um-form-actions">
-          <button className="um-btn-secondary" onClick={() => { setActivePage('roles'); setEditingRole(null); resetRoleForm(); }}>Cancel</button>
-          <button className="um-btn-primary" onClick={editingRole ? handleUpdateRole : handleAddRole}>{editingRole ? 'Update Role' : 'Create Role'}</button>
+          <button className="um-btn-secondary" onClick={() => { setActivePage('roles'); setEditingRole(null); resetRoleForm(); }} disabled={isAddingRole || isUpdatingRole}>Cancel</button>
+          <button className="um-btn-primary" onClick={editingRole ? handleUpdateRole : handleAddRole} disabled={isAddingRole || isUpdatingRole}>
+            {isAddingRole || isUpdatingRole ? (
+              <>
+                <span className="um-spinner-small"></span>
+                {editingRole ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              editingRole ? 'Update Role' : 'Create Role'
+            )}
+          </button>
         </div>
       </div>
     </div>
@@ -1903,20 +2284,42 @@ const UserManagement = () => {
   const renderPermissionForm = () => (
     <div className="um-page-content-full">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => { setActivePage('permissions'); setEditingPermission(null); resetPermissionForm(); }}>← Back to Permissions</button>
+        <button className="um-back-btn" onClick={() => { setActivePage('permissions'); setEditingPermission(null); resetPermissionForm(); }} disabled={isAddingPermission || isUpdatingPermission}>← Back to Permissions</button>
         <h1>{editingPermission ? 'Edit Permission' : 'Define New Permission'}</h1>
       </div>
       <div className="um-form-container-full">
         <div className="um-form-section">
           <div className="um-form-grid-full">
-            <div className="um-form-group"><label>Permission Slug (domain:action) *</label><input type="text" value={permissionFormData.slug} onChange={(e) => setPermissionFormData({...permissionFormData, slug: e.target.value})} placeholder="e.g., children:create, children:read" /><span className="um-helper-text">Format: domain:action (e.g., children:create, admin:read)</span></div>
-            <div className="um-form-group"><label>Category *</label><select value={permissionFormData.categoryId} onChange={(e) => setPermissionFormData({...permissionFormData, categoryId: e.target.value})}><option value="">Select Category</option>{permissionCategories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}</select></div>
-            <div className="um-form-group"><label>Description</label><textarea rows="4" value={permissionFormData.description} onChange={(e) => setPermissionFormData({...permissionFormData, description: e.target.value})} /></div>
+            <div className="um-form-group">
+              <label>Permission Slug (domain:action) *</label>
+              <input type="text" value={permissionFormData.slug} onChange={(e) => setPermissionFormData({...permissionFormData, slug: e.target.value})} placeholder="e.g., children:create, children:read" disabled={isAddingPermission || isUpdatingPermission} />
+              <span className="um-helper-text">Format: domain:action (e.g., children:create, admin:read)</span>
+            </div>
+            <div className="um-form-group">
+              <label>Category *</label>
+              <select value={permissionFormData.categoryId} onChange={(e) => setPermissionFormData({...permissionFormData, categoryId: e.target.value})} disabled={isAddingPermission || isUpdatingPermission}>
+                <option value="">Select Category</option>
+                {permissionCategories.map(cat => (<option key={cat.id} value={cat.id}>{cat.name}</option>))}
+              </select>
+            </div>
+            <div className="um-form-group">
+              <label>Description</label>
+              <textarea rows="4" value={permissionFormData.description} onChange={(e) => setPermissionFormData({...permissionFormData, description: e.target.value})} disabled={isAddingPermission || isUpdatingPermission} />
+            </div>
           </div>
         </div>
         <div className="um-form-actions">
-          <button className="um-btn-secondary" onClick={() => { setActivePage('permissions'); setEditingPermission(null); resetPermissionForm(); }}>Cancel</button>
-          <button className="um-btn-primary" onClick={editingPermission ? handleUpdatePermission : handleAddPermission}>{editingPermission ? 'Update Permission' : 'Create Permission'}</button>
+          <button className="um-btn-secondary" onClick={() => { setActivePage('permissions'); setEditingPermission(null); resetPermissionForm(); }} disabled={isAddingPermission || isUpdatingPermission}>Cancel</button>
+          <button className="um-btn-primary" onClick={editingPermission ? handleUpdatePermission : handleAddPermission} disabled={isAddingPermission || isUpdatingPermission}>
+            {isAddingPermission || isUpdatingPermission ? (
+              <>
+                <span className="um-spinner-small"></span>
+                {editingPermission ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              editingPermission ? 'Update Permission' : 'Create Permission'
+            )}
+          </button>
         </div>
       </div>
     </div>
@@ -1926,19 +2329,34 @@ const UserManagement = () => {
   const renderCategoryForm = () => (
     <div className="um-page-content-full">
       <div className="um-page-header">
-        <button className="um-back-btn" onClick={() => { setActivePage('categories'); setEditingCategory(null); resetCategoryForm(); }}>← Back to Categories</button>
+        <button className="um-back-btn" onClick={() => { setActivePage('categories'); setEditingCategory(null); resetCategoryForm(); }} disabled={isAddingCategory || isUpdatingCategory}>← Back to Categories</button>
         <h1>{editingCategory ? 'Edit Category' : 'Add New Category'}</h1>
       </div>
       <div className="um-form-container-full">
         <div className="um-form-section">
           <div className="um-form-grid-full">
-            <div className="um-form-group"><label>Category Name *</label><input type="text" value={categoryFormData.name} onChange={(e) => setCategoryFormData({...categoryFormData, name: e.target.value})} /></div>
-            <div className="um-form-group"><label>Description</label><textarea rows="4" value={categoryFormData.description} onChange={(e) => setCategoryFormData({...categoryFormData, description: e.target.value})} /></div>
+            <div className="um-form-group">
+              <label>Category Name *</label>
+              <input type="text" value={categoryFormData.name} onChange={(e) => setCategoryFormData({...categoryFormData, name: e.target.value})} disabled={isAddingCategory || isUpdatingCategory} />
+            </div>
+            <div className="um-form-group">
+              <label>Description</label>
+              <textarea rows="4" value={categoryFormData.description} onChange={(e) => setCategoryFormData({...categoryFormData, description: e.target.value})} disabled={isAddingCategory || isUpdatingCategory} />
+            </div>
           </div>
         </div>
         <div className="um-form-actions">
-          <button className="um-btn-secondary" onClick={() => { setActivePage('categories'); setEditingCategory(null); resetCategoryForm(); }}>Cancel</button>
-          <button className="um-btn-primary" onClick={editingCategory ? handleUpdateCategory : handleAddCategory}>{editingCategory ? 'Update Category' : 'Create Category'}</button>
+          <button className="um-btn-secondary" onClick={() => { setActivePage('categories'); setEditingCategory(null); resetCategoryForm(); }} disabled={isAddingCategory || isUpdatingCategory}>Cancel</button>
+          <button className="um-btn-primary" onClick={editingCategory ? handleUpdateCategory : handleAddCategory} disabled={isAddingCategory || isUpdatingCategory}>
+            {isAddingCategory || isUpdatingCategory ? (
+              <>
+                <span className="um-spinner-small"></span>
+                {editingCategory ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              editingCategory ? 'Update Category' : 'Create Category'
+            )}
+          </button>
         </div>
       </div>
     </div>
@@ -1957,7 +2375,7 @@ const UserManagement = () => {
     return (
       <div className="um-page-content-full">
         <div className="um-page-header">
-          <button className="um-back-btn" onClick={() => { setActivePage('roles'); setSelectedRoleForPermissions(null); setSelectedRolePermissions([]); }}>← Back to Roles</button>
+          <button className="um-back-btn" onClick={() => { setActivePage('roles'); setSelectedRoleForPermissions(null); setSelectedRolePermissions([]); }} disabled={isManagingPermissions}>← Back to Roles</button>
           <h1>Manage Permissions</h1>
           <p>Assign permissions to role: <strong>{selectedRoleForPermissions?.name}</strong></p>
         </div>
@@ -1987,6 +2405,7 @@ const UserManagement = () => {
                           showToast('All permissions removed from role', 'success'); 
                         } 
                       }} 
+                      disabled={isManagingPermissions}
                     />
                   </th>
                   <th>Permission Slug</th>
@@ -2003,6 +2422,7 @@ const UserManagement = () => {
                         className="um-permission-checkbox-input" 
                         checked={selectedRolePermissions.includes(permission.id)} 
                         onChange={() => togglePermission(permission.id)} 
+                        disabled={isManagingPermissions}
                       />
                     </td>
                     <td className="um-permission-name-cell">
@@ -2018,7 +2438,7 @@ const UserManagement = () => {
             </table>
           </div>
           <div className="um-form-actions">
-            <button className="um-btn-secondary" onClick={() => { setActivePage('roles'); setSelectedRoleForPermissions(null); setSelectedRolePermissions([]); }}>Close</button>
+            <button className="um-btn-secondary" onClick={() => { setActivePage('roles'); setSelectedRoleForPermissions(null); setSelectedRolePermissions([]); }} disabled={isManagingPermissions}>Close</button>
           </div>
         </div>
       </div>
@@ -2050,10 +2470,8 @@ const UserManagement = () => {
               {/* Total Users Card - Clickable */}
               <div 
                 className="um-stat-card" 
-                onClick={() => setActivePage('users')} 
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                onClick={() => !isLoading && setActivePage('users')} 
+                style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
               >
                 <div className="um-stat-icon">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2072,10 +2490,8 @@ const UserManagement = () => {
               {/* Active Roles Card - Clickable */}
               <div 
                 className="um-stat-card" 
-                onClick={() => setActivePage('roles')} 
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                onClick={() => !isLoading && setActivePage('roles')} 
+                style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
               >
                 <div className="um-stat-icon">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2092,10 +2508,8 @@ const UserManagement = () => {
               {/* Online Now Card - Clickable */}
               <div 
                 className="um-stat-card" 
-                onClick={() => setActivePage('users')} 
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                onClick={handleShowOnlineUsers}
+                style={{ cursor: loadingOnlineUsers ? 'not-allowed' : 'pointer', opacity: loadingOnlineUsers ? 0.6 : 1 }}
               >
                 <div className="um-stat-icon">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2112,10 +2526,8 @@ const UserManagement = () => {
               {/* Total Permissions Card - Clickable */}
               <div 
                 className="um-stat-card" 
-                onClick={() => setActivePage('permissions')} 
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                onClick={() => !isLoading && setActivePage('permissions')} 
+                style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
               >
                 <div className="um-stat-icon">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2132,10 +2544,8 @@ const UserManagement = () => {
               {/* Total Categories Card - Clickable */}
               <div 
                 className="um-stat-card" 
-                onClick={() => setActivePage('categories')} 
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                onClick={() => !isLoading && setActivePage('categories')} 
+                style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
               >
                 <div className="um-stat-icon">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2157,8 +2567,8 @@ const UserManagement = () => {
               {/* Manage Users Card - Clickable */}
               <div 
                 className="um-action-card" 
-                onClick={() => setActivePage('users')}
-                style={{ cursor: 'pointer' }}
+                onClick={() => !isLoading && setActivePage('users')}
+                style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
               >
                 <div className="um-action-icon">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2175,8 +2585,8 @@ const UserManagement = () => {
               {/* Manage Roles Card - Clickable */}
               <div 
                 className="um-action-card" 
-                onClick={() => setActivePage('roles')}
-                style={{ cursor: 'pointer' }}
+                onClick={() => !isLoading && setActivePage('roles')}
+                style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
               >
                 <div className="um-action-icon">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2193,8 +2603,8 @@ const UserManagement = () => {
               {/* Define Permissions Card - Clickable */}
               <div 
                 className="um-action-card" 
-                onClick={() => setActivePage('permissions')}
-                style={{ cursor: 'pointer' }}
+                onClick={() => !isLoading && setActivePage('permissions')}
+                style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
               >
                 <div className="um-action-icon">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2211,8 +2621,8 @@ const UserManagement = () => {
               {/* Manage Categories Card - Clickable */}
               <div 
                 className="um-action-card" 
-                onClick={() => setActivePage('categories')}
-                style={{ cursor: 'pointer' }}
+                onClick={() => !isLoading && setActivePage('categories')}
+                style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
               >
                 <div className="um-action-icon">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2231,6 +2641,7 @@ const UserManagement = () => {
           </>
         )}
 
+        {activePage === 'online_users' && renderOnlineUsersPage()}
         {activePage === 'users' && renderUsersList()}
         {activePage === 'add_user' && renderUserForm()}
         {activePage === 'edit_user' && renderUserForm()}

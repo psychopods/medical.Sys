@@ -8,12 +8,13 @@ const RenderChildEditPage = ({
   handleChildFormChange,
   handleChildAgeChange,
   handleSaveChild,
-  goBack
+  goBack,
+  isSavingChild // Add loading prop
 }) => {
   return (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={goBack}>← Back</button>
+        <button className="child-reg-back-btn" onClick={goBack} disabled={isSavingChild}>← Back</button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Edit Patient</h1>
         </div>
@@ -31,6 +32,7 @@ const RenderChildEditPage = ({
               onChange={handleChildFormChange}
               placeholder="Enter child's full name"
               className={childFormErrors.fullName ? 'error-input' : ''}
+              disabled={isSavingChild}
             />
             {childFormErrors.fullName && <span className="error-message">{childFormErrors.fullName}</span>}
           </div>
@@ -47,6 +49,7 @@ const RenderChildEditPage = ({
                   min="0"
                   max="120"
                   className={childFormErrors.estimatedBirthYear ? 'error-input' : ''}
+                  disabled={isSavingChild}
                 />
                 <span className="child-reg-input-sublabel">Estimated Age (Years)</span>
               </div>
@@ -57,6 +60,7 @@ const RenderChildEditPage = ({
                   value={childFormData.estimatedBirthYear || ""}
                   onChange={handleChildFormChange}
                   className={childFormErrors.estimatedBirthYear ? 'error-input' : ''}
+                  disabled={isSavingChild}
                 >
                   <option value="">Select Year</option>
                   {Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
@@ -75,6 +79,7 @@ const RenderChildEditPage = ({
               value={childFormData.gender}
               onChange={handleChildFormChange}
               className={childFormErrors.gender ? 'error-input' : ''}
+              disabled={isSavingChild}
             >
               <option value="">Select Gender</option>
               <option value="Male">Male</option>
@@ -89,6 +94,7 @@ const RenderChildEditPage = ({
               value={childFormData.primaryLocationId}
               onChange={handleChildFormChange}
               className={childFormErrors.primaryLocationId ? 'error-input' : ''}
+              disabled={isSavingChild}
             >
               <option value="">Select Location</option>
               {Array.isArray(locations) && locations.map(loc => (
@@ -100,8 +106,27 @@ const RenderChildEditPage = ({
         </div>
 
         <div className="child-reg-form-actions">
-          <button className="child-reg-btn-secondary" onClick={goBack}>Cancel</button>
-          <button className="child-reg-btn-primary" onClick={handleSaveChild}>Save Changes</button>
+          <button 
+            className="child-reg-btn-secondary" 
+            onClick={goBack}
+            disabled={isSavingChild}
+          >
+            Cancel
+          </button>
+          <button 
+            className="child-reg-btn-primary" 
+            onClick={handleSaveChild}
+            disabled={isSavingChild}
+          >
+            {isSavingChild ? (
+              <>
+                <span className="child-reg-spinner-small"></span>
+                Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
+          </button>
         </div>
       </div>
     </div>

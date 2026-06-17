@@ -58,7 +58,8 @@ const RenderFingerprintEnrollment = ({
   handleCaptureFingerprint,
   handleRemoveFingerprint,
   handleSkipFingerprints,
-  handleSaveFingerprints
+  handleSaveFingerprints,
+  isSavingFingerprints // Add loading prop for save
 }) => {
   const totalCaptured = capturedFingers.length;
   const isComplete = totalCaptured >= 10;
@@ -66,7 +67,13 @@ const RenderFingerprintEnrollment = ({
   return (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <button className="child-reg-back-btn" onClick={handleCancelEnrollment}>← Back</button>
+        <button 
+          className="child-reg-back-btn" 
+          onClick={handleCancelEnrollment}
+          disabled={isCapturing || isSavingFingerprints}
+        >
+          ← Back
+        </button>
         <div className="child-reg-header-actions">
           <h1 className="child-reg-page-title">Enroll Fingerprints</h1>
           <span className="child-reg-enrollment-progress">
@@ -97,6 +104,7 @@ const RenderFingerprintEnrollment = ({
                   className={`child-reg-finger-btn ${selectedFinger === fingerIndex ? 'selected' : ''} ${isCaptured ? 'captured' : ''}`}
                   onClick={() => handleSelectFinger(fingerIndex)}
                   title={`${fingerInfo.name}${isCaptured ? ` (Quality: ${quality}%)` : ''}`}
+                  disabled={isCapturing || isSavingFingerprints}
                 >
                   <div className="child-reg-finger-icon">
                     {isCaptured ? (
@@ -141,9 +149,16 @@ const RenderFingerprintEnrollment = ({
                 <button 
                   className="child-reg-btn-primary" 
                   onClick={handleCaptureFingerprint}
-                  disabled={isCapturing}
+                  disabled={isCapturing || isSavingFingerprints}
                 >
-                  {isCapturing ? 'Capturing...' : `Capture ${fingerNames[selectedFinger].name}`}
+                  {isCapturing ? (
+                    <>
+                      <span className="child-reg-spinner-small"></span>
+                      Capturing...
+                    </>
+                  ) : (
+                    `Capture ${fingerNames[selectedFinger].name}`
+                  )}
                 </button>
               </>
             ) : selectedFinger && fingerCaptures[selectedFinger] ? (
@@ -159,10 +174,18 @@ const RenderFingerprintEnrollment = ({
                   ></div>
                 </div>
                 <div className="child-reg-enrollment-actions">
-                  <button className="child-reg-btn-danger" onClick={() => handleRemoveFingerprint(selectedFinger)}>
+                  <button 
+                    className="child-reg-btn-danger" 
+                    onClick={() => handleRemoveFingerprint(selectedFinger)}
+                    disabled={isCapturing || isSavingFingerprints}
+                  >
                     <RemoveIcon width={14} height={14} color="white" /> Remove
                   </button>
-                  <button className="child-reg-btn-secondary" onClick={() => handleSelectFinger(null)}>
+                  <button 
+                    className="child-reg-btn-secondary" 
+                    onClick={() => handleSelectFinger(null)}
+                    disabled={isCapturing || isSavingFingerprints}
+                  >
                     Select Another Finger
                   </button>
                 </div>
@@ -194,6 +217,7 @@ const RenderFingerprintEnrollment = ({
                     className="child-reg-captured-remove"
                     onClick={() => handleRemoveFingerprint(fingerIndex)}
                     title="Remove this fingerprint"
+                    disabled={isCapturing || isSavingFingerprints}
                   >
                     <RemoveIcon width={12} height={12} color="#dc3545" />
                   </button>
@@ -205,15 +229,26 @@ const RenderFingerprintEnrollment = ({
           )}
           
           <div className="child-reg-enrollment-summary-actions">
-            <button className="child-reg-btn-secondary" onClick={handleSkipFingerprints}>
+            <button 
+              className="child-reg-btn-secondary" 
+              onClick={handleSkipFingerprints}
+              disabled={isCapturing || isSavingFingerprints}
+            >
               Skip (Continue without fingerprints)
             </button>
             <button 
               className="child-reg-btn-primary" 
               onClick={handleSaveFingerprints}
-              disabled={totalCaptured === 0}
+              disabled={totalCaptured === 0 || isCapturing || isSavingFingerprints}
             >
-              {totalCaptured === 0 ? 'No fingerprints to save' : `Save ${totalCaptured} Fingerprint(s)`}
+              {isSavingFingerprints ? (
+                <>
+                  <span className="child-reg-spinner-small"></span>
+                  Saving...
+                </>
+              ) : (
+                totalCaptured === 0 ? 'No fingerprints to save' : `Save ${totalCaptured} Fingerprint(s)`
+              )}
             </button>
           </div>
         </div>

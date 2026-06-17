@@ -31,6 +31,12 @@ const ReportsAdmin = () => {
   const [editingMetric, setEditingMetric] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   
+  // ===== LOADING STATES =====
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  
   // Form data
   const [annualFormData, setAnnualFormData] = useState({
     id: '',
@@ -383,6 +389,8 @@ const ReportsAdmin = () => {
 
   // Create Annual Report
   const createAnnualReport = async () => {
+    setIsSaving(true);
+
     const reportId = crypto.randomUUID();
     const payload = {
       id: reportId,
@@ -393,6 +401,7 @@ const ReportsAdmin = () => {
       pageCount: parseInt(annualFormData.pageCount),
       downloadUrl: annualFormData.downloadUrl
     };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnual, {
         method: 'POST',
@@ -418,6 +427,7 @@ const ReportsAdmin = () => {
       } catch (dbErr) {
         console.error('Failed to mirror to SQLite:', dbErr);
       }
+      setIsSaving(false);
       fetchAnnualReports();
       setActivePage('annual');
       resetAnnualForm();
@@ -426,6 +436,8 @@ const ReportsAdmin = () => {
 
   // Update Annual Report
   const updateAnnualReport = async () => {
+    setIsSaving(true);
+
     const payload = {
       year: parseInt(annualFormData.year),
       title: annualFormData.title,
@@ -434,6 +446,7 @@ const ReportsAdmin = () => {
       pageCount: parseInt(annualFormData.pageCount),
       downloadUrl: annualFormData.downloadUrl
     };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnualId(editingAnnual.id), {
         method: 'PUT',
@@ -459,6 +472,7 @@ const ReportsAdmin = () => {
       } catch (dbErr) {
         console.error('Failed to mirror to SQLite:', dbErr);
       }
+      setIsSaving(false);
       fetchAnnualReports();
       setActivePage('annual');
       setEditingAnnual(null);
@@ -469,6 +483,9 @@ const ReportsAdmin = () => {
   // Delete Annual Report
   const deleteAnnualReport = async (id, year) => {
     if (!window.confirm(`Delete annual report for ${year}?`)) return;
+    setDeletingId(id);
+    setIsDeleting(true);
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnualId(id), {
         method: 'DELETE'
@@ -483,6 +500,8 @@ const ReportsAdmin = () => {
       console.warn('Error deleting annual report online, removing locally:', error);
       showToastMessage('Deleted from local storage (Offline)', 'warning');
     } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
       // Mirror to SQLite
       try {
         await executeRun('DELETE FROM reports_annual WHERE id = ?', [id]);
@@ -495,6 +514,8 @@ const ReportsAdmin = () => {
 
   // Create Quarterly Report
   const createQuarterlyReport = async () => {
+    setIsSaving(true);
+
     const reportId = crypto.randomUUID();
     const payload = {
       id: reportId,
@@ -505,6 +526,7 @@ const ReportsAdmin = () => {
       fileSize: quarterlyFormData.fileSize,
       downloadUrl: quarterlyFormData.downloadUrl
     };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterly, {
         method: 'POST',
@@ -530,6 +552,7 @@ const ReportsAdmin = () => {
       } catch (dbErr) {
         console.error('Failed to mirror to SQLite:', dbErr);
       }
+      setIsSaving(false);
       fetchQuarterlyReports();
       setActivePage('quarterly');
       resetQuarterlyForm();
@@ -538,6 +561,8 @@ const ReportsAdmin = () => {
 
   // Update Quarterly Report
   const updateQuarterlyReport = async () => {
+    setIsSaving(true);
+
     const payload = {
       quarter: quarterlyFormData.quarter,
       title: quarterlyFormData.title,
@@ -546,6 +571,7 @@ const ReportsAdmin = () => {
       fileSize: quarterlyFormData.fileSize,
       downloadUrl: quarterlyFormData.downloadUrl
     };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterlyId(editingQuarterly.id), {
         method: 'PUT',
@@ -571,6 +597,7 @@ const ReportsAdmin = () => {
       } catch (dbErr) {
         console.error('Failed to mirror to SQLite:', dbErr);
       }
+      setIsSaving(false);
       fetchQuarterlyReports();
       setActivePage('quarterly');
       setEditingQuarterly(null);
@@ -581,6 +608,9 @@ const ReportsAdmin = () => {
   // Delete Quarterly Report
   const deleteQuarterlyReport = async (id, quarter) => {
     if (!window.confirm(`Delete ${quarter} report?`)) return;
+    setDeletingId(id);
+    setIsDeleting(true);
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterlyId(id), {
         method: 'DELETE'
@@ -595,6 +625,8 @@ const ReportsAdmin = () => {
       console.warn('Error deleting quarterly report online, removing locally:', error);
       showToastMessage('Deleted from local storage (Offline)', 'warning');
     } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
       // Mirror to SQLite
       try {
         await executeRun('DELETE FROM reports_quarterly WHERE id = ?', [id]);
@@ -607,6 +639,8 @@ const ReportsAdmin = () => {
 
   // Create Success Story
   const createSuccessStory = async () => {
+    setIsSaving(true);
+
     const storyId = crypto.randomUUID();
     const payload = {
       id: storyId,
@@ -616,6 +650,7 @@ const ReportsAdmin = () => {
       date: storyFormData.date,
       category: storyFormData.category
     };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStories, {
         method: 'POST',
@@ -641,6 +676,7 @@ const ReportsAdmin = () => {
       } catch (dbErr) {
         console.error('Failed to mirror to SQLite:', dbErr);
       }
+      setIsSaving(false);
       fetchSuccessStories();
       setActivePage('stories');
       resetStoryForm();
@@ -649,6 +685,8 @@ const ReportsAdmin = () => {
 
   // Update Success Story
   const updateSuccessStory = async () => {
+    setIsSaving(true);
+
     const payload = {
       title: storyFormData.title,
       description: storyFormData.description,
@@ -656,6 +694,7 @@ const ReportsAdmin = () => {
       date: storyFormData.date,
       category: storyFormData.category
     };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStoriesId(editingStory.id), {
         method: 'PUT',
@@ -681,6 +720,7 @@ const ReportsAdmin = () => {
       } catch (dbErr) {
         console.error('Failed to mirror to SQLite:', dbErr);
       }
+      setIsSaving(false);
       fetchSuccessStories();
       setActivePage('stories');
       setEditingStory(null);
@@ -691,6 +731,9 @@ const ReportsAdmin = () => {
   // Delete Success Story
   const deleteSuccessStory = async (id, title) => {
     if (!window.confirm(`Delete story "${title}"?`)) return;
+    setDeletingId(id);
+    setIsDeleting(true);
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStoriesId(id), {
         method: 'DELETE'
@@ -705,6 +748,8 @@ const ReportsAdmin = () => {
       console.warn('Error deleting success story online, removing locally:', error);
       showToastMessage('Deleted from local storage (Offline)', 'warning');
     } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
       // Mirror to SQLite
       try {
         await executeRun('DELETE FROM reports_success_stories WHERE id = ?', [id]);
@@ -717,6 +762,8 @@ const ReportsAdmin = () => {
 
   // Create Impact Metric
   const createImpactMetric = async () => {
+    setIsSaving(true);
+
     const metricId = crypto.randomUUID();
     const payload = {
       id: metricId,
@@ -728,6 +775,7 @@ const ReportsAdmin = () => {
       color: metricFormData.color,
       year: parseInt(metricFormData.year)
     };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsMetrics, {
         method: 'POST',
@@ -753,6 +801,7 @@ const ReportsAdmin = () => {
       } catch (dbErr) {
         console.error('Failed to mirror to SQLite:', dbErr);
       }
+      setIsSaving(false);
       fetchImpactMetrics();
       setActivePage('metrics');
       resetMetricForm();
@@ -761,6 +810,8 @@ const ReportsAdmin = () => {
 
   // Update Impact Metric
   const updateImpactMetric = async () => {
+    setIsSaving(true);
+
     const payload = {
       label: metricFormData.label,
       q1Value: parseInt(metricFormData.q1Value),
@@ -770,6 +821,7 @@ const ReportsAdmin = () => {
       color: metricFormData.color,
       year: parseInt(metricFormData.year)
     };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsMetricsId(editingMetric.id), {
         method: 'PUT',
@@ -795,6 +847,7 @@ const ReportsAdmin = () => {
       } catch (dbErr) {
         console.error('Failed to mirror to SQLite:', dbErr);
       }
+      setIsSaving(false);
       fetchImpactMetrics();
       setActivePage('metrics');
       setEditingMetric(null);
@@ -805,6 +858,9 @@ const ReportsAdmin = () => {
   // Delete Impact Metric
   const deleteImpactMetric = async (id, label) => {
     if (!window.confirm(`Delete metric "${label}"?`)) return;
+    setDeletingId(id);
+    setIsDeleting(true);
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsMetricsId(id), {
         method: 'DELETE'
@@ -819,6 +875,8 @@ const ReportsAdmin = () => {
       console.warn('Error deleting impact metric online, removing locally:', error);
       showToastMessage('Deleted from local storage (Offline)', 'warning');
     } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
       // Mirror to SQLite
       try {
         await executeRun('DELETE FROM reports_impact_metrics WHERE id = ?', [id]);
@@ -919,7 +977,7 @@ const ReportsAdmin = () => {
   const renderAnnualReportView = () => (
     <div className="ra-page">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('annual')}>
+        <button className="ra-back-btn" onClick={() => setActivePage('annual')} disabled={isLoading}>
           <IconBack /> Back to Annual Reports
         </button>
         <div className="ra-header-title">
@@ -978,12 +1036,14 @@ const ReportsAdmin = () => {
                 });
                 setActivePage('edit_annual');
               }}
+              disabled={isLoading}
             >
               Edit Report
             </button>
             <button 
               className="ra-btn ra-btn-secondary" 
               onClick={() => setActivePage('annual')}
+              disabled={isLoading}
             >
               Close
             </button>
@@ -997,7 +1057,7 @@ const ReportsAdmin = () => {
   const renderQuarterlyReportView = () => (
     <div className="ra-page">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('quarterly')}>
+        <button className="ra-back-btn" onClick={() => setActivePage('quarterly')} disabled={isLoading}>
           <IconBack /> Back to Quarterly Reports
         </button>
         <div className="ra-header-title">
@@ -1056,12 +1116,14 @@ const ReportsAdmin = () => {
                 });
                 setActivePage('edit_quarterly');
               }}
+              disabled={isLoading}
             >
               Edit Report
             </button>
             <button 
               className="ra-btn ra-btn-secondary" 
               onClick={() => setActivePage('quarterly')}
+              disabled={isLoading}
             >
               Close
             </button>
@@ -1075,7 +1137,7 @@ const ReportsAdmin = () => {
   const renderSuccessStoryView = () => (
     <div className="ra-page">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('stories')}>
+        <button className="ra-back-btn" onClick={() => setActivePage('stories')} disabled={isLoading}>
           <IconBack /> Back to Success Stories
         </button>
         <div className="ra-header-title">
@@ -1131,12 +1193,14 @@ const ReportsAdmin = () => {
                 });
                 setActivePage('edit_story');
               }}
+              disabled={isLoading}
             >
               Edit Story
             </button>
             <button 
               className="ra-btn ra-btn-secondary" 
               onClick={() => setActivePage('stories')}
+              disabled={isLoading}
             >
               Close
             </button>
@@ -1150,7 +1214,7 @@ const ReportsAdmin = () => {
   const renderImpactMetricView = () => (
     <div className="ra-page">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('metrics')}>
+        <button className="ra-back-btn" onClick={() => setActivePage('metrics')} disabled={isLoading}>
           <IconBack /> Back to Impact Metrics
         </button>
         <div className="ra-header-title">
@@ -1224,12 +1288,14 @@ const ReportsAdmin = () => {
                 });
                 setActivePage('edit_metric');
               }}
+              disabled={isLoading}
             >
               Edit Metric
             </button>
             <button 
               className="ra-btn ra-btn-secondary" 
               onClick={() => setActivePage('metrics')}
+              disabled={isLoading}
             >
               Close
             </button>
@@ -1248,7 +1314,7 @@ const ReportsAdmin = () => {
       </div>
       
       <div className="ra-dashboard-links">
-        <div className="ra-dash-link" onClick={() => { fetchAnnualReports(); setActivePage('annual'); }}>
+        <div className="ra-dash-link" onClick={() => { if (!isLoading) { fetchAnnualReports(); setActivePage('annual'); } }} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="ra-dash-link-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -1263,7 +1329,7 @@ const ReportsAdmin = () => {
           </div>
         </div>
         
-        <div className="ra-dash-link" onClick={() => { fetchQuarterlyReports(); setActivePage('quarterly'); }}>
+        <div className="ra-dash-link" onClick={() => { if (!isLoading) { fetchQuarterlyReports(); setActivePage('quarterly'); } }} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="ra-dash-link-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -1280,7 +1346,7 @@ const ReportsAdmin = () => {
           </div>
         </div>
         
-        <div className="ra-dash-link" onClick={() => { fetchSuccessStories(); setActivePage('stories'); }}>
+        <div className="ra-dash-link" onClick={() => { if (!isLoading) { fetchSuccessStories(); setActivePage('stories'); } }} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="ra-dash-link-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12 2L15 9H22L16 14L19 21L12 17L5 21L8 14L2 9H9L12 2Z"/>
@@ -1292,7 +1358,7 @@ const ReportsAdmin = () => {
           </div>
         </div>
         
-        <div className="ra-dash-link" onClick={() => { fetchImpactMetrics(); setActivePage('metrics'); }}>
+        <div className="ra-dash-link" onClick={() => { if (!isLoading) { fetchImpactMetrics(); setActivePage('metrics'); } }} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="ra-dash-link-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M21 12H18L15 21L9 3L6 12H3" strokeWidth="2"/>
@@ -1311,12 +1377,12 @@ const ReportsAdmin = () => {
   const renderAnnualReports = () => (
     <div className="ra-page">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('list')}>
+        <button className="ra-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>
           <IconBack /> Back
         </button>
         <div className="ra-header-title">
           <h2>Annual Reports</h2>
-          <button className="ra-add-btn" onClick={() => { resetAnnualForm(); setActivePage('add_annual'); }}>
+          <button className="ra-add-btn" onClick={() => { resetAnnualForm(); setActivePage('add_annual'); }} disabled={isLoading}>
             <IconAdd /> Add Report
           </button>
         </div>
@@ -1347,7 +1413,7 @@ const ReportsAdmin = () => {
                     <button className="ra-action-btn ra-view" onClick={() => {
                       setViewingAnnual(report);
                       setActivePage('view_annual');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconView /> View
                     </button>
                     <button className="ra-action-btn ra-edit" onClick={() => {
@@ -1362,11 +1428,15 @@ const ReportsAdmin = () => {
                         downloadUrl: report.download_url || ''
                       });
                       setActivePage('edit_annual');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconEdit /> Edit
                     </button>
-                    <button className="ra-action-btn ra-delete" onClick={() => deleteAnnualReport(report.id, report.year)}>
-                      <IconDelete /> Delete
+                    <button className="ra-action-btn ra-delete" onClick={() => deleteAnnualReport(report.id, report.year)} disabled={isDeleting && deletingId === report.id}>
+                      {isDeleting && deletingId === report.id ? (
+                        <span className="ra-spinner-small"></span>
+                      ) : (
+                        <><IconDelete /> Delete</>
+                      )}
                     </button>
                   </div>
                 </td>
@@ -1385,12 +1455,12 @@ const ReportsAdmin = () => {
   const renderQuarterlyReports = () => (
     <div className="ra-page">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('list')}>
+        <button className="ra-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>
           <IconBack /> Back 
         </button>
         <div className="ra-header-title">
           <h2>Quarterly Reports</h2>
-          <button className="ra-add-btn" onClick={() => { resetQuarterlyForm(); setActivePage('add_quarterly'); }}>
+          <button className="ra-add-btn" onClick={() => { resetQuarterlyForm(); setActivePage('add_quarterly'); }} disabled={isLoading}>
             <IconAdd /> Add Report
           </button>
         </div>
@@ -1421,7 +1491,7 @@ const ReportsAdmin = () => {
                     <button className="ra-action-btn ra-view" onClick={() => {
                       setViewingQuarterly(report);
                       setActivePage('view_quarterly');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconView /> View
                     </button>
                     <button className="ra-action-btn ra-edit" onClick={() => {
@@ -1436,11 +1506,15 @@ const ReportsAdmin = () => {
                         downloadUrl: report.download_url || ''
                       });
                       setActivePage('edit_quarterly');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconEdit /> Edit
                     </button>
-                    <button className="ra-action-btn ra-delete" onClick={() => deleteQuarterlyReport(report.id, report.quarter)}>
-                      <IconDelete /> Delete
+                    <button className="ra-action-btn ra-delete" onClick={() => deleteQuarterlyReport(report.id, report.quarter)} disabled={isDeleting && deletingId === report.id}>
+                      {isDeleting && deletingId === report.id ? (
+                        <span className="ra-spinner-small"></span>
+                      ) : (
+                        <><IconDelete /> Delete</>
+                      )}
                     </button>
                   </div>
                 </td>
@@ -1459,12 +1533,12 @@ const ReportsAdmin = () => {
   const renderSuccessStories = () => (
     <div className="ra-page">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('list')}>
+        <button className="ra-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>
           <IconBack /> Back
         </button>
         <div className="ra-header-title">
           <h2>Success Stories</h2>
-          <button className="ra-add-btn" onClick={() => { resetStoryForm(); setActivePage('add_story'); }}>
+          <button className="ra-add-btn" onClick={() => { resetStoryForm(); setActivePage('add_story'); }} disabled={isLoading}>
             <IconAdd /> Add Story
           </button>
         </div>
@@ -1495,7 +1569,7 @@ const ReportsAdmin = () => {
                     <button className="ra-action-btn ra-view" onClick={() => {
                       setViewingStory(story);
                       setActivePage('view_story');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconView /> View
                     </button>
                     <button className="ra-action-btn ra-edit" onClick={() => {
@@ -1509,11 +1583,15 @@ const ReportsAdmin = () => {
                         category: story.category
                       });
                       setActivePage('edit_story');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconEdit /> Edit
                     </button>
-                    <button className="ra-action-btn ra-delete" onClick={() => deleteSuccessStory(story.id, story.title)}>
-                      <IconDelete /> Delete
+                    <button className="ra-action-btn ra-delete" onClick={() => deleteSuccessStory(story.id, story.title)} disabled={isDeleting && deletingId === story.id}>
+                      {isDeleting && deletingId === story.id ? (
+                        <span className="ra-spinner-small"></span>
+                      ) : (
+                        <><IconDelete /> Delete</>
+                      )}
                     </button>
                   </div>
                 </td>
@@ -1532,12 +1610,12 @@ const ReportsAdmin = () => {
   const renderImpactMetrics = () => (
     <div className="ra-page">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => setActivePage('list')}>
+        <button className="ra-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>
           <IconBack /> Back
         </button>
         <div className="ra-header-title">
           <h2>Impact Metrics</h2>
-          <button className="ra-add-btn" onClick={() => { resetMetricForm(); setActivePage('add_metric'); }}>
+          <button className="ra-add-btn" onClick={() => { resetMetricForm(); setActivePage('add_metric'); }} disabled={isLoading}>
             <IconAdd /> Add Metric
           </button>
         </div>
@@ -1574,7 +1652,7 @@ const ReportsAdmin = () => {
                     <button className="ra-action-btn ra-view" onClick={() => {
                       setViewingMetric(metric);
                       setActivePage('view_metric');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconView /> View
                     </button>
                     <button className="ra-action-btn ra-edit" onClick={() => {
@@ -1590,11 +1668,15 @@ const ReportsAdmin = () => {
                         year: metric.year
                       });
                       setActivePage('edit_metric');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconEdit /> Edit
                     </button>
-                    <button className="ra-action-btn ra-delete" onClick={() => deleteImpactMetric(metric.id, metric.label)}>
-                      <IconDelete /> Delete
+                    <button className="ra-action-btn ra-delete" onClick={() => deleteImpactMetric(metric.id, metric.label)} disabled={isDeleting && deletingId === metric.id}>
+                      {isDeleting && deletingId === metric.id ? (
+                        <span className="ra-spinner-small"></span>
+                      ) : (
+                        <><IconDelete /> Delete</>
+                      )}
                     </button>
                   </div>
                 </td>
@@ -1613,7 +1695,7 @@ const ReportsAdmin = () => {
   const renderAnnualForm = () => (
     <div className="ra-page-full">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => { setActivePage('annual'); resetAnnualForm(); }}>
+        <button className="ra-back-btn" onClick={() => { setActivePage('annual'); resetAnnualForm(); }} disabled={isSaving}>
           <IconBack /> Back to Annual Reports
         </button>
         <h2>{editingAnnual ? 'Edit Annual Report' : 'Add Annual Report'}</h2>
@@ -1624,44 +1706,53 @@ const ReportsAdmin = () => {
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Year *</label>
-              <input type="number" value={annualFormData.year} onChange={(e) => setAnnualFormData({...annualFormData, year: e.target.value})} required placeholder="2024" />
+              <input type="number" value={annualFormData.year} onChange={(e) => setAnnualFormData({...annualFormData, year: e.target.value})} required placeholder="2024" disabled={isSaving} />
             </div>
             
             <div className="ra-form-group">
               <label>File Size *</label>
-              <input type="text" value={annualFormData.fileSize} onChange={(e) => setAnnualFormData({...annualFormData, fileSize: e.target.value})} required placeholder="e.g., 2.4 MB" />
+              <input type="text" value={annualFormData.fileSize} onChange={(e) => setAnnualFormData({...annualFormData, fileSize: e.target.value})} required placeholder="e.g., 2.4 MB" disabled={isSaving} />
             </div>
             
             <div className="ra-form-group">
               <label>Page Count *</label>
-              <input type="number" value={annualFormData.pageCount} onChange={(e) => setAnnualFormData({...annualFormData, pageCount: e.target.value})} required placeholder="24" />
+              <input type="number" value={annualFormData.pageCount} onChange={(e) => setAnnualFormData({...annualFormData, pageCount: e.target.value})} required placeholder="24" disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Title *</label>
-              <input type="text" value={annualFormData.title} onChange={(e) => setAnnualFormData({...annualFormData, title: e.target.value})} required />
+              <input type="text" value={annualFormData.title} onChange={(e) => setAnnualFormData({...annualFormData, title: e.target.value})} required disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Description *</label>
-              <textarea value={annualFormData.description} onChange={(e) => setAnnualFormData({...annualFormData, description: e.target.value})} required rows="3" />
+              <textarea value={annualFormData.description} onChange={(e) => setAnnualFormData({...annualFormData, description: e.target.value})} required rows="3" disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Download URL *</label>
-              <input type="url" value={annualFormData.downloadUrl} onChange={(e) => setAnnualFormData({...annualFormData, downloadUrl: e.target.value})} required placeholder="https://..." />
+              <input type="url" value={annualFormData.downloadUrl} onChange={(e) => setAnnualFormData({...annualFormData, downloadUrl: e.target.value})} required placeholder="https://..." disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-buttons">
-            <button type="button" className="ra-btn ra-btn-secondary" onClick={() => { setActivePage('annual'); resetAnnualForm(); }}>Cancel</button>
-            <button type="submit" className="ra-btn ra-btn-primary">{editingAnnual ? 'Update' : 'Create'}</button>
+            <button type="button" className="ra-btn ra-btn-secondary" onClick={() => { setActivePage('annual'); resetAnnualForm(); }} disabled={isSaving}>Cancel</button>
+            <button type="submit" className="ra-btn ra-btn-primary" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <span className="ra-spinner-small"></span>
+                  {editingAnnual ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                editingAnnual ? 'Update' : 'Create'
+              )}
+            </button>
           </div>
         </form>
       </div>
@@ -1672,7 +1763,7 @@ const ReportsAdmin = () => {
   const renderQuarterlyForm = () => (
     <div className="ra-page-full">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => { setActivePage('quarterly'); resetQuarterlyForm(); }}>
+        <button className="ra-back-btn" onClick={() => { setActivePage('quarterly'); resetQuarterlyForm(); }} disabled={isSaving}>
           <IconBack /> Back to Quarterly Reports
         </button>
         <h2>{editingQuarterly ? 'Edit Quarterly Report' : 'Add Quarterly Report'}</h2>
@@ -1683,44 +1774,53 @@ const ReportsAdmin = () => {
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Quarter *</label>
-              <input type="text" value={quarterlyFormData.quarter} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, quarter: e.target.value})} required placeholder="e.g., Q1 2024" />
+              <input type="text" value={quarterlyFormData.quarter} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, quarter: e.target.value})} required placeholder="e.g., Q1 2024" disabled={isSaving} />
             </div>
             
             <div className="ra-form-group">
               <label>Period *</label>
-              <input type="text" value={quarterlyFormData.period} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, period: e.target.value})} required placeholder="e.g., January - March 2024" />
+              <input type="text" value={quarterlyFormData.period} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, period: e.target.value})} required placeholder="e.g., January - March 2024" disabled={isSaving} />
             </div>
             
             <div className="ra-form-group">
               <label>File Size *</label>
-              <input type="text" value={quarterlyFormData.fileSize} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, fileSize: e.target.value})} required placeholder="e.g., 1.2 MB" />
+              <input type="text" value={quarterlyFormData.fileSize} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, fileSize: e.target.value})} required placeholder="e.g., 1.2 MB" disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Title *</label>
-              <input type="text" value={quarterlyFormData.title} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, title: e.target.value})} required />
+              <input type="text" value={quarterlyFormData.title} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, title: e.target.value})} required disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Description *</label>
-              <textarea value={quarterlyFormData.description} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, description: e.target.value})} required rows="3" />
+              <textarea value={quarterlyFormData.description} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, description: e.target.value})} required rows="3" disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Download URL *</label>
-              <input type="url" value={quarterlyFormData.downloadUrl} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, downloadUrl: e.target.value})} required placeholder="https://..." />
+              <input type="url" value={quarterlyFormData.downloadUrl} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, downloadUrl: e.target.value})} required placeholder="https://..." disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-buttons">
-            <button type="button" className="ra-btn ra-btn-secondary" onClick={() => { setActivePage('quarterly'); resetQuarterlyForm(); }}>Cancel</button>
-            <button type="submit" className="ra-btn ra-btn-primary">{editingQuarterly ? 'Update' : 'Create'}</button>
+            <button type="button" className="ra-btn ra-btn-secondary" onClick={() => { setActivePage('quarterly'); resetQuarterlyForm(); }} disabled={isSaving}>Cancel</button>
+            <button type="submit" className="ra-btn ra-btn-primary" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <span className="ra-spinner-small"></span>
+                  {editingQuarterly ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                editingQuarterly ? 'Update' : 'Create'
+              )}
+            </button>
           </div>
         </form>
       </div>
@@ -1731,7 +1831,7 @@ const ReportsAdmin = () => {
   const renderStoryForm = () => (
     <div className="ra-page-full">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => { setActivePage('stories'); resetStoryForm(); }}>
+        <button className="ra-back-btn" onClick={() => { setActivePage('stories'); resetStoryForm(); }} disabled={isSaving}>
           <IconBack /> Back to Stories
         </button>
         <h2>{editingStory ? 'Edit Success Story' : 'Add Success Story'}</h2>
@@ -1742,12 +1842,12 @@ const ReportsAdmin = () => {
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Title *</label>
-              <input type="text" value={storyFormData.title} onChange={(e) => setStoryFormData({...storyFormData, title: e.target.value})} required />
+              <input type="text" value={storyFormData.title} onChange={(e) => setStoryFormData({...storyFormData, title: e.target.value})} required disabled={isSaving} />
             </div>
             
             <div className="ra-form-group">
               <label>Category *</label>
-              <select value={storyFormData.category} onChange={(e) => setStoryFormData({...storyFormData, category: e.target.value})} required>
+              <select value={storyFormData.category} onChange={(e) => setStoryFormData({...storyFormData, category: e.target.value})} required disabled={isSaving}>
                 <option value="education">Education</option>
                 <option value="healthcare">Healthcare</option>
                 <option value="social">Social</option>
@@ -1757,27 +1857,36 @@ const ReportsAdmin = () => {
             
             <div className="ra-form-group">
               <label>Date *</label>
-              <input type="date" value={storyFormData.date} onChange={(e) => setStoryFormData({...storyFormData, date: e.target.value})} required />
+              <input type="date" value={storyFormData.date} onChange={(e) => setStoryFormData({...storyFormData, date: e.target.value})} required disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Description *</label>
-              <textarea value={storyFormData.description} onChange={(e) => setStoryFormData({...storyFormData, description: e.target.value})} required rows="3" />
+              <textarea value={storyFormData.description} onChange={(e) => setStoryFormData({...storyFormData, description: e.target.value})} required rows="3" disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Impact *</label>
-              <textarea value={storyFormData.impact} onChange={(e) => setStoryFormData({...storyFormData, impact: e.target.value})} required rows="2" placeholder="e.g., Reintegrated into school, Received medical care, etc." />
+              <textarea value={storyFormData.impact} onChange={(e) => setStoryFormData({...storyFormData, impact: e.target.value})} required rows="2" placeholder="e.g., Reintegrated into school, Received medical care, etc." disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-buttons">
-            <button type="button" className="ra-btn ra-btn-secondary" onClick={() => { setActivePage('stories'); resetStoryForm(); }}>Cancel</button>
-            <button type="submit" className="ra-btn ra-btn-primary">{editingStory ? 'Update' : 'Create'}</button>
+            <button type="button" className="ra-btn ra-btn-secondary" onClick={() => { setActivePage('stories'); resetStoryForm(); }} disabled={isSaving}>Cancel</button>
+            <button type="submit" className="ra-btn ra-btn-primary" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <span className="ra-spinner-small"></span>
+                  {editingStory ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                editingStory ? 'Update' : 'Create'
+              )}
+            </button>
           </div>
         </form>
       </div>
@@ -1788,7 +1897,7 @@ const ReportsAdmin = () => {
   const renderMetricForm = () => (
     <div className="ra-page-full">
       <div className="ra-header">
-        <button className="ra-back-btn" onClick={() => { setActivePage('metrics'); resetMetricForm(); }}>
+        <button className="ra-back-btn" onClick={() => { setActivePage('metrics'); resetMetricForm(); }} disabled={isSaving}>
           <IconBack /> Back to Metrics
         </button>
         <h2>{editingMetric ? 'Edit Impact Metric' : 'Add Impact Metric'}</h2>
@@ -1799,45 +1908,54 @@ const ReportsAdmin = () => {
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Label *</label>
-              <input type="text" value={metricFormData.label} onChange={(e) => setMetricFormData({...metricFormData, label: e.target.value})} required placeholder="e.g., Children Served" />
+              <input type="text" value={metricFormData.label} onChange={(e) => setMetricFormData({...metricFormData, label: e.target.value})} required placeholder="e.g., Children Served" disabled={isSaving} />
             </div>
             
             <div className="ra-form-group">
               <label>Year *</label>
-              <input type="number" value={metricFormData.year} onChange={(e) => setMetricFormData({...metricFormData, year: e.target.value})} required />
+              <input type="number" value={metricFormData.year} onChange={(e) => setMetricFormData({...metricFormData, year: e.target.value})} required disabled={isSaving} />
             </div>
             
             <div className="ra-form-group">
               <label>Color *</label>
-              <input type="color" value={metricFormData.color} onChange={(e) => setMetricFormData({...metricFormData, color: e.target.value})} required />
+              <input type="color" value={metricFormData.color} onChange={(e) => setMetricFormData({...metricFormData, color: e.target.value})} required disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-form-row">
             <div className="ra-form-group">
               <label>Q1 Value *</label>
-              <input type="number" value={metricFormData.q1Value} onChange={(e) => setMetricFormData({...metricFormData, q1Value: e.target.value})} required />
+              <input type="number" value={metricFormData.q1Value} onChange={(e) => setMetricFormData({...metricFormData, q1Value: e.target.value})} required disabled={isSaving} />
             </div>
             
             <div className="ra-form-group">
               <label>Q2 Value *</label>
-              <input type="number" value={metricFormData.q2Value} onChange={(e) => setMetricFormData({...metricFormData, q2Value: e.target.value})} required />
+              <input type="number" value={metricFormData.q2Value} onChange={(e) => setMetricFormData({...metricFormData, q2Value: e.target.value})} required disabled={isSaving} />
             </div>
             
             <div className="ra-form-group">
               <label>Q3 Value *</label>
-              <input type="number" value={metricFormData.q3Value} onChange={(e) => setMetricFormData({...metricFormData, q3Value: e.target.value})} required />
+              <input type="number" value={metricFormData.q3Value} onChange={(e) => setMetricFormData({...metricFormData, q3Value: e.target.value})} required disabled={isSaving} />
             </div>
             
             <div className="ra-form-group">
               <label>Q4 Value *</label>
-              <input type="number" value={metricFormData.q4Value} onChange={(e) => setMetricFormData({...metricFormData, q4Value: e.target.value})} required />
+              <input type="number" value={metricFormData.q4Value} onChange={(e) => setMetricFormData({...metricFormData, q4Value: e.target.value})} required disabled={isSaving} />
             </div>
           </div>
           
           <div className="ra-buttons">
-            <button type="button" className="ra-btn ra-btn-secondary" onClick={() => { setActivePage('metrics'); resetMetricForm(); }}>Cancel</button>
-            <button type="submit" className="ra-btn ra-btn-primary">{editingMetric ? 'Update' : 'Create'}</button>
+            <button type="button" className="ra-btn ra-btn-secondary" onClick={() => { setActivePage('metrics'); resetMetricForm(); }} disabled={isSaving}>Cancel</button>
+            <button type="submit" className="ra-btn ra-btn-primary" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <span className="ra-spinner-small"></span>
+                  {editingMetric ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                editingMetric ? 'Update' : 'Create'
+              )}
+            </button>
           </div>
         </form>
       </div>

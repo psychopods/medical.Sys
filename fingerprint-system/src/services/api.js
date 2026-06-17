@@ -22,7 +22,6 @@ export async function login(usernameOrEmail, password) {
 
   if (isOnline) {
     try {
-      console.log('API: Attempting online login...');
       const response = await fetch(API_ENDPOINTS.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -32,7 +31,6 @@ export async function login(usernameOrEmail, password) {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        console.log('API: Online login successful.');
         const user = data.user;
         const session = data.session;
 
@@ -50,12 +48,11 @@ export async function login(usernameOrEmail, password) {
         throw new Error(data.message || 'Login failed.');
       }
     } catch (onlineError) {
-      console.warn('API: Online login failed, attempting offline fallback...', onlineError);
+      // Silent fail - fallback to offline
     }
   }
 
   // Offline Fallback Auth
-  console.log('API: Running offline authentication...');
   const users = await executeQuery(
     `SELECT * FROM staff_users WHERE email = ? OR username = ? LIMIT 1`,
     [usernameOrEmail, usernameOrEmail]
@@ -117,7 +114,6 @@ export async function getLocations() {
     }
     return [];
   } catch (error) {
-    console.warn('API: Failed to fetch locations online, using cache.', error);
     // Fallback to cached locations
     const rows = await executeQuery('SELECT * FROM child_locations ORDER BY name ASC');
     return rows;
@@ -168,7 +164,7 @@ export async function getChildren() {
         return children;
       }
     } catch (error) {
-      console.warn('API: Failed to fetch children online, using cache.', error);
+      // Silent fail - fallback to cache
     }
   }
 
@@ -191,7 +187,6 @@ export async function getChildren() {
       createdAt: child.created_at
     }));
   } catch (err) {
-    console.error('API: Error fetching children from SQLite:', err);
     return [];
   }
 }
@@ -208,7 +203,6 @@ export async function getChildById(id) {
     }
     return null;
   } catch (error) {
-    console.error('API: Error fetching child:', error);
     return null;
   }
 }
@@ -259,7 +253,7 @@ export async function registerChild(childData) {
         return result;
       }
     } catch (error) {
-      console.warn('API: Failed to register child online, caching locally...', error);
+      // Silent fail - fallback to offline
     }
   }
 
@@ -306,7 +300,6 @@ export async function registerChild(childData) {
       }
     };
   } catch (err) {
-    console.error('API: Error storing child offline in SQLite:', err);
     throw err;
   }
 }
@@ -351,7 +344,7 @@ export async function updateChild(id, childData) {
         return result;
       }
     } catch (error) {
-      console.warn('API: Failed to update child online, caching locally...', error);
+      // Silent fail - fallback to offline
     }
   }
 
@@ -382,7 +375,6 @@ export async function updateChild(id, childData) {
       }
     };
   } catch (err) {
-    console.error('API: Error updating child offline in SQLite:', err);
     throw err;
   }
 }
@@ -403,17 +395,17 @@ export async function deleteChild(id) {
         return true;
       }
     } catch (error) {
-      console.error('API: Error deleting child online:', error);
+      // Silent fail
     }
   } else {
-    // Offline delete: since we don't have a deleted queue, we can just delete from SQLite
+    // Offline delete
     try {
       await executeRun('DELETE FROM children_profiles WHERE id = ?', [id]);
       await executeRun('DELETE FROM biometric_fingerprints WHERE child_id = ?', [id]);
       await saveDB();
       return true;
     } catch (err) {
-      console.error('API: Error deleting child offline:', err);
+      // Silent fail
     }
   }
   return false;
@@ -1106,7 +1098,7 @@ export async function getBiometricsForChild(childId) {
         return fingerprints;
       }
     } catch (error) {
-      console.warn('API: Failed to fetch biometrics online, using cache.', error);
+      // Silent fail - fallback to cache
     }
   }
 
@@ -1126,7 +1118,6 @@ export async function getBiometricsForChild(childId) {
       createdAt: fp.created_at
     }));
   } catch (err) {
-    console.error('API: Error fetching biometrics from SQLite:', err);
     return [];
   }
 }
@@ -1170,7 +1161,7 @@ export async function enrollBiometric(bioData) {
         return result;
       }
     } catch (error) {
-      console.warn('API: Failed to enroll biometric online, caching locally...', error);
+      // Silent fail - fallback to offline
     }
   }
 
@@ -1197,7 +1188,6 @@ export async function enrollBiometric(bioData) {
       }
     };
   } catch (err) {
-    console.error('API: Error storing biometric offline in SQLite:', err);
     throw err;
   }
 }
@@ -1240,7 +1230,6 @@ export async function getDashboardStats() {
       onlineUsers
     };
   } catch (error) {
-    console.error('API: Error fetching dashboard stats:', error);
     return {
       totalChildren: 0,
       todayRegistrations: 0,
@@ -1281,7 +1270,6 @@ export async function getLocationStats() {
     }
     return [];
   } catch (error) {
-    console.error('API: Error fetching location stats:', error);
     return [];
   }
 }
@@ -1314,7 +1302,6 @@ export async function getMonthlyRegistrations() {
     }
     return [];
   } catch (error) {
-    console.error('API: Error fetching monthly registrations:', error);
     return [];
   }
 }
@@ -1347,7 +1334,6 @@ export async function getRecentActivities(limit = 10) {
     }
     return [];
   } catch (error) {
-    console.error('API: Error fetching recent activities:', error);
     return [];
   }
 }
@@ -1373,7 +1359,6 @@ function updateSyncStatus(state, message) {
 }
 
 export function initSyncWorker() {
-  console.log('API: Sync worker initialized');
   updateSyncStatus('idle', 'Ready');
 }
 
@@ -1426,7 +1411,7 @@ export async function triggerSync() {
           );
         }
       } catch (error) {
-        console.error('Error syncing child record from SQLite:', error);
+        // Silent fail for individual record
       }
     }
 
@@ -1458,7 +1443,7 @@ export async function triggerSync() {
           );
         }
       } catch (error) {
-        console.error('Error syncing biometric record from SQLite:', error);
+        // Silent fail for individual record
       }
     }
 
@@ -1826,27 +1811,26 @@ export async function triggerSync() {
    ========================================== */
 
 export async function submitContactForm(form) {
-      try {
-        const response = await fetch(API_ENDPOINTS.contactSubmit, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            full_name: form.full_name,
-            email_address: form.email_address,
-            message_subject: form.message_subject,
-            message_content: form.message_content
-          })
-        });
-
-        if (response.ok) {
-          return { success: true };
-        }
-        return { success: false };
-      } catch (error) {
-        console.error('API: Error submitting contact form:', error);
-        return { success: false, error: error.message };
-      }
+  try {
+    const response = await fetch(API_ENDPOINTS.contactSubmit, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name: form.full_name,
+        email_address: form.email_address,
+        message_subject: form.message_subject,
+        message_content: form.message_content
+      })
+    });
+    if (response.ok) {
+      return { success: true };
     }
+    return { success: false };
+  } catch (error) {
+    console.error('API: Error submitting contact form:', error);
+    return { success: false, error: error.message };
+  }
+}
 
     export async function submitVolunteerApplication(form) {
       try {
@@ -2959,4 +2943,3 @@ export async function submitContactForm(form) {
       }
       return 1; // Default to 1 logged in user when offline
     }
-

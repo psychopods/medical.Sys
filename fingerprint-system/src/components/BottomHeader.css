@@ -1,9 +1,80 @@
 /* BottomHeader.css - Fixed */
+
+/* ============================================
+   DARK MODE SUPPORT - CSS Variables
+   ============================================ */
+:root {
+  /* Dark mode (default) - Header is dark */
+  --bb-bg-primary: #0f1423;
+  --bb-bg-secondary: #16213e;
+  --bb-bg-gradient: linear-gradient(135deg, #0f1423 0%, #16213e 100%);
+  --bb-text-primary: #ffffff;
+  --bb-text-secondary: #e2e8f0;
+  --bb-text-muted: #a0aec0;
+  --bb-accent: #00b4d8;
+  --bb-accent-hover: #0090b8;
+  --bb-border-color: rgba(255, 255, 255, 0.1);
+  --bb-shadow-color: rgba(0, 0, 0, 0.15);
+  --bb-shadow-light: rgba(0, 0, 0, 0.05);
+  --bb-toast-bg: #1a202c;
+  --bb-toast-text: #e2e8f0;
+  --bb-menu-bg: linear-gradient(135deg, #0f1423 0%, #16213e 100%);
+  --bb-mobile-close-color: #ffffff;
+  --bb-menu-icon-color: #ffffff;
+  --bb-nav-link-color: #e2e8f0;
+  --bb-nav-link-hover: #00b4d8;
+  --bb-toast-bg-success: linear-gradient(135deg, #1a3a1a 0%, #1a202c 100%);
+  --bb-toast-bg-error: linear-gradient(135deg, #3a1a1a 0%, #1a202c 100%);
+  --bb-toast-bg-info: linear-gradient(135deg, #1a2a3a 0%, #1a202c 100%);
+  --bb-toast-text-color: #e2e8f0;
+  --bb-border-light: rgba(255, 255, 255, 0.2);
+  --bb-join-btn-bg: linear-gradient(135deg, #ff6b35, #f7931e);
+  --bb-join-btn-color: #ffffff;
+  --bb-join-btn-shadow: rgba(247, 147, 30, 0.5);
+}
+
+/* Light mode - Header stays dark, only content below changes */
+[data-theme="light"] {
+  /* HEADER STAYS DARK - DO NOT OVERRIDE HEADER COLORS */
+  /* Only override non-header elements */
+  --bb-toast-bg: #ffffff;
+  --bb-toast-text: #333333;
+  --bb-toast-bg-success: linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%);
+  --bb-toast-bg-error: linear-gradient(135deg, #fef3f2 0%, #ffffff 100%);
+  --bb-toast-bg-info: linear-gradient(135deg, #e8f7f9 0%, #ffffff 100%);
+  --bb-toast-text-color: #333333;
+  --bb-border-light: rgba(0, 0, 0, 0.2);
+  --bb-shadow-color: rgba(0, 0, 0, 0.1);
+  --bb-shadow-light: rgba(0, 0, 0, 0.05);
+  
+  /* Header colors remain dark - NOT overridden */
+  /* --bb-bg-primary, --bb-bg-gradient, --bb-text-primary, etc. stay dark */
+}
+
+/* Auto-detect system preference - Header stays dark */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    /* HEADER STAYS DARK - DO NOT OVERRIDE HEADER COLORS */
+    --bb-toast-bg: #ffffff;
+    --bb-toast-text: #333333;
+    --bb-toast-bg-success: linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%);
+    --bb-toast-bg-error: linear-gradient(135deg, #fef3f2 0%, #ffffff 100%);
+    --bb-toast-bg-info: linear-gradient(135deg, #e8f7f9 0%, #ffffff 100%);
+    --bb-toast-text-color: #333333;
+    --bb-border-light: rgba(0, 0, 0, 0.2);
+    --bb-shadow-color: rgba(0, 0, 0, 0.1);
+    --bb-shadow-light: rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* ============================================
+   HEADER STYLES - ALWAYS DARK
+   ============================================ */
 .bb-nav-main {
-  background: linear-gradient(135deg, #0f1423 0%, #16213e 100%);
+  background: var(--bb-bg-gradient);
   width: 100%;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px var(--bb-shadow-light);
   position: relative;
   z-index: 999;
 }
@@ -14,7 +85,7 @@
   left: 0;
   right: 0;
   animation: bbSlideDown 0.3s ease;
-  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 5px 25px var(--bb-shadow-color);
   z-index: 1000;
 }
 
@@ -70,7 +141,7 @@
 }
 
 .bb-logo-icon {
-  color: #00b4d8;
+  color: var(--bb-accent);
 }
 
 .bb-logo-text {
@@ -81,12 +152,12 @@
 .bb-logo-title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #fff;
+  color: #ffffff; /* Always white - header stays dark */
 }
 
 .bb-logo-subtitle {
   font-size: 0.7rem;
-  color: #00b4d8;
+  color: var(--bb-accent);
 }
 
 /* Navigation Links */
@@ -99,7 +170,7 @@
 }
 
 .bb-nav-link {
-  color: #e2e8f0;
+  color: #e2e8f0; /* Always light - header stays dark */
   text-decoration: none;
   font-weight: 500;
   font-size: 1rem;
@@ -115,12 +186,12 @@
   left: 0;
   width: 0;
   height: 2px;
-  background: #00b4d8;
+  background: var(--bb-accent);
   transition: width 0.3s ease;
 }
 
 .bb-nav-link:hover {
-  color: #00b4d8;
+  color: var(--bb-accent);
 }
 
 .bb-nav-link:hover::after {
@@ -128,7 +199,7 @@
 }
 
 .bb-nav-link.bb-active {
-  color: #00b4d8;
+  color: var(--bb-accent);
 }
 
 .bb-nav-link.bb-active::after {
@@ -148,9 +219,9 @@
   gap: 8px;
   padding: 8px 28px;
   background: transparent;
-  border: 1.5px solid #00b4d8;
+  border: 1.5px solid var(--bb-accent);
   border-radius: 40px;
-  color: #00b4d8;
+  color: var(--bb-accent);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -158,8 +229,8 @@
 }
 
 .bb-login-btn:hover {
-  background: #00b4d8;
-  color: #fff;
+  background: var(--bb-accent);
+  color: #ffffff;
   transform: translateY(-2px);
 }
 
@@ -177,7 +248,7 @@
   display: block;
   width: 100%;
   height: 2.5px;
-  background: #fff;
+  background: #ffffff; /* Always white - header stays dark */
   border-radius: 2px;
   transition: all 0.3s ease;
 }
@@ -201,7 +272,7 @@
   width: 80%;
   max-width: 350px;
   height: 100vh;
-  background: linear-gradient(135deg, #0f1423 0%, #16213e 100%);
+  background: var(--bb-menu-bg);
   z-index: 9998;
   padding: 80px 30px 40px;
   transition: right 0.3s ease;
@@ -221,7 +292,7 @@
 }
 
 .bb-mobile-nav-link {
-  color: #e2e8f0;
+  color: #e2e8f0; /* Always light - header stays dark */
   text-decoration: none;
   font-size: 1.2rem;
   font-weight: 500;
@@ -230,7 +301,7 @@
 }
 
 .bb-mobile-nav-link.bb-active {
-  color: #00b4d8;
+  color: var(--bb-accent);
 }
 
 .bb-mobile-auth-buttons {
@@ -246,28 +317,28 @@
   gap: 8px;
   padding: 12px 24px;
   background: transparent;
-  border: 1.5px solid #00b4d8;
+  border: 1.5px solid var(--bb-accent);
   border-radius: 40px;
-  color: #00b4d8;
+  color: var(--bb-accent);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
 }
 
-/* Toast Notification Styles */
+/* Toast Notification Styles - These adapt to theme */
 .bb-toast-notification {
   position: fixed;
   top: 90px;
   right: 20px;
   min-width: 320px;
-  background: white;
+  background: var(--bb-toast-bg);
   border-radius: 12px;
   padding: 14px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 30px var(--bb-shadow-color);
   z-index: 10000;
   animation: bbSlideIn 0.3s ease;
   border-left: 4px solid;
@@ -275,7 +346,7 @@
 
 .bb-toast-notification.info {
   border-left-color: #17a2b8;
-  background: linear-gradient(135deg, #e8f7f9 0%, #ffffff 100%);
+  background: var(--bb-toast-bg-info);
 }
 
 .bb-toast-notification.info .bb-toast-content svg {
@@ -284,7 +355,7 @@
 
 .bb-toast-notification.success {
   border-left-color: #28a745;
-  background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%);
+  background: var(--bb-toast-bg-success);
 }
 
 .bb-toast-notification.success .bb-toast-content svg {
@@ -293,7 +364,7 @@
 
 .bb-toast-notification.error {
   border-left-color: #dc3545;
-  background: linear-gradient(135deg, #fef3f2 0%, #ffffff 100%);
+  background: var(--bb-toast-bg-error);
 }
 
 .bb-toast-notification.error .bb-toast-content svg {
@@ -312,7 +383,7 @@
 }
 
 .bb-toast-content span {
-  color: #333;
+  color: var(--bb-toast-text-color);
   font-size: 14px;
   line-height: 1.5;
   font-weight: 500;
@@ -322,7 +393,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #999;
+  color: var(--bb-text-muted);
   padding: 5px;
   display: flex;
   align-items: center;
@@ -332,8 +403,8 @@
 }
 
 .bb-toast-close:hover {
-  color: #333;
-  background: rgba(0, 0, 0, 0.05);
+  color: var(--bb-text-primary);
+  background: var(--bb-shadow-light);
   transform: scale(1.1);
 }
 
@@ -397,7 +468,7 @@ body {
   margin: 0;
 }
 
-/* Mobile Menu Close Button - White */
+/* Mobile Menu Close Button */
 .bb-mobile-close {
   position: absolute;
   top: 20px;
@@ -423,7 +494,7 @@ body {
 .bb-mobile-close svg {
   width: 20px;
   height: 20px;
-  stroke: white;
+  stroke: #ffffff; /* Always white - header stays dark */
   stroke-width: 2;
 }
 
@@ -435,7 +506,7 @@ body {
   width: 80%;
   max-width: 350px;
   height: 100vh;
-  background: linear-gradient(135deg, #0f1423 0%, #16213e 100%);
+  background: var(--bb-menu-bg);
   z-index: 9998;
   padding: 80px 30px 40px;
   transition: right 0.3s ease;
@@ -458,161 +529,9 @@ body {
   }
 }
 
-/* Add to BottomHeader.css - Keep existing styles, just add these */
-
-/* Join Now Button - Same style as Login button */
-.bb-join-wrapper {
-  position: relative;
-  display: inline-block;
-  margin-right: 12px;
-}
-
-.bb-join-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  background: #0066cc;
-  color: white;
-  border: none;
-  border-radius: 30px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.bb-join-btn:hover {
-  background: #0052a3;
-  transform: translateY(-2px);
-}
-
-.bb-join-btn.bb-pulse-active {
-  animation: bb-btn-pulse 0.5s ease-in-out;
-}
-
-@keyframes bb-btn-pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* Floating Indicators */
-.bb-join-indicators {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: 10;
-}
-
-.bb-indicator {
-  position: absolute;
-  font-size: 20px;
-  animation: bb-indicator-float 1.5s ease-out forwards;
-}
-
-.bb-indicator-1 {
-  top: -30px;
-  left: -20px;
-  animation-delay: 0s;
-}
-
-.bb-indicator-2 {
-  top: -40px;
-  right: -15px;
-  animation-delay: 0.1s;
-}
-
-.bb-indicator-3 {
-  bottom: -30px;
-  left: -10px;
-  animation-delay: 0.2s;
-}
-
-.bb-indicator-4 {
-  bottom: -35px;
-  right: -20px;
-  animation-delay: 0.15s;
-}
-
-.bb-indicator-5 {
-  top: -20px;
-  right: -30px;
-  animation-delay: 0.25s;
-}
-
-@keyframes bb-indicator-float {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: translateY(-20px) scale(1.2);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-40px) scale(1.5);
-  }
-}
-
-/* Mobile Join Button - Same style as mobile login */
-.bb-mobile-join-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  padding: 14px 20px;
-  background: #0066cc;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.bb-mobile-join-btn:hover {
-  background: #0052a3;
-}
-
-/* Auth Buttons Container */
-.bb-auth-buttons {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* Mobile Auth Buttons */
-.bb-mobile-auth-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .bb-auth-buttons {
-    display: none;
-  }
-}
-
-/* Add to BottomHeader.css - Eye-catching Join Now Button */
-
-/* Join Now Button - Fire style */
+/* ============================================
+   JOIN NOW BUTTON - Fire Style
+   ============================================ */
 .bb-join-wrapper {
   position: relative;
   display: inline-block;
@@ -625,7 +544,7 @@ body {
   gap: 8px;
   padding: 8px 20px;
   background: linear-gradient(135deg, #ff6b35, #f7931e);
-  color: white;
+  color: #ffffff;
   border: none;
   border-radius: 30px;
   font-size: 14px;
@@ -782,7 +701,7 @@ body {
   width: 100%;
   padding: 14px 20px;
   background: linear-gradient(135deg, #ff6b35, #f7931e);
-  color: white;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   font-size: 16px;

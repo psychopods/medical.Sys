@@ -24,6 +24,12 @@ const NotificationsAdmin = () => {
   const [viewingNotification, setViewingNotification] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   
+  // ===== LOADING STATES =====
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  
   // Data for dropdowns
   const [users, setUsers] = useState([]);
   
@@ -100,57 +106,83 @@ const NotificationsAdmin = () => {
       return;
     }
 
-    const notificationData = {
-      type: formData.type,
-      title: formData.title,
-      message: formData.message,
-      targetType: formData.targetType,
-      targetUserId: formData.targetType === 'USER' ? formData.targetUserId : null,
-      expiresAt: formData.expiresAt || null
-    };
+    setIsSaving(true);
+    try {
+      const notificationData = {
+        type: formData.type,
+        title: formData.title,
+        message: formData.message,
+        targetType: formData.targetType,
+        targetUserId: formData.targetType === 'USER' ? formData.targetUserId : null,
+        expiresAt: formData.expiresAt || null
+      };
 
-    const result = await createNotification(notificationData);
-    if (result) {
-      showToastMessage('Notification created successfully');
-      loadNotifications();
-      setActivePage('list');
-      resetForm();
-    } else {
+      const result = await createNotification(notificationData);
+      if (result) {
+        showToastMessage('Notification created successfully');
+        await loadNotifications();
+        setActivePage('list');
+        resetForm();
+      } else {
+        showToastMessage('Failed to create notification', 'error');
+      }
+    } catch (error) {
+      console.error('Error creating notification:', error);
       showToastMessage('Failed to create notification', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleUpdate = async () => {
-    const notificationData = {
-      type: formData.type,
-      title: formData.title,
-      message: formData.message,
-      targetType: formData.targetType,
-      targetUserId: formData.targetType === 'USER' ? formData.targetUserId : null,
-      expiresAt: formData.expiresAt || null
-    };
+    setIsSaving(true);
+    try {
+      const notificationData = {
+        type: formData.type,
+        title: formData.title,
+        message: formData.message,
+        targetType: formData.targetType,
+        targetUserId: formData.targetType === 'USER' ? formData.targetUserId : null,
+        expiresAt: formData.expiresAt || null
+      };
 
-    const result = await updateNotification(editingNotification.id, notificationData);
-    if (result) {
-      showToastMessage('Notification updated successfully');
-      loadNotifications();
-      setActivePage('list');
-      setEditingNotification(null);
-      resetForm();
-    } else {
+      const result = await updateNotification(editingNotification.id, notificationData);
+      if (result) {
+        showToastMessage('Notification updated successfully');
+        await loadNotifications();
+        setActivePage('list');
+        setEditingNotification(null);
+        resetForm();
+      } else {
+        showToastMessage('Failed to update notification', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating notification:', error);
       showToastMessage('Failed to update notification', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (id, title) => {
-    if (window.confirm(`Delete notification "${title}"?`)) {
+    if (!window.confirm(`Delete notification "${title}"?`)) return;
+    
+    setDeletingId(id);
+    setIsDeleting(true);
+    try {
       const success = await deleteNotification(id);
       if (success) {
         showToastMessage('Notification deleted successfully');
-        loadNotifications();
+        await loadNotifications();
       } else {
         showToastMessage('Failed to delete notification', 'error');
       }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      showToastMessage('Failed to delete notification', 'error');
+    } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
     }
   };
 
@@ -179,9 +211,17 @@ const NotificationsAdmin = () => {
   };
 
   const handleView = async (id) => {
-    const notification = await fetchNotificationById(id);
-    setViewingNotification(notification);
-    setActivePage('view');
+    setIsLoading(true);
+    try {
+      const notification = await fetchNotificationById(id);
+      setViewingNotification(notification);
+      setActivePage('view');
+    } catch (error) {
+      console.error('Error viewing notification:', error);
+      showToastMessage('Failed to load notification details', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getReadCount = (notificationId) => {
@@ -251,7 +291,11 @@ const NotificationsAdmin = () => {
       <div className="na-dashboard-header">
         <div className="na-header-title">
           <h1>Notifications Management</h1>
-          <button className="na-add-btn" onClick={() => { resetForm(); setActivePage('add'); }}>
+          <button 
+            className="na-add-btn" 
+            onClick={() => { resetForm(); setActivePage('add'); }}
+            disabled={isLoading}
+          >
             + Create Notification
           </button>
         </div>
@@ -295,25 +339,48 @@ const NotificationsAdmin = () => {
                     <td>{notif.expiresAt ? new Date(notif.expiresAt).toLocaleDateString() : 'Never'}</td>
                     <td>
                       <div className="na-action-buttons">
-                        <button className="na-action-btn na-view" onClick={() => handleView(notif.id)} title="View Details">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <circle cx="12" cy="12" r="3" />
-                          </svg>
+                        <button 
+                          className="na-action-btn na-view" 
+                          onClick={() => handleView(notif.id)} 
+                          title="View Details"
+                          disabled={isLoading || isDeleting}
+                        >
+                          {isLoading ? (
+                            <span className="na-spinner-small"></span>
+                          ) : (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          )}
                         </button>
-                        <button className="na-action-btn na-edit" onClick={() => handleEdit(notif)} title="Edit">
+                        <button 
+                          className="na-action-btn na-edit" 
+                          onClick={() => handleEdit(notif)} 
+                          title="Edit"
+                          disabled={isLoading || isDeleting}
+                        >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M17 3L21 7L7 21H3V17L17 3Z" />
                           </svg>
                         </button>
-                        <button className="na-action-btn na-delete" onClick={() => handleDelete(notif.id, notif.title)} title="Delete">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M4 7H20" strokeWidth="2" />
-                            <path d="M10 11V17" strokeWidth="2" />
-                            <path d="M14 11V17" strokeWidth="2" />
-                            <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2" />
-                            <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2" />
-                          </svg>
+                        <button 
+                          className="na-action-btn na-delete" 
+                          onClick={() => handleDelete(notif.id, notif.title)} 
+                          title="Delete"
+                          disabled={isDeleting && deletingId === notif.id}
+                        >
+                          {isDeleting && deletingId === notif.id ? (
+                            <span className="na-spinner-small"></span>
+                          ) : (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M4 7H20" strokeWidth="2" />
+                              <path d="M10 11V17" strokeWidth="2" />
+                              <path d="M14 11V17" strokeWidth="2" />
+                              <path d="M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" strokeWidth="2" />
+                              <path d="M9 7V4C9 3.4 9.4 3 10 3H14C14.6 3 15 3.4 15 4V7" strokeWidth="2" />
+                            </svg>
+                          )}
                         </button>
                       </div>
                     </td>
@@ -331,7 +398,11 @@ const NotificationsAdmin = () => {
   const renderForm = () => (
     <div className="na-dashboard-content">
       <div className="na-dashboard-header">
-        <button className="na-back-btn" onClick={() => { setActivePage('list'); resetForm(); setEditingNotification(null); }}>
+        <button 
+          className="na-back-btn" 
+          onClick={() => { setActivePage('list'); resetForm(); setEditingNotification(null); }}
+          disabled={isSaving}
+        >
           ← Back to Notifications
         </button>
         <h1>{editingNotification ? 'Edit Notification' : 'Create Notification'}</h1>
@@ -340,7 +411,11 @@ const NotificationsAdmin = () => {
       <div className="na-form-container">
         <div className="na-form-group">
           <label>Type *</label>
-          <select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
+          <select 
+            value={formData.type} 
+            onChange={(e) => setFormData({...formData, type: e.target.value})}
+            disabled={isSaving}
+          >
             <option value="SYSTEM">System</option>
             <option value="ANNOUNCEMENT">Announcement</option>
             <option value="EVENT">Event</option>
@@ -349,17 +424,33 @@ const NotificationsAdmin = () => {
 
         <div className="na-form-group">
           <label>Title *</label>
-          <input type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} placeholder="Enter notification title" />
+          <input 
+            type="text" 
+            value={formData.title} 
+            onChange={(e) => setFormData({...formData, title: e.target.value})} 
+            placeholder="Enter notification title"
+            disabled={isSaving}
+          />
         </div>
 
         <div className="na-form-group">
           <label>Message *</label>
-          <textarea rows="4" value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} placeholder="Enter notification message" />
+          <textarea 
+            rows="4" 
+            value={formData.message} 
+            onChange={(e) => setFormData({...formData, message: e.target.value})} 
+            placeholder="Enter notification message"
+            disabled={isSaving}
+          />
         </div>
 
         <div className="na-form-group">
           <label>Target Type *</label>
-          <select value={formData.targetType} onChange={(e) => setFormData({...formData, targetType: e.target.value, targetUserId: ''})}>
+          <select 
+            value={formData.targetType} 
+            onChange={(e) => setFormData({...formData, targetType: e.target.value, targetUserId: ''})}
+            disabled={isSaving}
+          >
             <option value="ALL">All Users</option>
             <option value="USER">Specific User</option>
           </select>
@@ -372,6 +463,7 @@ const NotificationsAdmin = () => {
               value={formData.targetUserId} 
               onChange={(e) => setFormData({...formData, targetUserId: e.target.value})}
               required
+              disabled={isSaving}
             >
               <option value="">Select a user</option>
               {users.map(userItem => (
@@ -385,13 +477,35 @@ const NotificationsAdmin = () => {
 
         <div className="na-form-group">
           <label>Expiration Date (Optional)</label>
-          <input type="date" value={formData.expiresAt} onChange={(e) => setFormData({...formData, expiresAt: e.target.value})} />
+          <input 
+            type="date" 
+            value={formData.expiresAt} 
+            onChange={(e) => setFormData({...formData, expiresAt: e.target.value})}
+            disabled={isSaving}
+          />
         </div>
 
         <div className="na-form-actions">
-          <button className="na-btn-secondary" onClick={() => { setActivePage('list'); resetForm(); setEditingNotification(null); }}>Cancel</button>
-          <button className="na-btn-primary" onClick={editingNotification ? handleUpdate : handleCreate}>
-            {editingNotification ? 'Update' : 'Create'}
+          <button 
+            className="na-btn-secondary" 
+            onClick={() => { setActivePage('list'); resetForm(); setEditingNotification(null); }}
+            disabled={isSaving}
+          >
+            Cancel
+          </button>
+          <button 
+            className="na-btn-primary" 
+            onClick={editingNotification ? handleUpdate : handleCreate}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>
+                <span className="na-spinner-small"></span>
+                {editingNotification ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              editingNotification ? 'Update' : 'Create'
+            )}
           </button>
         </div>
       </div>
@@ -406,7 +520,13 @@ const NotificationsAdmin = () => {
     return (
       <div className="na-dashboard-content">
         <div className="na-dashboard-header">
-          <button className="na-back-btn" onClick={() => setActivePage('list')}>← Back to Notifications</button>
+          <button 
+            className="na-back-btn" 
+            onClick={() => setActivePage('list')}
+            disabled={isLoading}
+          >
+            ← Back to Notifications
+          </button>
           <h1>Notification Details</h1>
         </div>
 
@@ -487,8 +607,20 @@ const NotificationsAdmin = () => {
             </div>
 
             <div className="na-view-actions">
-              <button className="na-btn-secondary" onClick={() => setActivePage('list')}>Close</button>
-              <button className="na-btn-primary" onClick={() => handleEdit(viewingNotification)}>Edit Notification</button>
+              <button 
+                className="na-btn-secondary" 
+                onClick={() => setActivePage('list')}
+                disabled={isLoading}
+              >
+                Close
+              </button>
+              <button 
+                className="na-btn-primary" 
+                onClick={() => handleEdit(viewingNotification)}
+                disabled={isLoading}
+              >
+                Edit Notification
+              </button>
             </div>
           </div>
         )}

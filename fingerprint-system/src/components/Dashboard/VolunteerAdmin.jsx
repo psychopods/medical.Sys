@@ -15,6 +15,13 @@ const VolunteerAdmin = () => {
   const [editingApplication, setEditingApplication] = useState(null);
   const [viewingApplication, setViewingApplication] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
+  
+  // ===== LOADING STATES =====
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  
   const [formData, setFormData] = useState({
     id: '',
     fullName: '',
@@ -257,6 +264,7 @@ const VolunteerAdmin = () => {
 
   // Create volunteer application
   const createApplication = async () => {
+    setIsSaving(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.volunteerApplications, {
         method: 'POST',
@@ -274,7 +282,7 @@ const VolunteerAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Volunteer application created successfully');
-        fetchApplications();
+        await fetchApplications();
         setActivePage('applications');
         resetForm();
       } else {
@@ -283,11 +291,14 @@ const VolunteerAdmin = () => {
     } catch (error) {
       console.error('Error creating application:', error);
       showToastMessage('Network error', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // Update volunteer application
   const updateApplication = async () => {
+    setIsSaving(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.volunteerApplication(editingApplication.id), {
         method: 'PUT',
@@ -304,7 +315,7 @@ const VolunteerAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Volunteer application updated successfully');
-        fetchApplications();
+        await fetchApplications();
         setActivePage('applications');
         setEditingApplication(null);
         resetForm();
@@ -314,6 +325,8 @@ const VolunteerAdmin = () => {
     } catch (error) {
       console.error('Error updating application:', error);
       showToastMessage('Network error', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -321,6 +334,8 @@ const VolunteerAdmin = () => {
   const deleteApplication = async (id, name) => {
     if (!window.confirm(`Delete application from "${name}"?`)) return;
     
+    setDeletingId(id);
+    setIsDeleting(true);
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.volunteerApplication(id), {
         method: 'DELETE'
@@ -330,13 +345,16 @@ const VolunteerAdmin = () => {
       
       if (response.ok && data.success) {
         showToastMessage('Volunteer application deleted successfully');
-        fetchApplications();
+        await fetchApplications();
       } else {
         showToastMessage(data.message || 'Failed to delete application', 'error');
       }
     } catch (error) {
       console.error('Error deleting application:', error);
       showToastMessage('Network error', 'error');
+    } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
     }
   };
 
@@ -395,7 +413,7 @@ const VolunteerAdmin = () => {
   const renderApplicationViewPage = () => (
     <div className="va-page">
       <div className="va-header">
-        <button className="va-back-btn" onClick={() => setActivePage('applications')}>
+        <button className="va-back-btn" onClick={() => setActivePage('applications')} disabled={isLoading}>
           <IconBack /> Back to Applications
         </button>
         <div className="va-header-title">
@@ -488,12 +506,14 @@ const VolunteerAdmin = () => {
                 });
                 setActivePage('edit_application');
               }}
+              disabled={isLoading}
             >
               Edit Application
             </button>
             <button 
               className="va-btn va-btn-secondary" 
               onClick={() => setActivePage('applications')}
+              disabled={isLoading}
             >
               Close
             </button>
@@ -512,7 +532,11 @@ const VolunteerAdmin = () => {
       </div>
       
       <div className="va-stats-grid">
-        <div className="va-stat-card">
+        <div 
+          className="va-stat-card" 
+          onClick={() => { if (!isLoading) { fetchApplications(); setActivePage('applications'); } }}
+          style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+        >
           <div className="va-stat-icon">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/>
@@ -540,7 +564,11 @@ const VolunteerAdmin = () => {
       </div>
       
       <div className="va-actions-grid">
-        <div className="va-action-card" onClick={() => { fetchApplications(); setActivePage('applications'); }}>
+        <div 
+          className="va-action-card" 
+          onClick={() => { if (!isLoading) { fetchApplications(); setActivePage('applications'); } }}
+          style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+        >
           <div className="va-action-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/>
@@ -553,7 +581,11 @@ const VolunteerAdmin = () => {
           </div>
         </div>
         
-        <div className="va-action-card" onClick={() => { resetForm(); setActivePage('add_application'); }}>
+        <div 
+          className="va-action-card" 
+          onClick={() => { if (!isLoading) { resetForm(); setActivePage('add_application'); } }}
+          style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+        >
           <div className="va-action-icon">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12 5V19" strokeWidth="2"/>
@@ -573,12 +605,12 @@ const VolunteerAdmin = () => {
   const renderApplicationsList = () => (
     <div className="va-page">
       <div className="va-header">
-        <button className="va-back-btn" onClick={() => setActivePage('list')}>
+        <button className="va-back-btn" onClick={() => setActivePage('list')} disabled={isLoading}>
           <IconBack /> Back
         </button>
         <div className="va-header-title">
           <h2>Volunteer Applications</h2>
-          <button className="va-add-btn" onClick={() => { resetForm(); setActivePage('add_application'); }}>
+          <button className="va-add-btn" onClick={() => { resetForm(); setActivePage('add_application'); }} disabled={isLoading}>
             <IconAdd /> Add Application
           </button>
         </div>
@@ -617,7 +649,7 @@ const VolunteerAdmin = () => {
                     <button className="va-action-btn va-view" onClick={() => {
                       setViewingApplication(app);
                       setActivePage('view_application');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconView /> View
                     </button>
                     <button className="va-action-btn va-edit" onClick={() => {
@@ -631,11 +663,15 @@ const VolunteerAdmin = () => {
                         message: app.message
                       });
                       setActivePage('edit_application');
-                    }}>
+                    }} disabled={isLoading}>
                       <IconEdit /> Edit
                     </button>
-                    <button className="va-action-btn va-delete" onClick={() => deleteApplication(app.id, app.fullName)}>
-                      <IconDelete /> Delete
+                    <button className="va-action-btn va-delete" onClick={() => deleteApplication(app.id, app.fullName)} disabled={isDeleting && deletingId === app.id}>
+                      {isDeleting && deletingId === app.id ? (
+                        <span className="va-spinner-small"></span>
+                      ) : (
+                        <><IconDelete /> Delete</>
+                      )}
                     </button>
                   </div>
                 </td>
@@ -656,7 +692,7 @@ const VolunteerAdmin = () => {
   const renderApplicationForm = () => (
     <div className="va-page-full">
       <div className="va-header">
-        <button className="va-back-btn" onClick={() => { setActivePage('applications'); resetForm(); }}>
+        <button className="va-back-btn" onClick={() => { setActivePage('applications'); resetForm(); }} disabled={isSaving}>
           <IconBack /> Back to Applications
         </button>
         <h2>{editingApplication ? 'Edit Volunteer Application' : 'Add Volunteer Application'}</h2>
@@ -673,6 +709,7 @@ const VolunteerAdmin = () => {
                 onChange={(e) => setFormData({...formData, fullName: e.target.value})}
                 required
                 placeholder="Enter full name"
+                disabled={isSaving}
               />
             </div>
             
@@ -684,6 +721,7 @@ const VolunteerAdmin = () => {
                 onChange={(e) => setFormData({...formData, emailAddress: e.target.value})}
                 required
                 placeholder="Enter email address"
+                disabled={isSaving}
               />
             </div>
             
@@ -695,6 +733,7 @@ const VolunteerAdmin = () => {
                 onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
                 required
                 placeholder="Enter phone number"
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -706,6 +745,7 @@ const VolunteerAdmin = () => {
                 value={formData.volunteerType}
                 onChange={(e) => setFormData({...formData, volunteerType: e.target.value})}
                 required
+                disabled={isSaving}
               >
                 <option value="">Select volunteer type</option>
                 <option value="medical">Medical Professional</option>
@@ -727,16 +767,24 @@ const VolunteerAdmin = () => {
                 required
                 rows="5"
                 placeholder="Tell us why you're interested in volunteering..."
+                disabled={isSaving}
               />
             </div>
           </div>
           
           <div className="va-buttons">
-            <button type="button" className="va-btn va-btn-secondary" onClick={() => { setActivePage('applications'); resetForm(); }}>
+            <button type="button" className="va-btn va-btn-secondary" onClick={() => { setActivePage('applications'); resetForm(); }} disabled={isSaving}>
               Cancel
             </button>
-            <button type="submit" className="va-btn va-btn-primary">
-              {editingApplication ? 'Update Application' : 'Create Application'}
+            <button type="submit" className="va-btn va-btn-primary" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <span className="va-spinner-small"></span>
+                  {editingApplication ? 'Updating...' : 'Creating...'}
+                </>
+              ) : (
+                editingApplication ? 'Update Application' : 'Create Application'
+              )}
             </button>
           </div>
         </form>

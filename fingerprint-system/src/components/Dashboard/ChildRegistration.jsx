@@ -74,6 +74,15 @@ const ChildRegistration = () => {
     primaryLocationId: "",
   });
 
+  // Loading states
+  const [isAddingLocation, setIsAddingLocation] = useState(false);
+  const [isAddingChild, setIsAddingChild] = useState(false);
+  const [isSavingChild, setIsSavingChild] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingChildId, setDeletingChildId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  
+
   const [youngPatients, setYoungPatients] = useState([]);
   const [olderPatients, setOlderPatients] = useState([]);
   const [searchYoung, setSearchYoung] = useState("");
@@ -126,11 +135,14 @@ const ChildRegistration = () => {
   const [showPrintPage, setShowPrintPage] = useState(false);
   const [printDataType, setPrintDataType] = useState("");
   const [printFilters, setPrintFilters] = useState({
-    date_from: "",
-    date_to: "",
-    location: "",
-    fingerprint_status: "",
-    gender: "",
+
+    date_from: '',
+    date_to: '',
+    location: '',
+    fingerprint_status: '',
+    gender: '',
+    age_group: ''
+
   });
 
   const [searchAllChildren, setSearchAllChildren] = useState("");
@@ -351,7 +363,9 @@ const ChildRegistration = () => {
         return userMap;
       }
     } catch (error) {
+
       console.error("Error fetching staff users:", error);
+
     }
     return {};
   };
@@ -361,7 +375,9 @@ const ChildRegistration = () => {
       const data = await getLocations();
       setLocations(Array.isArray(data) ? data : []);
     } catch (error) {
+
       console.error("Error fetching locations:", error);
+
       setLocations([]);
     }
   };
@@ -377,7 +393,9 @@ const ChildRegistration = () => {
       setChildrenData(childrenArray);
       filterPatientsByAge(childrenArray);
     } catch (error) {
+
       console.error("Error fetching children:", error);
+
       setChildrenData([]);
     }
   };
@@ -397,7 +415,9 @@ const ChildRegistration = () => {
         }));
       setTodayData(todayArray);
     } catch (error) {
+
       console.error("Error fetching today registrations:", error);
+
       setTodayData([]);
     }
   };
@@ -436,7 +456,9 @@ const ChildRegistration = () => {
           setFingerprintData(allFingerprints);
           return;
         } catch (dbError) {
+
           console.error("Error fetching fingerprints from SQLite:", dbError);
+
         }
       }
 
@@ -462,13 +484,17 @@ const ChildRegistration = () => {
               }
             });
           } catch (e) {
+
             console.error("Error fetching fingerprints for child:", e);
+
           }
         }
       }
       setFingerprintData(allFingerprints);
     } catch (error) {
+
       console.error("Error fetching fingerprints:", error);
+
       setFingerprintData([]);
     }
   };
@@ -512,7 +538,9 @@ const ChildRegistration = () => {
       const currentYear = new Date().getFullYear();
       setGeneratedId(`KID-${currentYear}-0001`);
     } catch (error) {
+
       console.error("Error generating registration ID:", error);
+
       const currentYear = new Date().getFullYear();
       const nextNumber = (childrenData.length + 1).toString().padStart(4, "0");
       setGeneratedId(`KID-${currentYear}-${nextNumber}`);
@@ -712,11 +740,13 @@ const ChildRegistration = () => {
         showToast("Camera started successfully!", "success");
       }
     } catch (err) {
+
       console.error("Camera error:", err);
       showToast(
         `Unable to access camera: ${err.message || "Please check permissions."}`,
         "error",
       );
+
     }
   };
 
@@ -791,9 +821,11 @@ const ChildRegistration = () => {
       const data = await apiGetChildById(id);
       return data;
     } catch (error) {
+
       console.error("Error fetching child:", error);
+
+      return null;
     }
-    return null;
   };
 
   const updateChild = async (id, childData) => {
@@ -805,9 +837,11 @@ const ChildRegistration = () => {
       });
       return data;
     } catch (error) {
+
       console.error("Error updating child:", error);
+
+      return null;
     }
-    return null;
   };
 
   const deleteChild = async (id) => {
@@ -815,7 +849,9 @@ const ChildRegistration = () => {
       const success = await apiDeleteChild(id);
       return success;
     } catch (error) {
+
       console.error("Error deleting child:", error);
+
       return false;
     }
   };
@@ -837,16 +873,25 @@ const ChildRegistration = () => {
       });
       return data;
     } catch (error) {
+
       console.error("Error adding registration:", error);
+
       return null;
     }
   };
 
   // ===== HANDLERS =====
   const handleViewChild = async (child) => {
-    const fullChild = await fetchChildById(child.id);
-    setViewingChild(fullChild || child);
-    navigateToPage("view_child");
+
+    setIsLoading(true);
+    try {
+      const fullChild = await fetchChildById(child.id);
+      setViewingChild(fullChild || child);
+      navigateToPage('view_child');
+    } finally {
+      setIsLoading(false);
+    }
+
   };
 
   const handleEditChild = (child) => {
@@ -869,26 +914,36 @@ const ChildRegistration = () => {
       showToast("Please fill in all required fields", "error");
       return;
     }
-    const result = await updateChild(editingChild.id, childFormData);
-    if (result) {
-      showToast("Child updated successfully!", "success");
-      setEditingChild(null);
-      setViewingChild(null);
-      await fetchChildren();
-      await fetchTodayRegistrations();
-      generateRegistrationId();
-      goBack();
-    } else {
-      showToast("Failed to update child", "error");
+
+    setIsSavingChild(true);
+    try {
+      const result = await updateChild(editingChild.id, childFormData);
+      if (result) {
+        showToast('Child updated successfully!', 'success');
+        setEditingChild(null);
+        setViewingChild(null);
+        await fetchChildren();
+        await fetchTodayRegistrations();
+        generateRegistrationId();
+        goBack();
+      } else {
+        showToast('Failed to update child', 'error');
+      }
+    } finally {
+      setIsSavingChild(false);
+
     }
   };
 
   const handleDeleteChild = async (child) => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete ${child.fullName}? This action cannot be undone.`,
-      )
-    ) {
+
+    if (!window.confirm(`Are you sure you want to delete ${child.fullName}? This action cannot be undone.`)) {
+      return;
+    }
+    setDeletingChildId(child.id);
+    setIsDeleting(true);
+    try {
+
       const success = await deleteChild(child.id);
       if (success) {
         showToast("Child deleted successfully!", "success");
@@ -898,6 +953,9 @@ const ChildRegistration = () => {
       } else {
         showToast("Failed to delete child", "error");
       }
+    } finally {
+      setIsDeleting(false);
+      setDeletingChildId(null);
     }
   };
 
@@ -958,38 +1016,42 @@ const ChildRegistration = () => {
       goBack();
       return;
     }
+    setIsSavingFingerprints(true);
     let successCount = 0;
-    for (const fingerIndex of capturedFingers) {
-      try {
-        const result = await apiEnrollBiometric({
-          id: crypto.randomUUID(),
-          childId: enrollingChild.id,
-          fingerIndex: fingerIndex,
-          templateBase64: `fingerprint_template_${fingerIndex}_base64`,
-          qualityScore: fingerQuality[fingerIndex] || 80,
-          createdAt: new Date().toISOString(),
-          status: "PENDING",
-        });
-        if (result) successCount++;
-      } catch (error) {
-        console.error("Error saving fingerprint:", error);
+
+    try {
+      for (const fingerIndex of capturedFingers) {
+        try {
+          const result = await apiEnrollBiometric({
+            id: crypto.randomUUID(),
+            childId: enrollingChild.id,
+            fingerIndex: fingerIndex,
+            templateBase64: `fingerprint_template_${fingerIndex}_base64`,
+            qualityScore: fingerQuality[fingerIndex] || 80,
+            createdAt: new Date().toISOString(),
+            status: 'PENDING'
+          });
+          if (result) successCount++;
+        } catch (error) {
+          console.error("Error saving fingerprint:", error);
+        }
       }
-    }
-    if (successCount > 0) {
-      showToast(
-        `${successCount} fingerprint(s) enrolled successfully for ${enrollingChild.fullName}!`,
-        "success",
-      );
-      await fetchChildren();
-      await fetchTodayRegistrations();
-      await fetchFingerprints();
-      goBack();
-      setEnrollingChild(null);
-      setFingerCaptures({});
-      setFingerQuality({});
-      setCapturedFingers([]);
-    } else {
-      showToast("Failed to save fingerprints", "error");
+      if (successCount > 0) {
+        showToast(`${successCount} fingerprint(s) enrolled successfully for ${enrollingChild.fullName}!`, 'success');
+        await fetchChildren();
+        await fetchTodayRegistrations();
+        await fetchFingerprints();
+        goBack();
+        setEnrollingChild(null);
+        setFingerCaptures({});
+        setFingerQuality({});
+        setCapturedFingers([]);
+      } else {
+        showToast('Failed to save fingerprints', 'error');
+      }
+    } finally {
+      setIsSavingFingerprints(false);
+
     }
   };
 
@@ -1056,97 +1118,113 @@ const ChildRegistration = () => {
 
   const handleRegSaveFingerprints = async () => {
     if (regCapturedFingers.length === 0) {
-      // No fingerprints, just complete registration
       setRegistrationStep(3);
       return;
     }
 
     setIsSavingFingerprints(true);
+    setIsAddingChild(true);
 
-    // First register the child
-    const newChild = {
-      fullName: formData.fullName,
-      estimatedBirthYear: formData.estimatedBirthYear,
-      gender: formData.gender,
-      primaryLocationId: formData.primaryLocationId,
-      createdByStaffId: user?.id || user?.user_id,
-    };
+    setIsAddingChild(true);
+    setIsSavingFingerprints(true);
+    try {
+      // First register the child
+      const newChild = {
+        fullName: formData.fullName,
+        estimatedBirthYear: formData.estimatedBirthYear,
+        gender: formData.gender,
+        primaryLocationId: formData.primaryLocationId,
+        createdByStaffId: user?.id || user?.user_id,
+      };
 
-    const result = await addRegistration(newChild);
-    let childId = null;
+      const result = await addRegistration(newChild);
+      let childId = null;
 
-    if (result && (result.child || result.id)) {
-      childId = result.child?.id || result.id;
-    }
+      if (result && (result.child || result.id)) {
+        childId = result.child?.id || result.id;
+      }
 
-    if (childId) {
-      let successCount = 0;
-      // Save fingerprints for this child
-      for (const fingerIndex of regCapturedFingers) {
-        try {
-          const enrollResult = await apiEnrollBiometric({
-            id: crypto.randomUUID(),
-            childId: childId,
-            fingerIndex: fingerIndex,
-            templateBase64: `fingerprint_template_${fingerIndex}_base64`,
-            qualityScore: regFingerQuality[fingerIndex] || 80,
-            createdAt: new Date().toISOString(),
-            status: "PENDING",
-          });
-          if (enrollResult) successCount++;
-        } catch (error) {
-          console.error("Error saving fingerprint:", error);
+      if (childId) {
+        let successCount = 0;
+        // Save fingerprints for this child
+        for (const fingerIndex of regCapturedFingers) {
+          try {
+            const enrollResult = await apiEnrollBiometric({
+              id: crypto.randomUUID(),
+              childId: childId,
+              fingerIndex: fingerIndex,
+              templateBase64: `fingerprint_template_${fingerIndex}_base64`,
+              qualityScore: regFingerQuality[fingerIndex] || 80,
+              createdAt: new Date().toISOString(),
+              status: "PENDING",
+            });
+            if (enrollResult) successCount++;
+          } catch (error) {
+            console.error("Error saving fingerprint:", error);
+          }
         }
-      }
 
-      setIsSavingFingerprints(false);
-
-      if (successCount > 0) {
-        showToast(
-          `✓ ${successCount} fingerprint(s) enrolled successfully!`,
-          "success",
-        );
-        await fetchChildren();
-        await fetchTodayRegistrations();
-        await fetchFingerprints();
-        setRegistrationStep(3);
+        if (successCount > 0) {
+          showToast(
+            `✓ ${successCount} fingerprint(s) enrolled successfully!`,
+            "success",
+          );
+          await fetchChildren();
+          await fetchTodayRegistrations();
+          await fetchFingerprints();
+          setRegistrationStep(3);
+        } else {
+          showToast(
+            "Failed to save fingerprints. You can add them later.",
+            "warning",
+          );
+          setRegistrationStep(3);
+        }
       } else {
-        showToast(
-          "Failed to save fingerprints. You can add them later.",
-          "warning",
-        );
-        setRegistrationStep(3);
+        showToast("Failed to register child. Please try again.", "error");
       }
-    } else {
+    } catch (error) {
+      console.error("Error during registration:", error);
+      showToast("An error occurred. Please try again.", "error");
+    } finally {
       setIsSavingFingerprints(false);
-      showToast("Failed to register child. Please try again.", "error");
+      setIsAddingChild(false);
     }
   };
 
   const handleRegSkipFingerprints = async () => {
-    // Register child without fingerprints
-    const newChild = {
-      fullName: formData.fullName,
-      estimatedBirthYear: formData.estimatedBirthYear,
-      gender: formData.gender,
-      primaryLocationId: formData.primaryLocationId,
-      createdByStaffId: user?.id || user?.user_id,
-    };
+    setIsAddingChild(true);
+    try {
+      // Register child without fingerprints
+      const newChild = {
+        fullName: formData.fullName,
+        estimatedBirthYear: formData.estimatedBirthYear,
+        gender: formData.gender,
+        primaryLocationId: formData.primaryLocationId,
+        createdByStaffId: user?.id || user?.user_id,
+      };
 
-    const result = await addRegistration(newChild);
-    if (result) {
-      showToast(
-        `✓ Child registered successfully with ID: ${generatedId}!`,
-        "success",
-      );
-      await fetchChildren();
-      await fetchTodayRegistrations();
-      await generateRegistrationId();
-      setRegistrationStep(3);
-    } else {
-      showToast("Failed to register child. Please try again.", "error");
+      const result = await addRegistration(newChild);
+      if (result) {
+        showToast(
+          `✓ Child registered successfully with ID: ${generatedId}!`,
+          "success",
+        );
+        await fetchChildren();
+        await fetchTodayRegistrations();
+        await generateRegistrationId();
+        setRegistrationStep(3);
+      } else {
+        showToast("Failed to register child. Please try again.", "error");
+      }
+    } catch (error) {
+      console.error("Error registering child without fingerprints:", error);
+      showToast("An error occurred. Please try again.", "error");
+    } finally {
+      setIsAddingChild(false);
     }
   };
+
 
   const handleRegComplete = () => {
     showToast(
@@ -1155,6 +1233,7 @@ const ChildRegistration = () => {
     );
     goBack();
     setRegistrationStep(1);
+
     setFormData({
       fullName: "",
       estimatedBirthYear: "",
@@ -1171,6 +1250,7 @@ const ChildRegistration = () => {
     setPreview2(null);
     setPreview3(null);
     // Reset registration fingerprint state
+
     setRegFingerCaptures({});
     setRegFingerQuality({});
     setRegCapturedFingers([]);
@@ -1197,7 +1277,10 @@ const ChildRegistration = () => {
         return await response.json();
       }
     } catch (error) {
+
       console.error("Error adding location:", error);
+
+      return null;
     }
     return null;
   };
@@ -1216,7 +1299,10 @@ const ChildRegistration = () => {
         return await response.json();
       }
     } catch (error) {
+
       console.error("Error updating location:", error);
+
+      return null;
     }
     return null;
   };
@@ -1229,7 +1315,9 @@ const ChildRegistration = () => {
       });
       return response.ok;
     } catch (error) {
+
       console.error("Error deleting location:", error);
+
       return false;
     }
   };
@@ -1245,34 +1333,44 @@ const ChildRegistration = () => {
 
   const handleSaveLocation = async () => {
     if (!validateLocationForm()) return;
-    let result;
-    if (editingLocation) {
-      result = await updateLocation(editingLocation.id, locationFormData);
-      if (result) showToast("Location updated successfully!", "success");
-    } else {
-      result = await addLocation(locationFormData);
-      if (result) showToast("Location added successfully!", "success");
-    }
-    if (result) {
-      await fetchLocations();
-      resetLocationForm();
-    } else {
-      showToast("Failed to save location", "error");
+
+    setIsAddingLocation(true);
+    try {
+      let result;
+      if (editingLocation) {
+        result = await updateLocation(editingLocation.id, locationFormData);
+        if (result) showToast('Location updated successfully!', 'success');
+      } else {
+        result = await addLocation(locationFormData);
+        if (result) showToast('Location added successfully!', 'success');
+      }
+      if (result) {
+        await fetchLocations();
+        resetLocationForm();
+      } else {
+        showToast('Failed to save location', 'error');
+      }
+    } finally {
+      setIsAddingLocation(false);
+
     }
   };
 
   const handleDeleteLocation = async (location) => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete location "${location.name}"?`,
-      )
-    ) {
-      const success = await deleteLocation(location.id);
-      if (success) {
-        await fetchLocations();
-        showToast("Location deleted successfully!", "success");
-      } else {
-        showToast("Failed to delete location", "error");
+
+    if (window.confirm(`Are you sure you want to delete location "${location.name}"?`)) {
+      setIsAddingLocation(true);
+      try {
+        const success = await deleteLocation(location.id);
+        if (success) {
+          await fetchLocations();
+          showToast('Location deleted successfully!', 'success');
+        } else {
+          showToast('Failed to delete location', 'error');
+        }
+      } finally {
+        setIsAddingLocation(false);
+
       }
     }
   };
@@ -1331,6 +1429,7 @@ const ChildRegistration = () => {
   // ===== OTHER HANDLERS =====
   const handleAddRegistrationClick = () => {
     setRegistrationStep(1);
+
     setFormData({
       fullName: "",
       estimatedBirthYear: "",
@@ -1341,6 +1440,7 @@ const ChildRegistration = () => {
     setPreview2(null);
     setPreview3(null);
     // Reset registration fingerprint state
+
     setRegFingerCaptures({});
     setRegFingerQuality({});
     setRegCapturedFingers([]);
@@ -1366,8 +1466,10 @@ const ChildRegistration = () => {
       setOfflineMode(!isOnline);
       showToast("✓ Synchronization completed successfully!", "success");
     } catch (error) {
+
       console.error("Error syncing:", error);
       showToast("Error occurred during synchronization", "error");
+
     } finally {
       setIsSyncing(false);
       await fetchChildren();
@@ -1388,17 +1490,241 @@ const ChildRegistration = () => {
 
   const handlePrintClick = (dataType) => {
     setPrintDataType(dataType);
-    setPrintFilters({
-      date_from: "",
-      date_to: "",
-      location: "",
-      fingerprint_status: "",
-      gender: "",
+
+    setPrintFilters({ 
+      date_from: '', 
+      date_to: '', 
+      location: '', 
+      fingerprint_status: '', 
+      gender: '',
+      age_group: ''
+
     });
     setShowPrintPage(true);
   };
 
+  // ===== COMPLETE WORKING PRINT FUNCTION WITH ALL FILTERS =====
   const handlePrint = () => {
+    let dataToPrint = [];
+    let title = '';
+
+    switch (printDataType) {
+      case 'children':
+        dataToPrint = [...filteredAllChildren];
+        title = 'All Registered Patients Report';
+        break;
+      case 'today':
+        dataToPrint = [...filteredTodayRegistrations];
+        title = 'Today\'s Registrations Report';
+        break;
+      case 'fingerprints':
+        dataToPrint = [...filteredFingerprintData];
+        title = 'Fingerprints Captured Report';
+        break;
+      case 'young':
+        dataToPrint = [...filteredYoungPatients];
+        title = 'Young Patients Report (Under 18 Years)';
+        break;
+      case 'older':
+        dataToPrint = [...filteredOlderPatients];
+        title = 'Older Patients Report (18 Years and Above)';
+        break;
+      default:
+        dataToPrint = [];
+        title = 'Report';
+    }
+
+    let filteredData = [...dataToPrint];
+
+    // Apply date filters
+    if (printFilters.date_from) {
+      const fromDate = new Date(printFilters.date_from);
+      fromDate.setHours(0, 0, 0, 0);
+      filteredData = filteredData.filter(item => {
+        const itemDate = new Date(item.createdAt || item.capturedAt || item.created_at);
+        return itemDate >= fromDate;
+      });
+    }
+
+    if (printFilters.date_to) {
+      const toDate = new Date(printFilters.date_to);
+      toDate.setHours(23, 59, 59, 999);
+      filteredData = filteredData.filter(item => {
+        const itemDate = new Date(item.createdAt || item.capturedAt || item.created_at);
+        return itemDate <= toDate;
+      });
+    }
+
+    // Apply location filter
+    if (printFilters.location) {
+      filteredData = filteredData.filter(item => {
+        const locationName = getLocationName(item.primaryLocationId);
+        return locationName === printFilters.location;
+      });
+    }
+
+    // Apply gender filter
+    if (printFilters.gender) {
+      filteredData = filteredData.filter(item => item.gender === printFilters.gender);
+    }
+
+    // Apply age group filter
+    if (printFilters.age_group) {
+      filteredData = filteredData.filter(item => {
+        const age = calculateAgeValue(item.estimatedBirthYear);
+        switch (printFilters.age_group) {
+          case '0-5': return age >= 0 && age <= 5;
+          case '6-12': return age >= 6 && age <= 12;
+          case '13-17': return age >= 13 && age <= 17;
+          case '18-35': return age >= 18 && age <= 35;
+          case '36-60': return age >= 36 && age <= 60;
+          case '60+': return age >= 60;
+          default: return true;
+        }
+      });
+    }
+
+    // Apply fingerprint status filter
+    if (printFilters.fingerprint_status) {
+      const isCaptured = printFilters.fingerprint_status === 'captured';
+      filteredData = filteredData.filter(item => {
+        const childFingerprints = fingerprintData.filter(fp => fp.childId === item.id || fp.customSerialId === item.customSerialId);
+        const fingerCount = childFingerprints.length;
+        return isCaptured ? fingerCount > 0 : fingerCount === 0;
+      });
+    }
+
+    if (filteredData.length === 0) {
+      showToast('No data matches the selected filters', 'warning');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=1200,height=800');
+    if (!printWindow) {
+      showToast('Please allow popups for this site', 'error');
+      return;
+    }
+
+    const currentDate = new Date().toLocaleString();
+    const currentUser = user?.username || user?.name || 'Unknown User';
+    const totalRecords = filteredData.length;
+
+    let tableRows = '';
+    filteredData.forEach((item, index) => {
+      const age = calculateAgeFromYear(item.estimatedBirthYear);
+      const childFingerprints = fingerprintData.filter(fp => fp.childId === item.id || fp.customSerialId === item.customSerialId);
+      const fingerCount = childFingerprints.length;
+      
+      tableRows += `
+        <tr>
+          <td style="text-align: center;">${index + 1}</td>
+          <td>${item.customSerialId || 'N/A'}</td>
+          <td>${item.fullName || 'N/A'}</td>
+          <td>${age}</td>
+          <td>${item.gender || 'N/A'}</td>
+          <td>${getLocationName(item.primaryLocationId) || 'N/A'}</td>
+          <td>${item.createdAt ? item.createdAt.split('T')[0] : 'N/A'}</td>
+          <td>${fingerCount > 0 ? `${fingerCount}/10` : '0/10'}</td>
+          <td>${item.registeredByName || getStaffNameById(item.createdByStaffId) || 'N/A'}</td>
+        </tr>
+      `;
+    });
+
+    let filterText = '';
+    if (printFilters.date_from) filterText += `Date From: ${printFilters.date_from} | `;
+    if (printFilters.date_to) filterText += `Date To: ${printFilters.date_to} | `;
+    if (printFilters.location) filterText += `Location: ${printFilters.location} | `;
+    if (printFilters.gender) filterText += `Gender: ${printFilters.gender} | `;
+    if (printFilters.age_group) {
+      const ageLabels = {
+        '0-5': '0-5 years',
+        '6-12': '6-12 years',
+        '13-17': '13-17 years',
+        '18-35': '18-35 years',
+        '36-60': '36-60 years',
+        '60+': '60+ years'
+      };
+      filterText += `Age Group: ${ageLabels[printFilters.age_group] || printFilters.age_group} | `;
+    }
+    if (printFilters.fingerprint_status) {
+      filterText += `Fingerprint: ${printFilters.fingerprint_status === 'captured' ? 'Captured' : 'Pending'} | `;
+    }
+    filterText = filterText || 'None';
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <meta charset="utf-8">
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 30px; background: #fff; }
+            .print-container { max-width: 1400px; margin: 0 auto; background: white; }
+            .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #667eea; }
+            h1 { color: #1a1a2e; font-size: 24px; margin-bottom: 10px; }
+            .subtitle { color: #666; font-size: 14px; margin-bottom: 5px; }
+            .date-info { color: #999; font-size: 12px; margin-top: 10px; }
+            .filters-applied { background: #f8f9fa; padding: 10px 15px; margin: 20px 0; border-left: 3px solid #667eea; font-size: 13px; color: #666; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+            th { background: #667eea; color: white; padding: 12px; text-align: left; font-weight: 600; border: 1px solid #5a67d8; }
+            td { border: 1px solid #e0e0e0; padding: 10px 12px; color: #333; }
+            tr:nth-child(even) { background: #f8f9fa; }
+            .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 11px; color: #999; }
+            .age-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+            .age-child { background: #dbeafe; color: #1e40af; }
+            .age-teen { background: #d1fae5; color: #065f46; }
+            .age-adult { background: #fef3c7; color: #92400e; }
+            .age-senior { background: #fce4ec; color: #9a3412; }
+            @media print { body { padding: 10px; } th { background: #667eea !important; color: white !important; } }
+          </style>
+        </head>
+        <body>
+          <div class="print-container">
+            <div class="header">
+              <h1>${title}</h1>
+              <div class="subtitle">Field Outreach and Street Medicine System</div>
+              <div class="date-info">Generated on: ${currentDate}</div>
+              <div class="date-info">Generated by: ${currentUser}</div>
+            </div>
+            <div class="filters-applied">
+              <strong>Filters Applied:</strong> ${filterText}
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>S/N</th>
+                  <th>ID</th>
+                  <th>Patient Name</th>
+                  <th>Age</th>
+                  <th>Gender</th>
+                  <th>Location</th>
+                  <th>Registration Date</th>
+                  <th>Fingerprints</th>
+                  <th>Registered By</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+            <div class="footer">
+              <p>This is a system generated report from Medical System</p>
+              <p>Total Records: ${totalRecords}</p>
+            </div>
+          </div>
+          <script>
+            window.onload = function() { 
+              window.print(); 
+              setTimeout(function() { 
+                window.close(); 
+              }, 1000);
+            }
+          <\/script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
     setShowPrintPage(false);
     showToast("Print job sent successfully!", "success");
   };
@@ -1411,9 +1737,10 @@ const ChildRegistration = () => {
     navigate("/login");
   };
 
-  // ===== PRINT PAGE COMPONENT =====
+  // ===== PRINT PAGE COMPONENT WITH ENHANCED FILTERS =====
   const PrintPage = () => {
     if (!showPrintPage) return null;
+    
     const getTitle = () => {
       switch (printDataType) {
         case "children":
@@ -1430,6 +1757,29 @@ const ChildRegistration = () => {
           return "Print Report";
       }
     };
+
+    const handleResetFilters = () => {
+      setPrintFilters({
+        date_from: '',
+        date_to: '',
+        location: '',
+        fingerprint_status: '',
+        gender: '',
+        age_group: ''
+      });
+      showToast('Filters reset successfully!', 'info');
+    };
+
+    const ageGroups = [
+      { value: '', label: 'All Ages' },
+      { value: '0-5', label: '0-5 years (Children)' },
+      { value: '6-12', label: '6-12 years (Children)' },
+      { value: '13-17', label: '13-17 years (Teens)' },
+      { value: '18-35', label: '18-35 years (Young Adults)' },
+      { value: '36-60', label: '36-60 years (Adults)' },
+      { value: '60+', label: '60+ years (Seniors)' }
+    ];
+
     return (
       <div className="child-reg-print-page">
         <div className="child-reg-print-header">
@@ -1448,66 +1798,85 @@ const ChildRegistration = () => {
           <div className="child-reg-filters-section">
             <div className="child-reg-filters-header">
               <h3>Report Filters</h3>
-              <button
-                className="child-reg-reset-filters-btn"
-                onClick={() =>
-                  setPrintFilters({
-                    date_from: "",
-                    date_to: "",
-                    location: "",
-                    fingerprint_status: "",
-                    gender: "",
-                  })
-                }
-              >
-                Reset Filters
-              </button>
+
+              <button className="child-reg-reset-filters-btn" onClick={handleResetFilters}>Reset Filters</button>
+
             </div>
             <div className="child-reg-filters-grid">
+              {/* Date Filters */}
               <div className="child-reg-filter-field">
                 <label>Date From</label>
-                <input
-                  type="date"
-                  value={printFilters.date_from}
-                  onChange={(e) =>
-                    setPrintFilters({
-                      ...printFilters,
-                      date_from: e.target.value,
-                    })
-                  }
+
+                <input 
+                  type="date" 
+                  value={printFilters.date_from} 
+                  onChange={(e) => setPrintFilters({...printFilters, date_from: e.target.value})} 
+
                 />
               </div>
               <div className="child-reg-filter-field">
                 <label>Date To</label>
-                <input
-                  type="date"
-                  value={printFilters.date_to}
-                  onChange={(e) =>
-                    setPrintFilters({
-                      ...printFilters,
-                      date_to: e.target.value,
-                    })
-                  }
+
+                <input 
+                  type="date" 
+                  value={printFilters.date_to} 
+                  onChange={(e) => setPrintFilters({...printFilters, date_to: e.target.value})} 
+
                 />
               </div>
+              
+              {/* Location Filter */}
               <div className="child-reg-filter-field">
                 <label>Location</label>
-                <select
-                  value={printFilters.location}
-                  onChange={(e) =>
-                    setPrintFilters({
-                      ...printFilters,
-                      location: e.target.value,
-                    })
-                  }
+
+                <select 
+                  value={printFilters.location} 
+                  onChange={(e) => setPrintFilters({...printFilters, location: e.target.value})}
                 >
                   <option value="">All Locations</option>
-                  {Array.isArray(locations) &&
-                    locations.map((loc) => (
-                      <option key={loc.id} value={loc.name}>
-                        {loc.name}
-                      </option>
-                    ))}
+                  {Array.isArray(locations) && locations.map(loc => (
+                    <option key={loc.id} value={loc.name}>{loc.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Gender Filter */}
+              <div className="child-reg-filter-field">
+                <label>Gender</label>
+                <select 
+                  value={printFilters.gender} 
+                  onChange={(e) => setPrintFilters({...printFilters, gender: e.target.value})}
+                >
+                  <option value="">All Genders</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+
+              {/* Age Group Filter */}
+              <div className="child-reg-filter-field">
+                <label>Age Group</label>
+                <select 
+                  value={printFilters.age_group} 
+                  onChange={(e) => setPrintFilters({...printFilters, age_group: e.target.value})}
+                >
+                  {ageGroups.map(group => (
+                    <option key={group.value} value={group.value}>{group.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Fingerprint Status Filter */}
+              <div className="child-reg-filter-field">
+                <label>Fingerprint Status</label>
+                <select 
+                  value={printFilters.fingerprint_status} 
+                  onChange={(e) => setPrintFilters({...printFilters, fingerprint_status: e.target.value})}
+                >
+                  <option value="">All Status</option>
+                  <option value="captured">Has Fingerprints</option>
+                  <option value="pending">No Fingerprints</option>
+
                 </select>
               </div>
             </div>
@@ -1527,6 +1896,32 @@ const ChildRegistration = () => {
       </div>
     );
   };
+
+  // ===== FILTERED DATA =====
+  const filteredAllChildren = Array.isArray(childrenData) ? childrenData.filter(child =>
+    child.fullName?.toLowerCase().includes(searchAllChildren.toLowerCase()) ||
+    child.customSerialId?.toLowerCase().includes(searchAllChildren.toLowerCase())
+  ) : [];
+
+  const filteredTodayRegistrations = Array.isArray(todayData) ? todayData.filter(child =>
+    child.fullName?.toLowerCase().includes(searchTodayReg.toLowerCase()) ||
+    child.customSerialId?.toLowerCase().includes(searchTodayReg.toLowerCase())
+  ) : [];
+
+  const filteredFingerprintData = Array.isArray(fingerprintData) ? fingerprintData.filter(fp =>
+    fp.childName?.toLowerCase().includes(searchFingerprints.toLowerCase()) ||
+    fp.customSerialId?.toLowerCase().includes(searchFingerprints.toLowerCase())
+  ) : [];
+
+  const filteredYoungPatients = Array.isArray(youngPatients) ? youngPatients.filter(child =>
+    child.fullName?.toLowerCase().includes(searchYoung.toLowerCase()) ||
+    child.customSerialId?.toLowerCase().includes(searchYoung.toLowerCase())
+  ) : [];
+
+  const filteredOlderPatients = Array.isArray(olderPatients) ? olderPatients.filter(child =>
+    child.fullName?.toLowerCase().includes(searchOlder.toLowerCase()) ||
+    child.customSerialId?.toLowerCase().includes(searchOlder.toLowerCase())
+  ) : [];
 
   // ===== USE EFFECTS =====
   useEffect(() => {
@@ -1594,6 +1989,7 @@ const ChildRegistration = () => {
             olderPatients={olderPatients}
             offlineMode={offlineMode}
             isSyncing={isSyncing}
+            isLoading={isLoading || isDeleting || isAddingChild || isSavingChild}
             handleStatClick={handleStatClick}
             handleActionClick={handleActionClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
@@ -1649,6 +2045,7 @@ const ChildRegistration = () => {
             setRegistrationStep={setRegistrationStep}
             handleCompleteRegistration={handleRegComplete}
             isSubmitting={isSavingFingerprints}
+            isAddingChild={isAddingChild}
           />
         )}
         {!showPrintPage && activePage === "verify" && (
@@ -1685,6 +2082,8 @@ const ChildRegistration = () => {
             handleVerifyFingerprintClick={handleVerifyFingerprintClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
             handlePrintClick={handlePrintClick}
+            isDeleting={isDeleting}
+            deletingChildId={deletingChildId}
           />
         )}
         {!showPrintPage && activePage === "todayList" && (
@@ -1704,6 +2103,9 @@ const ChildRegistration = () => {
             handleVerifyFingerprintClick={handleVerifyFingerprintClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
             handlePrintClick={handlePrintClick}
+            isLoading={isLoading || isSavingChild}
+            isDeleting={isDeleting}
+            deletingChildId={deletingChildId}
           />
         )}
         {!showPrintPage && activePage === "fingerprintsList" && (
@@ -1719,6 +2121,7 @@ const ChildRegistration = () => {
             handleAddRegistrationClick={handleAddRegistrationClick}
             handlePrintClick={handlePrintClick}
             getStaffNameById={getStaffNameById}
+            isLoading={isLoading || isDeleting}
           />
         )}
         {!showPrintPage && activePage === "locations" && (
@@ -1736,6 +2139,7 @@ const ChildRegistration = () => {
             handleEditLocation={handleEditLocation}
             handleDeleteLocation={handleDeleteLocation}
             goBack={goBack}
+
           />
         )}
         {!showPrintPage && activePage === "enroll_fingerprint" && (
@@ -1753,6 +2157,7 @@ const ChildRegistration = () => {
             handleRemoveFingerprint={handleRemoveFingerprint}
             handleSkipFingerprints={handleSkipFingerprints}
             handleSaveFingerprints={handleSaveFingerprints}
+            isSavingFingerprints={isSavingFingerprints}
           />
         )}
         {!showPrintPage && activePage === "view_child" && (
@@ -1764,6 +2169,7 @@ const ChildRegistration = () => {
             getStaffNameById={getStaffNameById}
             handleEditChild={handleEditChild}
             goBack={goBack}
+            isLoading={isLoading || isSavingChild || isDeleting}
           />
         )}
         {!showPrintPage && activePage === "edit_child" && (
@@ -1776,6 +2182,7 @@ const ChildRegistration = () => {
             handleChildAgeChange={handleChildAgeChange}
             handleSaveChild={handleSaveChild}
             goBack={goBack}
+            isSavingChild={isSavingChild}
           />
         )}
         {!showPrintPage && activePage === "youngPatients" && (
@@ -1795,6 +2202,9 @@ const ChildRegistration = () => {
             handleVerifyFingerprintClick={handleVerifyFingerprintClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
             handlePrintClick={handlePrintClick}
+            isLoading={isLoading || isSavingChild}
+            isDeleting={isDeleting}
+            deletingChildId={deletingChildId}
           />
         )}
         {!showPrintPage && activePage === "olderPatients" && (
@@ -1814,6 +2224,9 @@ const ChildRegistration = () => {
             handleVerifyFingerprintClick={handleVerifyFingerprintClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
             handlePrintClick={handlePrintClick}
+            isLoading={isLoading || isSavingChild}
+            isDeleting={isDeleting}
+            deletingChildId={deletingChildId}
           />
         )}
       </div>
