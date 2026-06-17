@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Layout from './Layout';
-import './ChildRegistration.css';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import Layout from "./Layout";
+import "./ChildRegistration.css";
 import {
   RenderAllChildrenList,
   RenderChildEditPage,
@@ -14,11 +14,11 @@ import {
   RenderRegistrationPage,
   RenderTodayRegistrations,
   RenderVerifyPage,
-  RenderYoungPatientsList
-} from './ChildRegistrationRenders';
+  RenderYoungPatientsList,
+} from "./ChildRegistrationRenders";
 
 // API base URL & endpoints
-import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
+import { API_ENDPOINTS } from "../../config/endpoints.js";
 import {
   getLocations,
   getChildren,
@@ -28,21 +28,21 @@ import {
   triggerSync,
   updateChild as apiUpdateChild,
   deleteChild as apiDeleteChild,
-  getChildById as apiGetChildById
-} from '../../services/api.js';
+  getChildById as apiGetChildById,
+} from "../../services/api.js";
 
 // Finger names and hand mapping
 const fingerNames = {
-  1: { name: 'Right Thumb', hand: 'Right', finger: 'Thumb' },
-  2: { name: 'Right Index', hand: 'Right', finger: 'Index' },
-  3: { name: 'Right Middle', hand: 'Right', finger: 'Middle' },
-  4: { name: 'Right Ring', hand: 'Right', finger: 'Ring' },
-  5: { name: 'Right Pinky', hand: 'Right', finger: 'Pinky' },
-  6: { name: 'Left Thumb', hand: 'Left', finger: 'Thumb' },
-  7: { name: 'Left Index', hand: 'Left', finger: 'Index' },
-  8: { name: 'Left Middle', hand: 'Left', finger: 'Middle' },
-  9: { name: 'Left Ring', hand: 'Left', finger: 'Ring' },
-  10: { name: 'Left Pinky', hand: 'Left', finger: 'Pinky' }
+  1: { name: "Right Thumb", hand: "Right", finger: "Thumb" },
+  2: { name: "Right Index", hand: "Right", finger: "Index" },
+  3: { name: "Right Middle", hand: "Right", finger: "Middle" },
+  4: { name: "Right Ring", hand: "Right", finger: "Ring" },
+  5: { name: "Right Pinky", hand: "Right", finger: "Pinky" },
+  6: { name: "Left Thumb", hand: "Left", finger: "Thumb" },
+  7: { name: "Left Index", hand: "Left", finger: "Index" },
+  8: { name: "Left Middle", hand: "Left", finger: "Middle" },
+  9: { name: "Left Ring", hand: "Left", finger: "Ring" },
+  10: { name: "Left Pinky", hand: "Left", finger: "Pinky" },
 };
 
 const ChildRegistration = () => {
@@ -50,8 +50,8 @@ const ChildRegistration = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
-  const [activePage, setActivePage] = useState('list');
-  const [pageHistory, setPageHistory] = useState(['list']);
+  const [activePage, setActivePage] = useState("list");
+  const [pageHistory, setPageHistory] = useState(["list"]);
   const [fingerprintExists, setFingerprintExists] = useState(null);
   const [existingChild, setExistingChild] = useState(null);
   const [existingChildImages, setExistingChildImages] = useState(null);
@@ -59,8 +59,8 @@ const ChildRegistration = () => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSavingFingerprints, setIsSavingFingerprints] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '', type: '' });
-  const [generatedId, setGeneratedId] = useState('');
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  const [generatedId, setGeneratedId] = useState("");
   const [childrenData, setChildrenData] = useState([]);
   const [todayData, setTodayData] = useState([]);
   const [fingerprintData, setFingerprintData] = useState([]);
@@ -68,12 +68,12 @@ const ChildRegistration = () => {
   const [staffUsers, setStaffUsers] = useState([]);
   const [staffUserMap, setStaffUserMap] = useState({});
   const [formErrors, setFormErrors] = useState({
-    fullName: '',
-    estimatedBirthYear: '',
-    gender: '',
-    primaryLocationId: ''
+    fullName: "",
+    estimatedBirthYear: "",
+    gender: "",
+    primaryLocationId: "",
   });
-  
+
   // Loading states
   const [isAddingLocation, setIsAddingLocation] = useState(false);
   const [isAddingChild, setIsAddingChild] = useState(false);
@@ -82,40 +82,41 @@ const ChildRegistration = () => {
   const [deletingChildId, setDeletingChildId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   
+
   const [youngPatients, setYoungPatients] = useState([]);
   const [olderPatients, setOlderPatients] = useState([]);
-  const [searchYoung, setSearchYoung] = useState('');
-  const [searchOlder, setSearchOlder] = useState('');
-  
+  const [searchYoung, setSearchYoung] = useState("");
+  const [searchOlder, setSearchOlder] = useState("");
+
   const [viewingChild, setViewingChild] = useState(null);
   const [editingChild, setEditingChild] = useState(null);
   const [childFormData, setChildFormData] = useState({
-    fullName: '',
-    estimatedBirthYear: '',
-    gender: '',
-    primaryLocationId: '',
-    customSerialId: '',
-    image1: '',
-    image2: '',
-    image3: ''
+    fullName: "",
+    estimatedBirthYear: "",
+    gender: "",
+    primaryLocationId: "",
+    customSerialId: "",
+    image1: "",
+    image2: "",
+    image3: "",
   });
   const [childFormErrors, setChildFormErrors] = useState({
-    fullName: '',
-    estimatedBirthYear: '',
-    gender: '',
-    primaryLocationId: ''
+    fullName: "",
+    estimatedBirthYear: "",
+    gender: "",
+    primaryLocationId: "",
   });
-  
+
   const [editingLocation, setEditingLocation] = useState(null);
   const [showLocationForm, setShowLocationForm] = useState(false);
   const [locationFormData, setLocationFormData] = useState({
-    name: '',
-    description: ''
+    name: "",
+    description: "",
   });
   const [locationFormErrors, setLocationFormErrors] = useState({
-    name: ''
+    name: "",
   });
-  
+
   // Fingerprint enrollment for existing child
   const [enrollingChild, setEnrollingChild] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -123,37 +124,39 @@ const ChildRegistration = () => {
   const [fingerCaptures, setFingerCaptures] = useState({});
   const [fingerQuality, setFingerQuality] = useState({});
   const [capturedFingers, setCapturedFingers] = useState([]);
-  
+
   // Fingerprint enrollment during registration
   const [regSelectedFinger, setRegSelectedFinger] = useState(null);
   const [regFingerCaptures, setRegFingerCaptures] = useState({});
   const [regFingerQuality, setRegFingerQuality] = useState({});
   const [regCapturedFingers, setRegCapturedFingers] = useState([]);
   const [regIsCapturing, setRegIsCapturing] = useState(false);
-  
+
   const [showPrintPage, setShowPrintPage] = useState(false);
-  const [printDataType, setPrintDataType] = useState('');
+  const [printDataType, setPrintDataType] = useState("");
   const [printFilters, setPrintFilters] = useState({
+
     date_from: '',
     date_to: '',
     location: '',
     fingerprint_status: '',
     gender: '',
     age_group: ''
+
   });
-  
-  const [searchAllChildren, setSearchAllChildren] = useState('');
-  const [searchTodayReg, setSearchTodayReg] = useState('');
-  const [searchFingerprints, setSearchFingerprints] = useState('');
-  const [searchLocations, setSearchLocations] = useState('');
-  
+
+  const [searchAllChildren, setSearchAllChildren] = useState("");
+  const [searchTodayReg, setSearchTodayReg] = useState("");
+  const [searchFingerprints, setSearchFingerprints] = useState("");
+  const [searchLocations, setSearchLocations] = useState("");
+
   const [preview1, setPreview1] = useState(null);
   const [preview2, setPreview2] = useState(null);
   const [preview3, setPreview3] = useState(null);
   const [showCamera1, setShowCamera1] = useState(false);
   const [showCamera2, setShowCamera2] = useState(false);
   const [showCamera3, setShowCamera3] = useState(false);
-  
+
   const videoRef1 = useRef(null);
   const videoRef2 = useRef(null);
   const videoRef3 = useRef(null);
@@ -163,19 +166,19 @@ const ChildRegistration = () => {
   const fileInputRef1 = useRef(null);
   const fileInputRef2 = useRef(null);
   const fileInputRef3 = useRef(null);
-  
+
   const [formData, setFormData] = useState({
-    fullName: '',
-    estimatedBirthYear: '',
-    gender: '',
-    primaryLocationId: ''
+    fullName: "",
+    estimatedBirthYear: "",
+    gender: "",
+    primaryLocationId: "",
   });
   const navigate = useNavigate();
 
   // ===== NAVIGATION FUNCTIONS =====
   const navigateToPage = (page) => {
     if (page !== activePage) {
-      setPageHistory(prev => [...prev, activePage]);
+      setPageHistory((prev) => [...prev, activePage]);
       setActivePage(page);
     }
   };
@@ -183,46 +186,51 @@ const ChildRegistration = () => {
   const goBack = () => {
     if (pageHistory.length > 0) {
       const previousPage = pageHistory[pageHistory.length - 1];
-      setPageHistory(prev => prev.slice(0, -1));
+      setPageHistory((prev) => prev.slice(0, -1));
       setActivePage(previousPage);
     } else {
-      setActivePage('list');
+      setActivePage("list");
     }
   };
 
   // ===== HELPER FUNCTIONS =====
   const getUserDisplayName = (userObj) => {
-    if (!userObj) return 'N/A';
-    
+    if (!userObj) return "N/A";
+
     if (userObj.firstName && userObj.lastName) {
       return `${userObj.firstName} ${userObj.lastName}`;
     }
     if (userObj.first_name && userObj.last_name) {
       return `${userObj.first_name} ${userObj.last_name}`;
     }
-    if (userObj.username && userObj.username !== userObj.user_id && userObj.username !== userObj.id) {
+    if (
+      userObj.username &&
+      userObj.username !== userObj.user_id &&
+      userObj.username !== userObj.id
+    ) {
       return userObj.username;
     }
     if (userObj.name) return userObj.name;
     if (userObj.user_name) return userObj.user_name;
-    if (userObj.email) return userObj.email.split('@')[0];
-    
-    return 'Staff User';
+    if (userObj.email) return userObj.email.split("@")[0];
+
+    return "Staff User";
   };
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token =
+      localStorage.getItem("token") || sessionStorage.getItem("token");
     return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     };
   };
 
   const calculateAgeFromYear = (estimatedBirthYear) => {
-    if (!estimatedBirthYear) return 'N/A';
+    if (!estimatedBirthYear) return "N/A";
     const currentYear = new Date().getFullYear();
     const age = currentYear - estimatedBirthYear;
-    return `${age} year${age !== 1 ? 's' : ''}`;
+    return `${age} year${age !== 1 ? "s" : ""}`;
   };
 
   const calculateAgeValue = (estimatedBirthYear) => {
@@ -232,13 +240,13 @@ const ChildRegistration = () => {
   };
 
   const getLocationName = (locationId) => {
-    if (!Array.isArray(locations) || locations.length === 0) return '';
-    const location = locations.find(loc => loc.id === locationId);
-    return location ? location.name : '';
+    if (!Array.isArray(locations) || locations.length === 0) return "";
+    const location = locations.find((loc) => loc.id === locationId);
+    return location ? location.name : "";
   };
 
   const getStaffNameById = (staffId) => {
-    if (!staffId) return 'N/A';
+    if (!staffId) return "N/A";
     if (staffUserMap[staffId]) return staffUserMap[staffId];
     if (user && (user.id === staffId || user.user_id === staffId)) {
       return getUserDisplayName(user);
@@ -247,10 +255,10 @@ const ChildRegistration = () => {
   };
 
   // ===== TOAST FUNCTION =====
-  const showToast = (message, type = 'success') => {
+  const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => {
-      setToast({ show: false, message: '', type: '' });
+      setToast({ show: false, message: "", type: "" });
     }, 3000);
   };
 
@@ -260,17 +268,61 @@ const ChildRegistration = () => {
     return (
       <div className={`child-reg-toast-notification ${toast.type}`}>
         <div className="child-reg-toast-content">
-          {toast.type === 'success' ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17L4 12" /></svg>
-          ) : toast.type === 'error' ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><circle cx="12" cy="16" r="1" fill="currentColor" /></svg>
+          {toast.type === "success" ? (
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M20 6L9 17L4 12" />
+            </svg>
+          ) : toast.type === "error" ? (
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <circle cx="12" cy="16" r="1" fill="currentColor" />
+            </svg>
           ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
           )}
           <span>{toast.message}</span>
         </div>
-        <button className="child-reg-toast-close" onClick={() => setToast({ show: false, message: '', type: '' })}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+        <button
+          className="child-reg-toast-close"
+          onClick={() => setToast({ show: false, message: "", type: "" })}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
       </div>
     );
@@ -280,16 +332,16 @@ const ChildRegistration = () => {
   const fetchStaffUsers = async () => {
     try {
       const response = await fetch(API_ENDPOINTS.users, {
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
       });
       if (response.ok) {
         const users = await response.json();
         setStaffUsers(users);
         const userMap = {};
-        users.forEach(staff => {
-          const firstName = staff.firstName || staff.first_name || '';
-          const lastName = staff.lastName || staff.last_name || '';
-          let fullName = '';
+        users.forEach((staff) => {
+          const firstName = staff.firstName || staff.first_name || "";
+          const lastName = staff.lastName || staff.last_name || "";
+          let fullName = "";
           if (firstName && lastName) {
             fullName = `${firstName} ${lastName}`;
           } else if (firstName) {
@@ -299,9 +351,9 @@ const ChildRegistration = () => {
           } else if (staff.username) {
             fullName = staff.username;
           } else if (staff.email) {
-            fullName = staff.email.split('@')[0];
+            fullName = staff.email.split("@")[0];
           } else {
-            fullName = 'Staff User';
+            fullName = "Staff User";
           }
           if (staff.id) userMap[staff.id] = fullName;
           if (staff.user_id) userMap[staff.user_id] = fullName;
@@ -311,7 +363,9 @@ const ChildRegistration = () => {
         return userMap;
       }
     } catch (error) {
-      // Silent fail
+
+      console.error("Error fetching staff users:", error);
+
     }
     return {};
   };
@@ -321,6 +375,9 @@ const ChildRegistration = () => {
       const data = await getLocations();
       setLocations(Array.isArray(data) ? data : []);
     } catch (error) {
+
+      console.error("Error fetching locations:", error);
+
       setLocations([]);
     }
   };
@@ -329,30 +386,38 @@ const ChildRegistration = () => {
     try {
       const data = await getChildren();
       let childrenArray = Array.isArray(data) ? data : [];
-      childrenArray = childrenArray.map(child => ({
+      childrenArray = childrenArray.map((child) => ({
         ...child,
-        registeredByName: getStaffNameById(child.createdByStaffId)
+        registeredByName: getStaffNameById(child.createdByStaffId),
       }));
       setChildrenData(childrenArray);
       filterPatientsByAge(childrenArray);
     } catch (error) {
+
+      console.error("Error fetching children:", error);
+
       setChildrenData([]);
     }
   };
 
   const fetchTodayRegistrations = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       const data = await getChildren();
       const childrenArray = Array.isArray(data) ? data : [];
       const todayArray = childrenArray
-        .filter(child => child.createdAt && child.createdAt.split('T')[0] === today)
-        .map(child => ({
+        .filter(
+          (child) => child.createdAt && child.createdAt.split("T")[0] === today,
+        )
+        .map((child) => ({
           ...child,
-          registeredByName: getStaffNameById(child.createdByStaffId)
+          registeredByName: getStaffNameById(child.createdByStaffId),
         }));
       setTodayData(todayArray);
     } catch (error) {
+
+      console.error("Error fetching today registrations:", error);
+
       setTodayData([]);
     }
   };
@@ -364,15 +429,17 @@ const ChildRegistration = () => {
 
       if (!isOnline) {
         try {
-          const { executeQuery } = await import('../../services/db.js');
-          const rows = await executeQuery('SELECT * FROM biometric_fingerprints');
-          rows.forEach(fp => {
-            const child = childrenData.find(c => c.id === fp.child_id);
+          const { executeQuery } = await import("../../services/db.js");
+          const rows = await executeQuery(
+            "SELECT * FROM biometric_fingerprints",
+          );
+          rows.forEach((fp) => {
+            const child = childrenData.find((c) => c.id === fp.child_id);
             allFingerprints.push({
               id: fp.id,
               childId: fp.child_id,
-              childName: child ? child.fullName : 'Unknown',
-              customSerialId: child ? child.customSerialId : '',
+              childName: child ? child.fullName : "Unknown",
+              customSerialId: child ? child.customSerialId : "",
               fingerIndex: fp.finger_index,
               templateBase64: fp.template_data,
               templateData: fp.template_data,
@@ -381,13 +448,17 @@ const ChildRegistration = () => {
               version: fp.version,
               syncStatus: fp.sync_status,
               capturedAt: fp.created_at,
-              fingerName: fingerNames[fp.finger_index]?.name || `Finger ${fp.finger_index}`
+              fingerName:
+                fingerNames[fp.finger_index]?.name ||
+                `Finger ${fp.finger_index}`,
             });
           });
           setFingerprintData(allFingerprints);
           return;
         } catch (dbError) {
-          // Silent fail
+
+          console.error("Error fetching fingerprints from SQLite:", dbError);
+
         }
       }
 
@@ -395,27 +466,35 @@ const ChildRegistration = () => {
         if (child.id) {
           try {
             const fingerprints = await getBiometricsForChild(child.id);
-            fingerprints.forEach(fp => {
+            fingerprints.forEach((fp) => {
               if (fp && Object.keys(fp).length > 0) {
-                allFingerprints.push({ 
-                  ...fp, 
-                  childName: child.fullName, 
+                allFingerprints.push({
+                  ...fp,
+                  childName: child.fullName,
                   childId: child.id,
                   customSerialId: child.customSerialId,
                   capturedAt: fp.capturedAt || fp.captured_at || fp.createdAt,
                   qualityScore: fp.qualityScore || fp.quality,
-                  capturedByName: fp.capturedByName || getStaffNameById(fp.capturedBy),
-                  fingerName: fingerNames[fp.fingerIndex]?.name || `Finger ${fp.fingerIndex}`
+                  capturedByName:
+                    fp.capturedByName || getStaffNameById(fp.capturedBy),
+                  fingerName:
+                    fingerNames[fp.fingerIndex]?.name ||
+                    `Finger ${fp.fingerIndex}`,
                 });
               }
             });
           } catch (e) {
-            // Silent fail
+
+            console.error("Error fetching fingerprints for child:", e);
+
           }
         }
       }
       setFingerprintData(allFingerprints);
     } catch (error) {
+
+      console.error("Error fetching fingerprints:", error);
+
       setFingerprintData([]);
     }
   };
@@ -423,7 +502,7 @@ const ChildRegistration = () => {
   const filterPatientsByAge = (children) => {
     const young = [];
     const older = [];
-    children.forEach(child => {
+    children.forEach((child) => {
       const age = calculateAgeValue(child.estimatedBirthYear);
       if (age < 18) {
         young.push(child);
@@ -440,17 +519,17 @@ const ChildRegistration = () => {
       const childrenArray = await getChildren();
       if (childrenArray && childrenArray.length > 0) {
         const matches = childrenArray
-          .map(c => c.customSerialId || c.custom_serial_id || '')
-          .filter(id => id.startsWith('KID-'))
-          .map(id => {
-            const parts = id.split('-');
+          .map((c) => c.customSerialId || c.custom_serial_id || "")
+          .filter((id) => id.startsWith("KID-"))
+          .map((id) => {
+            const parts = id.split("-");
             return parts.length === 3 ? parseInt(parts[2]) : 0;
           })
-          .filter(num => !isNaN(num) && num > 0);
-          
+          .filter((num) => !isNaN(num) && num > 0);
+
         if (matches.length > 0) {
           const lastNumber = Math.max(...matches);
-          const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
+          const nextNumber = (lastNumber + 1).toString().padStart(4, "0");
           const currentYear = new Date().getFullYear();
           setGeneratedId(`KID-${currentYear}-${nextNumber}`);
           return;
@@ -459,8 +538,11 @@ const ChildRegistration = () => {
       const currentYear = new Date().getFullYear();
       setGeneratedId(`KID-${currentYear}-0001`);
     } catch (error) {
+
+      console.error("Error generating registration ID:", error);
+
       const currentYear = new Date().getFullYear();
-      const nextNumber = (childrenData.length + 1).toString().padStart(4, '0');
+      const nextNumber = (childrenData.length + 1).toString().padStart(4, "0");
       setGeneratedId(`KID-${currentYear}-${nextNumber}`);
     }
   };
@@ -468,22 +550,27 @@ const ChildRegistration = () => {
   // ===== FORM VALIDATION FUNCTIONS =====
   const validateForm = () => {
     let isValid = true;
-    const errors = { fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' };
+    const errors = {
+      fullName: "",
+      estimatedBirthYear: "",
+      gender: "",
+      primaryLocationId: "",
+    };
 
     if (!formData.fullName.trim()) {
-      errors.fullName = 'Child name is required';
+      errors.fullName = "Child name is required";
       isValid = false;
     }
     if (!formData.estimatedBirthYear) {
-      errors.estimatedBirthYear = 'Estimated birth year is required';
+      errors.estimatedBirthYear = "Estimated birth year is required";
       isValid = false;
     }
     if (!formData.gender) {
-      errors.gender = 'Gender is required';
+      errors.gender = "Gender is required";
       isValid = false;
     }
     if (!formData.primaryLocationId) {
-      errors.primaryLocationId = 'Location is required';
+      errors.primaryLocationId = "Location is required";
       isValid = false;
     }
     setFormErrors(errors);
@@ -492,22 +579,27 @@ const ChildRegistration = () => {
 
   const validateChildEditForm = () => {
     let isValid = true;
-    const errors = { fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' };
+    const errors = {
+      fullName: "",
+      estimatedBirthYear: "",
+      gender: "",
+      primaryLocationId: "",
+    };
 
     if (!childFormData.fullName.trim()) {
-      errors.fullName = 'Child name is required';
+      errors.fullName = "Child name is required";
       isValid = false;
     }
     if (!childFormData.estimatedBirthYear) {
-      errors.estimatedBirthYear = 'Estimated birth year is required';
+      errors.estimatedBirthYear = "Estimated birth year is required";
       isValid = false;
     }
     if (!childFormData.gender) {
-      errors.gender = 'Gender is required';
+      errors.gender = "Gender is required";
       isValid = false;
     }
     if (!childFormData.primaryLocationId) {
-      errors.primaryLocationId = 'Location is required';
+      errors.primaryLocationId = "Location is required";
       isValid = false;
     }
     setChildFormErrors(errors);
@@ -516,9 +608,9 @@ const ChildRegistration = () => {
 
   const validateLocationForm = () => {
     let isValid = true;
-    const errors = { name: '' };
+    const errors = { name: "" };
     if (!locationFormData.name.trim()) {
-      errors.name = 'Location name is required';
+      errors.name = "Location name is required";
       isValid = false;
     }
     setLocationFormErrors(errors);
@@ -530,23 +622,26 @@ const ChildRegistration = () => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     if (formErrors[name]) {
-      setFormErrors({ ...formErrors, [name]: '' });
+      setFormErrors({ ...formErrors, [name]: "" });
     }
   };
 
   const handleAgeChange = (e) => {
     const ageVal = e.target.value;
     const currentYear = new Date().getFullYear();
-    if (ageVal === '') {
-      setFormData({ ...formData, estimatedBirthYear: '' });
+    if (ageVal === "") {
+      setFormData({ ...formData, estimatedBirthYear: "" });
     } else {
       const age = parseInt(ageVal, 10);
       if (!isNaN(age)) {
-        setFormData({ ...formData, estimatedBirthYear: (currentYear - age).toString() });
+        setFormData({
+          ...formData,
+          estimatedBirthYear: (currentYear - age).toString(),
+        });
       }
     }
     if (formErrors.estimatedBirthYear) {
-      setFormErrors({ ...formErrors, estimatedBirthYear: '' });
+      setFormErrors({ ...formErrors, estimatedBirthYear: "" });
     }
   };
 
@@ -554,23 +649,26 @@ const ChildRegistration = () => {
     const { name, value } = e.target;
     setChildFormData({ ...childFormData, [name]: value });
     if (childFormErrors[name]) {
-      setChildFormErrors({ ...childFormErrors, [name]: '' });
+      setChildFormErrors({ ...childFormErrors, [name]: "" });
     }
   };
 
   const handleChildAgeChange = (e) => {
     const ageVal = e.target.value;
     const currentYear = new Date().getFullYear();
-    if (ageVal === '') {
-      setChildFormData({ ...childFormData, estimatedBirthYear: '' });
+    if (ageVal === "") {
+      setChildFormData({ ...childFormData, estimatedBirthYear: "" });
     } else {
       const age = parseInt(ageVal, 10);
       if (!isNaN(age)) {
-        setChildFormData({ ...childFormData, estimatedBirthYear: (currentYear - age).toString() });
+        setChildFormData({
+          ...childFormData,
+          estimatedBirthYear: (currentYear - age).toString(),
+        });
       }
     }
     if (childFormErrors.estimatedBirthYear) {
-      setChildFormErrors({ ...childFormErrors, estimatedBirthYear: '' });
+      setChildFormErrors({ ...childFormErrors, estimatedBirthYear: "" });
     }
   };
 
@@ -578,25 +676,35 @@ const ChildRegistration = () => {
     const { name, value } = e.target;
     setLocationFormData({ ...locationFormData, [name]: value });
     if (locationFormErrors[name]) {
-      setLocationFormErrors({ ...locationFormErrors, [name]: '' });
+      setLocationFormErrors({ ...locationFormErrors, [name]: "" });
     }
   };
 
   const resetLocationForm = () => {
     setEditingLocation(null);
-    setLocationFormData({ name: '', description: '' });
-    setLocationFormErrors({ name: '' });
+    setLocationFormData({ name: "", description: "" });
+    setLocationFormErrors({ name: "" });
     setShowLocationForm(false);
   };
 
   // ===== CAMERA FUNCTIONS =====
   const checkCameraSupport = () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showToast('Your browser does not support camera access. Please use Chrome, Firefox, or Edge.', 'error');
+      showToast(
+        "Your browser does not support camera access. Please use Chrome, Firefox, or Edge.",
+        "error",
+      );
       return false;
     }
-    if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      showToast('Camera access requires HTTPS. Please use HTTPS or localhost.', 'error');
+    if (
+      window.location.protocol !== "https:" &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+    ) {
+      showToast(
+        "Camera access requires HTTPS. Please use HTTPS or localhost.",
+        "error",
+      );
       return false;
     }
     return true;
@@ -616,19 +724,29 @@ const ChildRegistration = () => {
       setShowCamera = setShowCamera3;
     }
     if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setShowCamera(true);
-        showToast('Camera started successfully!', 'success');
+        showToast("Camera started successfully!", "success");
       }
     } catch (err) {
-      showToast(`Unable to access camera: ${err.message || 'Please check permissions.'}`, 'error');
+
+      console.error("Camera error:", err);
+      showToast(
+        `Unable to access camera: ${err.message || "Please check permissions."}`,
+        "error",
+      );
+
     }
   };
 
@@ -651,20 +769,20 @@ const ChildRegistration = () => {
       setShowCamera = setShowCamera3;
     }
     if (!video || !video.videoWidth || !video.videoHeight) {
-      showToast('Camera not ready. Please wait and try again.', 'error');
+      showToast("Camera not ready. Please wait and try again.", "error");
       return;
     }
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    const imageDataUrl = canvas.toDataURL("image/jpeg", 0.9);
     setPreview(imageDataUrl);
     setShowCamera(false);
     if (video.srcObject) {
-      video.srcObject.getTracks().forEach(track => track.stop());
+      video.srcObject.getTracks().forEach((track) => track.stop());
     }
-    showToast(`Photo ${num} captured successfully!`, 'success');
+    showToast(`Photo ${num} captured successfully!`, "success");
   };
 
   const stopCamera = (num) => {
@@ -681,7 +799,7 @@ const ChildRegistration = () => {
     }
     setShowCamera(false);
     if (video && video.srcObject) {
-      video.srcObject.getTracks().forEach(track => track.stop());
+      video.srcObject.getTracks().forEach((track) => track.stop());
     }
   };
 
@@ -692,7 +810,7 @@ const ChildRegistration = () => {
       if (num === 1) setPreview1(reader.result);
       else if (num === 2) setPreview2(reader.result);
       else setPreview3(reader.result);
-      showToast(`Photo ${num} uploaded successfully!`, 'success');
+      showToast(`Photo ${num} uploaded successfully!`, "success");
     };
     reader.readAsDataURL(file);
   };
@@ -703,6 +821,9 @@ const ChildRegistration = () => {
       const data = await apiGetChildById(id);
       return data;
     } catch (error) {
+
+      console.error("Error fetching child:", error);
+
       return null;
     }
   };
@@ -711,10 +832,14 @@ const ChildRegistration = () => {
     try {
       const data = await apiUpdateChild(id, {
         ...childData,
-        createdByStaffId: childData.createdByStaffId || user?.id || user?.user_id
+        createdByStaffId:
+          childData.createdByStaffId || user?.id || user?.user_id,
       });
       return data;
     } catch (error) {
+
+      console.error("Error updating child:", error);
+
       return null;
     }
   };
@@ -724,6 +849,9 @@ const ChildRegistration = () => {
       const success = await apiDeleteChild(id);
       return success;
     } catch (error) {
+
+      console.error("Error deleting child:", error);
+
       return false;
     }
   };
@@ -741,16 +869,20 @@ const ChildRegistration = () => {
         image2: preview2 || null,
         image3: preview3 || null,
         createdByStaffId: user?.id || user?.user_id,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
       return data;
     } catch (error) {
+
+      console.error("Error adding registration:", error);
+
       return null;
     }
   };
 
   // ===== HANDLERS =====
   const handleViewChild = async (child) => {
+
     setIsLoading(true);
     try {
       const fullChild = await fetchChildById(child.id);
@@ -759,6 +891,7 @@ const ChildRegistration = () => {
     } finally {
       setIsLoading(false);
     }
+
   };
 
   const handleEditChild = (child) => {
@@ -769,18 +902,19 @@ const ChildRegistration = () => {
       gender: child.gender,
       primaryLocationId: child.primaryLocationId,
       customSerialId: child.customSerialId,
-      image1: child.image1 || '',
-      image2: child.image2 || '',
-      image3: child.image3 || ''
+      image1: child.image1 || "",
+      image2: child.image2 || "",
+      image3: child.image3 || "",
     });
-    navigateToPage('edit_child');
+    navigateToPage("edit_child");
   };
 
   const handleSaveChild = async () => {
     if (!validateChildEditForm()) {
-      showToast('Please fill in all required fields', 'error');
+      showToast("Please fill in all required fields", "error");
       return;
     }
+
     setIsSavingChild(true);
     try {
       const result = await updateChild(editingChild.id, childFormData);
@@ -797,24 +931,27 @@ const ChildRegistration = () => {
       }
     } finally {
       setIsSavingChild(false);
+
     }
   };
 
   const handleDeleteChild = async (child) => {
+
     if (!window.confirm(`Are you sure you want to delete ${child.fullName}? This action cannot be undone.`)) {
       return;
     }
     setDeletingChildId(child.id);
     setIsDeleting(true);
     try {
+
       const success = await deleteChild(child.id);
       if (success) {
-        showToast('Child deleted successfully!', 'success');
+        showToast("Child deleted successfully!", "success");
         await fetchChildren();
         await fetchTodayRegistrations();
         generateRegistrationId();
       } else {
-        showToast('Failed to delete child', 'error');
+        showToast("Failed to delete child", "error");
       }
     } finally {
       setIsDeleting(false);
@@ -830,7 +967,7 @@ const ChildRegistration = () => {
     setFingerQuality({});
     setCapturedFingers([]);
     setIsCapturing(false);
-    navigateToPage('enroll_fingerprint');
+    navigateToPage("enroll_fingerprint");
   };
 
   const handleSelectFinger = (fingerIndex) => {
@@ -839,45 +976,49 @@ const ChildRegistration = () => {
 
   const handleCaptureFingerprint = () => {
     if (!selectedFinger) {
-      showToast('Please select a finger first', 'error');
+      showToast("Please select a finger first", "error");
       return;
     }
     setIsCapturing(true);
     setTimeout(() => {
       const quality = Math.floor(Math.random() * 30) + 70;
-      setFingerQuality(prev => ({ ...prev, [selectedFinger]: quality }));
-      setFingerCaptures(prev => ({ ...prev, [selectedFinger]: true }));
+      setFingerQuality((prev) => ({ ...prev, [selectedFinger]: quality }));
+      setFingerCaptures((prev) => ({ ...prev, [selectedFinger]: true }));
       if (!capturedFingers.includes(selectedFinger)) {
-        setCapturedFingers(prev => [...prev, selectedFinger]);
+        setCapturedFingers((prev) => [...prev, selectedFinger]);
       }
       setIsCapturing(false);
-      showToast(`Finger ${fingerNames[selectedFinger].name} captured with ${quality}% quality!`, 'success');
+      showToast(
+        `Finger ${fingerNames[selectedFinger].name} captured with ${quality}% quality!`,
+        "success",
+      );
     }, 2000);
   };
 
   const handleRemoveFingerprint = (fingerIndex) => {
-    setFingerCaptures(prev => {
+    setFingerCaptures((prev) => {
       const newCaptures = { ...prev };
       delete newCaptures[fingerIndex];
       return newCaptures;
     });
-    setFingerQuality(prev => {
+    setFingerQuality((prev) => {
       const newQuality = { ...prev };
       delete newQuality[fingerIndex];
       return newQuality;
     });
-    setCapturedFingers(prev => prev.filter(f => f !== fingerIndex));
-    showToast(`Finger ${fingerNames[fingerIndex].name} removed`, 'info');
+    setCapturedFingers((prev) => prev.filter((f) => f !== fingerIndex));
+    showToast(`Finger ${fingerNames[fingerIndex].name} removed`, "info");
   };
 
   const handleSaveFingerprints = async () => {
     if (capturedFingers.length === 0) {
-      showToast('No fingerprints captured. You can skip this step.', 'info');
+      showToast("No fingerprints captured. You can skip this step.", "info");
       goBack();
       return;
     }
     setIsSavingFingerprints(true);
     let successCount = 0;
+
     try {
       for (const fingerIndex of capturedFingers) {
         try {
@@ -892,7 +1033,7 @@ const ChildRegistration = () => {
           });
           if (result) successCount++;
         } catch (error) {
-          // Silent fail
+          console.error("Error saving fingerprint:", error);
         }
       }
       if (successCount > 0) {
@@ -910,6 +1051,7 @@ const ChildRegistration = () => {
       }
     } finally {
       setIsSavingFingerprints(false);
+
     }
   };
 
@@ -937,35 +1079,41 @@ const ChildRegistration = () => {
 
   const handleRegCaptureFingerprint = () => {
     if (!regSelectedFinger) {
-      showToast('Please select a finger first', 'error');
+      showToast("Please select a finger first", "error");
       return;
     }
     setRegIsCapturing(true);
     setTimeout(() => {
       const quality = Math.floor(Math.random() * 30) + 70;
-      setRegFingerQuality(prev => ({ ...prev, [regSelectedFinger]: quality }));
-      setRegFingerCaptures(prev => ({ ...prev, [regSelectedFinger]: true }));
+      setRegFingerQuality((prev) => ({
+        ...prev,
+        [regSelectedFinger]: quality,
+      }));
+      setRegFingerCaptures((prev) => ({ ...prev, [regSelectedFinger]: true }));
       if (!regCapturedFingers.includes(regSelectedFinger)) {
-        setRegCapturedFingers(prev => [...prev, regSelectedFinger]);
+        setRegCapturedFingers((prev) => [...prev, regSelectedFinger]);
       }
       setRegIsCapturing(false);
-      showToast(`Finger ${fingerNames[regSelectedFinger].name} captured with ${quality}% quality!`, 'success');
+      showToast(
+        `Finger ${fingerNames[regSelectedFinger].name} captured with ${quality}% quality!`,
+        "success",
+      );
     }, 2000);
   };
 
   const handleRegRemoveFingerprint = (fingerIndex) => {
-    setRegFingerCaptures(prev => {
+    setRegFingerCaptures((prev) => {
       const newCaptures = { ...prev };
       delete newCaptures[fingerIndex];
       return newCaptures;
     });
-    setRegFingerQuality(prev => {
+    setRegFingerQuality((prev) => {
       const newQuality = { ...prev };
       delete newQuality[fingerIndex];
       return newQuality;
     });
-    setRegCapturedFingers(prev => prev.filter(f => f !== fingerIndex));
-    showToast(`Finger ${fingerNames[fingerIndex].name} removed`, 'info');
+    setRegCapturedFingers((prev) => prev.filter((f) => f !== fingerIndex));
+    showToast(`Finger ${fingerNames[fingerIndex].name} removed`, "info");
   };
 
   const handleRegSaveFingerprints = async () => {
@@ -977,24 +1125,28 @@ const ChildRegistration = () => {
     setIsSavingFingerprints(true);
     setIsAddingChild(true);
 
+    setIsAddingChild(true);
+    setIsSavingFingerprints(true);
     try {
+      // First register the child
       const newChild = {
         fullName: formData.fullName,
         estimatedBirthYear: formData.estimatedBirthYear,
         gender: formData.gender,
         primaryLocationId: formData.primaryLocationId,
-        createdByStaffId: user?.id || user?.user_id
+        createdByStaffId: user?.id || user?.user_id,
       };
 
       const result = await addRegistration(newChild);
       let childId = null;
-      
+
       if (result && (result.child || result.id)) {
         childId = result.child?.id || result.id;
       }
 
       if (childId) {
         let successCount = 0;
+        // Save fingerprints for this child
         for (const fingerIndex of regCapturedFingers) {
           try {
             const enrollResult = await apiEnrollBiometric({
@@ -1004,29 +1156,36 @@ const ChildRegistration = () => {
               templateBase64: `fingerprint_template_${fingerIndex}_base64`,
               qualityScore: regFingerQuality[fingerIndex] || 80,
               createdAt: new Date().toISOString(),
-              status: 'PENDING'
+              status: "PENDING",
             });
             if (enrollResult) successCount++;
           } catch (error) {
-            // Silent fail
+            console.error("Error saving fingerprint:", error);
           }
         }
-        
+
         if (successCount > 0) {
-          showToast(`✓ ${successCount} fingerprint(s) enrolled successfully!`, 'success');
+          showToast(
+            `✓ ${successCount} fingerprint(s) enrolled successfully!`,
+            "success",
+          );
           await fetchChildren();
           await fetchTodayRegistrations();
           await fetchFingerprints();
           setRegistrationStep(3);
         } else {
-          showToast('Failed to save fingerprints. You can add them later.', 'warning');
+          showToast(
+            "Failed to save fingerprints. You can add them later.",
+            "warning",
+          );
           setRegistrationStep(3);
         }
       } else {
-        showToast('Failed to register child. Please try again.', 'error');
+        showToast("Failed to register child. Please try again.", "error");
       }
     } catch (error) {
-      showToast('An error occurred. Please try again.', 'error');
+      console.error("Error during registration:", error);
+      showToast("An error occurred. Please try again.", "error");
     } finally {
       setIsSavingFingerprints(false);
       setIsAddingChild(false);
@@ -1036,36 +1195,62 @@ const ChildRegistration = () => {
   const handleRegSkipFingerprints = async () => {
     setIsAddingChild(true);
     try {
+      // Register child without fingerprints
       const newChild = {
         fullName: formData.fullName,
         estimatedBirthYear: formData.estimatedBirthYear,
         gender: formData.gender,
         primaryLocationId: formData.primaryLocationId,
-        createdByStaffId: user?.id || user?.user_id
+        createdByStaffId: user?.id || user?.user_id,
       };
 
       const result = await addRegistration(newChild);
       if (result) {
-        showToast(`✓ Child registered successfully with ID: ${generatedId}!`, 'success');
+        showToast(
+          `✓ Child registered successfully with ID: ${generatedId}!`,
+          "success",
+        );
         await fetchChildren();
         await fetchTodayRegistrations();
         await generateRegistrationId();
         setRegistrationStep(3);
       } else {
-        showToast('Failed to register child. Please try again.', 'error');
+        showToast("Failed to register child. Please try again.", "error");
       }
+    } catch (error) {
+      console.error("Error registering child without fingerprints:", error);
+      showToast("An error occurred. Please try again.", "error");
     } finally {
       setIsAddingChild(false);
     }
   };
 
+
   const handleRegComplete = () => {
-    showToast(`✓ Child registered successfully with ID: ${generatedId}!`, 'success');
+    showToast(
+      `✓ Child registered successfully with ID: ${generatedId}!`,
+      "success",
+    );
     goBack();
     setRegistrationStep(1);
-    setFormData({ fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' });
-    setFormErrors({ fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' });
-    setPreview1(null); setPreview2(null); setPreview3(null);
+
+    setFormData({
+      fullName: "",
+      estimatedBirthYear: "",
+      gender: "",
+      primaryLocationId: "",
+    });
+    setFormErrors({
+      fullName: "",
+      estimatedBirthYear: "",
+      gender: "",
+      primaryLocationId: "",
+    });
+    setPreview1(null);
+    setPreview2(null);
+    setPreview3(null);
+    // Reset registration fingerprint state
+
     setRegFingerCaptures({});
     setRegFingerQuality({});
     setRegCapturedFingers([]);
@@ -1080,18 +1265,21 @@ const ChildRegistration = () => {
   const addLocation = async (locationData) => {
     try {
       const response = await fetch(API_ENDPOINTS.locations, {
-        method: 'POST',
+        method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
           id: crypto.randomUUID(),
           name: locationData.name,
-          description: locationData.description || ''
-        })
+          description: locationData.description || "",
+        }),
       });
       if (response.ok) {
         return await response.json();
       }
     } catch (error) {
+
+      console.error("Error adding location:", error);
+
       return null;
     }
     return null;
@@ -1100,17 +1288,20 @@ const ChildRegistration = () => {
   const updateLocation = async (id, locationData) => {
     try {
       const response = await fetch(API_ENDPOINTS.location(id), {
-        method: 'PUT',
+        method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify({
           name: locationData.name,
-          description: locationData.description || ''
-        })
+          description: locationData.description || "",
+        }),
       });
       if (response.ok) {
         return await response.json();
       }
     } catch (error) {
+
+      console.error("Error updating location:", error);
+
       return null;
     }
     return null;
@@ -1119,11 +1310,14 @@ const ChildRegistration = () => {
   const deleteLocation = async (id) => {
     try {
       const response = await fetch(API_ENDPOINTS.location(id), {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+        method: "DELETE",
+        headers: getAuthHeaders(),
       });
       return response.ok;
     } catch (error) {
+
+      console.error("Error deleting location:", error);
+
       return false;
     }
   };
@@ -1132,13 +1326,14 @@ const ChildRegistration = () => {
     setEditingLocation(location);
     setLocationFormData({
       name: location.name,
-      description: location.description || ''
+      description: location.description || "",
     });
     setShowLocationForm(true);
   };
 
   const handleSaveLocation = async () => {
     if (!validateLocationForm()) return;
+
     setIsAddingLocation(true);
     try {
       let result;
@@ -1157,10 +1352,12 @@ const ChildRegistration = () => {
       }
     } finally {
       setIsAddingLocation(false);
+
     }
   };
 
   const handleDeleteLocation = async (location) => {
+
     if (window.confirm(`Are you sure you want to delete location "${location.name}"?`)) {
       setIsAddingLocation(true);
       try {
@@ -1173,6 +1370,7 @@ const ChildRegistration = () => {
         }
       } finally {
         setIsAddingLocation(false);
+
       }
     }
   };
@@ -1193,20 +1391,24 @@ const ChildRegistration = () => {
           locationName: getLocationName(matchedChild.primaryLocationId),
           createdAt: matchedChild.createdAt,
           registeredBy: matchedChild.createdByStaffId,
-          images: { image1: matchedChild.image1, image2: matchedChild.image2, image3: matchedChild.image3 }
+          images: {
+            image1: matchedChild.image1,
+            image2: matchedChild.image2,
+            image3: matchedChild.image3,
+          },
         });
-        setExistingChildImages({ 
-          image1: matchedChild.image1, 
-          image2: matchedChild.image2, 
-          image3: matchedChild.image3 
+        setExistingChildImages({
+          image1: matchedChild.image1,
+          image2: matchedChild.image2,
+          image3: matchedChild.image3,
         });
         setFingerprintExists(true);
-        showToast('✓ Fingerprint verified! Child found in system.', 'success');
+        showToast("✓ Fingerprint verified! Child found in system.", "success");
       } else {
         setFingerprintExists(false);
         setExistingChild(null);
         setExistingChildImages(null);
-        showToast('✗ Fingerprint not found. No matching record.', 'info');
+        showToast("✗ Fingerprint not found. No matching record.", "info");
       }
       setIsVerifying(false);
     }, 1500);
@@ -1214,27 +1416,37 @@ const ChildRegistration = () => {
 
   const handleLoadExistingRecord = () => {
     if (existingChild && existingChild.fullName) {
-      sessionStorage.setItem('selectedChild', JSON.stringify(existingChild));
-      navigate('/medical-records', { state: { child: existingChild } });
+      sessionStorage.setItem("selectedChild", JSON.stringify(existingChild));
+      navigate("/medical-records", { state: { child: existingChild } });
       setFingerprintExists(null);
       setExistingChild(null);
       setExistingChildImages(null);
     } else {
-      showToast('No record selected', 'error');
+      showToast("No record selected", "error");
     }
   };
 
   // ===== OTHER HANDLERS =====
   const handleAddRegistrationClick = () => {
     setRegistrationStep(1);
-    setFormData({ fullName: '', estimatedBirthYear: '', gender: '', primaryLocationId: '' });
-    setPreview1(null); setPreview2(null); setPreview3(null);
+
+    setFormData({
+      fullName: "",
+      estimatedBirthYear: "",
+      gender: "",
+      primaryLocationId: "",
+    });
+    setPreview1(null);
+    setPreview2(null);
+    setPreview3(null);
+    // Reset registration fingerprint state
+
     setRegFingerCaptures({});
     setRegFingerQuality({});
     setRegCapturedFingers([]);
     setRegSelectedFinger(null);
     setRegIsCapturing(false);
-    navigateToPage('register');
+    navigateToPage("register");
   };
 
   const handleVerifyFingerprintClick = () => {
@@ -1242,19 +1454,22 @@ const ChildRegistration = () => {
     setExistingChild(null);
     setExistingChildImages(null);
     setIsVerifying(false);
-    navigateToPage('verify');
+    navigateToPage("verify");
   };
 
   const handleSyncOfflineData = async () => {
     setIsSyncing(true);
-    showToast('Starting synchronization...', 'info');
+    showToast("Starting synchronization...", "info");
     try {
       await triggerSync();
       const isOnline = navigator.onLine;
       setOfflineMode(!isOnline);
-      showToast('✓ Synchronization completed successfully!', 'success');
+      showToast("✓ Synchronization completed successfully!", "success");
     } catch (error) {
-      showToast('Error occurred during synchronization', 'error');
+
+      console.error("Error syncing:", error);
+      showToast("Error occurred during synchronization", "error");
+
     } finally {
       setIsSyncing(false);
       await fetchChildren();
@@ -1265,16 +1480,17 @@ const ChildRegistration = () => {
   };
 
   const handleStatClick = (page, title) => {
-    showToast(`Viewing ${title}`, 'info');
+    showToast(`Viewing ${title}`, "info");
     navigateToPage(page);
   };
 
   const handleActionClick = (action) => {
-    showToast(`Opening ${action}`, 'info');
+    showToast(`Opening ${action}`, "info");
   };
 
   const handlePrintClick = (dataType) => {
     setPrintDataType(dataType);
+
     setPrintFilters({ 
       date_from: '', 
       date_to: '', 
@@ -1282,6 +1498,7 @@ const ChildRegistration = () => {
       fingerprint_status: '', 
       gender: '',
       age_group: ''
+
     });
     setShowPrintPage(true);
   };
@@ -1509,15 +1726,15 @@ const ChildRegistration = () => {
     `);
     printWindow.document.close();
     setShowPrintPage(false);
-    showToast('Print job sent successfully!', 'success');
+    showToast("Print job sent successfully!", "success");
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('user');
-    sessionStorage.removeItem('token');
-    navigate('/login');
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    navigate("/login");
   };
 
   // ===== PRINT PAGE COMPONENT WITH ENHANCED FILTERS =====
@@ -1526,12 +1743,18 @@ const ChildRegistration = () => {
     
     const getTitle = () => {
       switch (printDataType) {
-        case 'children': return 'All Registered Patients';
-        case 'today': return "Today's Registrations";
-        case 'fingerprints': return 'Fingerprints Captured';
-        case 'young': return 'Young Patients (Under 18)';
-        case 'older': return 'Older Patients (18+)';
-        default: return 'Print Report';
+        case "children":
+          return "All Registered Patients";
+        case "today":
+          return "Today's Registrations";
+        case "fingerprints":
+          return "Fingerprints Captured";
+        case "young":
+          return "Young Patients (Under 18)";
+        case "older":
+          return "Older Patients (18+)";
+        default:
+          return "Print Report";
       }
     };
 
@@ -1560,7 +1783,12 @@ const ChildRegistration = () => {
     return (
       <div className="child-reg-print-page">
         <div className="child-reg-print-header">
-          <button className="child-reg-back-btn" onClick={() => setShowPrintPage(false)}>← Back to Dashboard</button>
+          <button
+            className="child-reg-back-btn"
+            onClick={() => setShowPrintPage(false)}
+          >
+            ← Back to Dashboard
+          </button>
           <div className="child-reg-print-title-section">
             <h1>Print {getTitle()} Report</h1>
             <p>Select filters below to customize your report</p>
@@ -1570,30 +1798,37 @@ const ChildRegistration = () => {
           <div className="child-reg-filters-section">
             <div className="child-reg-filters-header">
               <h3>Report Filters</h3>
+
               <button className="child-reg-reset-filters-btn" onClick={handleResetFilters}>Reset Filters</button>
+
             </div>
             <div className="child-reg-filters-grid">
               {/* Date Filters */}
               <div className="child-reg-filter-field">
                 <label>Date From</label>
+
                 <input 
                   type="date" 
                   value={printFilters.date_from} 
                   onChange={(e) => setPrintFilters({...printFilters, date_from: e.target.value})} 
+
                 />
               </div>
               <div className="child-reg-filter-field">
                 <label>Date To</label>
+
                 <input 
                   type="date" 
                   value={printFilters.date_to} 
                   onChange={(e) => setPrintFilters({...printFilters, date_to: e.target.value})} 
+
                 />
               </div>
               
               {/* Location Filter */}
               <div className="child-reg-filter-field">
                 <label>Location</label>
+
                 <select 
                   value={printFilters.location} 
                   onChange={(e) => setPrintFilters({...printFilters, location: e.target.value})}
@@ -1641,12 +1876,20 @@ const ChildRegistration = () => {
                   <option value="">All Status</option>
                   <option value="captured">Has Fingerprints</option>
                   <option value="pending">No Fingerprints</option>
+
                 </select>
               </div>
             </div>
             <div className="child-reg-filters-actions">
-              <button className="child-reg-cancel-btn" onClick={() => setShowPrintPage(false)}>Cancel</button>
-              <button className="child-reg-generate-btn" onClick={handlePrint}>Generate & Print Report</button>
+              <button
+                className="child-reg-cancel-btn"
+                onClick={() => setShowPrintPage(false)}
+              >
+                Cancel
+              </button>
+              <button className="child-reg-generate-btn" onClick={handlePrint}>
+                Generate & Print Report
+              </button>
             </div>
           </div>
         </div>
@@ -1683,7 +1926,8 @@ const ChildRegistration = () => {
   // ===== USE EFFECTS =====
   useEffect(() => {
     const initData = async () => {
-      const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+      const storedUser =
+        localStorage.getItem("user") || sessionStorage.getItem("user");
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
@@ -1694,7 +1938,7 @@ const ChildRegistration = () => {
         await fetchFingerprints();
         await generateRegistrationId();
       } else {
-        navigate('/login');
+        navigate("/login");
       }
       setLoading(false);
     };
@@ -1711,16 +1955,22 @@ const ChildRegistration = () => {
     const handleOnline = () => setOfflineMode(false);
     const handleOffline = () => setOfflineMode(true);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
-  if (loading) return <div className="child-reg-dashboard-loading"><div className="child-reg-spinner"></div><p>Loading...</p></div>;
+  if (loading)
+    return (
+      <div className="child-reg-dashboard-loading">
+        <div className="child-reg-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
   if (!user) return null;
 
   // ===== RENDER =====
@@ -1729,7 +1979,7 @@ const ChildRegistration = () => {
       <ToastNotification />
       <div className="child-registration-container">
         {showPrintPage && <PrintPage />}
-        {!showPrintPage && activePage === 'list' && (
+        {!showPrintPage && activePage === "list" && (
           <RenderListPage
             user={user}
             childrenData={childrenData}
@@ -1749,7 +1999,7 @@ const ChildRegistration = () => {
             getUserDisplayName={getUserDisplayName}
           />
         )}
-        {!showPrintPage && activePage === 'register' && (
+        {!showPrintPage && activePage === "register" && (
           <RenderRegistrationPage
             registrationStep={registrationStep}
             formData={formData}
@@ -1798,7 +2048,7 @@ const ChildRegistration = () => {
             isAddingChild={isAddingChild}
           />
         )}
-        {!showPrintPage && activePage === 'verify' && (
+        {!showPrintPage && activePage === "verify" && (
           <RenderVerifyPage
             fingerprintExists={fingerprintExists}
             existingChild={existingChild}
@@ -1815,7 +2065,7 @@ const ChildRegistration = () => {
             setExistingChildImages={setExistingChildImages}
           />
         )}
-        {!showPrintPage && activePage === 'childrenList' && (
+        {!showPrintPage && activePage === "childrenList" && (
           <RenderAllChildrenList
             childrenData={childrenData}
             fingerprintData={fingerprintData}
@@ -1836,7 +2086,7 @@ const ChildRegistration = () => {
             deletingChildId={deletingChildId}
           />
         )}
-        {!showPrintPage && activePage === 'todayList' && (
+        {!showPrintPage && activePage === "todayList" && (
           <RenderTodayRegistrations
             todayData={todayData}
             fingerprintData={fingerprintData}
@@ -1858,7 +2108,7 @@ const ChildRegistration = () => {
             deletingChildId={deletingChildId}
           />
         )}
-        {!showPrintPage && activePage === 'fingerprintsList' && (
+        {!showPrintPage && activePage === "fingerprintsList" && (
           <RenderFingerprintsList
             fingerprintData={fingerprintData}
             searchFingerprints={searchFingerprints}
@@ -1874,7 +2124,7 @@ const ChildRegistration = () => {
             isLoading={isLoading || isDeleting}
           />
         )}
-        {!showPrintPage && activePage === 'locations' && (
+        {!showPrintPage && activePage === "locations" && (
           <RenderLocationsManagement
             locations={locations}
             searchLocations={searchLocations}
@@ -1889,11 +2139,10 @@ const ChildRegistration = () => {
             handleEditLocation={handleEditLocation}
             handleDeleteLocation={handleDeleteLocation}
             goBack={goBack}
-            setShowLocationForm={setShowLocationForm}
-            isAddingLocation={isAddingLocation}
+
           />
         )}
-        {!showPrintPage && activePage === 'enroll_fingerprint' && (
+        {!showPrintPage && activePage === "enroll_fingerprint" && (
           <RenderFingerprintEnrollment
             enrollingChild={enrollingChild}
             isCapturing={isCapturing}
@@ -1911,7 +2160,7 @@ const ChildRegistration = () => {
             isSavingFingerprints={isSavingFingerprints}
           />
         )}
-        {!showPrintPage && activePage === 'view_child' && (
+        {!showPrintPage && activePage === "view_child" && (
           <RenderChildViewPage
             viewingChild={viewingChild}
             fingerprintData={fingerprintData}
@@ -1923,7 +2172,7 @@ const ChildRegistration = () => {
             isLoading={isLoading || isSavingChild || isDeleting}
           />
         )}
-        {!showPrintPage && activePage === 'edit_child' && (
+        {!showPrintPage && activePage === "edit_child" && (
           <RenderChildEditPage
             editingChild={editingChild}
             childFormData={childFormData}
@@ -1936,7 +2185,7 @@ const ChildRegistration = () => {
             isSavingChild={isSavingChild}
           />
         )}
-        {!showPrintPage && activePage === 'youngPatients' && (
+        {!showPrintPage && activePage === "youngPatients" && (
           <RenderYoungPatientsList
             youngPatients={youngPatients}
             searchYoung={searchYoung}
@@ -1958,7 +2207,7 @@ const ChildRegistration = () => {
             deletingChildId={deletingChildId}
           />
         )}
-        {!showPrintPage && activePage === 'olderPatients' && (
+        {!showPrintPage && activePage === "olderPatients" && (
           <RenderOlderPatientsList
             olderPatients={olderPatients}
             searchOlder={searchOlder}

@@ -281,4 +281,118 @@ CREATE TABLE `contact_submissions` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `medical_baselines` (
+    `id` CHAR(36) NOT NULL,
+    `child_id` CHAR(36) NOT NULL,
+    `visit_date` DATE NOT NULL,
+    `first_visit` TINYINT(1) NOT NULL DEFAULT 1,
+    `recorded_by` CHAR(36) NULL,
+    `recorded_by_name` VARCHAR(100) NULL,
+    `version` INT NOT NULL DEFAULT 1,
+    `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_baseline_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `child_vitals` (
+    `id` CHAR(36) NOT NULL,
+    `child_id` CHAR(36) NOT NULL,
+    `weight` DECIMAL(5,2) NULL,
+    `height` DECIMAL(5,2) NULL,
+    `bmi` DECIMAL(4,2) NULL,
+    `bmi_status` VARCHAR(50) NULL,
+    `recorded_by` CHAR(36) NULL,
+    `recorded_by_name` VARCHAR(100) NULL,
+    `date` DATE NOT NULL,
+    `version` INT NOT NULL DEFAULT 1,
+    `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_vitals_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `medications_given` (
+    `id` CHAR(36) NOT NULL,
+    `child_id` CHAR(36) NOT NULL,
+    `ntds_meds` TEXT NULL,
+    `antibiotics` TEXT NULL,
+    `other_meds` TEXT NULL,
+    `date_given` DATE NOT NULL,
+    `recorded_by` CHAR(36) NULL,
+    `recorded_by_name` VARCHAR(100) NULL,
+    `version` INT NOT NULL DEFAULT 1,
+    `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_meds_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `laboratory_tests` (
+    `id` CHAR(36) NOT NULL,
+    `child_id` CHAR(36) NOT NULL,
+    `test_type` VARCHAR(100) NOT NULL,
+    `result` VARCHAR(255) NOT NULL,
+    `date` DATE NOT NULL,
+    `recorded_by` CHAR(36) NULL,
+    `recorded_by_name` VARCHAR(100) NULL,
+    `version` INT NOT NULL DEFAULT 1,
+    `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_tests_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `services_rendered` (
+    `id` CHAR(36) NOT NULL,
+    `child_id` CHAR(36) NOT NULL,
+    `service_type` VARCHAR(20) NOT NULL,
+    `services_list` TEXT NOT NULL,
+    `date` DATE NOT NULL,
+    `recorded_by` CHAR(36) NULL,
+    `recorded_by_name` VARCHAR(100) NULL,
+    `version` INT NOT NULL DEFAULT 1,
+    `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_services_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `symptoms_recorded` (
+    `id` CHAR(36) NOT NULL,
+    `child_id` CHAR(36) NOT NULL,
+    `symptoms` TEXT NULL,
+    `visit_notes` TEXT NULL,
+    `date` DATE NOT NULL,
+    `recorded_by` CHAR(36) NULL,
+    `recorded_by_name` VARCHAR(100) NULL,
+    `version` INT NOT NULL DEFAULT 1,
+    `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_symptoms_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `clothing_provisions` (
+    `id` CHAR(36) NOT NULL,
+    `child_id` CHAR(36) NOT NULL,
+    `shoes` VARCHAR(100) NULL,
+    `clothes` VARCHAR(100) NULL,
+    `date` DATE NOT NULL,
+    `recorded_by` CHAR(36) NULL,
+    `recorded_by_name` VARCHAR(100) NULL,
+    `version` INT NOT NULL DEFAULT 1,
+    `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_clothing_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 

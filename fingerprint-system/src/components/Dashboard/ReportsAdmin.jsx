@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './ReportsAdmin.css';
+import { executeQuery, executeRun } from '../../services/db.js';
 
 import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
 const API_TIMEOUT = 10000;
@@ -172,29 +173,55 @@ const ReportsAdmin = () => {
       const data = await response.json();
       
       if (response.ok) {
+        let mappedReports = [];
         if (data.success && data.reports) {
-          const mappedReports = data.reports.map(report => ({
+          mappedReports = data.reports.map(report => ({
             id: report.id,
             year: report.year,
             title: report.title,
             description: report.description,
-            file_size: report.fileSize,
-            page_count: report.pageCount,
-            download_url: report.downloadUrl
+            file_size: report.fileSize || report.file_size || '',
+            page_count: report.pageCount || report.page_count || 0,
+            download_url: report.downloadUrl || report.download_url || ''
           }));
-          setAnnualReports(mappedReports);
         } else if (Array.isArray(data)) {
-          setAnnualReports(data);
+          mappedReports = data.map(report => ({
+            id: report.id,
+            year: report.year,
+            title: report.title,
+            description: report.description,
+            file_size: report.fileSize || report.file_size || '',
+            page_count: report.pageCount || report.page_count || 0,
+            download_url: report.downloadUrl || report.download_url || ''
+          }));
+        }
+        
+        if (mappedReports.length > 0) {
+          setAnnualReports(mappedReports);
+          // Cache in SQLite
+          for (const report of mappedReports) {
+            await executeRun(
+              `INSERT OR REPLACE INTO reports_annual (id, year, title, description, file_size, page_count, download_url)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [report.id || crypto.randomUUID(), report.year, report.title, report.description, report.file_size, report.page_count, report.download_url]
+            );
+          }
         } else {
           setAnnualReports([]);
         }
       } else {
         console.error('Failed to fetch annual reports:', data.message);
-        setAnnualReports([]);
+        throw new Error(data.message || 'Failed response');
       }
     } catch (error) {
-      console.error('Error fetching annual reports:', error);
-      setAnnualReports([]);
+      console.warn('Error fetching annual reports, reading from SQLite:', error);
+      try {
+        const localReports = await executeQuery('SELECT * FROM reports_annual ORDER BY year DESC');
+        setAnnualReports(localReports);
+      } catch (dbError) {
+        console.error('SQLite query failed for annual reports:', dbError);
+        setAnnualReports([]);
+      }
     }
   };
 
@@ -205,29 +232,55 @@ const ReportsAdmin = () => {
       const data = await response.json();
       
       if (response.ok) {
+        let mappedReports = [];
         if (data.success && data.reports) {
-          const mappedReports = data.reports.map(report => ({
+          mappedReports = data.reports.map(report => ({
             id: report.id,
             quarter: report.quarter,
             title: report.title,
             period: report.period,
             description: report.description,
-            file_size: report.fileSize,
-            download_url: report.downloadUrl
+            file_size: report.fileSize || report.file_size || '',
+            download_url: report.downloadUrl || report.download_url || ''
           }));
-          setQuarterlyReports(mappedReports);
         } else if (Array.isArray(data)) {
-          setQuarterlyReports(data);
+          mappedReports = data.map(report => ({
+            id: report.id,
+            quarter: report.quarter,
+            title: report.title,
+            period: report.period,
+            description: report.description,
+            file_size: report.fileSize || report.file_size || '',
+            download_url: report.downloadUrl || report.download_url || ''
+          }));
+        }
+        
+        if (mappedReports.length > 0) {
+          setQuarterlyReports(mappedReports);
+          // Cache in SQLite
+          for (const report of mappedReports) {
+            await executeRun(
+              `INSERT OR REPLACE INTO reports_quarterly (id, quarter, title, period, description, file_size, download_url)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [report.id || crypto.randomUUID(), report.quarter, report.title, report.period, report.description, report.file_size, report.download_url]
+            );
+          }
         } else {
           setQuarterlyReports([]);
         }
       } else {
         console.error('Failed to fetch quarterly reports:', data.message);
-        setQuarterlyReports([]);
+        throw new Error(data.message || 'Failed response');
       }
     } catch (error) {
-      console.error('Error fetching quarterly reports:', error);
-      setQuarterlyReports([]);
+      console.warn('Error fetching quarterly reports, reading from SQLite:', error);
+      try {
+        const localReports = await executeQuery('SELECT * FROM reports_quarterly ORDER BY quarter DESC');
+        setQuarterlyReports(localReports);
+      } catch (dbError) {
+        console.error('SQLite query failed for quarterly reports:', dbError);
+        setQuarterlyReports([]);
+      }
     }
   };
 
@@ -238,20 +291,39 @@ const ReportsAdmin = () => {
       const data = await response.json();
       
       if (response.ok) {
+        let mappedStories = [];
         if (data.success && data.stories) {
-          setSuccessStories(data.stories);
+          mappedStories = data.stories;
         } else if (Array.isArray(data)) {
-          setSuccessStories(data);
+          mappedStories = data;
+        }
+        
+        if (mappedStories.length > 0) {
+          setSuccessStories(mappedStories);
+          // Cache in SQLite
+          for (const story of mappedStories) {
+            await executeRun(
+              `INSERT OR REPLACE INTO reports_success_stories (id, title, description, impact, date, category)
+               VALUES (?, ?, ?, ?, ?, ?)`,
+              [story.id, story.title, story.description, story.impact, story.date, story.category]
+            );
+          }
         } else {
           setSuccessStories([]);
         }
       } else {
         console.error('Failed to fetch success stories:', data.message);
-        setSuccessStories([]);
+        throw new Error(data.message || 'Failed response');
       }
     } catch (error) {
-      console.error('Error fetching success stories:', error);
-      setSuccessStories([]);
+      console.warn('Error fetching success stories, reading from SQLite:', error);
+      try {
+        const localStories = await executeQuery('SELECT * FROM reports_success_stories ORDER BY date DESC');
+        setSuccessStories(localStories);
+      } catch (dbError) {
+        console.error('SQLite query failed for success stories:', dbError);
+        setSuccessStories([]);
+      }
     }
   };
 
@@ -262,412 +334,556 @@ const ReportsAdmin = () => {
       const data = await response.json();
       
       if (response.ok) {
+        let mappedMetrics = [];
         if (data.success && data.metrics) {
-          setImpactMetrics(data.metrics);
+          mappedMetrics = data.metrics;
         } else if (Array.isArray(data)) {
-          setImpactMetrics(data);
+          mappedMetrics = data;
+        }
+        
+        if (mappedMetrics.length > 0) {
+          setImpactMetrics(mappedMetrics);
+          // Cache in SQLite
+          for (const metric of mappedMetrics) {
+            const q1Val = metric.q1Value !== undefined ? metric.q1Value : (metric.q1_value || 0);
+            const q2Val = metric.q2Value !== undefined ? metric.q2Value : (metric.q2_value || 0);
+            const q3Val = metric.q3Value !== undefined ? metric.q3Value : (metric.q3_value || 0);
+            const q4Val = metric.q4Value !== undefined ? metric.q4Value : (metric.q4_value || 0);
+            const colorVal = metric.color || '#0066cc';
+            const yearVal = metric.year || new Date().getFullYear();
+            
+            await executeRun(
+              `INSERT OR REPLACE INTO reports_impact_metrics (id, label, q1_value, q2_value, q3_value, q4_value, color, year)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [metric.id, metric.label, q1Val, q2Val, q3Val, q4Val, colorVal, yearVal]
+            );
+          }
         } else {
           setImpactMetrics([]);
         }
       } else {
         console.error('Failed to fetch impact metrics:', data.message);
-        setImpactMetrics([]);
+        throw new Error(data.message || 'Failed response');
       }
     } catch (error) {
-      console.error('Error fetching impact metrics:', error);
-      setImpactMetrics([]);
+      console.warn('Error fetching impact metrics, reading from SQLite:', error);
+      try {
+        const localMetrics = await executeQuery('SELECT * FROM reports_impact_metrics ORDER BY label ASC');
+        const mappedLocalMetrics = localMetrics.map(metric => ({
+          id: metric.id,
+          label: metric.label,
+          q1Value: metric.q1_value,
+          q2Value: metric.q2_value,
+          q3Value: metric.q3_value,
+          q4Value: metric.q4_value,
+          color: metric.color,
+          year: metric.year
+        }));
+        setImpactMetrics(mappedLocalMetrics);
+      } catch (dbError) {
+        console.error('SQLite query failed for impact metrics:', dbError);
+        setImpactMetrics([]);
+      }
     }
   };
 
   // Create Annual Report
   const createAnnualReport = async () => {
     setIsSaving(true);
+
+    const reportId = crypto.randomUUID();
+    const payload = {
+      id: reportId,
+      year: parseInt(annualFormData.year),
+      title: annualFormData.title,
+      description: annualFormData.description,
+      fileSize: annualFormData.fileSize,
+      pageCount: parseInt(annualFormData.pageCount),
+      downloadUrl: annualFormData.downloadUrl
+    };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnual, {
         method: 'POST',
-        body: JSON.stringify({
-          id: crypto.randomUUID(),
-          year: parseInt(annualFormData.year),
-          title: annualFormData.title,
-          description: annualFormData.description,
-          fileSize: annualFormData.fileSize,
-          pageCount: parseInt(annualFormData.pageCount),
-          downloadUrl: annualFormData.downloadUrl
-        })
+        body: JSON.stringify(payload)
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Annual report created successfully');
-        await fetchAnnualReports();
-        setActivePage('annual');
-        resetAnnualForm();
       } else {
-        showToastMessage(data.message || 'Failed to create report', 'error');
+        throw new Error(data.message || 'Failed to create report online');
       }
     } catch (error) {
-      console.error('Error creating annual report:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error creating annual report online, saving locally:', error);
+      showToastMessage('Saved to local storage (Offline)', 'warning');
     } finally {
+      // Mirror to SQLite
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO reports_annual (id, year, title, description, file_size, page_count, download_url)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [payload.id, payload.year, payload.title, payload.description, payload.fileSize, payload.pageCount, payload.downloadUrl]
+        );
+      } catch (dbErr) {
+        console.error('Failed to mirror to SQLite:', dbErr);
+      }
       setIsSaving(false);
+      fetchAnnualReports();
+      setActivePage('annual');
+      resetAnnualForm();
     }
   };
 
   // Update Annual Report
   const updateAnnualReport = async () => {
     setIsSaving(true);
+
+    const payload = {
+      year: parseInt(annualFormData.year),
+      title: annualFormData.title,
+      description: annualFormData.description,
+      fileSize: annualFormData.fileSize,
+      pageCount: parseInt(annualFormData.pageCount),
+      downloadUrl: annualFormData.downloadUrl
+    };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnualId(editingAnnual.id), {
         method: 'PUT',
-        body: JSON.stringify({
-          year: parseInt(annualFormData.year),
-          title: annualFormData.title,
-          description: annualFormData.description,
-          fileSize: annualFormData.fileSize,
-          pageCount: parseInt(annualFormData.pageCount),
-          downloadUrl: annualFormData.downloadUrl
-        })
+        body: JSON.stringify(payload)
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Annual report updated successfully');
-        await fetchAnnualReports();
-        setActivePage('annual');
-        setEditingAnnual(null);
-        resetAnnualForm();
       } else {
-        showToastMessage(data.message || 'Failed to update report', 'error');
+        throw new Error(data.message || 'Failed to update report online');
       }
     } catch (error) {
-      console.error('Error updating annual report:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error updating annual report online, saving locally:', error);
+      showToastMessage('Updated in local storage (Offline)', 'warning');
     } finally {
+      // Mirror to SQLite
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO reports_annual (id, year, title, description, file_size, page_count, download_url)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [editingAnnual.id, payload.year, payload.title, payload.description, payload.fileSize, payload.pageCount, payload.downloadUrl]
+        );
+      } catch (dbErr) {
+        console.error('Failed to mirror to SQLite:', dbErr);
+      }
       setIsSaving(false);
+      fetchAnnualReports();
+      setActivePage('annual');
+      setEditingAnnual(null);
+      resetAnnualForm();
     }
   };
 
   // Delete Annual Report
   const deleteAnnualReport = async (id, year) => {
     if (!window.confirm(`Delete annual report for ${year}?`)) return;
-    
     setDeletingId(id);
     setIsDeleting(true);
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnualId(id), {
         method: 'DELETE'
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Annual report deleted successfully');
-        await fetchAnnualReports();
       } else {
-        showToastMessage(data.message || 'Failed to delete report', 'error');
+        throw new Error(data.message || 'Failed to delete report online');
       }
     } catch (error) {
-      console.error('Error deleting annual report:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error deleting annual report online, removing locally:', error);
+      showToastMessage('Deleted from local storage (Offline)', 'warning');
     } finally {
       setIsDeleting(false);
       setDeletingId(null);
+      // Mirror to SQLite
+      try {
+        await executeRun('DELETE FROM reports_annual WHERE id = ?', [id]);
+      } catch (dbErr) {
+        console.error('Failed to delete in SQLite:', dbErr);
+      }
+      fetchAnnualReports();
     }
   };
 
   // Create Quarterly Report
   const createQuarterlyReport = async () => {
     setIsSaving(true);
+
+    const reportId = crypto.randomUUID();
+    const payload = {
+      id: reportId,
+      quarter: quarterlyFormData.quarter,
+      title: quarterlyFormData.title,
+      period: quarterlyFormData.period,
+      description: quarterlyFormData.description,
+      fileSize: quarterlyFormData.fileSize,
+      downloadUrl: quarterlyFormData.downloadUrl
+    };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterly, {
         method: 'POST',
-        body: JSON.stringify({
-          id: crypto.randomUUID(),
-          quarter: quarterlyFormData.quarter,
-          title: quarterlyFormData.title,
-          period: quarterlyFormData.period,
-          description: quarterlyFormData.description,
-          fileSize: quarterlyFormData.fileSize,
-          downloadUrl: quarterlyFormData.downloadUrl
-        })
+        body: JSON.stringify(payload)
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Quarterly report created successfully');
-        await fetchQuarterlyReports();
-        setActivePage('quarterly');
-        resetQuarterlyForm();
       } else {
-        showToastMessage(data.message || 'Failed to create report', 'error');
+        throw new Error(data.message || 'Failed to create report online');
       }
     } catch (error) {
-      console.error('Error creating quarterly report:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error creating quarterly report online, saving locally:', error);
+      showToastMessage('Saved to local storage (Offline)', 'warning');
     } finally {
+      // Mirror to SQLite
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO reports_quarterly (id, quarter, title, period, description, file_size, download_url)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [payload.id, payload.quarter, payload.title, payload.period, payload.description, payload.fileSize, payload.downloadUrl]
+        );
+      } catch (dbErr) {
+        console.error('Failed to mirror to SQLite:', dbErr);
+      }
       setIsSaving(false);
+      fetchQuarterlyReports();
+      setActivePage('quarterly');
+      resetQuarterlyForm();
     }
   };
 
   // Update Quarterly Report
   const updateQuarterlyReport = async () => {
     setIsSaving(true);
+
+    const payload = {
+      quarter: quarterlyFormData.quarter,
+      title: quarterlyFormData.title,
+      period: quarterlyFormData.period,
+      description: quarterlyFormData.description,
+      fileSize: quarterlyFormData.fileSize,
+      downloadUrl: quarterlyFormData.downloadUrl
+    };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterlyId(editingQuarterly.id), {
         method: 'PUT',
-        body: JSON.stringify({
-          quarter: quarterlyFormData.quarter,
-          title: quarterlyFormData.title,
-          period: quarterlyFormData.period,
-          description: quarterlyFormData.description,
-          fileSize: quarterlyFormData.fileSize,
-          downloadUrl: quarterlyFormData.downloadUrl
-        })
+        body: JSON.stringify(payload)
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Quarterly report updated successfully');
-        await fetchQuarterlyReports();
-        setActivePage('quarterly');
-        setEditingQuarterly(null);
-        resetQuarterlyForm();
       } else {
-        showToastMessage(data.message || 'Failed to update report', 'error');
+        throw new Error(data.message || 'Failed to update report online');
       }
     } catch (error) {
-      console.error('Error updating quarterly report:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error updating quarterly report online, saving locally:', error);
+      showToastMessage('Updated in local storage (Offline)', 'warning');
     } finally {
+      // Mirror to SQLite
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO reports_quarterly (id, quarter, title, period, description, file_size, download_url)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [editingQuarterly.id, payload.quarter, payload.title, payload.period, payload.description, payload.fileSize, payload.downloadUrl]
+        );
+      } catch (dbErr) {
+        console.error('Failed to mirror to SQLite:', dbErr);
+      }
       setIsSaving(false);
+      fetchQuarterlyReports();
+      setActivePage('quarterly');
+      setEditingQuarterly(null);
+      resetQuarterlyForm();
     }
   };
 
   // Delete Quarterly Report
   const deleteQuarterlyReport = async (id, quarter) => {
     if (!window.confirm(`Delete ${quarter} report?`)) return;
-    
     setDeletingId(id);
     setIsDeleting(true);
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterlyId(id), {
         method: 'DELETE'
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Quarterly report deleted successfully');
-        await fetchQuarterlyReports();
       } else {
-        showToastMessage(data.message || 'Failed to delete report', 'error');
+        throw new Error(data.message || 'Failed to delete report online');
       }
     } catch (error) {
-      console.error('Error deleting quarterly report:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error deleting quarterly report online, removing locally:', error);
+      showToastMessage('Deleted from local storage (Offline)', 'warning');
     } finally {
       setIsDeleting(false);
       setDeletingId(null);
+      // Mirror to SQLite
+      try {
+        await executeRun('DELETE FROM reports_quarterly WHERE id = ?', [id]);
+      } catch (dbErr) {
+        console.error('Failed to delete in SQLite:', dbErr);
+      }
+      fetchQuarterlyReports();
     }
   };
 
   // Create Success Story
   const createSuccessStory = async () => {
     setIsSaving(true);
+
+    const storyId = crypto.randomUUID();
+    const payload = {
+      id: storyId,
+      title: storyFormData.title,
+      description: storyFormData.description,
+      impact: storyFormData.impact,
+      date: storyFormData.date,
+      category: storyFormData.category
+    };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStories, {
         method: 'POST',
-        body: JSON.stringify({
-          id: crypto.randomUUID(),
-          title: storyFormData.title,
-          description: storyFormData.description,
-          impact: storyFormData.impact,
-          date: storyFormData.date,
-          category: storyFormData.category
-        })
+        body: JSON.stringify(payload)
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Success story created successfully');
-        await fetchSuccessStories();
-        setActivePage('stories');
-        resetStoryForm();
       } else {
-        showToastMessage(data.message || 'Failed to create story', 'error');
+        throw new Error(data.message || 'Failed to create story online');
       }
     } catch (error) {
-      console.error('Error creating success story:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error creating success story online, saving locally:', error);
+      showToastMessage('Saved to local storage (Offline)', 'warning');
     } finally {
+      // Mirror to SQLite
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO reports_success_stories (id, title, description, impact, date, category)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [payload.id, payload.title, payload.description, payload.impact, payload.date, payload.category]
+        );
+      } catch (dbErr) {
+        console.error('Failed to mirror to SQLite:', dbErr);
+      }
       setIsSaving(false);
+      fetchSuccessStories();
+      setActivePage('stories');
+      resetStoryForm();
     }
   };
 
   // Update Success Story
   const updateSuccessStory = async () => {
     setIsSaving(true);
+
+    const payload = {
+      title: storyFormData.title,
+      description: storyFormData.description,
+      impact: storyFormData.impact,
+      date: storyFormData.date,
+      category: storyFormData.category
+    };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStoriesId(editingStory.id), {
         method: 'PUT',
-        body: JSON.stringify({
-          title: storyFormData.title,
-          description: storyFormData.description,
-          impact: storyFormData.impact,
-          date: storyFormData.date,
-          category: storyFormData.category
-        })
+        body: JSON.stringify(payload)
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Success story updated successfully');
-        await fetchSuccessStories();
-        setActivePage('stories');
-        setEditingStory(null);
-        resetStoryForm();
       } else {
-        showToastMessage(data.message || 'Failed to update story', 'error');
+        throw new Error(data.message || 'Failed to update story online');
       }
     } catch (error) {
-      console.error('Error updating success story:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error updating success story online, saving locally:', error);
+      showToastMessage('Updated in local storage (Offline)', 'warning');
     } finally {
+      // Mirror to SQLite
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO reports_success_stories (id, title, description, impact, date, category)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [editingStory.id, payload.title, payload.description, payload.impact, payload.date, payload.category]
+        );
+      } catch (dbErr) {
+        console.error('Failed to mirror to SQLite:', dbErr);
+      }
       setIsSaving(false);
+      fetchSuccessStories();
+      setActivePage('stories');
+      setEditingStory(null);
+      resetStoryForm();
     }
   };
 
   // Delete Success Story
   const deleteSuccessStory = async (id, title) => {
     if (!window.confirm(`Delete story "${title}"?`)) return;
-    
     setDeletingId(id);
     setIsDeleting(true);
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsSuccessStoriesId(id), {
         method: 'DELETE'
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Success story deleted successfully');
-        await fetchSuccessStories();
       } else {
-        showToastMessage(data.message || 'Failed to delete story', 'error');
+        throw new Error(data.message || 'Failed to delete story online');
       }
     } catch (error) {
-      console.error('Error deleting success story:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error deleting success story online, removing locally:', error);
+      showToastMessage('Deleted from local storage (Offline)', 'warning');
     } finally {
       setIsDeleting(false);
       setDeletingId(null);
+      // Mirror to SQLite
+      try {
+        await executeRun('DELETE FROM reports_success_stories WHERE id = ?', [id]);
+      } catch (dbErr) {
+        console.error('Failed to delete in SQLite:', dbErr);
+      }
+      fetchSuccessStories();
     }
   };
 
   // Create Impact Metric
   const createImpactMetric = async () => {
     setIsSaving(true);
+
+    const metricId = crypto.randomUUID();
+    const payload = {
+      id: metricId,
+      label: metricFormData.label,
+      q1Value: parseInt(metricFormData.q1Value),
+      q2Value: parseInt(metricFormData.q2Value),
+      q3Value: parseInt(metricFormData.q3Value),
+      q4Value: parseInt(metricFormData.q4Value),
+      color: metricFormData.color,
+      year: parseInt(metricFormData.year)
+    };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsMetrics, {
         method: 'POST',
-        body: JSON.stringify({
-          id: crypto.randomUUID(),
-          label: metricFormData.label,
-          q1Value: parseInt(metricFormData.q1Value),
-          q2Value: parseInt(metricFormData.q2Value),
-          q3Value: parseInt(metricFormData.q3Value),
-          q4Value: parseInt(metricFormData.q4Value),
-          color: metricFormData.color,
-          year: parseInt(metricFormData.year)
-        })
+        body: JSON.stringify(payload)
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Impact metric created successfully');
-        await fetchImpactMetrics();
-        setActivePage('metrics');
-        resetMetricForm();
       } else {
-        showToastMessage(data.message || 'Failed to create metric', 'error');
+        throw new Error(data.message || 'Failed to create metric online');
       }
     } catch (error) {
-      console.error('Error creating impact metric:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error creating impact metric online, saving locally:', error);
+      showToastMessage('Saved to local storage (Offline)', 'warning');
     } finally {
+      // Mirror to SQLite
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO reports_impact_metrics (id, label, q1_value, q2_value, q3_value, q4_value, color, year)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [payload.id, payload.label, payload.q1Value, payload.q2Value, payload.q3Value, payload.q4Value, payload.color, payload.year]
+        );
+      } catch (dbErr) {
+        console.error('Failed to mirror to SQLite:', dbErr);
+      }
       setIsSaving(false);
+      fetchImpactMetrics();
+      setActivePage('metrics');
+      resetMetricForm();
     }
   };
 
   // Update Impact Metric
   const updateImpactMetric = async () => {
     setIsSaving(true);
+
+    const payload = {
+      label: metricFormData.label,
+      q1Value: parseInt(metricFormData.q1Value),
+      q2Value: parseInt(metricFormData.q2Value),
+      q3Value: parseInt(metricFormData.q3Value),
+      q4Value: parseInt(metricFormData.q4Value),
+      color: metricFormData.color,
+      year: parseInt(metricFormData.year)
+    };
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsMetricsId(editingMetric.id), {
         method: 'PUT',
-        body: JSON.stringify({
-          label: metricFormData.label,
-          q1Value: parseInt(metricFormData.q1Value),
-          q2Value: parseInt(metricFormData.q2Value),
-          q3Value: parseInt(metricFormData.q3Value),
-          q4Value: parseInt(metricFormData.q4Value),
-          color: metricFormData.color,
-          year: parseInt(metricFormData.year)
-        })
+        body: JSON.stringify(payload)
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Impact metric updated successfully');
-        await fetchImpactMetrics();
-        setActivePage('metrics');
-        setEditingMetric(null);
-        resetMetricForm();
       } else {
-        showToastMessage(data.message || 'Failed to update metric', 'error');
+        throw new Error(data.message || 'Failed to update metric online');
       }
     } catch (error) {
-      console.error('Error updating impact metric:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error updating impact metric online, saving locally:', error);
+      showToastMessage('Updated in local storage (Offline)', 'warning');
     } finally {
+      // Mirror to SQLite
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO reports_impact_metrics (id, label, q1_value, q2_value, q3_value, q4_value, color, year)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [editingMetric.id, payload.label, payload.q1Value, payload.q2Value, payload.q3Value, payload.q4Value, payload.color, payload.year]
+        );
+      } catch (dbErr) {
+        console.error('Failed to mirror to SQLite:', dbErr);
+      }
       setIsSaving(false);
+      fetchImpactMetrics();
+      setActivePage('metrics');
+      setEditingMetric(null);
+      resetMetricForm();
     }
   };
 
   // Delete Impact Metric
   const deleteImpactMetric = async (id, label) => {
     if (!window.confirm(`Delete metric "${label}"?`)) return;
-    
     setDeletingId(id);
     setIsDeleting(true);
+
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsMetricsId(id), {
         method: 'DELETE'
       });
-      
       const data = await response.json();
-      
       if (response.ok && data.success) {
         showToastMessage('Impact metric deleted successfully');
-        await fetchImpactMetrics();
       } else {
-        showToastMessage(data.message || 'Failed to delete metric', 'error');
+        throw new Error(data.message || 'Failed to delete metric online');
       }
     } catch (error) {
-      console.error('Error deleting impact metric:', error);
-      showToastMessage('Network error', 'error');
+      console.warn('Error deleting impact metric online, removing locally:', error);
+      showToastMessage('Deleted from local storage (Offline)', 'warning');
     } finally {
       setIsDeleting(false);
       setDeletingId(null);
+      // Mirror to SQLite
+      try {
+        await executeRun('DELETE FROM reports_impact_metrics WHERE id = ?', [id]);
+      } catch (dbErr) {
+        console.error('Failed to delete in SQLite:', dbErr);
+      }
+      fetchImpactMetrics();
     }
   };
 

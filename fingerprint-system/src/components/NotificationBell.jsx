@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchNotifications, markNotificationAsRead } from './services/notificationService';
 import './NotificationBell.css';
+import { getUsers } from '../services/api.js';
 
 import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 
@@ -16,18 +17,9 @@ const NotificationBell = ({ user }) => {
 
   // Fetch users for getting creator names
   const fetchUsers = async () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     try {
-      const response = await fetch(API_ENDPOINTS.users, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-      }
+      const data = await getUsers();
+      setUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
