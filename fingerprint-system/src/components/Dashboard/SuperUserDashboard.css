@@ -1040,3 +1040,121 @@
   font-size: 16px;
   margin: 0;
 }
+
+/* Device tracking styles */
+.sd-device-cell {
+  max-width: 300px;
+}
+
+.sd-device-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.sd-single-device {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.sd-multiple-devices {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffb74d;
+}
+
+.sd-device-badge:hover {
+  transform: scale(1.02);
+}
+
+.sd-device-warning {
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+.sd-device-expand-icon {
+  margin-left: 4px;
+  font-size: 10px;
+}
+
+.sd-device-details {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #ffb74d;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.sd-device-details::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sd-device-details::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
+}
+
+.sd-device-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 15px;
+  padding: 4px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 11px;
+}
+
+.sd-device-info:last-child {
+  border-bottom: none;
+}
+
+.sd-device-agent {
+  color: #333;
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.sd-device-ip {
+  color: #666;
+}
+
+.sd-device-time {
+  color: #999;
+  font-size: 10px;
+}
+
+.sd-device-show-more {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #2196f3;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.sd-device-show-more:hover {
+  color: #1976d2;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sd-device-cell {
+    max-width: 200px;
+  }
+  
+  .sd-device-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+  
+  .sd-device-info {
+    font-size: 10px;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
