@@ -3162,3 +3162,194 @@
 .child-reg-justify-center {
   justify-content: center;
 }
+
+/* Minimal Sync Status - Only shows when there are pending items */
+.child-reg-sync-status-mini {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  margin: 4px 0 12px 0;
+  background: #fff8e1;
+  border: 1px solid #ffcc02;
+  border-radius: 16px;
+  font-size: 12px;
+  color: #856404;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.child-reg-sync-status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.child-reg-sync-status-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Status text */
+.child-reg-sync-status-text {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.child-reg-sync-status-text.syncing {
+  color: #1565c0;
+}
+
+.child-reg-sync-status-text.active {
+  color: #2e7d32;
+}
+
+.child-reg-sync-status-text.pending {
+  color: #e65100;
+}
+
+/* Small dot indicator */
+.child-reg-sync-dot-small {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+}
+
+.child-reg-sync-dot-small.warning {
+  background: #ff9800;
+  animation: sync-pulse 1.5s infinite;
+}
+
+.child-reg-sync-status-text.syncing .child-reg-sync-dot-small {
+  background: #2196f3;
+  animation: sync-pulse 0.8s infinite;
+}
+
+/* Sync time */
+.child-reg-sync-time {
+  font-size: 10px;
+  color: #999;
+  padding: 0 4px;
+}
+
+/* Toggle button - small dot */
+.child-reg-sync-toggle-mini {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-sync-toggle-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  border: 2px solid #ddd;
+}
+
+.child-reg-sync-toggle-dot.on {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.child-reg-sync-toggle-dot.off {
+  background: #ef5350;
+  border-color: #ef5350;
+}
+
+.child-reg-sync-toggle-mini:hover .child-reg-sync-toggle-dot {
+  transform: scale(1.1);
+}
+
+/* Sync now button - tiny icon */
+.child-reg-sync-now-mini {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: #666;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-sync-now-mini:hover:not(:disabled) {
+  color: #2196f3;
+  transform: rotate(45deg);
+}
+
+.child-reg-sync-now-mini:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Offline banner */
+.child-reg-offline-banner {
+  background: #fff8e1;
+  border: 1px solid #ffcc02;
+  border-radius: 4px;
+  padding: 6px 12px;
+  margin: 4px 0 12px 0;
+  color: #856404;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+/* Spinner for sync action card */
+.child-reg-sync-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #2196f3;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Animations */
+@keyframes sync-pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .child-reg-sync-status-mini {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 10px;
+  }
+  
+  .child-reg-sync-status-left {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}

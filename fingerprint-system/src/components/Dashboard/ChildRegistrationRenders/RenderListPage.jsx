@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const RenderListPage = ({
   user,
@@ -9,15 +9,81 @@ const RenderListPage = ({
   olderPatients,
   offlineMode,
   isSyncing,
-  isLoading, // Add loading prop
+  isLoading,
   handleStatClick,
   handleActionClick,
   handleAddRegistrationClick,
   handleVerifyFingerprintClick,
   handleSyncOfflineData,
   navigateToPage,
-  getUserDisplayName
+  getUserDisplayName,
+  syncStatus,
+  lastSyncTime,
+  pendingSyncCount
 }) => {
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+  const syncTimerRef = useRef(null);
+  const [isAutoSyncing, setIsAutoSyncing] = useState(false);
+
+  // Start auto-sync timer - runs silently in background
+  useEffect(() => {
+    if (autoSyncEnabled && !offlineMode) {
+      // Clear any existing timer
+      if (syncTimerRef.current) {
+        clearInterval(syncTimerRef.current);
+      }
+
+      // Start sync timer - runs every 5 seconds silently
+      syncTimerRef.current = setInterval(() => {
+        if (!isSyncing && !isLoading && !isAutoSyncing) {
+          setIsAutoSyncing(true);
+          // Silent sync - no toast messages
+          handleSyncOfflineData(true); // Pass silent flag
+          setTimeout(() => {
+            setIsAutoSyncing(false);
+          }, 1000);
+        }
+      }, 5000); // 5 seconds
+
+      return () => {
+        if (syncTimerRef.current) {
+          clearInterval(syncTimerRef.current);
+        }
+      };
+    }
+  }, [autoSyncEnabled, offlineMode, isSyncing, isLoading]);
+
+  // Toggle auto-sync
+  const toggleAutoSync = () => {
+    setAutoSyncEnabled(prev => !prev);
+  };
+
+  // Get status display text - minimal and non-intrusive
+  const getStatusDisplay = () => {
+    if (isSyncing || isAutoSyncing) {
+      return (
+        <span className="child-reg-sync-status-text syncing">
+          <span className="child-reg-sync-dot-small"></span>
+          Syncing...
+        </span>
+      );
+    }
+    if (pendingSyncCount > 0) {
+      return (
+        <span className="child-reg-sync-status-text pending">
+          <span className="child-reg-sync-dot-small warning"></span>
+          {pendingSyncCount} pending
+        </span>
+      );
+    }
+    return (
+      <span className="child-reg-sync-status-text active">
+        <span className="child-reg-sync-dot-small"></span>
+        Synced
+      </span>
+    );
+  };
+
   return (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
@@ -107,6 +173,44 @@ const RenderListPage = ({
         </div>
       </div>
 
+      {/* Minimal Sync Status - No toasts, silent background sync */}
+      <div className="child-reg-sync-status-mini">
+        <div className="child-reg-sync-status-left">
+          {getStatusDisplay()}
+          {lastSyncTime && (
+            <span className="child-reg-sync-time">
+              {new Date(lastSyncTime).toLocaleTimeString()}
+            </span>
+          )}
+        </div>
+        <div className="child-reg-sync-status-right">
+          <button 
+            className="child-reg-sync-toggle-mini"
+            onClick={toggleAutoSync}
+            title={autoSyncEnabled ? 'Auto-sync is ON - Click to pause' : 'Auto-sync is OFF - Click to resume'}
+          >
+            <span className={`child-reg-sync-toggle-dot ${autoSyncEnabled ? 'on' : 'off'}`}></span>
+          </button>
+          <button 
+            className="child-reg-sync-now-mini"
+            onClick={() => {
+              if (!isSyncing && !isLoading) {
+                handleSyncOfflineData(true); // Silent sync - no toast
+              }
+            }}
+            disabled={isSyncing || isLoading}
+            title="Sync now"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M23 4v6h-6"/>
+              <path d="M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+              <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
       {offlineMode && (
         <div className="child-reg-offline-banner">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#856404" strokeWidth="2">
@@ -114,7 +218,7 @@ const RenderListPage = ({
             <line x1="12" y1="8" x2="12" y2="12"/>
             <circle cx="12" cy="16" r="1" fill="#856404"/>
           </svg>
-          You are in Offline Mode. Data will sync when connection is restored.
+          Offline Mode - Auto-sync paused
         </div>
       )}
 
@@ -156,7 +260,7 @@ const RenderListPage = ({
             <p>Add, edit, or delete locations</p>
           </div>
         </div>
-        <div className="child-reg-action-card" onClick={() => { if (!isLoading && !isSyncing) { handleActionClick('Sync Offline Data'); handleSyncOfflineData(); } }} style={{ cursor: (isLoading || isSyncing) ? 'not-allowed' : 'pointer', opacity: (isLoading || isSyncing) ? 0.6 : 1 }}>
+        <div className="child-reg-action-card" onClick={() => { if (!isLoading && !isSyncing) { handleActionClick('Sync Offline Data'); handleSyncOfflineData(true); } }} style={{ cursor: (isLoading || isSyncing) ? 'not-allowed' : 'pointer', opacity: (isLoading || isSyncing) ? 0.6 : 1 }}>
           <div className="child-reg-action-icon">
             {isSyncing ? (
               <div className="child-reg-sync-spinner"></div>
