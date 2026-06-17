@@ -81,7 +81,6 @@ const ChildRegistration = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletingChildId, setDeletingChildId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  
 
   const [youngPatients, setYoungPatients] = useState([]);
   const [olderPatients, setOlderPatients] = useState([]);
@@ -135,14 +134,12 @@ const ChildRegistration = () => {
   const [showPrintPage, setShowPrintPage] = useState(false);
   const [printDataType, setPrintDataType] = useState("");
   const [printFilters, setPrintFilters] = useState({
-
     date_from: '',
     date_to: '',
     location: '',
     fingerprint_status: '',
     gender: '',
     age_group: ''
-
   });
 
   const [searchAllChildren, setSearchAllChildren] = useState("");
@@ -363,9 +360,7 @@ const ChildRegistration = () => {
         return userMap;
       }
     } catch (error) {
-
       console.error("Error fetching staff users:", error);
-
     }
     return {};
   };
@@ -375,9 +370,7 @@ const ChildRegistration = () => {
       const data = await getLocations();
       setLocations(Array.isArray(data) ? data : []);
     } catch (error) {
-
       console.error("Error fetching locations:", error);
-
       setLocations([]);
     }
   };
@@ -393,9 +386,7 @@ const ChildRegistration = () => {
       setChildrenData(childrenArray);
       filterPatientsByAge(childrenArray);
     } catch (error) {
-
       console.error("Error fetching children:", error);
-
       setChildrenData([]);
     }
   };
@@ -415,9 +406,7 @@ const ChildRegistration = () => {
         }));
       setTodayData(todayArray);
     } catch (error) {
-
       console.error("Error fetching today registrations:", error);
-
       setTodayData([]);
     }
   };
@@ -456,9 +445,7 @@ const ChildRegistration = () => {
           setFingerprintData(allFingerprints);
           return;
         } catch (dbError) {
-
           console.error("Error fetching fingerprints from SQLite:", dbError);
-
         }
       }
 
@@ -484,17 +471,13 @@ const ChildRegistration = () => {
               }
             });
           } catch (e) {
-
             console.error("Error fetching fingerprints for child:", e);
-
           }
         }
       }
       setFingerprintData(allFingerprints);
     } catch (error) {
-
       console.error("Error fetching fingerprints:", error);
-
       setFingerprintData([]);
     }
   };
@@ -538,9 +521,7 @@ const ChildRegistration = () => {
       const currentYear = new Date().getFullYear();
       setGeneratedId(`KID-${currentYear}-0001`);
     } catch (error) {
-
       console.error("Error generating registration ID:", error);
-
       const currentYear = new Date().getFullYear();
       const nextNumber = (childrenData.length + 1).toString().padStart(4, "0");
       setGeneratedId(`KID-${currentYear}-${nextNumber}`);
@@ -680,11 +661,20 @@ const ChildRegistration = () => {
     }
   };
 
+  // ===== FIX: Reset location form without closing it =====
   const resetLocationForm = () => {
     setEditingLocation(null);
     setLocationFormData({ name: "", description: "" });
     setLocationFormErrors({ name: "" });
-    setShowLocationForm(false);
+    // DO NOT set showLocationForm(false) here
+  };
+
+  // ===== FIX: Add new location handler =====
+  const handleAddNewLocation = () => {
+    setEditingLocation(null);
+    setLocationFormData({ name: "", description: "" });
+    setLocationFormErrors({ name: "" });
+    setShowLocationForm(true);
   };
 
   // ===== CAMERA FUNCTIONS =====
@@ -740,13 +730,11 @@ const ChildRegistration = () => {
         showToast("Camera started successfully!", "success");
       }
     } catch (err) {
-
       console.error("Camera error:", err);
       showToast(
         `Unable to access camera: ${err.message || "Please check permissions."}`,
         "error",
       );
-
     }
   };
 
@@ -821,9 +809,7 @@ const ChildRegistration = () => {
       const data = await apiGetChildById(id);
       return data;
     } catch (error) {
-
       console.error("Error fetching child:", error);
-
       return null;
     }
   };
@@ -837,9 +823,7 @@ const ChildRegistration = () => {
       });
       return data;
     } catch (error) {
-
       console.error("Error updating child:", error);
-
       return null;
     }
   };
@@ -849,9 +833,7 @@ const ChildRegistration = () => {
       const success = await apiDeleteChild(id);
       return success;
     } catch (error) {
-
       console.error("Error deleting child:", error);
-
       return false;
     }
   };
@@ -873,16 +855,13 @@ const ChildRegistration = () => {
       });
       return data;
     } catch (error) {
-
       console.error("Error adding registration:", error);
-
       return null;
     }
   };
 
   // ===== HANDLERS =====
   const handleViewChild = async (child) => {
-
     setIsLoading(true);
     try {
       const fullChild = await fetchChildById(child.id);
@@ -891,7 +870,6 @@ const ChildRegistration = () => {
     } finally {
       setIsLoading(false);
     }
-
   };
 
   const handleEditChild = (child) => {
@@ -931,19 +909,16 @@ const ChildRegistration = () => {
       }
     } finally {
       setIsSavingChild(false);
-
     }
   };
 
   const handleDeleteChild = async (child) => {
-
     if (!window.confirm(`Are you sure you want to delete ${child.fullName}? This action cannot be undone.`)) {
       return;
     }
     setDeletingChildId(child.id);
     setIsDeleting(true);
     try {
-
       const success = await deleteChild(child.id);
       if (success) {
         showToast("Child deleted successfully!", "success");
@@ -1051,7 +1026,6 @@ const ChildRegistration = () => {
       }
     } finally {
       setIsSavingFingerprints(false);
-
     }
   };
 
@@ -1124,9 +1098,6 @@ const ChildRegistration = () => {
 
     setIsSavingFingerprints(true);
     setIsAddingChild(true);
-
-    setIsAddingChild(true);
-    setIsSavingFingerprints(true);
     try {
       // First register the child
       const newChild = {
@@ -1225,7 +1196,6 @@ const ChildRegistration = () => {
     }
   };
 
-
   const handleRegComplete = () => {
     showToast(
       `✓ Child registered successfully with ID: ${generatedId}!`,
@@ -1250,7 +1220,6 @@ const ChildRegistration = () => {
     setPreview2(null);
     setPreview3(null);
     // Reset registration fingerprint state
-
     setRegFingerCaptures({});
     setRegFingerQuality({});
     setRegCapturedFingers([]);
@@ -1277,9 +1246,7 @@ const ChildRegistration = () => {
         return await response.json();
       }
     } catch (error) {
-
       console.error("Error adding location:", error);
-
       return null;
     }
     return null;
@@ -1299,9 +1266,7 @@ const ChildRegistration = () => {
         return await response.json();
       }
     } catch (error) {
-
       console.error("Error updating location:", error);
-
       return null;
     }
     return null;
@@ -1315,22 +1280,23 @@ const ChildRegistration = () => {
       });
       return response.ok;
     } catch (error) {
-
       console.error("Error deleting location:", error);
-
       return false;
     }
   };
 
+  // ===== FIX: Edit location handler =====
   const handleEditLocation = (location) => {
     setEditingLocation(location);
     setLocationFormData({
       name: location.name,
       description: location.description || "",
     });
+    setLocationFormErrors({ name: "" });
     setShowLocationForm(true);
   };
 
+  // ===== FIX: Save location handler =====
   const handleSaveLocation = async () => {
     if (!validateLocationForm()) return;
 
@@ -1339,39 +1305,54 @@ const ChildRegistration = () => {
       let result;
       if (editingLocation) {
         result = await updateLocation(editingLocation.id, locationFormData);
-        if (result) showToast('Location updated successfully!', 'success');
+        if (result) {
+          showToast('Location updated successfully!', 'success');
+          await fetchLocations();
+          // Close form after successful update
+          setShowLocationForm(false);
+          resetLocationForm();
+        } else {
+          showToast('Failed to update location', 'error');
+        }
       } else {
         result = await addLocation(locationFormData);
-        if (result) showToast('Location added successfully!', 'success');
+        if (result) {
+          showToast('Location added successfully!', 'success');
+          await fetchLocations();
+          // Close form after successful add
+          setShowLocationForm(false);
+          resetLocationForm();
+        } else {
+          showToast('Failed to add location', 'error');
+        }
       }
-      if (result) {
-        await fetchLocations();
-        resetLocationForm();
-      } else {
-        showToast('Failed to save location', 'error');
-      }
+    } catch (error) {
+      console.error('Error saving location:', error);
+      showToast('An error occurred while saving location', 'error');
     } finally {
       setIsAddingLocation(false);
-
     }
   };
 
+  // ===== FIX: Delete location handler =====
   const handleDeleteLocation = async (location) => {
-
-    if (window.confirm(`Are you sure you want to delete location "${location.name}"?`)) {
-      setIsAddingLocation(true);
-      try {
-        const success = await deleteLocation(location.id);
-        if (success) {
-          await fetchLocations();
-          showToast('Location deleted successfully!', 'success');
-        } else {
-          showToast('Failed to delete location', 'error');
-        }
-      } finally {
-        setIsAddingLocation(false);
-
+    if (!window.confirm(`Are you sure you want to delete location "${location.name}"?`)) {
+      return;
+    }
+    setIsAddingLocation(true);
+    try {
+      const success = await deleteLocation(location.id);
+      if (success) {
+        await fetchLocations();
+        showToast('Location deleted successfully!', 'success');
+      } else {
+        showToast('Failed to delete location', 'error');
       }
+    } catch (error) {
+      console.error('Error deleting location:', error);
+      showToast('An error occurred while deleting location', 'error');
+    } finally {
+      setIsAddingLocation(false);
     }
   };
 
@@ -1429,7 +1410,6 @@ const ChildRegistration = () => {
   // ===== OTHER HANDLERS =====
   const handleAddRegistrationClick = () => {
     setRegistrationStep(1);
-
     setFormData({
       fullName: "",
       estimatedBirthYear: "",
@@ -1440,7 +1420,6 @@ const ChildRegistration = () => {
     setPreview2(null);
     setPreview3(null);
     // Reset registration fingerprint state
-
     setRegFingerCaptures({});
     setRegFingerQuality({});
     setRegCapturedFingers([]);
@@ -1466,10 +1445,8 @@ const ChildRegistration = () => {
       setOfflineMode(!isOnline);
       showToast("✓ Synchronization completed successfully!", "success");
     } catch (error) {
-
       console.error("Error syncing:", error);
       showToast("Error occurred during synchronization", "error");
-
     } finally {
       setIsSyncing(false);
       await fetchChildren();
@@ -1490,7 +1467,6 @@ const ChildRegistration = () => {
 
   const handlePrintClick = (dataType) => {
     setPrintDataType(dataType);
-
     setPrintFilters({ 
       date_from: '', 
       date_to: '', 
@@ -1498,7 +1474,6 @@ const ChildRegistration = () => {
       fingerprint_status: '', 
       gender: '',
       age_group: ''
-
     });
     setShowPrintPage(true);
   };
@@ -1798,37 +1773,30 @@ const ChildRegistration = () => {
           <div className="child-reg-filters-section">
             <div className="child-reg-filters-header">
               <h3>Report Filters</h3>
-
               <button className="child-reg-reset-filters-btn" onClick={handleResetFilters}>Reset Filters</button>
-
             </div>
             <div className="child-reg-filters-grid">
               {/* Date Filters */}
               <div className="child-reg-filter-field">
                 <label>Date From</label>
-
                 <input 
                   type="date" 
                   value={printFilters.date_from} 
                   onChange={(e) => setPrintFilters({...printFilters, date_from: e.target.value})} 
-
                 />
               </div>
               <div className="child-reg-filter-field">
                 <label>Date To</label>
-
                 <input 
                   type="date" 
                   value={printFilters.date_to} 
                   onChange={(e) => setPrintFilters({...printFilters, date_to: e.target.value})} 
-
                 />
               </div>
               
               {/* Location Filter */}
               <div className="child-reg-filter-field">
                 <label>Location</label>
-
                 <select 
                   value={printFilters.location} 
                   onChange={(e) => setPrintFilters({...printFilters, location: e.target.value})}
@@ -1876,7 +1844,6 @@ const ChildRegistration = () => {
                   <option value="">All Status</option>
                   <option value="captured">Has Fingerprints</option>
                   <option value="pending">No Fingerprints</option>
-
                 </select>
               </div>
             </div>
@@ -2139,7 +2106,9 @@ const ChildRegistration = () => {
             handleEditLocation={handleEditLocation}
             handleDeleteLocation={handleDeleteLocation}
             goBack={goBack}
-
+            handleAddNewLocation={handleAddNewLocation}
+            isAddingLocation={isAddingLocation}
+            setShowLocationForm={setShowLocationForm}
           />
         )}
         {!showPrintPage && activePage === "enroll_fingerprint" && (
