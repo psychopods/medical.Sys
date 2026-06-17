@@ -97,6 +97,10 @@ const UserManagement = () => {
   const [isManagingPermissions, setIsManagingPermissions] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
+  // ===== ONLINE USERS STATE =====
+  const [onlineUsersList, setOnlineUsersList] = useState([]);
+  const [loadingOnlineUsers, setLoadingOnlineUsers] = useState(false);
+
   const navigate = useNavigate();
 
   // Helper function to get auth headers
@@ -657,18 +661,114 @@ const UserManagement = () => {
     }
   }, [activePage]);
 
+  // ===== FETCH ONLINE USERS =====
   const fetchOnlineUsers = async () => {
     try {
-      const response = await fetch(API_ENDPOINTS.onlineUsers, {
+      // First, get the count of online users
+      const countResponse = await fetch(API_ENDPOINTS.onlineCount, {
         headers: getAuthHeaders()
       });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(prev => ({ ...prev, online_now: data.count || data.length || 0 }));
+      
+      let count = 0;
+      if (countResponse.ok) {
+        const data = await countResponse.json();
+        count = data.activeOnlineCount || data.count || 0;
+        setStats(prev => ({ ...prev, online_now: count }));
+      }
+
+      // If there are online users, fetch the full user list and filter active ones
+      if (count > 0) {
+        const usersResponse = await fetch(API_ENDPOINTS.users, {
+          headers: getAuthHeaders()
+        });
+        
+        if (usersResponse.ok) {
+          const allUsers = await usersResponse.json();
+          
+          // Filter users who have been active in the last 5 minutes
+          const now = Date.now();
+          const fiveMinutesAgo = now - (5 * 60 * 1000);
+          
+          const onlineUsers = allUsers.filter(user => {
+            if (!user.lastActive) return false;
+            const lastActive = new Date(user.lastActive).getTime();
+            return lastActive > fiveMinutesAgo;
+          });
+          
+          setOnlineUsersList(onlineUsers);
+          // Update count if API count doesn't match filtered count
+          if (onlineUsers.length !== count) {
+            setStats(prev => ({ ...prev, online_now: onlineUsers.length }));
+          }
+        } else {
+          // If users endpoint fails, try to get sessions
+          try {
+            const sessionsResponse = await fetch(API_ENDPOINTS.sessions, {
+              headers: getAuthHeaders()
+            });
+            
+            if (sessionsResponse.ok) {
+              const sessionsData = await sessionsResponse.json();
+              const sessions = sessionsData.sessions || sessionsData.data || [];
+              
+              // Extract unique users from sessions
+              const userMap = new Map();
+              sessions.forEach(session => {
+                if (session.staffUserId && !userMap.has(session.staffUserId)) {
+                  userMap.set(session.staffUserId, {
+                    id: session.staffUserId,
+                    username: session.username || session.staffUserId,
+                    firstName: session.firstName || '',
+                    lastName: session.lastName || '',
+                    email: session.email || '',
+                    roleName: session.role || session.roleName || 'User',
+                    lastActive: session.lastActive || session.createdAt || new Date().toISOString()
+                  });
+                }
+              });
+              
+              setOnlineUsersList(Array.from(userMap.values()));
+            } else {
+              // If all fails, try to get online count only
+              setOnlineUsersList([]);
+            }
+          } catch (sessionError) {
+            console.warn('Failed to fetch sessions:', sessionError);
+            setOnlineUsersList([]);
+          }
+        }
+      } else {
+        setOnlineUsersList([]);
       }
     } catch (error) {
       console.error('Error fetching online users:', error);
+      // On error, try to get at least the current user online
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (currentUser && currentUser.id) {
+          setOnlineUsersList([{
+            id: currentUser.id,
+            username: currentUser.username || 'admin',
+            firstName: currentUser.firstName || 'System',
+            lastName: currentUser.lastName || 'Admin',
+            email: currentUser.email || '',
+            roleName: currentUser.role || 'Super Admin',
+            lastActive: new Date().toISOString()
+          }]);
+          setStats(prev => ({ ...prev, online_now: 1 }));
+        }
+      } catch (e) {
+        setOnlineUsersList([]);
+      }
     }
+  };
+
+  // Function to handle clicking on Online Now card
+  const handleShowOnlineUsers = async () => {
+    setLoadingOnlineUsers(true);
+    setActivePage('online_users');
+    await fetchOnlineUsers();
+    setLoadingOnlineUsers(false);
   };
 
   const showToast = (message, type = 'success') => {
@@ -1313,6 +1413,126 @@ const UserManagement = () => {
         </svg>
         Manage Categories
       </button>
+    </div>
+  );
+
+  // Render Online Users Page
+  const renderOnlineUsersPage = () => (
+    <div className="um-page-content">
+      <div className="um-page-header">
+        <button className="um-back-btn" onClick={() => setActivePage('list')} disabled={loadingOnlineUsers}>
+          ← Back to Dashboard
+        </button>
+        <QuickActionButtons />
+        <div className="um-header-actions">
+          <h1>Online Users</h1>
+          <button 
+            className="um-refresh-btn" 
+            onClick={handleShowOnlineUsers} 
+            disabled={loadingOnlineUsers}
+          >
+            {loadingOnlineUsers ? 'Refreshing...' : '🔄 Refresh'}
+          </button>
+        </div>
+      </div>
+      
+      <div className="um-online-users-stats">
+        <div className="um-online-stats-card">
+          <div className="um-online-stats-icon" style={{ background: '#e3f2fd', color: '#1565c0' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="12" r="4" fill="currentColor"/>
+            </svg>
+          </div>
+          <div className="um-online-stats-info">
+            <h2>{onlineUsersList.length}</h2>
+            <p>Users Currently Online</p>
+          </div>
+        </div>
+        
+        <div className="um-online-stats-card">
+          <div className="um-online-stats-icon" style={{ background: '#e8f5e9', color: '#2e7d32' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21"/>
+              <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"/>
+            </svg>
+          </div>
+          <div className="um-online-stats-info">
+            <h2>{stats.total_users}</h2>
+            <p>Total Registered Users</p>
+          </div>
+        </div>
+      </div>
+
+      {loadingOnlineUsers ? (
+        <div className="um-online-loading">
+          <div className="um-spinner"></div>
+          <p>Loading online users...</p>
+        </div>
+      ) : (
+        <div className="um-online-users-table-container">
+          {onlineUsersList.length === 0 ? (
+            <div className="um-no-online-users">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.3"/>
+              </svg>
+              <h3>No Users Online</h3>
+              <p>There are currently no users active on the system.</p>
+            </div>
+          ) : (
+            <table className="um-data-table">
+              <thead>
+                <tr>
+                  <th>S/N</th>
+                  <th>Username</th>
+                  <th>Full Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Last Active</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {onlineUsersList.map((onlineUser, index) => {
+                  // Handle different property naming conventions
+                  const username = onlineUser.username || onlineUser.user_name || 'User';
+                  const firstName = onlineUser.firstName || onlineUser.first_name || '';
+                  const lastName = onlineUser.lastName || onlineUser.last_name || '';
+                  const email = onlineUser.email || '';
+                  const role = onlineUser.roleName || onlineUser.role || onlineUser.role_name || 'User';
+                  const lastActive = onlineUser.lastActive || onlineUser.last_active || onlineUser.updatedAt || new Date().toISOString();
+                  
+                  return (
+                    <tr key={onlineUser.id || index}>
+                      <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                      <td>
+                        <div className="um-online-user-username">
+                          <span className="um-online-indicator"></span>
+                          {username}
+                        </div>
+                      </td>
+                      <td>{firstName} {lastName}</td>
+                      <td>{email}</td>
+                      <td>
+                        <span className="um-role-badge">{role}</span>
+                      </td>
+                      <td>
+                        {new Date(lastActive).toLocaleString()}
+                      </td>
+                      <td>
+                        <span className="um-status-badge um-status-online">
+                          <span className="um-online-dot"></span> Online
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 
@@ -2225,25 +2445,6 @@ const UserManagement = () => {
     );
   };
 
-  // Add spinner CSS to UserManagement.css
-  // Also add these styles to your CSS file:
-  /*
-  .um-spinner-small {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: um-spin 0.8s ease-in-out infinite;
-    margin-right: 6px;
-    vertical-align: middle;
-  }
-  @keyframes um-spin {
-    to { transform: rotate(360deg); }
-  }
-  */
-
   if (loading) {
     return (
       <div className="um-dashboard-loading">
@@ -2307,8 +2508,8 @@ const UserManagement = () => {
               {/* Online Now Card - Clickable */}
               <div 
                 className="um-stat-card" 
-                onClick={() => !isLoading && setActivePage('users')} 
-                style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+                onClick={handleShowOnlineUsers}
+                style={{ cursor: loadingOnlineUsers ? 'not-allowed' : 'pointer', opacity: loadingOnlineUsers ? 0.6 : 1 }}
               >
                 <div className="um-stat-icon">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2440,6 +2641,7 @@ const UserManagement = () => {
           </>
         )}
 
+        {activePage === 'online_users' && renderOnlineUsersPage()}
         {activePage === 'users' && renderUsersList()}
         {activePage === 'add_user' && renderUserForm()}
         {activePage === 'edit_user' && renderUserForm()}
