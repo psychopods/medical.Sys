@@ -469,6 +469,51 @@ const Gallery = () => {
     document.body.style.overflow = "auto";
   };
 
+  // Extract video ID from various video URL formats
+  const getVideoId = (url) => {
+    if (!url) return null;
+    
+    // YouTube
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const youtubeMatch = url.match(youtubeRegex);
+    if (youtubeMatch) return youtubeMatch[1];
+    
+    // Vimeo
+    const vimeoRegex = /(?:vimeo\.com\/)(\d+)/;
+    const vimeoMatch = url.match(vimeoRegex);
+    if (vimeoMatch) return vimeoMatch[1];
+    
+    // If it's already an embed URL or direct URL
+    if (url.includes('embed') || url.includes('player')) {
+      return url;
+    }
+    
+    return null;
+  };
+
+  // Get video embed URL
+  const getVideoEmbedUrl = (url) => {
+    if (!url) return null;
+    
+    // YouTube
+    const youtubeId = getVideoId(url);
+    if (youtubeId && url.includes('youtube') || url.includes('youtu.be')) {
+      return `https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0`;
+    }
+    
+    // Vimeo
+    if (youtubeId && url.includes('vimeo')) {
+      return `https://player.vimeo.com/video/${youtubeId}?autoplay=1`;
+    }
+    
+    // If it's already an embed URL
+    if (url.includes('embed') || url.includes('player')) {
+      return url;
+    }
+    
+    return url;
+  };
+
   // Show loading immediately
   if (loadingCategories && categories.length === 0) {
     return (
@@ -680,62 +725,71 @@ const Gallery = () => {
         )}
       </div>
 
-      {/* Modal for Image/Video Preview */}
+      {/* Modal - Clean Simple Design */}
       {selectedMedia && (
-        <div className="gallery-modal" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={closeModal}>
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={closeModal}>
               ×
             </button>
 
-            {selectedMedia.type === "image" ? (
-              <div className="modal-image">
-                <img src={selectedMedia.image} alt={selectedMedia.title} />
-              </div>
-            ) : (
-              <div className="modal-video">
-                {selectedMedia.video_url ? (
-                  <iframe
-                    src={selectedMedia.video_url}
-                    title={selectedMedia.title}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                ) : (
-                  <div className="video-placeholder-large">
-                    <svg
-                      width="80"
-                      height="80"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <rect
-                        x="2"
-                        y="4"
-                        width="20"
-                        height="16"
-                        rx="2"
-                        stroke="#0066cc"
-                        strokeWidth="2"
+            <div className="modal-body">
+              {selectedMedia.type === "image" ? (
+                <div className="modal-media">
+                  <img 
+                    src={selectedMedia.image} 
+                    alt={selectedMedia.title}
+                    className="modal-media-content"
+                  />
+                </div>
+              ) : (
+                <div className="modal-media video-modal">
+                  {selectedMedia.video_url ? (
+                    <div className="video-wrapper">
+                      <iframe
+                        src={getVideoEmbedUrl(selectedMedia.video_url)}
+                        title={selectedMedia.title}
+                        className="modal-video-content"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
                       />
-                      <polygon points="10,8 16,12 10,16" fill="#0066cc" />
-                    </svg>
-                    <p>Video URL not available</p>
-                  </div>
-                )}
-              </div>
-            )}
+                    </div>
+                  ) : (
+                    <div className="modal-video-placeholder">
+                      <svg
+                        width="64"
+                        height="64"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <rect
+                          x="2"
+                          y="4"
+                          width="20"
+                          height="16"
+                          rx="2"
+                          stroke="#0066cc"
+                          strokeWidth="2"
+                        />
+                        <polygon points="10,8 16,12 10,16" fill="#0066cc" />
+                      </svg>
+                      <p>Video URL not available</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            <div className="modal-info">
-              <h2>{selectedMedia.title}</h2>
-              <p>{selectedMedia.description}</p>
-              <div className="modal-meta">
-                <span className="modal-date">{selectedMedia.date}</span>
-                <span className="modal-category">
-                  Category: {selectedMedia.category}
-                </span>
+              <div className="modal-info">
+                <h2 className="modal-title">{selectedMedia.title}</h2>
+                <p className="modal-description">{selectedMedia.description}</p>
+                <div className="modal-meta">
+                  <span className="modal-date">{selectedMedia.date}</span>
+                  <span className="modal-category-tag">
+                    {selectedMedia.category}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
