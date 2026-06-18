@@ -134,7 +134,6 @@ const BottomHeader = () => {
     { path: '/about', name: 'About' },
     { path: '/gallery', name: 'Gallery' },
     { path: '/reports', name: 'Reports' },
-    // { path: '/support', name: 'Support' },
     { path: '/contact', name: 'Contact' }
   ];
 
@@ -185,7 +184,7 @@ const BottomHeader = () => {
           </div>
           
           <div className="bb-auth-buttons">
-            {/* Join Now Button - Eye-catching with fire effects */}
+            {/* Join Now Button - Same design as Login button */}
             <div className="bb-join-wrapper">
               <button 
                 className={`bb-join-btn ${showJoinIndicators ? 'bb-pulse-active' : ''}`}
@@ -195,7 +194,6 @@ const BottomHeader = () => {
                   <path d="M12 2L15 9H22L16 14L19 21L12 17L5 21L8 14L2 9H9L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 Join Now
-                <span className="bb-fire-emoji">🔥</span>
               </button>
               {showJoinIndicators && (
                 <div className="bb-join-indicators">
@@ -255,7 +253,7 @@ const BottomHeader = () => {
               <svg className="bb-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L15 9H22L16 14L19 21L12 17L5 21L8 14L2 9H9L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Join Now 🔥
+              Join Now
             </button>
             <button className="bb-mobile-login-btn" onClick={handleLoginClick}>
               <svg className="bb-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

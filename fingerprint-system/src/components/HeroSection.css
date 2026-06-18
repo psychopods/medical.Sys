@@ -87,6 +87,7 @@
   line-height: 1.2;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 .highlight {
@@ -103,6 +104,7 @@
   line-height: 1.6;
   font-weight: 500;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 /* Hero Description */
@@ -116,6 +118,7 @@
   line-height: 1.7;
   margin-bottom: 16px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 .description-text:last-child {
@@ -151,6 +154,7 @@
   margin-bottom: 8px;
   font-weight: bold;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 .stat p {
@@ -158,6 +162,26 @@
   font-size: clamp(0.8rem, 2vw, 0.9rem);
   opacity: 0.95;
   font-weight: 500;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Fingerprint Wrapper */
+.fingerprint-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.3s ease;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.fingerprint-wrapper:hover {
+  transform: scale(1.05);
 }
 
 /* Fingerprint Animation */
@@ -173,7 +197,7 @@
   animation: pulse 2s infinite;
   position: relative;
   z-index: 2;
-  cursor: pointer;
+  pointer-events: none;
 }
 
 .fingerprint-svg {
@@ -184,11 +208,64 @@
   fill: none;
   filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4));
   transition: all 0.3s ease;
+  pointer-events: none;
 }
 
 .fingerprint-svg:hover {
   transform: scale(1.05);
   filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.6));
+}
+
+/* Circular Text - Same font as left side, slower rotation */
+.circular-text-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.circular-text-svg {
+  width: clamp(240px, 32vw, 460px);
+  height: clamp(240px, 32vw, 460px);
+  animation: rotateText 20s linear infinite; /* Slower: 20s instead of 12s */
+  pointer-events: none;
+}
+
+.circular-text {
+  font-size: 10px;
+  font-weight: 700;
+  fill: #ffd700;
+  letter-spacing: 2.5px;
+  text-shadow: 
+    0 0 20px rgba(255, 215, 0, 0.6),
+    0 0 40px rgba(255, 215, 0, 0.4),
+    0 0 60px rgba(255, 215, 0, 0.2);
+  /* Same font family as hero-title */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  text-transform: uppercase;
+}
+
+/* Date text will be white via inline tspan styling */
+.circular-text tspan {
+  text-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.8),
+    0 0 40px rgba(255, 215, 0, 0.6) !important;
+}
+
+@keyframes rotateText {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Rings - White and Highly Visible */
@@ -203,6 +280,7 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 1;
 }
 
 .ring {
@@ -365,6 +443,16 @@
     width: 320px;
     height: 320px;
   }
+  
+  .circular-text-svg {
+    width: clamp(200px, 28vw, 340px);
+    height: clamp(200px, 28vw, 340px);
+  }
+  
+  .circular-text {
+    font-size: 9px;
+    letter-spacing: 2px;
+  }
 }
 
 @media (min-width: 481px) and (max-width: 767px) {
@@ -402,6 +490,16 @@
   
   .ring-1, .ring-2, .ring-3 {
     display: none;
+  }
+  
+  .circular-text-svg {
+    width: clamp(180px, 24vw, 260px);
+    height: clamp(180px, 24vw, 260px);
+  }
+  
+  .circular-text {
+    font-size: 8px;
+    letter-spacing: 1.5px;
   }
 }
 
@@ -450,6 +548,16 @@
   .ring-1, .ring-2, .ring-3 {
     display: none;
   }
+  
+  .circular-text-svg {
+    width: clamp(160px, 22vw, 200px);
+    height: clamp(160px, 22vw, 200px);
+  }
+  
+  .circular-text {
+    font-size: 7px;
+    letter-spacing: 1.5px;
+  }
 }
 
 @media (max-width: 360px) {
@@ -460,6 +568,16 @@
   
   .description-text {
     font-size: 0.8rem;
+  }
+  
+  .circular-text-svg {
+    width: 130px;
+    height: 130px;
+  }
+  
+  .circular-text {
+    font-size: 6px;
+    letter-spacing: 1px;
   }
 }
 
@@ -508,6 +626,16 @@
     width: 560px;
     height: 560px;
   }
+  
+  .circular-text-svg {
+    width: clamp(300px, 32vw, 500px);
+    height: clamp(300px, 32vw, 500px);
+  }
+  
+  .circular-text {
+    font-size: 13px;
+    letter-spacing: 3px;
+  }
 }
 
 @media (min-width: 2560px) {
@@ -549,6 +677,16 @@
     width: 690px;
     height: 690px;
   }
+  
+  .circular-text-svg {
+    width: clamp(350px, 35vw, 580px);
+    height: clamp(350px, 35vw, 580px);
+  }
+  
+  .circular-text {
+    font-size: 15px;
+    letter-spacing: 4px;
+  }
 }
 
 /* Print styles */
@@ -578,7 +716,8 @@
   .ring,
   .hero-content,
   .hero-image,
-  .stat {
+  .stat,
+  .circular-text-svg {
     animation: none;
     transition: none;
   }
@@ -595,6 +734,10 @@
   .ring {
     display: none;
   }
+  
+  .circular-text-svg {
+    animation: none;
+  }
 }
 
 /* High contrast mode */
@@ -610,6 +753,11 @@
   .ring {
     border-color: #ffffff;
     border-width: 3px;
+  }
+  
+  .circular-text {
+    fill: #ffff00;
+    text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
   }
 }
 
