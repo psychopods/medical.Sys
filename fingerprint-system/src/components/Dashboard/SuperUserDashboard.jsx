@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SuperUserDashboard.css';
 import { getChildren, getUsers, getRoles, getPermissions, getPermissionCategories } from '../../services/api.js';
@@ -65,6 +65,11 @@ const Icons = {
   BackArrow: () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  ),
+  Spinner: () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="sd-spinning">
+      <path d="M12 2v4M12 22v-4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M22 12h-4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
     </svg>
   )
 };
@@ -194,6 +199,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   const [recentChildren, setRecentChildren] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
   const [healthStatus, setHealthStatus] = useState({
     status: 'checking',
     lastChecked: null,
@@ -221,6 +228,10 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   const [onlineSessions, setOnlineSessions] = useState({});
   const [expandedUsers, setExpandedUsers] = useState({});
   const [currentDeviceInfo, setCurrentDeviceInfo] = useState(null);
+
+  // ===== REF FOR BACKGROUND REFRESH =====
+  const refreshIntervalRef = useRef(null);
+  const isRefreshingRef = useRef(false);
 
   // Helper function to get auth headers
   const getAuthHeaders = () => {
@@ -537,8 +548,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
   };
 
   // ===== FETCH DETAILED ONLINE USERS LIST WITH SESSION INFO =====
-  const fetchOnlineUsersList = async () => {
-    setLoadingOnlineUsers(true);
+  const fetchOnlineUsersList = async (showLoading = true) => {
+    if (showLoading) setLoadingOnlineUsers(true);
     try {
       // Try to get sessions from API
       const sessionsResponse = await fetch(`${API_BASE_URL}/api/auth/sessions`, {
@@ -652,7 +663,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
       console.error('Error fetching online users list:', error);
       setOnlineUsersList([]);
     } finally {
-      setLoadingOnlineUsers(false);
+      if (showLoading) setLoadingOnlineUsers(false);
     }
   };
 
@@ -678,32 +689,55 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     );
   };
 
+  // ===== BACKGROUND REFRESH FUNCTION =====
+  const refreshDashboardData = async (showSpinner = false) => {
+    // Prevent multiple simultaneous refreshes
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+    
+    if (showSpinner) {
+      setRefreshing(true);
+    }
+    
+    try {
+      const [childrenResult, usersResult, rolesCount, permissionsCount, categoriesCount, onlineCount] = await Promise.all([
+        fetchChildrenData(),
+        fetchUsersData(),
+        fetchRolesData(),
+        fetchPermissionsData(),
+        fetchCategoriesData(),
+        fetchOnlineUsersCount()
+      ]);
+
+      setDashboardData({
+        totalChildren: childrenResult.totalChildren,
+        registeredToday: childrenResult.registeredToday,
+        fingerprintsCaptured: childrenResult.fingerprintsCaptured,
+        totalUsers: usersResult.totalUsers,
+        activeRoles: rolesCount,
+        totalPermissions: permissionsCount,
+        totalCategories: categoriesCount,
+        onlineNow: onlineCount,
+        youngPatients: childrenResult.youngPatients,
+        olderPatients: childrenResult.olderPatients
+      });
+      setRecentChildren(childrenResult.recentChildren);
+      setRecentUsers(usersResult.recentUsers);
+      setLastRefreshed(new Date());
+    } catch (error) {
+      console.error('Background refresh error:', error);
+    } finally {
+      isRefreshingRef.current = false;
+      if (showSpinner) {
+        setRefreshing(false);
+      }
+    }
+  };
+
   // Load all dashboard data
   const loadDashboardData = async () => {
     setLoading(true);
-    const [childrenResult, usersResult, rolesCount, permissionsCount, categoriesCount, onlineCount] = await Promise.all([
-      fetchChildrenData(),
-      fetchUsersData(),
-      fetchRolesData(),
-      fetchPermissionsData(),
-      fetchCategoriesData(),
-      fetchOnlineUsersCount()
-    ]);
-
-    setDashboardData({
-      totalChildren: childrenResult.totalChildren,
-      registeredToday: childrenResult.registeredToday,
-      fingerprintsCaptured: childrenResult.fingerprintsCaptured,
-      totalUsers: usersResult.totalUsers,
-      activeRoles: rolesCount,
-      totalPermissions: permissionsCount,
-      totalCategories: categoriesCount,
-      onlineNow: onlineCount,
-      youngPatients: childrenResult.youngPatients,
-      olderPatients: childrenResult.olderPatients
-    });
-    setRecentChildren(childrenResult.recentChildren);
-    setRecentUsers(usersResult.recentUsers);
+    await refreshDashboardData(false);
     setLoading(false);
   };
 
@@ -715,25 +749,70 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     ]);
   };
 
+  // ===== MANUAL REFRESH WITH SPINNER =====
+  const handleManualRefresh = async () => {
+    await refreshDashboardData(true);
+    await loadHealthData();
+    if (currentView === 'online-users') {
+      await fetchOnlineUsersList(true);
+    }
+  };
+
+  // ===== START BACKGROUND REFRESH =====
+  const startBackgroundRefresh = () => {
+    // Clear any existing interval
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+    }
+    
+    // Set up background refresh every 30 seconds
+    refreshIntervalRef.current = setInterval(() => {
+      // Only refresh if on dashboard view
+      if (currentView === 'dashboard') {
+        refreshDashboardData(false);
+        loadHealthData();
+      }
+    }, 30000);
+  };
+
+  // ===== STOP BACKGROUND REFRESH =====
+  const stopBackgroundRefresh = () => {
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+  };
+
+  // ===== EFFECTS =====
   useEffect(() => {
     const deviceInfo = storeDeviceInfo();
     setCurrentDeviceInfo(deviceInfo);
     loadDashboardData();
     loadHealthData();
-    const interval = setInterval(() => {
-      loadDashboardData();
-      loadHealthData();
-    }, 30000);
-    return () => clearInterval(interval);
+    
+    // Start background refresh
+    startBackgroundRefresh();
+    
+    // Cleanup on unmount
+    return () => {
+      stopBackgroundRefresh();
+    };
   }, []);
 
-  // Handle Online Now card click - show online users view
+  // Refresh when view changes
+  useEffect(() => {
+    if (currentView === 'online-users') {
+      fetchOnlineUsersList(true);
+    }
+  }, [currentView]);
+
+  // ===== HANDLE ONLINE NOW CARD CLICK =====
   const handleOnlineNowClick = () => {
     setCurrentView('online-users');
-    fetchOnlineUsersList();
+    fetchOnlineUsersList(true);
   };
 
-  // Handle back to dashboard
+  // ===== HANDLE BACK TO DASHBOARD =====
   const handleBackToDashboard = () => {
     setCurrentView('dashboard');
   };
@@ -781,10 +860,12 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     }
   };
 
-  // Helper function to get max value for charts
+  // Helper function to get max value for charts with safe fallback
   const getMaxValue = (data, key) => {
     if (!data || data.length === 0) return 1;
-    return Math.max(...data.map(d => d[key]), 1);
+    const values = data.map(d => d[key]).filter(v => typeof v === 'number' && !isNaN(v));
+    if (values.length === 0) return 1;
+    return Math.max(...values, 1);
   };
 
   // ===== RENDER ONLINE USERS VIEW =====
@@ -795,7 +876,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
           <Icons.BackArrow /> Back to Dashboard
         </button>
         <h1>Online Users</h1>
-        <button className="sd-refresh-btn" onClick={fetchOnlineUsersList} disabled={loadingOnlineUsers}>
+        <button className="sd-refresh-btn" onClick={() => fetchOnlineUsersList(true)} disabled={loadingOnlineUsers}>
           <Icons.Refresh />
           {loadingOnlineUsers ? 'Refreshing...' : 'Refresh'}
         </button>
@@ -933,7 +1014,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     </div>
   );
 
-  // ===== RENDER DASHBOARD VIEW =====
+  // ===== RENDER DASHBOARD VIEW WITH SAFE CHART RENDERING =====
   const renderDashboardView = () => {
     const healthDisplay = getStatusDisplay(healthStatus.status);
     const maxRegistrations = getMaxValue(chartData.registrationsByMonth, 'count');
@@ -960,6 +1041,17 @@ const SuperUserDashboard = ({ user, onLogout }) => {
           <div className="sd-date-time">
             <div className="sd-date">{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
             <div className="sd-time">{new Date().toLocaleTimeString()}</div>
+            <div className="sd-refresh-indicator">
+              {refreshing ? (
+                <span className="sd-refreshing">
+                  <Icons.Spinner /> Refreshing...
+                </span>
+              ) : lastRefreshed ? (
+                <span className="sd-last-refreshed">
+                  Last updated: {lastRefreshed.toLocaleTimeString()}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -967,7 +1059,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         <div className="sd-health-section">
           <div className="sd-health-header">
             <h2>System Health Monitor</h2>
-            <button className="sd-refresh-btn" onClick={() => { loadHealthData(); loadDashboardData(); }}>
+            <button className="sd-refresh-btn" onClick={handleManualRefresh}>
               <Icons.Refresh />
               Refresh
             </button>
@@ -1230,12 +1322,12 @@ const SuperUserDashboard = ({ user, onLogout }) => {
               <p>Last 6 months trend</p>
             </div>
             <div className="sd-bar-chart">
-              {chartData.registrationsByMonth.length > 0 ? (
+              {chartData.registrationsByMonth && chartData.registrationsByMonth.length > 0 ? (
                 chartData.registrationsByMonth.map((item, index) => {
-                  const height = (item.count / maxRegistrations) * 150;
+                  const height = maxRegistrations > 0 ? (item.count / maxRegistrations) * 150 : 0;
                   return (
                     <div key={index} className="sd-bar-item">
-                      <div className="sd-bar" style={{ height: `${height}px` }}>
+                      <div className="sd-bar" style={{ height: `${Math.max(height, 4)}px` }}>
                         <span className="sd-bar-value">{item.count}</span>
                       </div>
                       <div className="sd-bar-label">{item.month}</div>
@@ -1255,14 +1347,16 @@ const SuperUserDashboard = ({ user, onLogout }) => {
               <p>Distribution by week of month</p>
             </div>
             <div className="sd-line-chart">
-              {chartData.weeklyRegistrations.length > 0 ? (
+              {chartData.weeklyRegistrations && chartData.weeklyRegistrations.length > 0 ? (
                 <div className="sd-line-container">
                   <svg className="sd-line-svg" viewBox="0 0 500 200" preserveAspectRatio="none">
                     <polyline
                       className="sd-line-path"
                       points={chartData.weeklyRegistrations.map((item, index) => {
-                        const x = (index / (chartData.weeklyRegistrations.length - 1)) * 500;
-                        const y = 180 - (item.count / maxWeekly) * 160;
+                        const x = chartData.weeklyRegistrations.length > 1 
+                          ? (index / (chartData.weeklyRegistrations.length - 1)) * 500 
+                          : 250;
+                        const y = maxWeekly > 0 ? 180 - (item.count / maxWeekly) * 160 : 180;
                         return `${x},${y}`;
                       }).join(' ')}
                       fill="none"
@@ -1270,8 +1364,10 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                       strokeWidth="2"
                     />
                     {chartData.weeklyRegistrations.map((item, index) => {
-                      const x = (index / (chartData.weeklyRegistrations.length - 1)) * 500;
-                      const y = 180 - (item.count / maxWeekly) * 160;
+                      const x = chartData.weeklyRegistrations.length > 1 
+                        ? (index / (chartData.weeklyRegistrations.length - 1)) * 500 
+                        : 250;
+                      const y = maxWeekly > 0 ? 180 - (item.count / maxWeekly) * 160 : 180;
                       return (
                         <circle key={index} cx={x} cy={y} r="4" fill="#667eea" />
                       );
@@ -1299,7 +1395,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
               <p>Registrations by hour of day</p>
             </div>
             <div className="sd-area-chart">
-              {chartData.activityByHour.length > 0 ? (
+              {chartData.activityByHour && chartData.activityByHour.length > 0 ? (
                 <div className="sd-area-container">
                   <svg className="sd-area-svg" viewBox="0 0 500 200" preserveAspectRatio="none">
                     <defs>
@@ -1311,8 +1407,10 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                     <polygon
                       className="sd-area-polygon"
                       points={`0,180 ${chartData.activityByHour.map((item, index) => {
-                        const x = (index / (chartData.activityByHour.length - 1)) * 500;
-                        const y = 180 - (item.count / maxHourly) * 160;
+                        const x = chartData.activityByHour.length > 1 
+                          ? (index / (chartData.activityByHour.length - 1)) * 500 
+                          : 250;
+                        const y = maxHourly > 0 ? 180 - (item.count / maxHourly) * 160 : 180;
                         return `${x},${y}`;
                       }).join(' ')} 500,180 0,180`}
                       fill="url(#areaGradient)"
@@ -1320,8 +1418,10 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                     <polyline
                       className="sd-area-line"
                       points={chartData.activityByHour.map((item, index) => {
-                        const x = (index / (chartData.activityByHour.length - 1)) * 500;
-                        const y = 180 - (item.count / maxHourly) * 160;
+                        const x = chartData.activityByHour.length > 1 
+                          ? (index / (chartData.activityByHour.length - 1)) * 500 
+                          : 250;
+                        const y = maxHourly > 0 ? 180 - (item.count / maxHourly) * 160 : 180;
                         return `${x},${y}`;
                       }).join(' ')}
                       fill="none"
@@ -1359,11 +1459,11 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                   <circle 
                     cx="90" cy="90" r="70" fill="none" 
                     stroke="#28a745" strokeWidth="20"
-                    strokeDasharray={`${(chartData.fingerprintStatus.captured / (chartData.fingerprintStatus.captured + chartData.fingerprintStatus.pending || 1)) * 440} 440`}
+                    strokeDasharray={`${((chartData.fingerprintStatus.captured / (chartData.fingerprintStatus.captured + chartData.fingerprintStatus.pending || 1)) * 440) || 0} 440`}
                     strokeDashoffset="0" transform="rotate(-90 90 90)"
                   />
                   <text x="90" y="85" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#333">
-                    {Math.round((chartData.fingerprintStatus.captured / (chartData.fingerprintStatus.captured + chartData.fingerprintStatus.pending || 1)) * 100)}%
+                    {Math.round((chartData.fingerprintStatus.captured / (chartData.fingerprintStatus.captured + chartData.fingerprintStatus.pending || 1)) * 100) || 0}%
                   </text>
                   <text x="90" y="105" textAnchor="middle" fontSize="12" fill="#888">Enrolled</text>
                 </svg>
@@ -1388,7 +1488,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
               <p>System user breakdown</p>
             </div>
             <div className="sd-horizontal-bar-chart">
-              {chartData.usersByRole.length > 0 ? (
+              {chartData.usersByRole && chartData.usersByRole.length > 0 ? (
                 chartData.usersByRole.map((item, index) => {
                   const maxUsers = Math.max(...chartData.usersByRole.map(d => d.count), 1);
                   const width = (item.count / maxUsers) * 100;
@@ -1396,7 +1496,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                     <div key={index} className="sd-horizontal-bar-item">
                       <div className="sd-horizontal-bar-label">{item.role}</div>
                       <div className="sd-horizontal-bar-container">
-                        <div className="sd-horizontal-bar" style={{ width: `${width}%` }}>
+                        <div className="sd-horizontal-bar" style={{ width: `${Math.max(width, 2)}%` }}>
                           <span className="sd-horizontal-bar-value">{item.count}</span>
                         </div>
                       </div>
@@ -1448,7 +1548,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                   <tr><th>Name</th><th>Age</th><th>Registration Date</th><th>Fingerprint</th></tr>
                 </thead>
                 <tbody>
-                  {recentChildren.length > 0 ? (
+                  {recentChildren && recentChildren.length > 0 ? (
                     recentChildren.map((child, index) => (
                       <tr key={child.id || index}>
                         <td>{child.fullName}</td>
@@ -1477,7 +1577,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                   <tr><th>Username</th><th>Full Name</th><th>Role</th><th>Status</th></tr>
                 </thead>
                 <tbody>
-                  {recentUsers.length > 0 ? (
+                  {recentUsers && recentUsers.length > 0 ? (
                     recentUsers.map((userItem, index) => (
                       <tr key={userItem.id || index}>
                         <td>{userItem.username}</td>

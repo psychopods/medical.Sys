@@ -1,4 +1,4 @@
-/* NotificationBell.css - Expanded width with Montserrat font */
+/* NotificationBell.css - Simple design, no box shadows */
 
 .notification-bell {
   position: relative;
@@ -61,7 +61,6 @@
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   overflow: hidden;
   font-family: 'Montserrat', sans-serif;
@@ -164,12 +163,41 @@
   word-wrap: break-word;
 }
 
+.notification-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.notification-creator {
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Montserrat', sans-serif;
+  color: #0066cc;
+  background: rgba(0, 102, 204, 0.08);
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.notification-time-separator {
+  font-size: 10px;
+  color: #cbd5e1;
+}
+
 .notification-time {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   font-family: 'Montserrat', sans-serif;
   color: #94a3b8;
-  margin-top: 4px;
+}
+
+.notification-item .notification-time {
+  margin-top: 0;
+  display: inline;
 }
 
 .notification-expand-btn {
@@ -343,8 +371,22 @@
     font-size: 12px;
   }
   
+  .notification-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .notification-time-separator {
+    display: none;
+  }
+  
+  .notification-creator {
+    font-size: 10px;
+  }
+  
   .notification-time {
-    font-size: 11px;
+    font-size: 10px;
   }
   
   .notification-header {
@@ -416,70 +458,7 @@
   .notification-empty p {
     font-size: 13px;
   }
-}
-
-/* Add to NotificationBell.css */
-
-.notification-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-
-.notification-creator {
-  font-size: 11px;
-  font-weight: 500;
-  font-family: 'Montserrat', sans-serif;
-  color: #0066cc;
-  background: rgba(0, 102, 204, 0.08);
-  padding: 2px 8px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.notification-time-separator {
-  font-size: 10px;
-  color: #cbd5e1;
-}
-
-.notification-time {
-  font-size: 11px;
-  font-weight: 500;
-  font-family: 'Montserrat', sans-serif;
-  color: #94a3b8;
-}
-
-/* Update existing notification-time to be inline with creator */
-.notification-item .notification-time {
-  margin-top: 0;
-  display: inline;
-}
-
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .notification-meta {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
   
-  .notification-time-separator {
-    display: none;
-  }
-  
-  .notification-creator {
-    font-size: 10px;
-  }
-  
-  .notification-time {
-    font-size: 10px;
-  }
-}
-
-@media (max-width: 480px) {
   .notification-creator {
     font-size: 9px;
     padding: 2px 6px;

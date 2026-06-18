@@ -54,7 +54,7 @@ const VolunteerSupport = () => {
       title: 'Make a Donation',
       description: 'Your financial support helps us provide medical care, food, clothing, and education to vulnerable children.',
       buttonText: 'Donate Now',
-      link: '/donate'
+      link: '/contact'
     },
     {
       icon: 'volunteer',
@@ -269,7 +269,7 @@ const VolunteerSupport = () => {
         </div>
       </div>
 
-      {/* Ways to Support Section - Placed BEFORE Become a Volunteer */}
+      {/* Ways to Support Section - 4 Columns */}
       <div className="support-options-section">
         <div className="container">
           <h2 className="support-title">Ways to Support</h2>
@@ -290,7 +290,7 @@ const VolunteerSupport = () => {
         </div>
       </div>
 
-      {/* Volunteer Form Section - Placed AFTER Ways to Support */}
+      {/* Volunteer Form Section */}
       <div id="volunteer-form" className="volunteer-form-section">
         <div className="container">
           <div className="volunteer-form-wrapper">
