@@ -1,0 +1,1420 @@
+﻿Document Title:
+Street Children Fingerprint Management System
+
+Version:
+1.0
+
+Prepared By:
+MITzKITs Development Team
+
+Approved By:
+Project Manager
+
+Date:
+June 2026
+
+Revision History
+version
+date
+Author
+Description
+1.0
+15 June 2026
+Development Team
+Initial Release
+
+
+
+
+
+
+
+
+
+
+
+Table of Contents
+LIST OF FIGURES	iv
+ACRONYMS AND ABBREVIATIONS	v
+CHAPTER 1: PROJECT INTRODUCTION	1
+1.1 Executive Summary	1
+1.2 Business Problem	1
+1.3 SYSTEM OBJECTIVES	1
+1.4 Project Scope	2
+In Scope	2
+Out of Scope	2
+CHAPTER 2: SYSTEM ARCHITECTURE & TECHNOLOGY STACK	3
+2.1 High-Level Architecture	3
+2.2 System Use Cases	4
+2.3 Technology Stack	5
+2.4 Environment Requirements	6
+Minimum Requirements	6
+Recommended	6
+CHAPTER 3: WEBSITE MODULES AND INTERFACES	7
+3.1 Overview	7
+3.2 Public Pages	7
+Login Page	8
+Forgot Password Page	9
+Street Medicine Page	9
+About Page	10
+ Gallery Page	10
+Join Now Page	10
+3.3 Dashboard Pages	11
+Main Dashboard	11
+Patient Registration	12
+Fingerprint Enrollment	13
+Fingerprint Verification	13
+Staff Management	14
+Role Management	14
+Notifications	15
+CHAPTER 4: USER ROLES & ACCESS CONTROL	16
+4.1 Overview	16
+4.2 User Roles	16
+Super User	16
+Nurse	16
+Doctor	17
+Laboratory Technician	17
+Pharmacist	17
+Staff Member	18
+4.3 Role-Based Access Control (RBAC)	18
+4.4 Role-Based Access Control Matrix	18
+CHAPTER 5: DATA MODEL	20
+5.1 Overview	20
+5.2 Entity Relationship Diagram (ERD)	20
+Figure 5.1: Entity Relationship Diagram	21
+5.3 Core Entities	21
+Staff Users	21
+Roles	22
+Permissions	22
+Patients	22
+Fingerprints	23
+Locations	23
+Notifications	23
+Audit Logs	23
+5.4 Entity Relationships	24
+User and Role Relationship	24
+Patient and Fingerprint Relationship	24
+Location and Patient Relationship	24
+User and Patient Relationship	25
+5.5 Sample Patient Entity	25
+Field Description	25
+5.6 Sample Fingerprint Entity	25
+Field Description	25
+5.7 Data Integrity and Security	26
+CHAPTER6: API OVERVIEW	27
+6.1 Introduction	27
+6.2 API Architecture	27
+6.3 Authentication and Authorization	28
+Authentication Header Example	28
+Authentication Process	28
+6.4 Standard Response Format	28
+Successful Response	28
+Error Response	29
+6.5 Authentication Endpoints	29
+User Login	29
+Additional Authentication Endpoints	29
+6.6 Patient Management Endpoints	30
+Create Patient	30
+Get All Patients	30
+Get Patient by ID	30
+Update Patient	30
+Delete Patient	30
+Patient API Summary	30
+6.7 Biometric Endpoints	30
+Fingerprint Enrollment	31
+Fingerprint Verification (1:1)	31
+Fingerprint Identification (1:N)	31
+Biometric Process Flow	31
+Biometric API Summary	32
+6.8 Notification Endpoints	32
+Notification Endpoints	32
+6.9 HTTP Status Codes	32
+6.10 API Security Considerations	32
+CHAPTER 7: OFFLINE SYNCHRONIZATION	33
+7.1 Overview	33
+7.2 Offline Operation Architecture	33
+7.3 Synchronization Process	33
+Synchronization Steps	33
+7.4 Offline Synchronization Workflow	34
+7.5 Synchronization API Endpoints	34
+Push Local Changes	34
+Retrieve Server Updates	35
+Synchronization Endpoint Summary	35
+7.6 Conflict Resolution	35
+7.7 Benefits of Offline Synchronization	35
+7.8 Synchronization Status Indicators	35
+CHAPTER 8: SECURITY	36
+Authentication	36
+Authorization	36
+Data Protection	36
+CHAPTER 9: DEPLOYMENT	37
+Installation	37
+Database	37
+CHAPTER 10: MAINTENANCE & TROUBLESHOOTING	37
+Common Errors	37
+401 Unauthorized	37
+500 Internal Server Error	37
+Fingerprint Scanner Not Detected	38
+Synchronization Failure	38
+APPENDICES	39
+Appendix A: System Modules	39
+Appendix B: Project Development Timeline	39
+Appendix C: System Diagrams	39
+Included Diagrams	39
+Appendix D: External Dependencies	40
+Software Components	40
+Hardware Components	40
+Appendix E: Document Revision History	40
+
+
+
+LIST OF FIGURES
+Figure 2.1 High-Level System Architecture Diagram
+Figure 2.2 System Use Case Diagram
+Figure 3.1 Home Page Interface
+Figure 3.2 Login Interface
+Figure 3.3 Street Medicine Page
+Figure 3.4 Join Now Interface
+Figure 3.5 Dashboard Interface
+Figure 3.6 Patient Registration Interface
+Figure 3.7 Fingerprint Verification Interface
+Figure 4.1 Role-Based Access Control Model
+Figure 5.1 Entity Relationship Diagram
+Figure 6.1 API Request Processing Flow
+Figure 6.2 Authentication Flow
+Figure 6.3 Biometric Verification Flow
+Figure 7.1 Offline Synchronization Architecture
+Figure 7.2 Synchronization Workflow
+
+
+
+
+
+
+
+
+
+
+ACRONYMS AND ABBREVIATIONS
+
+API   - Application Programming Interface
+
+RBAC  - Role-Based Access Control
+
+JWT   - JSON Web Token
+
+ERD   - Entity Relationship Diagram
+
+SDK   - Software Development Kit
+
+OTP   - One-Time Password
+
+UI    - User Interface
+
+REST  - Representational State Transfer
+
+TRHM  - Tanzania Rural Health Movement
+
+UUID  - Universally Unique Identifier
+
+
+CHAPTER 1: PROJECT INTRODUCTION
+1.1 Executive Summary
+The Street Children Fingerprint Management System is a web-based biometric identification and registration platform designed to support the registration, identification, and management of street children. The system enables healthcare workers and authorized staff to capture child demographic information, enroll fingerprints, verify identities, manage users, and operate in both online and offline environments.
+The platform improves record accuracy, prevents duplicate registrations, and provides a secure method of identifying children through biometric fingerprint technology.
+1.2 Business Problem
+Organizations working with vulnerable children often face challenges including:
+    • Duplicate child registrations.
+    • Loss of identification records.
+    • Inability to accurately identify returning children.
+    • Manual data collection processes.
+    • Poor tracking of service delivery.
+This system addresses these challenges by introducing biometric fingerprint identification, centralized child records, role-based access control, and offline synchronization capabilities.
+1.3 SYSTEM OBJECTIVES
+The system aims to:
+• Uniquely identify street children using biometrics.
+• Reduce duplicate registrations.
+• Improve service delivery tracking.
+• Support offline field operations.
+• Provide secure access to sensitive information.
+• Enable reporting and analytics.
+1.4 Project Scope
+In Scope
+    • Staff Authentication
+    • User and Role Management
+    • Patient Registration
+    • Fingerprint Enrollment
+    • Fingerprint Verification
+    • Dashboard Analytics
+    • Notifications
+    • Audit Tracking
+    • Offline Data Collection
+    • Data Synchronization
+    • Outreach Location Management
+Out of Scope
+    • Payroll Management
+    • Financial Accounting
+    • Mobile Native Applications
+    • SMS Gateway Integration
+    • National ID Integration
+    • Electronic Medical Records (EMR)
+
+
+
+CHAPTER 2: SYSTEM ARCHITECTURE & TECHNOLOGY STACK
+2.1 High-Level Architecture
+The Street Children Fingerprint Management System follows a multi-tier client-server architecture. The architecture separates presentation, business logic, and data storage layers to improve maintainability, scalability, and security.
+Users interact with the web application through a browser. Requests are processed by the back-end API, which communicates with the database and biometric services. Fingerprint devices communicate with the biometric module through the installed SDK.
+┌──────────────────────────────────────────────┐
+│                End Users                     │
+│----------------------------------------------│
+│ Super User | Nurse | Doctor | Lab Technician │
+│ Pharmacist | Staff                           │
+└─────────────────────┬────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────┐
+│          Front-end Application                │
+│----------------------------------------------│
+│ React 18                                     │
+│ React Router DOM                             │
+│ CSS3                                         │
+│ WebRTC Camera Integration                    │
+└─────────────────────┬────────────────────────┘
+                      │
+                HTTPS / JWT
+                      │
+                      ▼
+┌──────────────────────────────────────────────┐
+│              REST API Back-end                │
+│----------------------------------------------│
+│ Authentication API                           │
+│ Patient Registration API                     │
+│ Biometric API                                │
+│ Notification API                             │
+│ Synchronization API                          │
+│ RBAC API                                     │
+└─────────────────────┬────────────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────────────────────┐
+│             Business Logic Layer             │
+│----------------------------------------------│
+│ Authentication Service                       │
+│ Patient Management Service                   │
+│ Fingerprint Management Service               │
+│ Verification Service                         │
+│ Notification Service                         │
+│ Offline Synchronization Service              │
+│ Role & Permission Service                    │
+└──────────────┬───────────────┬───────────────┘
+               │               │
+               │               │
+               ▼               ▼
+
+┌──────────────────────┐   ┌──────────────────┐
+│    MySQL Database    │   │ Fingerprint SDK  │
+│----------------------│   │ & Scanner Device │
+│ Users                │   │                  │
+│ Roles                │   │ Capture          │
+│ Permissions          │   │ Enrollment       │
+│ Patients             │   │ Verification     │
+│ Fingerprints         │   │ Matching         │
+│ Locations            │   │                  │
+│ Notifications        │   └──────────────────┘
+└──────────────────────┘
+
+FIG 2.1: HIGH LEVEL SYSTEM ARCHITECTURE DIAGRAM
+The architecture supports both online and offline operations through local storage and synchronization services.
+2.2 System Use Cases
+This section illustrates the interactions between users and the system.
+
+
+ Fig 2.2:Use Case Diagram
+Actors:
+• Super User
+• Nurse
+• Doctor
+• Lab Technician
+• Pharmacist
+Use Cases:
+• Login
+• Register Patient
+• Capture Fingerprint
+• Verify Identity
+• Manage Users
+• Manage Roles
+• View Dashboard
+• Generate Reports
+• Receive Notifications
+2.3 Technology Stack
+Layer
+Technology
+Front-end
+React 18
+Routing
+React Router DOM
+Styling
+CSS3
+Camera Access
+WebRTC
+Authentication
+JWT
+Back-end API
+REST API
+Database
+MySQL 8+
+Offline Sync
+Sync Worker
+Biometric Engine
+Fingerprint SDK
+Version Control
+Git
+2.4 Environment Requirements
+Minimum Requirements
+    • Node.js v16+
+    • MySQL 8+
+    • NPM or Yarn
+    • Modern Chromium Browser
+    • 4GB RAM
+    • Internet Connection (for synchronization)
+Recommended
+    • Node.js v20+
+    • MySQL 8.0+
+    • 8GB RAM
+    • Dedicated fingerprint scanner device
+
+
+CHAPTER 3: WEBSITE MODULES AND INTERFACES
+3.1 Overview
+The Street Children Fingerprint Management System is made up of parts. Each part helps with a task and gives users what they need to do their job well.
+The way the system looks and works is designed to be easy to use. It is also safe and easy to move. Who can see and use each part is decided by a set of rules. This is explained more in Chapter 4.
+3.2 Public Pages
+The system has a website that anyone can visit. This website tells people about the Tanzania Rural Health Movement, what they do and what services they offer. It also has reports and information about the community. Anyone can look at these pages without having to log in. They are like a page for people who are new, to the site.
+Home Page
+Path: 
+/home
+The Home Page serves as the landing page of the platform and provides an overview of the Tanzania Rural Health Movement (TRHM), its mission, objectives, and community impact.
+Features:
+    • Organization overview
+    • Street medicine program introduction
+    • Call-to-action buttons
+    • Quick navigation menu
+    • Contact information
+    • Social media links
+Purpose:
+To introduce visitors to the organization and provide access to public information and system services.
+
+Figure 3.1: Home Page Interface
+
+Login Page
+Path:
+/login
+The Login Page allows authorized users to securely access the system using their assigned credentials. The purpose is to authenticate users and provide secure access to protected system resources.
+Features:
+    • Username/Email field
+    • Password field
+    • Forgot Password
+    • Login Validation
+    • JWT Authentication
+      Fig 3.2: Login interface
+Forgot Password Page
+Path:
+/forgot-password
+The Forgot Password Page enables users to recover access to their accounts when credentials are forgotten. And the purpose is to provide a secure mechanism for password recovery.
+Features:
+    • Email Submission
+    • OTP Verification
+    • Password Reset
+Street Medicine Page
+Path: 
+/street-medicine
+This page provides detailed information about the Street Medicine program, outreach activities, and healthcare services offered to vulnerable children.
+Features:
+    • Program overview
+    • Outreach activities
+    • Service descriptions
+    • Community impact information
+Purpose:
+To educate visitors about street medicine initiatives and community healthcare interventions.
+
+
+Figure 3.3: Street Medicine Page
+About Page
+Path: /about
+The About Page provides background information about the organization, its mission, vision, and operational objectives.
+Features:
+    • Organizational profile
+    • Mission and vision statements
+    • Team information
+    • Historical background
+Gallery Page
+Path: /gallery
+The Gallery Page showcases photographs and media from outreach activities, healthcare interventions, and community events.
+Features:
+    • Photo gallery
+    • Event highlights
+    • Community engagement activities
+Join Now Page
+Path: /join
+The Join Now Page enables interested individuals to register, participate, volunteer, or engage with organizational programs.
+Features:
+    • Registration form
+    • Volunteer information
+    • Membership details
+      
+Figure 3.4: Join Now Interface
+
+
+3.3 Dashboard Pages
+Main Dashboard
+Path:
+/dashboard
+The dashboard serves as the primary operational interface for authenticated users. It provides real-time visibility into registrations, biometric activities, notifications, and system statistics.
+Displays:
+    • Registered patient Count
+    • Fingerprint Enrollment Statistics
+    • Active Users
+    • Notifications
+    • Recent Activities
+      Fig 3.5: Dashboard Interface
+Patient Registration
+Path:
+/patient
+The Patient Registration Module allows authorized users to create and manage patient records.
+During registration, demographic information, photographs, and outreach location details are captured and stored securely.
+Functions:
+    • Create patient Record
+    • Upload patient Photos
+    • Assign Location
+    • Search patient Records
+    • Update patient Information
+      
+      Fig 3.6: Patient Registration Interface
+Fingerprint Enrollment
+Path:
+/biometrics/enroll
+The Fingerprint Enrollment Module captures and stores biometric fingerprint templates associated with registered pat
+Functions:
+    • Capture Fingerprints
+    • Save Templates
+    • Quality Validation
+    • Enrollment Status Tracking
+Fingerprint Verification
+Path:
+/biometrics/verify
+The Fingerprint Verification Module enables identity verification and patient identification using stored biometric templates.
+Functions:
+    • 1:1 Verification
+    • 1:N Identification
+    • Match Scoring
+    • Verification History
+      Fig 3.7: Fingerprint Verification Interface
+Staff Management
+Path:
+/users
+Functions:
+    • Create Users
+    • Edit Users
+    • Reset Passwords
+    • Assign Roles
+Role Management
+Path:
+/roles
+Functions:
+    • Create Roles
+    • Assign Permissions
+    • Manage Access Levels
+Notifications
+Path:
+/notifications
+Functions:
+    • Create Notifications
+    • Read Notifications
+    • Manage Announcements
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CHAPTER 4: USER ROLES & ACCESS CONTROL
+4.1 Overview
+The Street Children Fingerprint Management System uses a kind of security called Role-Based Access Control. This means that people who use the system can only do things that are part of their job.
+The Street Children Fingerprint Management Systems Role-Based Access Control makes the system more secure. It keeps information and fingerprints safe. It also stops people from getting to parts of the system when they should not be able to. Each person who uses the system gets a role. Each role can do things and not others.
+This way of doing things makes it easier to manage who can do what. The Street Children Fingerprint Management Systems Role-Based Access Control also helps make sure that people follow the rules and that patient information is protected.
+4.2 User Roles
+Super User
+The Super User is the highest-level system administrator responsible for overall system management and configuration.
+Permissions:
+    • Full system access
+    • Manage users
+    • Manage roles
+    • Manage permissions
+    • Create and manage notifications
+    • Generate reports
+    • View audit logs
+    • Configure system settings
+    • Manage synchronization activities
+Nurse
+The Nurse is responsible for patient registration and biometric enrollment activities.
+Permissions:
+    • Register patients
+    • Update patient information
+    • Search patient records
+    • Upload patient photographs
+    • Assign outreach locations
+    • Capture fingerprints
+    • Enroll fingerprints
+    • Verify fingerprints
+    • View notifications
+    • Work offline
+Doctor
+The Doctor is responsible for reviewing patient information and verifying identities.
+Permissions:
+    • View patient records
+    • Search patient records
+    • Verify patient identity
+    • Access medical information
+    • View notifications
+Laboratory Technician
+The Laboratory Technician is responsible for biometric verification and quality assurance of fingerprint records.
+Permissions:
+    • Verify fingerprints
+    • Identify patients using biometrics
+    • Perform biometric quality review
+    • View notifications
+Pharmacist
+The Pharmacist is responsible for reviewing patient information relevant to medication and treatment support.
+Permissions:
+    • View patient profiles
+    • Access medication records
+    • View notifications
+Staff Member
+The Staff Member supports field operations and synchronization activities.
+Permissions:
+    • View dashboard
+    • Access assigned information
+    • Work offline
+    • Synchronize data
+4.3 Role-Based Access Control (RBAC)
+The RBAC framework controls access to system functionality based on user roles. When a user logs into the system, permissions associated with their assigned role determine which modules, pages, and actions are accessible.
+The authorization process follows the structure below:
+User
+   │
+   ▼
+Assigned Role
+   │
+   ▼
+Granted Permissions
+   │
+   ▼
+Accessible Features
+
+4.4 Role-Based Access Control Matrix
+Feature
+Super User
+Nurse
+Doctor
+Lab Technician
+Pharmacist
+Staff Member
+Login
+✓
+✓
+✓
+✓
+✓
+✓
+View Dashboard
+✓
+✓
+✓
+✓
+✓
+✓
+Register Patient
+✓
+✓
+✗
+✗
+✗
+✗
+Update Patient Information
+✓
+✓
+✗
+✗
+✗
+✗
+Search Patient Records
+✓
+✓
+✓
+✓
+✓
+✓
+View Patient Profile
+✓
+✓
+✓
+✓
+✓
+✓
+Upload Patient Photograph
+✓
+✓
+✗
+✗
+✗
+✗
+Assign Outreach Location
+✓
+✓
+✗
+✗
+✗
+✗
+Capture Fingerprint
+✓
+✓
+✗
+✗
+✗
+✗
+Enroll Fingerprint
+✓
+✓
+✗
+✗
+✗
+✗
+Verify Fingerprint
+✓
+✓
+✗
+✗
+✗
+✗
+Manage Users
+✓
+✗
+✗
+✗
+✗
+✗
+Manage Roles
+✓
+✗
+✗
+✗
+✗
+✗
+Manage Permissions
+✓
+✗
+✗
+✗
+✗
+✗
+Create Notifications
+✓
+✗
+✗
+✗
+✗
+✗
+View Notifications
+✓
+✓
+✓
+✓
+✓
+✓
+Generate Reports
+✓
+✓
+✗
+✗
+✗
+✗
+View Audit Logs
+✓
+✗
+✗
+✗
+✗
+✗
+Work Offline
+✓
+✓
+✓
+✓
+✓
+✓
+Synchronize Data
+✓
+✓
+✓
+✓
+✓
+✓
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CHAPTER 5: DATA MODEL
+5.1 Overview
+The Street Children Fingerprint Management System is a system that uses a kind of database to keep all the information safe and organized. This database is like a container that holds all the important information, about the patients, including their fingerprints and other personal details. It also keeps track of who's using the system what they can do and what is happening in the system.
+The database is designed to make sure that all the information is safe and can be retrieved easily. It helps to connect all the parts of the system like the patients, the people who work with them and the people who manage the system.
+The Street Children Fingerprint Management System database is made using MySQL, which is a type of database software. It is set up in a way that reduces repetition of information and makes it easier to maintain.
+5.2 Entity Relationship Diagram (ERD)
+The Entity Relationship Diagram is a diagram that shows how all the different parts of the Street Children Fingerprint Management System are connected.
+The Entity Relationship Diagram shows how the users, the roles they play what they are allowed to do the patients, the fingerprints, the locations, the notifications and the audit logs all work together in the Street Children Fingerprint Management System.
+
+Figure 5.1: Entity Relationship Diagram
+5.3 Core Entities
+Staff Users
+The Staff Users entity stores information about all authorized system users.
+This entity manages:
+    • User authentication credentials
+    • Personal profile information
+    • Assigned roles
+    • Account status
+    • User activities
+Examples of staff users include:
+    • System Administrators
+    • Nurses
+    • Doctors
+    • Lab Technicians
+    • Pharmacists
+Roles
+The Roles entity defines user responsibilities and access levels within the system.
+Examples include:
+    • Super User
+    • Nurse
+    • Doctor
+    • Lab Technician
+    • Pharmacist
+Each role is associated with a set of permissions that determine what actions a user can perform within the application.
+Permissions
+The Permissions entity defines individual system privileges.
+Examples include:
+    • Create Patient
+    • Update Patient
+    • Delete Patient
+    • Enroll Fingerprint
+    • Verify Identity
+    • Manage Users
+    • Create Notifications
+Permissions are assigned to roles through the Role-Based Access Control (RBAC) framework.
+Patients
+The Patients entity stores demographic and registration information for all registered individuals.
+Information stored includes:
+    • Unique patient identifier
+    • Full name
+    • Gender
+    • Estimated birth year
+    • Photographs
+    • Registration location
+    • Registration date
+    • Responsible staff member
+This entity serves as the primary record for each beneficiary registered in the system.
+Fingerprints
+The Fingerprints entity stores biometric fingerprint templates associated with registered patients.
+Information stored includes:
+    • Finger index
+    • Biometric template
+    • Quality score
+    • Verification status
+    • Enrollment date
+A single patient may have multiple fingerprint records.
+Locations
+The Locations entity stores information about outreach centers, registration facilities, and service delivery points.
+This enables the organization to track where registrations and biometric activities occur.
+Notifications
+The Notifications entity manages system alerts, announcements, reminders, and informational messages distributed to users.
+Notifications can be targeted to:
+    • All users
+    • Specific roles
+    • Individual users
+Audit Logs
+The Audit Logs entity maintains a record of critical system activities for accountability and compliance purposes.
+Examples include:
+    • User logins
+    • Patient registration
+    • Fingerprint enrollment
+    • Record modifications
+    • Permission changes
+    • Synchronization events
+Audit logs help ensure transparency and traceability within the system.
+5.4 Entity Relationships
+The system contains several key relationships between entities.
+User and Role Relationship
+A role can be assigned to many users, while each user is assigned a single role.
+Example:
+Role (Nurse)
+     │
+     ├── User 1
+     ├── User 2
+     └── User 3
+Patient and Fingerprint Relationship
+A patient can have multiple enrolled fingerprints.
+Example:
+Patient
+   │
+   ├── Right Thumb
+   ├── Right Index
+   ├── Left Thumb
+   └── Left Index
+Location and Patient Relationship
+A location may contain many patient registrations.
+Example:
+Location
+    │
+    ├── Patient A
+    ├── Patient B
+    └── Patient C
+User and Patient Relationship
+A staff member can register multiple patients.
+Example:
+Staff User
+      │
+      ├── Patient 1
+      ├── Patient 2
+      └── Patient 3
+5.5 Sample Patient Entity
+The following example illustrates a patient record stored within the system.
+{
+  "id": "UUID",
+  "customSerialId": "KID-2026-0001",
+  "fullName": "John Doe",
+  "gender": "Male",
+  "estimatedBirthYear": 2016,
+  "primaryLocationId": "UUID",
+  "createdByStaffId": "UUID"
+}
+Field Description
+Field
+Description
+id
+Unique patient identifier
+customSerialId
+Human-readable registration number
+fullName
+Patient full name
+gender
+Patient gender
+estimatedBirthYear
+Estimated year of birth
+primaryLocationId
+Registration location
+createdByStaffId
+Staff member who created the record
+5.6 Sample Fingerprint Entity
+The following example illustrates a fingerprint record stored within the system.
+{
+  "id": "UUID",
+  "patientId": "UUID",
+  "fingerIndex": 1,
+  "qualityScore": 89,
+  "status": "VERIFIED"
+}
+Field Description
+Field
+Description
+id
+Unique fingerprint identifier
+patientId
+Associated patient
+fingerIndex
+Finger captured
+qualityScore
+Fingerprint quality rating
+status
+Verification status
+5.7 Data Integrity and Security
+To ensure reliability and security, the database implements the following controls:
+    • Primary Keys
+    • Foreign Keys
+    • Referential Integrity Constraints
+    • Unique Constraints
+    • Password Hashing
+    • Audit Logging
+    • Role-Based Access Control
+    • Data Validation Rules
+These controls ensure that patient and biometric data remain accurate, secure, and traceable throughout the system life-cycle.
+
+
+
+
+
+
+
+
+
+
+
+CHAPTER6: API OVERVIEW
+6.1 Introduction
+The Street Children Fingerprint Management System has a set of RESTful API endpoints that enable secure communication between the front-end application and back-end services. The APIs are responsible for handling authentication, patient registration, biometric processing, notifications, synchronization, and other system operations.
+All API requests and responses use JSON format and are transmitted over HTTPS to ensure secure communication.
+6.2 API Architecture
+The API layer acts as an intermediary between the user interface and the system database. It processes requests, validates data, enforces security policies, executes business logic, and returns appropriate responses to the client application.
+API Request Flow
+
+Figure 6.1: API Request Processing Flow
+
+6.3 Authentication and Authorization
+The system uses JSON Web Token (JWT) authentication to secure API access. Upon successful login, the server generates an access token which must be included in the Authorization header for all protected endpoints.
+Authentication Header Example
+Authorization: Bearer <access_token>
+Authentication Process
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Figure 6.2: Authentication Flow
+
+6.4 Standard Response Format
+Successful Response
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": {}
+}
+Error Response
+{
+  "success": false,
+  "message": "Validation failed",
+  "errors": []
+}
+6.5 Authentication Endpoints
+The Authentication Module handles user login, session validation, password recovery, and access management.
+User Login
+Endpoint
+POST /api/auth/login
+Description
+Authenticates a user and returns a JWT access token.
+Request Liberation Serif
+{
+  "usernameOrEmail": "admin",
+  "password": "password"
+}
+Response
+{
+  "success": true,
+  "accessToken": "jwt_token"
+}
+Additional Authentication Endpoints
+Method
+Endpoint
+Description
+POST
+/api/auth/login
+Authenticate user
+POST
+/api/auth/logout
+Logout user
+POST
+/api/auth/reset-password
+Reset password
+GET
+/api/auth/session
+Validate session
+
+6.6 Patient Management Endpoints
+The Patient Management Module is responsible for creating, retrieving, updating, and deleting patient records.
+Create Patient
+POST /api/patient
+Creates a new patient record in the system.
+Get All Patients
+GET /api/patient
+Retrieves all registered patients.
+Get Patient by ID
+GET /api/patient/{id}
+Retrieves a specific patient record.
+Update Patient
+PUT /api/patient/{id}
+Updates an existing patient record.
+Delete Patient
+DELETE /api/patient/{id}
+Removes a patient record from the system.
+Patient API Summary
+Method
+Endpoint
+Description
+POST
+/api/patient
+Create patient
+GET
+/api/patient
+Get all patients
+GET
+/api/patient/{id}
+Get patient details
+PUT
+/api/patient/{id}
+Update patient
+DELETE
+/api/patient/{id}
+Delete patient
+6.7 Biometric Endpoints
+The Biometric Module manages fingerprint enrollment, verification, and identification processes.
+Fingerprint Enrollment
+POST /api/biometrics/enroll
+Captures and stores a fingerprint template for a patient.
+Fingerprint Verification (1:1)
+POST /api/biometrics/verify-1to1
+Compares a scanned fingerprint against a known fingerprint record.
+Fingerprint Identification (1:N)
+POST /api/biometrics/identify-1toN
+Searches the fingerprint database to identify a patient.
+Biometric Process Flow
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Figure 6.3: Biometric Verification Flow
+Biometric API Summary
+Method
+Endpoint
+Description
+POST
+/api/biometrics/enroll
+Enroll fingerprint
+POST
+/api/biometrics/verify-1to1
+Verify fingerprint
+POST
+/api/biometrics/identify-1toN
+Identify patient
+6.8 Notification Endpoints
+The Notification Module enables administrators to create, manage, and distribute announcements and alerts.
+Notification Endpoints
+Method
+Endpoint
+Description
+GET
+/api/notifications
+Retrieve notifications
+POST
+/api/notifications
+Create notification
+PUT
+/api/notifications/{id}
+Update notification
+DELETE
+/api/notifications/{id}
+Delete notification
+6.9 HTTP Status Codes
+The API returns standard HTTP status codes to indicate the outcome of requests.
+Status Code
+Meaning
+200
+Success
+201
+Resource Created
+400
+Bad Request
+401
+Unauthorized
+403
+Forbidden
+404
+Resource Not Found
+409
+Conflict
+500
+Internal Server Error
+6.10 API Security Considerations
+To protect sensitive patient and biometric data, the API implements multiple security mechanisms:
+    • JWT Authentication
+    • Role-Based Access Control (RBAC)
+    • Request Validation
+    • Password Hashing
+    • Secure HTTPS Communication
+    • Audit Logging
+    • Permission-Based Endpoint Access
+CHAPTER 7: OFFLINE SYNCHRONIZATION
+7.1 Overview
+The Street Children Fingerprint Management System is designed to operate effectively in environments where internet connectivity may be unreliable or unavailable. To support field operations, the system includes an Offline Synchronization Engine that enables staff to continue registering patients, capturing biometric fingerprints, and updating records while disconnected from the central server.
+All changes performed during offline operation are temporarily stored in the local database and automatically synchronized with the central server once network connectivity becomes available.
+This functionality ensures uninterrupted service delivery and minimizes the risk of data loss during outreach activities.
+7.2 Offline Operation Architecture
+The synchronization architecture consists of four primary components:
+Component
+Description
+User Interface
+Allows staff to continue working while offline
+Local Database
+Stores records created or modified offline
+Sync Worker
+Detects connectivity changes and manages synchronization
+Central Server
+Stores master records and resolves synchronization conflicts
+
+7.3 Synchronization Process
+When internet connectivity is unavailable, the system automatically switches to offline mode. Users can continue performing authorized operations without interruption.
+Once connectivity is restored, the synchronization service automatically begins transferring locally stored records to the central server and retrieving any new updates.
+Synchronization Steps
+    1. User works in offline mode.
+    2. Data is stored in the local database.
+    3. Connectivity becomes available.
+    4. Sync Worker detects the connection.
+    5. Pending local changes are uploaded.
+    6. Updated records are downloaded from the server.
+    7. Conflict resolution is performed if necessary.
+    8. Local database is updated.
+    9. Synchronization status is confirmed.
+7.4 Offline Synchronization Workflow
+The Offline Synchronization Workflow illustrates how the system continues to operate when internet connectivity is unavailable and how data is synchronized once connectivity is restored. Field staff continue using the application normally even when an internet connection is unavailable. During this period, users can register patients, capture fingerprints, update records, and perform other authorized activities without interruption. All data created or modified while offline is stored securely within the local database on the user's device. This ensures that no information is lost due to network unavailability.
+
+
+
+
+
+
+
+
+
+
+Figure 7.2: Synchronization Workflow
+7.5 Synchronization API Endpoints
+The synchronization service communicates with the server through dedicated API endpoints.
+Push Local Changes
+POST /api/sync/push
+Uploads locally stored records that have not yet been synchronized.
+Retrieve Server Updates
+GET /api/sync/delta
+Downloads records that have changed on the server since the last synchronization.
+Synchronization Endpoint Summary
+Method
+Endpoint
+Description
+POST
+/api/sync/push
+Upload local changes
+GET
+/api/sync/delta
+Download updated records
+7.6 Conflict Resolution
+Data conflicts may occur when the same record is modified both locally and on the server before synchronization.
+The system resolves conflicts using predefined synchronization rules.
+Examples include:
+    • Latest modification timestamp wins.
+    • Server record takes precedence.
+    • Manual review required for critical records.
+All synchronization conflicts are logged for audit purposes.
+7.7 Benefits of Offline Synchronization
+The Offline Synchronization Engine provides several operational benefits:
+    • Continuous operation without internet connectivity.
+    • Reduced risk of data loss.
+    • Improved reliability during field outreach activities.
+    • Automatic synchronization once connectivity is restored.
+    • Reduced workload for field staff.
+    • Consistent data across all devices and locations.
+    • Supports reliable patient registration and biometric identification in remote environments.
+    • Enables uninterrupted service delivery in areas with poor or no internet connectivity.
+7.8 Synchronization Status Indicators
+The application displays synchronization status to users using visual indicators.
+Status
+Description
+Online
+Connected and synchronized
+Offline
+No internet connection
+Syncing
+Data synchronization in progress
+Synced
+All records synchronized
+Conflict
+Manual review required
+
+CHAPTER 8: SECURITY
+Security Architecture Overview
+The system uses multiple layers of security controls to protect sensitive patient and biometric information.
+Security Measures:
+• JWT Authentication
+• Password Hashing
+• Role-Based Access Control
+• Session Validation
+• Audit Logging
+• Secure API Communication
+• Permission Validation
+Authentication
+    • JWT Access Tokens
+    • Session Validation
+    • Token Expiration
+Authorization
+    • Role-Based Access Control (RBAC)
+    • Permission-Based Endpoints
+Data Protection
+    • Password Hashing
+    • Secure API Access
+    • Audit Logging
+    • Protected Biometric Data
+
+CHAPTER 9: DEPLOYMENT
+Installation
+git clone https://github.com/psychopods/medical. Sys.git
+
+cd medical. Sys
+
+npm install
+
+npm run dev
+Database
+mysql -u root -p
+Configure database credentials and run migrations before application startup.
+CHAPTER 10: MAINTENANCE & TROUBLESHOOTING
+System Maintenance Activities
+Routine maintenance activities include database backups, security updates, user account reviews, fingerprint device diagnostics, log monitoring and synchronization monitoring
+Common Errors
+401 Unauthorized
+Cause:
+Expired JWT token.
+Solution:
+Login again and obtain a new token.
+500 Internal Server Error
+Cause:
+Database or server failure.
+Solution:
+Check API logs and database connectivity.
+Fingerprint Scanner Not Detected
+Cause:
+SDK or device connectivity issue.
+Solution:
+    • Verify SDK installation.
+    • Reconnect scanner.
+    • Restart browser.
+Synchronization Failure
+Cause:
+Network interruption.
+Solution:
+Retry synchronization after connectivity is restored.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+APPENDICES
+Appendix A: System Modules
+The Street Children Fingerprint Management System is composed of the following core modules implemented during Phase One.
+Module
+Description
+Authentication Module
+Manages user login, logout, password recovery, and session validation
+Dashboard Module
+Provides system statistics, activities, and notifications
+Patient Registration Module
+Manages patient demographic information and registration records
+Fingerprint Enrollment Module
+Captures and stores biometric fingerprint templates
+Fingerprint Verification Module
+Performs biometric verification and identification
+Staff Management Module
+Manages system users, roles, and permissions
+Notification Module
+Creates and distributes announcements and alerts
+Offline Synchronization Module
+Synchronizes offline records with the central server
+Appendix B: Project Development Timeline
+The Phase One implementation was executed according to the following development schedule.
+Week
+Activities
+Week 1
+Requirements Analysis, System Architecture Design, Database Design, Project Setup
+Week 2
+Authentication Module, User Management Module, Dashboard Development
+Week 3
+Patient Registration Module, Fingerprint Enrollment Module, Biometric Integration
+Week 4
+API Integration, Testing, Bug Fixing, Deployment Preparation
+Appendix C: System Diagrams
+The following diagrams support the technical documentation.
+Included Diagrams
+    • High-Level Architecture Diagram
+    • Use Case Diagram
+    • Entity Relationship Diagram (ERD)
+    • Authentication Workflow Diagram
+    • Patient Registration Workflow Diagram
+    • Fingerprint Enrollment Workflow Diagram
+    • Fingerprint Verification Workflow Diagram
+    • Offline Synchronization Workflow Diagram
+Appendix D: External Dependencies
+The system relies on the following technologies and third-party components.
+Software Components
+    • React 18
+    • React Router DOM
+    • Node.js
+    • MySQL 8+
+    • JWT Authentication
+    • Fingerprint SDK
+    • Git Version Control
+Hardware Components
+    • Fingerprint Scanner Device
+    • Web Camera (Optional)
+    • Workstation or Laptop
+Appendix E: Document Revision History
+Version
+Date
+Author
+Description
+1.0
+June 2026
+MITzKITs Development Team
+Initial Release
+
