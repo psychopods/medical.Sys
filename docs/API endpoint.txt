@@ -1,0 +1,2211 @@
+================================================================================
+FIELD OUTREACH AND STREET MEDICINE SYSTEM - API ENDPOINT SPECIFICATION
+================================================================================
+
+This document details all active API endpoints, authentication requirements,
+parameter properties (casing standards), and request/response structures.
+
+--------------------------------------------------------------------------------
+GENERAL TECHNICAL GUIDELINES
+--------------------------------------------------------------------------------
+
+1. CONTENT-TYPE STANDARD
+   - All API endpoints that receive body payloads require the HTTP header:
+     Content-Type: application/json
+
+2. CASING STANDARDS
+   - Request and Response JSON payload properties strictly use camelCase
+     (e.g., 'usernameOrEmail', 'roleId', 'permissionId').
+   - URL path parameters use camelCase (e.g., ':id', ':permissionId').
+   - The underlying MySQL database uses snake_case for tables and columns
+     (e.g., 'staff_users', 'role_id', 'password_hash'), but the API layer maps
+     these values cleanly into camelCase before emitting response payloads.
+
+3. AUTHENTICATION & SHIELDING
+   - Protected endpoints require a signed JSON Web Token (JWT) passed via
+     the HTTP Authorization header:
+     Authorization: Bearer <your_jwt_access_token>
+   - User privileges are validated in real-time by verifying dynamic
+     permission slugs mapped to the staff user's role.
+
+================================================================================
+SECTION 1: SYSTEM MONITORING
+================================================================================
+
+1. GET /health
+   - Description: Verifies application health and operational status.
+   - Authentication: None.
+   - Data Sending Method: URL GET request.
+   - Query Parameters: None.
+   - Response Payload Example:
+     {
+         "status": "ok"
+     }
+
+================================================================================
+SECTION 2: STAFF AUTHENTICATION & SESSION MANAGEMENT (/api/auth)
+================================================================================
+
+1. POST /api/auth/login
+   - Description: Validates credentials and issues a signed bearer access token.
+   - Authentication: None.
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "usernameOrEmail": "string" (Required - non-empty),
+         "password": "string" (Required - non-empty)
+     }
+   - Response Payload Example:
+     {
+         "accessToken": "eyJhbGciOiJIUzI1...",
+         "session": {
+             "sessionId": "4d7be15e-99ac-40eb-bc0e-36526117eb8a",
+             "staffUserId": "staff-admin-001",
+             "username": "master_admin",
+             "email": "admin@outreach.org",
+             "roleId": "role-su-777",
+             "permissions": ["rbac:read", "rbac:write", "children:create"],
+             "issuedAt": "2026-05-26T10:30:59.000Z",
+             "expiresAt": "2026-05-26T22:30:59.000Z"
+         },
+         "localSession": {
+             "storageKey": "field_outreach.auth.session.v1",
+             "permissionCacheKey": "field_outreach.auth.permissions.v1",
+             "expiresAt": "2026-05-26T22:30:59.000Z"
+         },
+         "success": true,
+         "token": "eyJhbGciOiJIUzI1...",
+         "user": {
+             "user_id": "staff-admin-001",
+             "id": "staff-admin-001",
+             "username": "master_admin",
+             "email": "admin@outreach.org",
+             "role_id": "role-su-777",
+             "first_name": "System",
+             "last_name": "Admin",
+             "phone_number": "+255000000000",
+             "role": "superuser",
+             "permissions": ["rbac:read", "rbac:write", "children:create"]
+         }
+     }
+
+2. GET /api/auth/session
+   - Description: Loads active session properties from the presented token.
+   - Authentication: Protected (Requires Authorization Bearer Token).
+   - Data Sending Method: HTTP Authorization Header.
+   - Response Payload Example:
+     {
+         "session": {
+             "sessionId": "4d7be15e-99ac-40eb-bc0e-36526117eb8a",
+             "staffUserId": "staff-admin-001",
+             "username": "master_admin",
+             "email": "paschaltimoth@gmx.us",
+             "roleId": "role-su-777",
+             "permissions": ["rbac:read", "rbac:write"],
+             "issuedAt": "2026-05-26T10:30:59.000Z",
+             "expiresAt": "2026-05-26T22:30:59.000Z"
+         }
+     }
+
+3. POST /api/auth/logout
+   - Description: Emits session clearance notification (tokens are stateless).
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "message": "Local session cleared by client. Bearer token should be discarded from local storage."
+     }
+
+4. POST /api/auth/signup
+   - Description: Creates a new staff operator.
+   - Authentication: None.
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "username": "string" (Required - non-empty),
+         "email": "string" (Required - must be valid email format),
+         "password": "string" (Required - Minimum 6 characters),
+         "roleId": "string" (Required - Must refer to an existing role ID),
+         "firstName": "string" (Required - non-empty),
+         "lastName": "string" (Required - non-empty),
+         "phone": "string" (Required - non-empty)
+     }
+   - Response Payload Example:
+     {
+         "message": "Staff user registered successfully.",
+         "user": {
+             "id": "3be55c0a-01df-4e2b-a010-8b636cd4f971",
+             "username": "field_medic_john",
+             "email": "john.medic@outreach.org",
+             "roleId": "role-nu-888",
+             "firstName": "John",
+             "lastName": "Medic",
+             "phone": "+255777666555",
+             "version": 1,
+             "createdAt": "2026-05-26T11:00:59.000Z"
+         }
+     }
+
+5. POST /api/auth/forgot-password
+   - Description: Triggers a password reset flow by sending/queueing a reset link or OTP.
+   - Authentication: None.
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "email": "string" (Required - User's registered email or username)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "If the account exists, a password reset link has been sent to the registered email address."
+     }
+
+6. POST /api/auth/verify-otp
+   - Description: Verifies the password reset OTP sent to the user's email address.
+   - Authentication: None.
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "email": "string" (Required),
+         "otp": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "OTP verified successfully."
+     }
+
+7. POST /api/auth/resend-otp
+   - Description: Resends a password reset OTP to the user's email address.
+   - Authentication: None.
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "email": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "OTP resent successfully."
+     }
+
+8. POST /api/auth/reset-password
+   - Description: Resets a staff user's password using either a valid reset token or OTP.
+   - Authentication: None.
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (token-based or OTP-based):
+     {
+         "token": "string" (Required for token-based),
+         "new_password": "string" (Required - Minimum 6 characters),
+         "confirm_password": "string" (Required - Must match new_password)
+     }
+     OR
+     {
+         "email": "string" (Required for OTP-based),
+         "otp": "string" (Required for OTP-based),
+         "new_password": "string" (Required - Minimum 6 characters)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Password reset successfully."
+     }
+
+--------------------------------------------------------------------------------
+STAFF USER MANAGEMENT CRUD OPERATIONS (Protected)
+--------------------------------------------------------------------------------
+
+1. GET /api/auth/users
+   - Description: Lists all registered staff users with role names and last active times.
+   - Authentication: Protected (Requires 'admin:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     [
+         {
+             "id": "3be55c0a-01df-4e2b-a010-8b636cd4f971",
+             "username": "field_medic_john",
+             "email": "john.medic@outreach.org",
+             "roleId": "role-nu-888",
+             "roleName": "Nurse",
+             "firstName": "John",
+             "lastName": "Medic",
+             "phone": "+255777666555",
+             "securityStatus": "ACTIVE",
+             "version": 1,
+             "createdAt": "2026-05-26T11:00:59.000Z",
+             "lastActive": "2026-05-26T12:00:00.000Z"
+         }
+     ]
+
+2. GET /api/auth/users/generate_username?year=YYYY
+   - Description: Generates a sequential username in ST-YYYY-XXXX format.
+   - Authentication: Protected (Requires 'admin:create' permission slug).
+   - Data Sending Method: URL query parameter.
+   - Response Payload Example:
+     {
+         "username": "ST-2026-0004"
+     }
+
+3. POST /api/auth/users
+   - Description: Creates a new staff user profile.
+   - Authentication: Protected (Requires 'admin:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "username": "string" (Required - non-empty),
+         "email": "string" (Required - must be valid email format),
+         "password": "string" (Required - Minimum 6 characters),
+         "roleId": "string" (Required),
+         "firstName": "string" (Required),
+         "lastName": "string" (Required),
+         "phone": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "message": "Staff user registered successfully.",
+         "user": {
+             "id": "3be55c0a-01df-4e2b-a010-8b636cd4f971",
+             "username": "field_medic_john",
+             "email": "john.medic@outreach.org",
+             "roleId": "role-nu-888",
+             "firstName": "John",
+             "lastName": "Medic",
+             "phone": "+255777666555",
+             "version": 1,
+             "createdAt": "2026-05-26T11:00:59.000Z"
+         }
+     }
+
+4. PUT /api/auth/users/:id
+   - Description: Updates an existing staff user profile.
+   - Authentication: Protected (Requires 'admin:update' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "username": "string" (Required),
+         "email": "string" (Required),
+         "roleId": "string" (Required),
+         "firstName": "string" (Required),
+         "lastName": "string" (Required),
+         "phone": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "message": "Staff user updated successfully.",
+         "user": {
+             "id": "3be55c0a-01df-4e2b-a010-8b636cd4f971",
+             "username": "field_medic_john_updated",
+             "email": "john.medic.new@outreach.org",
+             "roleId": "role-nu-888",
+             "firstName": "John",
+             "lastName": "Medic",
+             "phone": "+255777666555",
+             "version": 2
+         }
+     }
+
+5. DELETE /api/auth/users/:id
+   - Description: Deletes a staff user profile.
+   - Authentication: Protected (Requires 'admin:delete' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Staff user deleted successfully."
+     }
+
+6. GET /api/auth/online-count
+   - Description: Retrieves the total count of active online staff members.
+   - Authentication: Protected (Requires 'admin:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     {
+         "activeOnlineCount": 3
+     }
+
+7. GET /api/auth/online_users
+   - Description: Retrieves the count of online staff members (legacy/alternative format).
+   - Authentication: Protected (Requires 'admin:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     {
+         "count": 3
+     }
+
+8. POST /api/auth/send_credentials
+   - Description: Sends/queues a password reset link for a staff user.
+   - Authentication: Protected (Requires 'admin:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "toEmail": "string" (Required - Target staff user email or username)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Password reset link queued for droidgrim@gmail.com."
+     }
+
+9. POST /api/auth/users/:id/password-reset-link
+   - Description: Generates a password reset link for a specific staff user ID.
+   - Authentication: Protected (Requires 'admin:update' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Password reset link queued for droidgrim@gmail.com."
+     }
+
+10. POST /api/auth/users/:id/reset-password
+    - Description: Directly resets password for a specific staff user.
+    - Authentication: Protected (Requires 'admin:update' permission slug).
+    - Data Sending Method: URL path parameter & JSON raw body.
+    - Request Body Parameters (camelCase):
+      {
+          "password": "string" (Required - Minimum 6 characters)
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Staff user password reset successfully."
+      }
+
+11. GET /api/auth/sessions
+    - Description: Lists all active user sessions.
+    - Authentication: Protected (Requires 'admin:read' permission slug).
+    - Data Sending Method: URL GET request.
+    - Response Payload Example:
+      {
+          "success": true,
+          "sessions": [
+              {
+                  "id": "4d7be15e-99ac-40eb-bc0e-36526117eb8a",
+                  "staffUserId": "staff-admin-001",
+                  "tokenHash": "sha256_hash_here",
+                  "userAgent": "Mozilla/5.0...",
+                  "ipAddress": "127.0.0.1",
+                  "expiresAt": "2026-05-26T22:30:59.000Z",
+                  "createdAt": "2026-05-26T10:30:59.000Z"
+              }
+          ]
+      }
+
+12. DELETE /api/auth/sessions/:id
+    - Description: Revokes/deletes an active session by session ID.
+    - Authentication: Protected (Requires 'admin:delete' permission slug).
+    - Data Sending Method: URL path parameter.
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Session revoked successfully."
+      }
+
+13. GET /api/auth/reset-tokens
+    - Description: Lists all generated password reset tokens.
+    - Authentication: Protected (Requires 'admin:read' permission slug).
+    - Data Sending Method: URL GET request.
+    - Response Payload Example:
+      {
+          "success": true,
+          "tokens": [
+              {
+                  "id": "token-uuid-1234",
+                  "staffUserId": "staff-admin-001",
+                  "tokenHash": "token_hash_here",
+                  "requestedByStaffId": null,
+                  "expiresAt": "2026-05-26T11:30:59.000Z",
+                  "createdAt": "2026-05-26T10:30:59.000Z"
+              }
+          ]
+      }
+
+14. POST /api/auth/reset-tokens
+    - Description: Creates a new password reset token manually.
+    - Authentication: Protected (Requires 'admin:create' permission slug).
+    - Data Sending Method: JSON raw body.
+    - Request Body Parameters (camelCase):
+      {
+          "id": "string" (Required - UUIDv4),
+          "staffUserId": "string" (Required),
+          "tokenHash": "string" (Required),
+          "requestedByStaffId": "string|null" (Optional),
+          "expiresAt": "string" (Required - ISO timestamp)
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Password reset token created successfully.",
+          "token": {
+              "id": "token-uuid-1234",
+              "staffUserId": "staff-admin-001",
+              "tokenHash": "token_hash_here",
+              "requestedByStaffId": null,
+              "expiresAt": "2026-05-26T11:30:59.000Z",
+              "createdAt": "2026-05-26T10:30:59.000Z"
+          }
+      }
+
+15. DELETE /api/auth/reset-tokens/:id
+    - Description: Deletes/revokes a password reset token by ID.
+    - Authentication: Protected (Requires 'admin:delete' permission slug).
+    - Data Sending Method: URL path parameter.
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Password reset token deleted successfully."
+      }
+
+================================================================================
+SECTION 3: ROLE-BASED ACCESS CONTROL (/api)
+================================================================================
+
+--------------------------------------------------------------------------------
+ROLES CRUD OPERATIONS
+--------------------------------------------------------------------------------
+
+1. POST /api/roles
+   - Description: Registers a new authorization role profile.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "name": "string" (Required - Unique role profile name),
+         "description": "string" (Optional - null-coalescing fallback)
+     }
+   - Response Payload Example:
+     {
+         "message": "Role created successfully.",
+         "role": {
+             "id": "c1f7b0a3-2c1a-4d7a-8b83-d3a6eeef7f01",
+             "name": "Supervisor",
+             "description": "Outreach system administration manager",
+             "version": 1,
+             "lastModifiedAt": "2026-05-26T12:00:00.000Z"
+         }
+     }
+
+2. GET /api/roles
+   - Description: Lists all registered roles as a direct array.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     [
+         {
+             "id": "role-nu-888",
+             "name": "Nurse",
+             "description": "Field operator handling patient intake.",
+             "version": 1,
+             "lastModifiedAt": "2026-05-26T10:30:59.000Z"
+         }
+     ]
+
+3. GET /api/roles/:id
+   - Description: Retrieves a role by ID with nested linked permissions.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "id": "role-su-777",
+         "name": "Super User",
+         "description": "System Administrator with complete access.",
+         "version": 1,
+         "lastModifiedAt": "2026-05-26T10:30:59.000Z",
+         "permissions": [
+             {
+                 "id": "perm-001",
+                 "slug": "rbac:read",
+                 "description": "View roles and permissions",
+                 "categoryId": 4
+             }
+         ]
+     }
+
+4. GET /api/roles/:id/permissions
+   - Description: Retrieves a flat array of permission IDs associated with a role.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     [
+         "11111111-1111-4111-8111-111111111151",
+         "11111111-1111-4111-8111-111111111152"
+     ]
+
+5. PUT /api/roles/:id
+   - Description: Updates an existing role's name/description and increments version.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "name": "string" (Required - Unique role profile name),
+         "description": "string" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Role updated successfully.",
+         "role": {
+             "id": "c1f7b0a3-2c1a-4d7a-8b83-d3a6eeef7f01",
+             "name": "Outreach Supervisor",
+             "description": "Modified supervisor profile",
+             "version": 2,
+             "lastModifiedAt": "2026-05-26T12:05:00.000Z"
+         }
+     }
+
+6. DELETE /api/roles/:id
+   - Description: Deletes a role (blocks deletion if assigned to active users).
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Role deleted successfully."
+     }
+
+--------------------------------------------------------------------------------
+PERMISSIONS CRUD OPERATIONS
+--------------------------------------------------------------------------------
+
+1. POST /api/permissions
+   - Description: Registers a new system-wide functional permission slug.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "slug": "string" (Required - Must follow 'domain:action' format, e.g. 'children:create'),
+         "description": "string" (Optional),
+         "categoryId": "number|null" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Permission created successfully.",
+         "permission": {
+             "id": "f5b6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+             "slug": "biometrics:enroll",
+             "description": "Register fingerprints",
+             "categoryId": 2
+         }
+     }
+
+2. GET /api/permissions
+   - Description: Lists all registered system permissions as a direct array.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Response Payload Example:
+     [
+         {
+             "id": "perm-001",
+             "slug": "rbac:read",
+             "description": "View roles and permissions",
+             "categoryId": 4
+         }
+     ]
+
+3. GET /api/permissions/:id
+   - Description: Retrieves permission profile details by ID.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "id": "f5b6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+         "slug": "biometrics:enroll",
+         "description": "Register fingerprints",
+         "categoryId": 2
+     }
+
+4. PUT /api/permissions/:id
+   - Description: Updates a permission slug/description/category.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "slug": "string" (Required - format 'domain:action'),
+         "description": "string" (Optional),
+         "categoryId": "number|null" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Permission updated successfully.",
+         "permission": {
+             "id": "f5b6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+             "slug": "biometrics:enroll_scan",
+             "description": "Register fingerprints and manage scan flows",
+             "categoryId": 2
+         }
+     }
+
+5. DELETE /api/permissions/:id
+   - Description: Deletes a permission (automatically unlinks related roles).
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Permission deleted successfully."
+     }
+
+--------------------------------------------------------------------------------
+PERMISSION CATEGORIES CRUD OPERATIONS
+--------------------------------------------------------------------------------
+
+1. GET /api/permission_categories
+   - Description: Lists all registered permission categories as a direct array.
+   - Authentication: Protected (Requires 'rbac:read' permission slug).
+   - Response Payload Example:
+     [
+         {
+             "id": 1,
+             "name": "Patients CRUD",
+             "description": "Manage child profiles and records",
+             "createdAt": "2026-05-26T10:30:59.000Z",
+             "updatedAt": "2026-05-26T10:30:59.000Z"
+         }
+     ]
+
+2. POST /api/permission_categories
+   - Description: Creates a new permission category.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "name": "string" (Required - Unique),
+         "description": "string" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Permission category created successfully.",
+         "category": {
+             "id": 5,
+             "name": "Scheduling",
+             "description": "Endpoints to schedule clinic rotations",
+             "createdAt": "2026-05-26T12:00:00.000Z",
+             "updatedAt": "2026-05-26T12:00:00.000Z"
+         }
+     }
+
+3. PUT /api/permission_categories/:id
+   - Description: Updates an existing permission category's name and description.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "name": "string" (Required),
+         "description": "string" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Permission category updated successfully.",
+         "category": {
+             "id": 5,
+             "name": "Outreach Scheduling",
+             "description": "Clinic rotation scheduling and planning",
+             "createdAt": "2026-05-26T12:00:00.000Z",
+             "updatedAt": "2026-05-26T12:05:00.000Z"
+         }
+     }
+
+4. DELETE /api/permission_categories/:id
+   - Description: Deletes a permission category (referencing permissions will have categoryId set to null).
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Permission category deleted successfully."
+     }
+
+--------------------------------------------------------------------------------
+ROLE-PERMISSIONS BRIDGE ENDPOINTS (Linking Relationships)
+--------------------------------------------------------------------------------
+
+1. POST /api/roles/:id/permissions
+   - Description: Link a permission to a specific role.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameter (role ID) & JSON raw body (permission ID).
+   - Request Body Parameters (camelCase):
+     {
+         "permissionId": "string" (Required - ID of the target permission)
+     }
+   - Response Payload Example:
+     {
+         "message": "Permission assigned to role successfully."
+     }
+
+2. DELETE /api/roles/:id/permissions/:permissionId
+   - Description: Unlink a permission from a specific role.
+   - Authentication: Protected (Requires 'rbac:write' permission slug).
+   - Data Sending Method: URL path parameters (role ID and permission ID).
+   - Response Payload Example:
+     {
+         "message": "Permission removed from role successfully."
+     }
+================================================================================
+
+SECTION 4: CHILD REGISTRATION MODULE (/api/children)
+================================================================================
+
+1. POST /api/children
+   - Description: Creates a child profile record.
+   - Authentication: Protected (Requires 'children:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Important Binding Rule:
+     createdByStaffId is server-bound from request.authSession.staffUserId.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - UUIDv4),
+         "customSerialId": "string" (Required - Unique),
+         "fullName": "string" (Required),
+         "gender": "string" (Required - 'Male' or 'Female'),
+         "estimatedBirthYear": "number|null" (Optional - 1900..current year),
+         "primaryLocationId": "string" (Required - UUIDv4),
+         "image1": "string|null" (Optional - base64 image data URL starting with data:image/),
+         "image2": "string|null" (Optional - base64 image data URL starting with data:image/),
+         "image3": "string|null" (Optional - base64 image data URL starting with data:image/)
+     }
+   - Response Payload Example:
+     {
+         "message": "Patient profile created successfully.",
+         "child": {
+             "id": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "customSerialId": "KID-2026-0001",
+             "fullName": "John Doe",
+             "gender": "Male",
+             "estimatedBirthYear": 2016,
+             "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
+             "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+             "image1": "data:image/jpeg;base64,...",
+             "image2": null,
+             "image3": null,
+             "version": 1
+         }
+     }
+
+2. GET /api/children
+   - Description: Lists child profiles (optionally filtered by registration date).
+   - Authentication: Protected (Requires 'children:read' permission slug).
+   - Query Parameters (camelCase):
+     registrationDate: "string" (Optional - YYYY-MM-DD format to filter profiles by registration date)
+   - Response Payload Example:
+     {
+         "children": [
+             {
+                 "id": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+                 "customSerialId": "KID-2026-0001",
+                 "fullName": "John Doe",
+                 "gender": "Male",
+                 "estimatedBirthYear": 2016,
+                 "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
+                 "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+                 "image1": "data:image/jpeg;base64,...",
+                 "image2": null,
+                 "image3": null,
+                 "version": 1
+             }
+         ]
+     }
+
+3. GET /api/children/:id
+   - Description: Retrieves a single child profile.
+   - Authentication: Protected (Requires 'children:read' permission slug).
+   - Response Payload Example:
+     {
+         "child": {
+             "id": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "customSerialId": "KID-2026-0001",
+             "fullName": "John Doe",
+             "gender": "Male",
+             "estimatedBirthYear": 2016,
+             "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
+             "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+             "image1": "data:image/jpeg;base64,...",
+             "image2": null,
+             "image3": null,
+             "version": 1
+         }
+     }
+
+4. PUT /api/children/:id
+   - Description: Updates a child profile and increments version.
+   - Authentication: Protected (Requires 'children:update' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "customSerialId": "string" (Required),
+         "fullName": "string" (Required),
+         "gender": "string" (Required - 'Male' or 'Female'),
+         "estimatedBirthYear": "number|null" (Optional),
+         "primaryLocationId": "string" (Required - UUIDv4),
+         "image1": "string|null" (Optional - base64 image data URL),
+         "image2": "string|null" (Optional - base64 image data URL),
+         "image3": "string|null" (Optional - base64 image data URL)
+     }
+   - Response Payload Example:
+     {
+         "message": "Patient profile updated successfully.",
+         "child": {
+             "id": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "customSerialId": "KID-2026-0001",
+             "fullName": "John Doe Updated",
+             "gender": "Male",
+             "estimatedBirthYear": 2016,
+             "primaryLocationId": "8de32e68-df50-469f-b0ea-218d8fa7c47a",
+             "createdByStaffId": "2327d9f9-8968-4ef1-9577-06bf2ccecc45",
+             "image1": "data:image/jpeg;base64,...",
+             "image2": "data:image/jpeg;base64,...",
+             "image3": null,
+             "version": 2
+         }
+     }
+
+5. DELETE /api/children/:id
+   - Description: Deletes a child profile (cascades biometric records via FK).
+   - Authentication: Protected (Requires 'children:delete' permission slug).
+   - Response Payload Example:
+     {
+         "message": "Patient profile deleted successfully."
+     }
+
+================================================================================
+SECTION 5: BIOMETRIC MODULE (/api/biometrics)
+================================================================================
+
+1. POST /api/biometrics/enroll
+   - Description: Upserts (create/update) a fingerprint template for childId + fingerIndex.
+   - Authentication: Protected (Requires 'biometrics:create' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - UUIDv4 template ID),
+         "childId": "string" (Required - UUIDv4 child ID),
+         "fingerIndex": "number" (Required - integer 1..10),
+         "templateBase64": "string" (Required - base64 template bytes),
+         "qualityScore": "number|null" (Optional - integer 0..100),
+         "capturedAt": "string" (Optional metadata),
+         "matcherVersion": "string" (Optional metadata)
+     }
+   - Response Payload Example:
+     {
+         "fingerprint": {
+             "id": "d988fce7-f5ad-4f7a-b77e-2ce44b111117",
+             "childId": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "fingerIndex": 1,
+             "qualityScore": 89,
+             "status": "PENDING",
+             "version": 1
+         },
+         "enrollment": {
+             "childId": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "capturedFingerIndexes": [1],
+             "missingFingerIndexes": [2,3,4,5,6,7,8,9,10],
+             "isComplete": false
+         }
+     }
+
+2. GET /api/biometrics/child/:childId
+   - Description: Lists fingerprint records for a child with enrollment completeness.
+   - Authentication: Protected (Requires 'biometrics:read' permission slug).
+
+3. POST /api/biometrics/verify-1to1
+   - Description: Stores/returns bridge-computed 1:1 verification outcome.
+   - Authentication: Protected (Requires 'biometrics:read' permission slug).
+   - Enforcement Rule:
+     Child must have all 10 fingers enrolled; otherwise HTTP 409.
+   - Request Body Parameters:
+     {
+         "childId": "string" (Required),
+         "templateBase64": "string" (Required),
+         "matched": "boolean" (Required),
+         "score": "number" (Required),
+         "threshold": "number" (Required),
+         "fingerIndex": "number" (Optional)
+     }
+
+4. POST /api/biometrics/identify-1toN
+   - Description: Stores/returns bridge-computed 1:N identification outcome.
+   - Authentication: Protected (Requires 'biometrics:read' permission slug).
+   - Request Body Parameters:
+     {
+         "templateBase64": "string" (Required),
+         "matched": "boolean" (Required),
+         "score": "number" (Required),
+         "threshold": "number" (Required),
+         "candidateChildId": "string|null" (Required if matched=true),
+         "candidateFingerprintId": "string|null" (Required if matched=true)
+     }
+
+5. DELETE /api/biometrics/:id
+   - Description: Deletes a fingerprint template row.
+   - Authentication: Protected (Requires 'biometrics:delete' permission slug).
+   - Response Payload Example:
+     {
+         "message": "Fingerprint record deleted successfully."
+     }
+
+6. GET /api/biometrics
+   - Description: Lists all biometric fingerprint records.
+   - Authentication: Protected (Requires 'biometrics:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     {
+         "success": true,
+         "fingerprints": [
+             {
+                 "id": "d988fce7-f5ad-4f7a-b77e-2ce44b111117",
+                 "childId": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+                 "fingerIndex": 1,
+                 "templateBase64": "base64_template_data...",
+                 "qualityScore": 89,
+                 "status": "PENDING",
+                 "createdAt": "2026-06-04T12:00:00.000Z",
+                 "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+             }
+         ]
+     }
+
+7. GET /api/biometrics/:id
+   - Description: Retrieves a specific biometric fingerprint record by ID.
+   - Authentication: Protected (Requires 'biometrics:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "success": true,
+         "fingerprint": {
+             "id": "d988fce7-f5ad-4f7a-b77e-2ce44b111117",
+             "childId": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "fingerIndex": 1,
+             "templateBase64": "base64_template_data...",
+             "qualityScore": 89,
+             "status": "PENDING",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+8. PUT /api/biometrics/:id
+   - Description: Updates a specific biometric fingerprint record's details and verification status.
+   - Authentication: Protected (Requires 'biometrics:update' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "fingerIndex": "number" (Required - integer 1..10),
+         "templateBase64": "string" (Required - base64 template bytes),
+         "qualityScore": "number|null" (Optional - integer 0..100),
+         "status": "string" (Required - 'PENDING' | 'VERIFIED' | 'REJECTED')
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Fingerprint record updated successfully.",
+         "fingerprint": {
+             "id": "d988fce7-f5ad-4f7a-b77e-2ce44b111117",
+             "childId": "d9a9099e-1f68-4874-9e81-699c2ccadfb6",
+             "fingerIndex": 1,
+             "templateBase64": "base64_template_data...",
+             "qualityScore": 89,
+             "status": "VERIFIED",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:05:00.000Z"
+         }
+     }
+
+================================================================================
+SECTION 6: DUAL-STATE IDENTITY RESOLUTION (/api/identity)
+================================================================================
+
+1. POST /api/identity/resolve
+   - Description: Two-stage resolution helper for local-first search.
+   - Authentication: Protected (Requires 'biometrics:read' permission slug).
+   - Data Flow:
+     Stage A: client performs local SQLite biometric search.
+     Stage B: if no local match and internet exists, call this endpoint with runCentralLookup=true.
+   - Request Body Parameters (camelCase):
+     {
+         "templateBase64": "string" (Required),
+         "localMatched": "boolean" (Required),
+         "localChildId": "string|null" (Required if localMatched=true),
+         "runCentralLookup": "boolean" (Optional; default true)
+     }
+   - Response Shape:
+     {
+         "stage": "local|central|none",
+         "found": "boolean",
+         "child": "object|null",
+         "matchFingerprintId": "string|null",
+         "message": "string"
+     }
+
+================================================================================
+SECTION 7: OFFLINE/ONLINE SYNC ENGINE (/api/sync)
+================================================================================
+
+1. POST /api/sync/push
+   - Description: Pushes client offline changes to server with optimistic conflict handling.
+   - Authentication: Protected (Bearer token required).
+   - Request Body Parameters:
+     {
+         "childrenProfiles": [ ... ],
+         "biometricFingerprints": [ ... ]
+     }
+   - Response Payload Example:
+     {
+         "message": "Sync push accepted.",
+         "conflicts": [
+             {
+                 "domain": "children_profiles|biometric_fingerprints",
+                 "id": "string",
+                 "reason": "string"
+             }
+         ]
+     }
+
+2. GET /api/sync/delta?since=<ISO-8601 timestamp>
+   - Description: Pulls server-side additions/updates since the provided timestamp.
+   - Authentication: Protected (Bearer token required).
+   - Query Parameter:
+     since (Optional - ISO datetime; if omitted, full baseline since epoch)
+   - Response Payload Example:
+     {
+         "serverTime": "2026-05-28T12:45:00.000Z",
+         "childrenProfiles": [ ... ],
+         "biometricFingerprints": [ ... ]
+     }
+
+--------------------------------------------------------------------------------
+SYNC WORKER CONTEXT (Client-Side Contract)
+--------------------------------------------------------------------------------
+
+Background worker script location:
+  API/public/workers/syncWorker.ts
+
+Inbound messages:
+  INIT
+  NETWORK_STATUS
+  RUN_SYNC
+  STOP
+
+Outbound messages:
+  READY
+  SYNC_STATUS
+  SYNC_RESULT
+  SYNC_ERROR
+
+Purpose:
+  Keeps sync off the UI thread, queues pending records, pushes on reconnect,
+  then fetches server delta snapshots for local SQLite application.
+
+================================================================================
+SECTION 8: OUTREACH LOCATIONS MODULE (/api/locations)
+================================================================================
+
+1. POST /api/locations
+   - Description: Registers a new outreach location.
+   - Authentication: Protected (Requires 'locations:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "name": "string" (Required - Unique location name),
+         "description": "string|null" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Location created successfully.",
+         "location": {
+             "id": "d8e32e68-df50-469f-b0ea-218d8fa7c47a",
+             "name": "Kibera Clinic",
+             "description": "Main outreach site in Kibera",
+             "version": 1,
+             "lastModifiedAt": "2026-05-26T12:00:00.000Z"
+         }
+     }
+
+2. GET /api/locations
+   - Description: Lists all registered outreach locations ordered by name.
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "locations": [
+             {
+                 "id": "d8e32e68-df50-469f-b0ea-218d8fa7c47a",
+                 "name": "Kibera Clinic",
+                 "description": "Main outreach site in Kibera",
+                 "version": 1,
+                 "lastModifiedAt": "2026-05-26T12:00:00.000Z"
+             }
+         ]
+     }
+
+3. GET /api/locations/:id
+   - Description: Retrieves details of a specific outreach location.
+   - Authentication: Protected (Requires 'locations:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "location": {
+             "id": "d8e32e68-df50-469f-b0ea-218d8fa7c47a",
+             "name": "Kibera Clinic",
+             "description": "Main outreach site in Kibera",
+             "version": 1,
+             "lastModifiedAt": "2026-05-26T12:00:00.000Z"
+         }
+     }
+
+4. PUT /api/locations/:id
+   - Description: Updates an existing outreach location's name and description.
+   - Authentication: Protected (Requires 'locations:update' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "name": "string" (Required - Unique location name),
+         "description": "string|null" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "message": "Location updated successfully.",
+         "location": {
+             "id": "d8e32e68-df50-469f-b0ea-218d8fa7c47a",
+             "name": "Kibera Clinic Updated",
+             "description": "Updated main outreach site description",
+             "version": 2,
+             "lastModifiedAt": "2026-05-26T12:05:00.000Z"
+         }
+     }
+
+5. DELETE /api/locations/:id
+   - Description: Deletes an outreach location (blocks deletion if assigned to any children).
+   - Authentication: Protected (Requires 'locations:delete' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Location deleted successfully."
+     }
+================================================================================
+SECTION 9: NOTIFICATIONS MODULE (/api/notifications)
+================================================================================
+
+1. POST /api/notifications
+   - Description: Registers a new system, announcement, or event notification.
+   - Authentication: Protected (Requires 'notifications:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "type": "string" (Required - 'SYSTEM' | 'ANNOUNCEMENT' | 'EVENT'),
+         "title": "string" (Required - non-empty),
+         "message": "string" (Required - non-empty),
+         "targetType": "string" (Required - 'ALL' | 'ROLE' | 'USER'),
+         "targetRoleId": "string|null" (Required if targetType is ROLE),
+         "targetUserId": "string|null" (Required if targetType is USER),
+         "expiresAt": "string|null" (Optional - ISO datetime string)
+     }
+   - Response Payload Example:
+     {
+         "message": "Notification created successfully.",
+         "notification": {
+             "id": "c8e32e68-df50-469f-b0ea-218d8fa7c47b",
+             "type": "ANNOUNCEMENT",
+             "title": "System Update",
+             "message": "We will have maintenance on Saturday.",
+             "targetType": "ALL",
+             "targetRoleId": null,
+             "targetUserId": null,
+             "createdByStaffId": "staff-admin-001",
+             "expiresAt": "2026-06-10T12:00:00.000Z",
+             "version": 1,
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+2. GET /api/notifications
+   - Description: Retrieves active notifications targeted at the authenticated user or their role.
+   - Authentication: Protected (Requires 'notifications:read' permission slug).
+   - Query Parameters:
+     includeRead (Optional - boolean 'true' to also list already read notifications)
+   - Response Payload Example:
+     [
+         {
+             "id": "c8e32e68-df50-469f-b0ea-218d8fa7c47b",
+             "type": "ANNOUNCEMENT",
+             "title": "System Update",
+             "message": "We will have maintenance on Saturday.",
+             "targetType": "ALL",
+             "targetRoleId": null,
+             "targetUserId": null,
+             "createdByStaffId": "staff-admin-001",
+             "expiresAt": "2026-06-10T12:00:00.000Z",
+             "version": 1,
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z",
+             "isRead": false
+         }
+     ]
+
+3. PUT /api/notifications/:id/read
+   - Description: Marks a notification as read for the authenticated staff user.
+   - Authentication: Protected (Requires 'notifications:update' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Notification marked as read."
+     }
+
+4. DELETE /api/notifications/:id
+   - Description: Deletes a notification from the system.
+   - Authentication: Protected (Requires 'notifications:delete' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "message": "Notification deleted successfully."
+     }
+
+5. GET /api/notifications/all
+   - Description: Retrieves all system, announcement, or event notifications (no user/role filtering).
+   - Authentication: Protected (Requires 'notifications:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     {
+         "success": true,
+         "notifications": [
+             {
+                 "id": "c8e32e68-df50-469f-b0ea-218d8fa7c47b",
+                 "type": "ANNOUNCEMENT",
+                 "title": "System Update",
+                 "message": "We will have maintenance on Saturday.",
+                 "targetType": "ALL",
+                 "targetRoleId": null,
+                 "targetUserId": null,
+                 "createdByStaffId": "staff-admin-001",
+                 "expiresAt": "2026-06-10T12:00:00.000Z",
+                 "version": 1,
+                 "createdAt": "2026-06-04T12:00:00.000Z",
+                 "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+             }
+         ]
+     }
+
+6. GET /api/notifications/reads
+   - Description: Retrieves all notification read receipts in the system.
+   - Authentication: Protected (Requires 'notifications:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     {
+         "success": true,
+         "reads": [
+             {
+                 "notificationId": "c8e32e68-df50-469f-b0ea-218d8fa7c47b",
+                 "staffUserId": "staff-admin-001",
+                 "readAt": "2026-06-04T13:00:00.000Z"
+             }
+         ]
+     }
+
+7. POST /api/notifications/reads
+   - Description: Manually records a notification read receipt for a user.
+   - Authentication: Protected (Requires 'notifications:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "notificationId": "string" (Required - UUIDv4),
+         "staffUserId": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Notification read record created successfully."
+     }
+
+8. DELETE /api/notifications/reads/:notificationId/:staffUserId
+   - Description: Deletes a specific notification read receipt.
+   - Authentication: Protected (Requires 'notifications:delete' permission slug).
+   - Data Sending Method: URL path parameters.
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Notification read record deleted successfully."
+     }
+
+9. GET /api/notifications/:id
+   - Description: Retrieves a specific notification by ID.
+   - Authentication: Protected (Requires 'notifications:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "success": true,
+         "notification": {
+             "id": "c8e32e68-df50-469f-b0ea-218d8fa7c47b",
+             "type": "ANNOUNCEMENT",
+             "title": "System Update",
+             "message": "We will have maintenance on Saturday.",
+             "targetType": "ALL",
+             "targetRoleId": null,
+             "targetUserId": null,
+             "createdByStaffId": "staff-admin-001",
+             "expiresAt": "2026-06-10T12:00:00.000Z",
+             "version": 1,
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+10. PUT /api/notifications/:id
+    - Description: Updates a specific notification's details by ID.
+    - Authentication: Protected (Requires 'notifications:update' permission slug).
+    - Data Sending Method: URL path parameter & JSON raw body.
+    - Request Body Parameters (camelCase):
+      {
+          "type": "string" (Required - 'SYSTEM' | 'ANNOUNCEMENT' | 'EVENT'),
+          "title": "string" (Required),
+          "message": "string" (Required),
+          "targetType": "string" (Required - 'ALL' | 'ROLE' | 'USER'),
+          "targetRoleId": "string|null" (Required if targetType is ROLE),
+          "targetUserId": "string|null" (Required if targetType is USER),
+          "expiresAt": "string|null" (Optional - ISO datetime string)
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Notification updated successfully.",
+          "notification": {
+              "id": "c8e32e68-df50-469f-b0ea-218d8fa7c47b",
+              "type": "ANNOUNCEMENT",
+              "title": "Updated Title",
+              "message": "We will have maintenance on Sunday.",
+              "targetType": "ALL",
+              "targetRoleId": null,
+              "targetUserId": null,
+              "createdByStaffId": "staff-admin-001",
+              "expiresAt": "2026-06-10T12:00:00.000Z",
+              "version": 2,
+              "createdAt": "2026-06-04T12:00:00.000Z",
+              "lastModifiedAt": "2026-06-04T12:05:00.000Z"
+          }
+      }
+
+================================================================================
+SECTION 10: WEBSITE CONTENT MANAGEMENT MODULES (Gallery, Reports, Support)
+================================================================================
+
+--------------------------------------------------------------------------------
+10.1 GALLERY MODULE (/api/gallery)
+--------------------------------------------------------------------------------
+
+1. GET /api/gallery/categories
+   - Description: Lists all gallery categories.
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "success": true,
+         "categories": [
+             {
+                 "categoryKey": "outreach",
+                 "categoryName": "Outreach",
+                 "categoryIcon": "outreach"
+             }
+         ]
+     }
+
+2. GET /api/gallery/items
+   - Description: Lists all gallery items, optionally filtered by category.
+   - Authentication: None.
+   - Query Parameters:
+     category (Optional - category key slug filter)
+   - Response Payload Example:
+     {
+         "success": true,
+         "items": [
+             {
+                 "id": "a0000000-0000-4000-8000-000000000001",
+                 "mediaType": "image",
+                 "categoryKey": "outreach",
+                 "title": "Nyegezi Outreach Drive",
+                 "description": "Providing medical assistance...",
+                 "imageUrl": "https://img.url",
+                 "thumbnailUrl": null,
+                 "videoUrl": null,
+                 "createdAt": "2026-06-04T12:00:00.000Z",
+                 "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+             }
+         ]
+     }
+
+3. POST /api/gallery/categories
+   - Description: Creates a new gallery category.
+   - Authentication: Protected (Requires 'gallery:create' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "categoryKey": "string" (Required - Unique alphanumeric key/slug),
+         "categoryName": "string" (Required - Display name),
+         "categoryIcon": "string" (Required - Icon slug name)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Category created successfully.",
+         "category": {
+             "categoryKey": "medical",
+             "categoryName": "Medical Care",
+             "categoryIcon": "medical"
+         }
+     }
+
+4. PUT /api/gallery/categories/:categoryKey
+   - Description: Updates an existing gallery category name and icon.
+   - Authentication: Protected (Requires 'gallery:update' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "categoryName": "string" (Required - Display name),
+         "categoryIcon": "string" (Required - Icon slug name)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Category updated successfully.",
+         "category": {
+             "categoryKey": "medical",
+             "categoryName": "Medical Outreach Clinic",
+             "categoryIcon": "outreach"
+         }
+     }
+
+5. DELETE /api/gallery/categories/:categoryKey
+   - Description: Deletes a gallery category. Blocks deletion if it is assigned to any items.
+   - Authentication: Protected (Requires 'gallery:delete' permission slug).
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Category deleted successfully."
+     }
+
+6. POST /api/gallery/items
+   - Description: Creates a new gallery media item.
+   - Authentication: Protected (Requires 'gallery:create' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - Must be a valid client-side generated UUIDv4),
+         "mediaType": "string" (Required - 'image' | 'video'),
+         "categoryKey": "string" (Required - Key of an existing category),
+         "title": "string" (Required),
+         "description": "string" (Required),
+         "imageUrl": "string|null" (Optional),
+         "thumbnailUrl": "string|null" (Optional),
+         "videoUrl": "string|null" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Gallery item created successfully.",
+         "item": {
+             "id": "a0000000-0000-4000-8000-000000000002",
+             "mediaType": "video",
+             "categoryKey": "outreach",
+             "title": "Clinical Team Drive",
+             "description": "Medical teams on field...",
+             "imageUrl": null,
+             "thumbnailUrl": "https://thumb.url",
+             "videoUrl": "https://video.url",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+7. PUT /api/gallery/items/:id
+   - Description: Updates an existing gallery media item.
+   - Authentication: Protected (Requires 'gallery:update' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "mediaType": "string" (Required - 'image' | 'video'),
+         "categoryKey": "string" (Required - Key of an existing category),
+         "title": "string" (Required),
+         "description": "string" (Required),
+         "imageUrl": "string|null" (Optional),
+         "thumbnailUrl": "string|null" (Optional),
+         "videoUrl": "string|null" (Optional)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Gallery item updated successfully.",
+         "item": { ... }
+     }
+
+8. DELETE /api/gallery/items/:id
+   - Description: Deletes a gallery media item.
+   - Authentication: Protected (Requires 'gallery:delete' permission slug).
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Gallery item deleted successfully."
+     }
+
+9. GET /api/gallery/categories/:categoryKey
+   - Description: Retrieves details of a specific gallery category by its key.
+   - Authentication: Protected (Requires 'gallery:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "success": true,
+         "category": {
+             "categoryKey": "outreach",
+             "categoryName": "Outreach",
+             "categoryIcon": "outreach"
+         }
+     }
+
+10. GET /api/gallery/items/:id
+    - Description: Retrieves details of a specific gallery item by ID.
+    - Authentication: Protected (Requires 'gallery:read' permission slug).
+    - Data Sending Method: URL path parameter.
+    - Response Payload Example:
+      {
+          "success": true,
+          "item": {
+              "id": "a0000000-0000-4000-8000-000000000001",
+              "mediaType": "image",
+              "categoryKey": "outreach",
+              "title": "Nyegezi Outreach Drive",
+              "description": "Providing medical assistance...",
+              "imageUrl": "https://img.url",
+              "thumbnailUrl": null,
+              "videoUrl": null,
+              "createdAt": "2026-06-04T12:00:00.000Z",
+              "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+          }
+      }
+
+--------------------------------------------------------------------------------
+10.2 REPORTS MODULE (/api/reports)
+--------------------------------------------------------------------------------
+
+1. GET /api/reports/impact-data
+   - Description: Fetches quarterly performance metrics formatted for public charts.
+   - Authentication: None.
+   - Query Parameters:
+     year (Optional - Defaults to current calendar year)
+   - Response Payload Example:
+     {
+         "success": true,
+         "title": "Quarterly Performance 2026",
+         "labels": ["Q1", "Q2", "Q3", "Q4"],
+         "datasets": [
+             {
+                 "label": "Children Served",
+                 "values": [340, 450, 600, 750],
+                 "color": "#0066cc"
+             }
+         ]
+     }
+
+2. GET /api/reports/annual
+   - Description: Lists all annual PDF reports.
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "success": true,
+         "reports": [
+             {
+                 "year": 2025,
+                 "title": "Annual Impact Report 2025",
+                 "description": "Detailed layout...",
+                 "file_size": "2.4 MB",
+                 "page_count": 24,
+                 "download_url": "https://example.com/report.pdf"
+             }
+         ]
+     }
+
+3. GET /api/reports/quarterly
+   - Description: Lists all quarterly progress PDF reports.
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "success": true,
+         "reports": [
+             {
+                 "quarter": "Q1 2026",
+                 "title": "Quarter 1 Progress Report 2026",
+                 "period": "January - March 2026",
+                 "description": "Progress updates...",
+                 "file_size": "1.1 MB",
+                 "download_url": "https://example.com/q1.pdf"
+             }
+         ]
+     }
+
+4. GET /api/reports/success-stories
+   - Description: Lists success stories.
+   - Authentication: None.
+   - Response Payload Example:
+     {
+         "success": true,
+         "stories": [
+             {
+                 "id": "d0000000-0000-4000-8000-000000000001",
+                 "title": "John's Recovery Journey",
+                 "description": "John received critical care...",
+                 "impact": "Reintegrated into school",
+                 "date": "May 12, 2026",
+                 "category": "healthcare"
+             }
+         ]
+     }
+
+5. POST /api/reports/annual
+   - Description: Publishes a new annual report.
+   - Authentication: Protected (Requires 'reports:create' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - UUIDv4),
+         "year": "number" (Required - Unique calendar year),
+         "title": "string" (Required),
+         "description": "string" (Required),
+         "fileSize": "string" (Required - e.g. '2.4 MB'),
+         "pageCount": "number" (Required),
+         "downloadUrl": "string" (Required - URL to PDF file)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Annual report created successfully.",
+         "report": { ... }
+     }
+
+6. PUT /api/reports/annual/:id
+   - Description: Updates an annual report.
+   - Authentication: Protected (Requires 'reports:update' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "year": "number" (Required),
+         "title": "string" (Required),
+         "description": "string" (Required),
+         "fileSize": "string" (Required),
+         "pageCount": "number" (Required),
+         "downloadUrl": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Annual report updated successfully.",
+         "report": { ... }
+     }
+
+7. DELETE /api/reports/annual/:id
+   - Description: Deletes an annual report entry.
+   - Authentication: Protected (Requires 'reports:delete' permission slug).
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Annual report deleted successfully."
+     }
+
+8. POST /api/reports/quarterly
+   - Description: Publishes a new quarterly progress report.
+   - Authentication: Protected (Requires 'reports:create' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - UUIDv4),
+         "quarter": "string" (Required - e.g. 'Q1 2026'),
+         "title": "string" (Required),
+         "period": "string" (Required - e.g. 'January - March 2026'),
+         "description": "string" (Required),
+         "fileSize": "string" (Required),
+         "downloadUrl": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Quarterly report created successfully.",
+         "report": { ... }
+     }
+
+9. PUT /api/reports/quarterly/:id
+   - Description: Updates a quarterly progress report.
+   - Authentication: Protected (Requires 'reports:update' permission slug).
+   - Request Body Parameters (camelCase):
+     {
+         "quarter": "string" (Required),
+         "title": "string" (Required),
+         "period": "string" (Required),
+         "description": "string" (Required),
+         "fileSize": "string" (Required),
+         "downloadUrl": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Quarterly report updated successfully.",
+         "report": { ... }
+     }
+
+10. DELETE /api/reports/quarterly/:id
+    - Description: Deletes a quarterly report entry.
+    - Authentication: Protected (Requires 'reports:delete' permission slug).
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Quarterly report deleted successfully."
+      }
+
+11. POST /api/reports/success-stories
+    - Description: Publishes a new success story.
+    - Authentication: Protected (Requires 'reports:create' permission slug).
+    - Request Body Parameters (camelCase):
+      {
+          "id": "string" (Required - UUIDv4),
+          "title": "string" (Required),
+          "description": "string" (Required),
+          "impact": "string" (Required),
+          "date": "string" (Required),
+          "category": "string" (Required - 'education' | 'healthcare' | 'social' | 'nutrition')
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Success story created successfully.",
+          "story": { ... }
+      }
+
+12. PUT /api/reports/success-stories/:id
+    - Description: Updates a success story.
+    - Authentication: Protected (Requires 'reports:update' permission slug).
+    - Request Body Parameters (camelCase):
+      {
+          "title": "string" (Required),
+          "description": "string" (Required),
+          "impact": "string" (Required),
+          "date": "string" (Required),
+          "category": "string" (Required - 'education' | 'healthcare' | 'social' | 'nutrition')
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Success story updated successfully.",
+          "story": { ... }
+      }
+
+13. DELETE /api/reports/success-stories/:id
+    - Description: Deletes a success story entry.
+    - Authentication: Protected (Requires 'reports:delete' permission slug).
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Success story deleted successfully."
+      }
+
+14. GET /api/reports/metrics
+    - Description: Lists all raw impact metrics configured for the charts.
+    - Authentication: Protected (Requires 'reports:read' permission slug).
+    - Query Parameters:
+      year (Optional - filter by year)
+    - Response Payload Example:
+      {
+          "success": true,
+          "metrics": [
+              {
+                  "id": "e0000000-0000-4000-8000-000000000001",
+                  "label": "Children Served",
+                  "q1Value": 340,
+                  "q2Value": 450,
+                  "q3Value": 600,
+                  "q4Value": 750,
+                  "color": "#0066cc",
+                  "year": 2026,
+                  "createdAt": "2026-06-04T12:00:00.000Z",
+                  "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+              }
+          ]
+      }
+
+15. POST /api/reports/metrics
+    - Description: Creates a new quarterly chart metric category.
+    - Authentication: Protected (Requires 'reports:create' permission slug).
+    - Request Body Parameters (camelCase):
+      {
+          "id": "string" (Required - UUIDv4),
+          "label": "string" (Required),
+          "q1Value": "number" (Required),
+          "q2Value": "number" (Required),
+          "q3Value": "number" (Required),
+          "q4Value": "number" (Required),
+          "color": "string" (Required - hex color string or color name),
+          "year": "number" (Required)
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Impact metric created successfully.",
+          "metric": { ... }
+      }
+
+16. PUT /api/reports/metrics/:id
+    - Description: Updates a quarterly chart metric.
+    - Authentication: Protected (Requires 'reports:update' permission slug).
+    - Request Body Parameters (camelCase):
+      {
+          "label": "string" (Required),
+          "q1Value": "number" (Required),
+          "q2Value": "number" (Required),
+          "q3Value": "number" (Required),
+          "q4Value": "number" (Required),
+          "color": "string" (Required),
+          "year": "number" (Required)
+      }
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Impact metric updated successfully.",
+          "metric": { ... }
+      }
+
+17. DELETE /api/reports/metrics/:id
+    - Description: Deletes a quarterly chart metric.
+    - Authentication: Protected (Requires 'reports:delete' permission slug).
+    - Response Payload Example:
+      {
+          "success": true,
+          "message": "Impact metric deleted successfully."
+      }
+
+18. GET /api/reports/annual/:id
+    - Description: Retrieves details of a specific annual report by ID.
+    - Authentication: Protected (Requires 'reports:read' permission slug).
+    - Data Sending Method: URL path parameter.
+    - Response Payload Example:
+      {
+          "success": true,
+          "report": {
+              "id": "report-annual-uuid",
+              "year": 2025,
+              "title": "Annual Impact Report 2025",
+              "description": "Detailed layout...",
+              "fileSize": "2.4 MB",
+              "pageCount": 24,
+              "downloadUrl": "https://example.com/report.pdf",
+              "createdAt": "2026-06-04T12:00:00.000Z",
+              "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+          }
+      }
+
+19. GET /api/reports/quarterly/:id
+    - Description: Retrieves details of a specific quarterly report by ID.
+    - Authentication: Protected (Requires 'reports:read' permission slug).
+    - Data Sending Method: URL path parameter.
+    - Response Payload Example:
+      {
+          "success": true,
+          "report": {
+              "id": "report-quarterly-uuid",
+              "quarter": "Q1 2026",
+              "title": "Quarter 1 Progress Report 2026",
+              "period": "January - March 2026",
+              "description": "Progress updates...",
+              "fileSize": "1.1 MB",
+              "downloadUrl": "https://example.com/q1.pdf",
+              "createdAt": "2026-06-04T12:00:00.000Z",
+              "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+          }
+      }
+
+20. GET /api/reports/success-stories/:id
+    - Description: Retrieves details of a specific success story by ID.
+    - Authentication: Protected (Requires 'reports:read' permission slug).
+    - Data Sending Method: URL path parameter.
+    - Response Payload Example:
+      {
+          "success": true,
+          "story": {
+              "id": "success-story-uuid",
+              "title": "John's Recovery Journey",
+              "description": "John received critical care...",
+              "impact": "Reintegrated into school",
+              "date": "May 12, 2026",
+              "category": "healthcare",
+              "createdAt": "2026-06-04T12:00:00.000Z",
+              "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+          }
+      }
+
+21. GET /api/reports/metrics/:id
+    - Description: Retrieves details of a specific impact metric by ID.
+    - Authentication: Protected (Requires 'reports:read' permission slug).
+    - Data Sending Method: URL path parameter.
+    - Response Payload Example:
+      {
+          "success": true,
+          "metric": {
+              "id": "metric-uuid-123",
+              "label": "Children Served",
+              "q1Value": 340,
+              "q2Value": 450,
+              "q3Value": 600,
+              "q4Value": 750,
+              "color": "#0066cc",
+              "year": 2026,
+              "createdAt": "2026-06-04T12:00:00.000Z",
+              "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+          }
+      }
+
+--------------------------------------------------------------------------------
+10.3 VOLUNTEER & SUPPORT MODULE (/api/volunteer)
+--------------------------------------------------------------------------------
+
+1. POST /api/volunteer/submit
+   - Description: Submits a volunteer registration application.
+   - Authentication: None (Publicly open).
+   - Request Body Parameters (snake_case exception to match web form):
+     {
+         "full_name": "string" (Required - non-empty),
+         "email_address": "string" (Required - valid email structure),
+         "phone_number": "string" (Required),
+         "volunteer_type": "string" (Required - 'medical' | 'outreach' | 'education' | 'admin' | 'fundraising' | 'other'),
+         "message": "string" (Required - minimum 10 characters)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Volunteer application submitted successfully.",
+         "application": {
+             "id": "f8e32e68-df50-469f-b0ea-218d8fa7c47d",
+             "fullName": "Jane Doe",
+             "emailAddress": "jane@example.com",
+             "phoneNumber": "+255111222333",
+             "volunteerType": "medical",
+             "message": "I want to volunteer...",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+2. GET /api/volunteer/applications
+   - Description: Retrieves all submitted volunteer applications.
+   - Authentication: Protected (Requires 'support:read' permission slug).
+   - Response Payload Example:
+     {
+         "success": true,
+         "applications": [
+             {
+                 "id": "f8e32e68-df50-469f-b0ea-218d8fa7c47d",
+                 "fullName": "Jane Doe",
+                 "emailAddress": "jane@example.com",
+                 "phoneNumber": "+255111222333",
+                 "volunteerType": "medical",
+                 "message": "I want to volunteer...",
+                 "createdAt": "2026-06-04T12:00:00.000Z",
+                 "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+             }
+         ]
+     }
+
+3. DELETE /api/volunteer/applications/:id
+   - Description: Purges a volunteer application entry from the system database.
+   - Authentication: Protected (Requires 'support:delete' permission slug).
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Volunteer application deleted successfully."
+     }
+
+4. POST /api/volunteer/applications
+   - Description: Manually creates/submits a volunteer application.
+   - Authentication: Protected (Requires 'support:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - UUIDv4),
+         "fullName": "string" (Required),
+         "emailAddress": "string" (Required),
+         "phoneNumber": "string" (Required),
+         "volunteerType": "string" (Required - 'medical' | 'outreach' | 'education' | 'admin' | 'fundraising' | 'other'),
+         "message": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Volunteer application created successfully.",
+         "application": {
+             "id": "f8e32e68-df50-469f-b0ea-218d8fa7c47d",
+             "fullName": "Jane Doe",
+             "emailAddress": "jane@example.com",
+             "phoneNumber": "+255111222333",
+             "volunteerType": "medical",
+             "message": "I want to volunteer...",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+5. GET /api/volunteer/applications/:id
+   - Description: Retrieves details of a specific volunteer application by ID.
+   - Authentication: Protected (Requires 'support:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "success": true,
+         "application": {
+             "id": "f8e32e68-df50-469f-b0ea-218d8fa7c47d",
+             "fullName": "Jane Doe",
+             "emailAddress": "jane@example.com",
+             "phoneNumber": "+255111222333",
+             "volunteerType": "medical",
+             "message": "I want to volunteer...",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+6. PUT /api/volunteer/applications/:id
+   - Description: Updates details of a specific volunteer application by ID.
+   - Authentication: Protected (Requires 'support:update' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "fullName": "string" (Required),
+         "emailAddress": "string" (Required),
+         "phoneNumber": "string" (Required),
+         "volunteerType": "string" (Required),
+         "message": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Volunteer application updated successfully.",
+         "application": {
+             "id": "f8e32e68-df50-469f-b0ea-218d8fa7c47d",
+             "fullName": "Jane Doe Updated",
+             "emailAddress": "jane.updated@example.com",
+             "phoneNumber": "+255111222333",
+             "volunteerType": "medical",
+             "message": "I want to volunteer...",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:05:00.000Z"
+         }
+     }
+
+--------------------------------------------------------------------------------
+10.4 CONTACT SUBMISSIONS MODULE (/api/contact)
+--------------------------------------------------------------------------------
+
+1. POST /api/contact/submit
+   - Description: Submits a new contact form message.
+   - Authentication: None (Publicly open).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (snake_case exception for public forms):
+     {
+         "full_name": "string" (Required - non-empty),
+         "email_address": "string" (Required - valid email structure),
+         "message_subject": "string" (Required),
+         "message_content": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Message sent successfully! We'll contact you soon.",
+         "submission": {
+             "id": "contact-submission-uuid",
+             "fullName": "Jane Doe",
+             "emailAddress": "jane@example.com",
+             "messageSubject": "General Inquiry",
+             "messageContent": "How can I help...",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+2. GET /api/contact/submissions
+   - Description: Retrieves all submitted contact messages.
+   - Authentication: Protected (Requires 'support:read' permission slug).
+   - Data Sending Method: URL GET request.
+   - Response Payload Example:
+     {
+         "success": true,
+         "submissions": [
+             {
+                 "id": "contact-submission-uuid",
+                 "fullName": "Jane Doe",
+                 "emailAddress": "jane@example.com",
+                 "messageSubject": "General Inquiry",
+                 "messageContent": "How can I help...",
+                 "createdAt": "2026-06-04T12:00:00.000Z",
+                 "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+             }
+         ]
+     }
+
+3. DELETE /api/contact/submissions/:id
+   - Description: Purges a contact submission from the system.
+   - Authentication: Protected (Requires 'support:delete' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Contact submission deleted successfully."
+     }
+
+4. POST /api/contact/submissions
+   - Description: Manually creates a contact submission entry with a specific ID.
+   - Authentication: Protected (Requires 'support:create' permission slug).
+   - Data Sending Method: JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "id": "string" (Required - UUIDv4),
+         "fullName": "string" (Required),
+         "emailAddress": "string" (Required),
+         "messageSubject": "string" (Required),
+         "messageContent": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Contact submission created successfully.",
+         "submission": {
+             "id": "contact-submission-uuid",
+             "fullName": "Jane Doe",
+             "emailAddress": "jane@example.com",
+             "messageSubject": "General Inquiry",
+             "messageContent": "How can I help...",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+5. GET /api/contact/submissions/:id
+   - Description: Retrieves details of a specific contact submission by ID.
+   - Authentication: Protected (Requires 'support:read' permission slug).
+   - Data Sending Method: URL path parameter.
+   - Response Payload Example:
+     {
+         "success": true,
+         "submission": {
+             "id": "contact-submission-uuid",
+             "fullName": "Jane Doe",
+             "emailAddress": "jane@example.com",
+             "messageSubject": "General Inquiry",
+             "messageContent": "How can I help...",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:00:00.000Z"
+         }
+     }
+
+6. PUT /api/contact/submissions/:id
+   - Description: Updates details of a specific contact submission by ID.
+   - Authentication: Protected (Requires 'support:update' permission slug).
+   - Data Sending Method: URL path parameter & JSON raw body.
+   - Request Body Parameters (camelCase):
+     {
+         "fullName": "string" (Required),
+         "emailAddress": "string" (Required),
+         "messageSubject": "string" (Required),
+         "messageContent": "string" (Required)
+     }
+   - Response Payload Example:
+     {
+         "success": true,
+         "message": "Contact submission updated successfully.",
+         "submission": {
+             "id": "contact-submission-uuid",
+             "fullName": "Jane Doe Updated",
+             "emailAddress": "jane.updated@example.com",
+             "messageSubject": "General Inquiry",
+             "messageContent": "How can I help...",
+             "createdAt": "2026-06-04T12:00:00.000Z",
+             "lastModifiedAt": "2026-06-04T12:05:00.000Z"
+         }
+     }
+================================================================================
+

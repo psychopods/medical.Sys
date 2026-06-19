@@ -1,0 +1,45 @@
+{
+  "name": "childrenapi",
+  "version": "1.0.0",
+  "description": "A backend API System that will be used to handle Street Children Information both medically and socially whenever help is given to them. Made with expressjs and nodejs technology + MySQL database for easy configuration.",
+  "license": "ISC",
+  "contributors": [
+    "Paschal Joseph <https://github.com/psychopods>",
+    "Kamuli Zila <https://github.com/kamulizila>",
+    "Happyness Juma <https://github.com/Happynessj>"
+  ],
+  "type": "module",
+  "author": "Paschal Joseph <https://github.com/psychopods>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/psychopods/medical.Sys.git",
+    "directory": "src"
+  },
+  "main": "src/server.ts",
+  "scripts": {
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.9.1",
+    "@types/nodemailer": "^8.0.0",
+    "bcrypt": "^6.0.0",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.22.3",
+    "nodemailer": "^8.0.10",
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2"
+  }
+}

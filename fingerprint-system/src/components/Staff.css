@@ -1,0 +1,458 @@
+/* Staff Page Styles */
+.staff-page {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Hero Section */
+.staff-hero {
+  position: relative;
+  width: 100%;
+  height: 350px;
+  background-image: url('/image2.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.staff-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 102, 204, 0.8);
+}
+
+.staff-hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  color: white;
+  padding: 0 20px;
+}
+
+.staff-hero-content h1 {
+  font-size: 56px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #ffd700;
+  letter-spacing: 2px;
+  animation: fadeInUp 0.8s ease;
+}
+
+.staff-hero-content p {
+  font-size: 20px;
+  opacity: 0.95;
+  animation: fadeInUp 0.8s ease 0.2s both;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Container */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Section Title */
+.section-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0066cc;
+  text-align: left;
+  margin-bottom: 40px;
+  position: relative;
+  display: inline-block;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: #0066cc;
+  border-radius: 2px;
+}
+
+/* Leadership Section */
+.leadership-section {
+  padding: 80px 0;
+  background: #ffffff;
+}
+
+.leadership-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+/* Medical Team Section */
+.medical-team-section {
+  padding: 80px 0;
+  background: #f0f7ff;
+}
+
+.medical-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
+}
+
+/* Staff Card */
+.staff-card {
+  padding: 30px;
+  border: 1px solid #e0e8f0;
+  background: #ffffff;
+  text-align: center;
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.staff-card:hover {
+  border-color: #0066cc;
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.staff-icon {
+  margin-bottom: 20px;
+}
+
+.staff-icon svg {
+  width: 60px;
+  height: 60px;
+  stroke: #0066cc;
+}
+
+.staff-card h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.staff-position {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0066cc;
+  margin-bottom: 12px;
+}
+
+.staff-description {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+  flex: 1;
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  min-width: 280px;
+  background: #fff;
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 10001;
+  animation: slideIn 0.3s ease;
+  border-left: 3px solid #10b981;
+  border-top: 1px solid #e0e8f0;
+  border-right: 1px solid #e0e8f0;
+  border-bottom: 1px solid #e0e8f0;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #999;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Responsive Breakpoints */
+
+/* Large Desktop (1200px - 1400px) */
+@media (min-width: 1200px) and (max-width: 1400px) {
+  .container {
+    max-width: 1200px;
+  }
+  
+  .leadership-grid {
+    gap: 30px;
+  }
+  
+  .medical-grid {
+    gap: 25px;
+  }
+}
+
+/* Desktop (992px - 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .container {
+    max-width: 1000px;
+  }
+  
+  .leadership-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+  }
+  
+  .medical-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+  }
+  
+  .section-title {
+    font-size: 30px;
+  }
+}
+
+/* Tablet Landscape (768px - 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+  .staff-hero {
+    height: 350px;
+    background-attachment: scroll;
+  }
+  
+  .staff-hero-content h1 {
+    font-size: 42px;
+  }
+  
+  .staff-hero-content p {
+    font-size: 18px;
+  }
+  
+  .leadership-section,
+  .medical-team-section {
+    padding: 60px 0;
+  }
+  
+  .section-title {
+    font-size: 28px;
+  }
+  
+  .leadership-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+  }
+  
+  .medical-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+  }
+  
+  .staff-card {
+    padding: 25px;
+  }
+  
+  .staff-card h3 {
+    font-size: 18px;
+  }
+}
+
+/* Tablet Portrait (481px - 767px) */
+@media (min-width: 481px) and (max-width: 767px) {
+  .staff-hero {
+    height: 300px;
+    background-attachment: scroll;
+  }
+  
+  .staff-hero-content h1 {
+    font-size: 36px;
+  }
+  
+  .staff-hero-content p {
+    font-size: 16px;
+  }
+  
+  .leadership-section,
+  .medical-team-section {
+    padding: 50px 0;
+  }
+  
+  .section-title {
+    font-size: 28px;
+  }
+  
+  .leadership-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .medical-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .staff-card {
+    padding: 20px;
+  }
+  
+  .staff-card h3 {
+    font-size: 18px;
+  }
+  
+  .staff-icon svg {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .toast-notification {
+    top: 70px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+  }
+}
+
+/* Mobile (320px - 480px) */
+@media (max-width: 480px) {
+  .staff-hero {
+    height: 250px;
+    background-attachment: scroll;
+  }
+  
+  .staff-hero-content h1 {
+    font-size: 28px;
+    letter-spacing: 1px;
+  }
+  
+  .staff-hero-content p {
+    font-size: 14px;
+  }
+  
+  .leadership-section,
+  .medical-team-section {
+    padding: 40px 0;
+  }
+  
+  .section-title {
+    font-size: 24px;
+  }
+  
+  .section-title::after {
+    width: 40px;
+    bottom: -8px;
+  }
+  
+  .leadership-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .medical-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .staff-card {
+    padding: 15px;
+  }
+  
+  .staff-card h3 {
+    font-size: 16px;
+  }
+  
+  .staff-position {
+    font-size: 12px;
+  }
+  
+  .staff-description {
+    font-size: 12px;
+  }
+  
+  .staff-icon svg {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+/* Small Mobile (up to 360px) */
+@media (max-width: 360px) {
+  .staff-hero {
+    height: 220px;
+  }
+  
+  .staff-hero-content h1 {
+    font-size: 24px;
+  }
+  
+  .staff-hero-content p {
+    font-size: 12px;
+  }
+  
+  .section-title {
+    font-size: 22px;
+  }
+  
+  .staff-card {
+    padding: 12px;
+  }
+  
+  .staff-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .staff-hero {
+    background-attachment: scroll;
+  }
+  
+  .staff-hero-content h1,
+  .staff-hero-content p {
+    animation: none;
+  }
+  
+  .staff-card {
+    transition: none;
+    transform: none;
+  }
+  
+  .staff-card:hover {
+    transform: none;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .staff-hero::before {
+    background: rgba(0, 102, 204, 0.9);
+  }
+  
+  .staff-card {
+    border: 2px solid #0066cc;
+  }
+  
+  .staff-card:hover {
+    border-color: #ffd700;
+  }
+}

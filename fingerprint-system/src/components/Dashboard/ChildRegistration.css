@@ -1,0 +1,3355 @@
+/* Child Registration Container - White Background */
+.child-registration-container {
+  width: 100%;
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+/* Page Content */
+.child-reg-page-content {
+  width: 100%;
+  background: #ffffff;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Page Header */
+.child-reg-page-header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+  background: #ffffff;
+}
+
+.child-reg-page-header h1 {
+  font-size: 28px;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.child-reg-page-header p {
+  color: #666;
+  font-size: 14px;
+}
+
+/* Back Button */
+.child-reg-back-btn {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding: 8px 0;
+}
+
+.child-reg-back-btn:hover { color: #5a67d8; }
+
+/* Stats Grid */
+.child-reg-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1px;
+  background: #e0e0e0;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 30px;
+}
+
+/* Updated Stat Card with Print Button */
+.child-reg-stat-card {
+  background: #fff;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.child-reg-stat-info-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.child-reg-stat-icon svg { stroke: #667eea; }
+
+.child-reg-stat-info h3 {
+  font-size: 28px;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.child-reg-stat-info p { color: #666; font-size: 14px; }
+
+.child-reg-trend { 
+  font-size: 12px; 
+  color: #28a745; 
+  margin-left: 5px; 
+}
+
+/* Print Button */
+.child-reg-print-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-print-btn:hover {
+  background: #f0f0f0;
+}
+
+.child-reg-print-btn svg {
+  stroke: #667eea;
+}
+
+/* Section Title */
+.child-reg-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+/* Actions Grid */
+.child-reg-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1px;
+  background: #e0e0e0;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 30px;
+}
+
+.child-reg-action-card {
+  background: #fff;
+  padding: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transition: background 0.3s ease;
+}
+
+.child-reg-action-card:hover { background: #f8f9fa; }
+
+.child-reg-action-icon {
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-action-icon svg { stroke: #667eea; }
+
+.child-reg-action-info h4 {
+  font-size: 16px;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.child-reg-action-info p { color: #666; font-size: 12px; }
+
+/* Recent Table */
+.child-reg-recent-table {
+  border: 1px solid #e0e0e0;
+  overflow-x: auto;
+  margin-bottom: 30px;
+  background: #ffffff;
+}
+
+.child-reg-recent-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.child-reg-recent-table th,
+.child-reg-recent-table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-reg-recent-table th {
+  background: #f8f9fa;
+  color: #1a1a2e;
+  font-weight: 600;
+}
+
+.child-reg-recent-table td { color: #666; }
+.child-reg-recent-table tr:last-child td { border-bottom: none; }
+
+/* Status Badges */
+.child-reg-status-badge {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 20px;
+}
+
+.child-reg-status-completed { background: #d4edda; color: #155724; }
+.child-reg-status-pending { background: #fff3cd; color: #856404; }
+
+/* Offline Banner */
+.child-reg-offline-banner {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #856404;
+  margin-bottom: 20px;
+}
+
+/* Form Styles */
+.child-reg-registration-form-container {
+  border: 1px solid #e0e0e0;
+  padding: 30px;
+  background: #ffffff;
+}
+
+.child-reg-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.child-reg-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.child-reg-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.child-reg-form-group input,
+.child-reg-form-group select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: #ffffff;
+}
+
+.child-reg-form-group input:focus,
+.child-reg-form-group select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.child-reg-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+/* Fingerprint Area */
+.child-reg-fingerprint-section {
+  border: 1px solid #e0e0e0;
+  padding: 30px;
+  text-align: center;
+  background: #ffffff;
+}
+
+.child-reg-fingerprint-area {
+  text-align: center;
+  padding: 40px;
+  background: #f8f9fa;
+  margin: 20px 0;
+}
+
+.child-reg-fingerprint-area svg { margin-bottom: 20px; }
+.child-reg-fingerprint-area p { color: #666; margin-bottom: 25px; }
+
+/* Verify Page */
+.child-reg-verify-fingerprint-area {
+  border: 1px solid #e0e0e0;
+  padding: 30px;
+  text-align: center;
+  background: #ffffff;
+}
+
+/* Success/Info Messages */
+.child-reg-success-message {
+  background: #d4edda;
+  padding: 30px;
+  text-align: center;
+  border: 1px solid #c3e6cb;
+}
+
+.child-reg-success-message h3 { color: #155724; margin-bottom: 10px; }
+
+.child-reg-info-message {
+  background: #d1ecf1;
+  padding: 30px;
+  text-align: center;
+  border: 1px solid #bee5eb;
+}
+
+.child-reg-info-message h3 { color: #0c5460; margin-bottom: 10px; }
+
+/* Verifying State */
+.child-reg-verifying-state {
+  text-align: center;
+  padding: 60px;
+  border: 1px solid #e0e0e0;
+  background: #ffffff;
+}
+
+.child-reg-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: child-reg-spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes child-reg-spin { to { transform: rotate(360deg); } }
+
+/* Child Details Card */
+.child-reg-child-details-card {
+  border: 1px solid #e0e0e0;
+  padding: 25px;
+  margin: 20px 0;
+  text-align: left;
+  background: #ffffff;
+}
+
+.child-reg-child-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-reg-child-header h4 { font-size: 20px; color: #1a1a2e; margin: 0; }
+.child-reg-child-id { font-size: 12px; color: #667eea; font-weight: 600; }
+
+/* Info Grid */
+.child-reg-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.child-reg-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.child-reg-info-item label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+}
+
+.child-reg-info-item span { font-size: 14px; color: #1a1a2e; font-weight: 500; }
+
+/* Parent Information */
+.child-reg-parent-info {
+  border: 1px solid #e0e0e0;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.child-reg-parent-info h5 {
+  font-size: 14px;
+  color: #1a1a2e;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-reg-fingerprint-status { text-align: center; margin-top: 15px; }
+
+/* Pictures Section */
+.child-reg-pictures-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.child-reg-pictures-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.child-reg-picture-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.child-reg-picture-preview {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #f8f9fa;
+  border: 2px dashed #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.child-reg-preview-image { width: 100%; height: 100%; object-fit: cover; }
+
+.child-reg-picture-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: #999;
+}
+
+/* Upload Options - Icon Only */
+.child-reg-upload-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+
+.child-reg-btn-upload, 
+.child-reg-btn-camera, 
+.child-reg-btn-remove {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+}
+
+.child-reg-btn-upload {
+  background: #667eea;
+  color: #fff;
+}
+
+.child-reg-btn-upload:hover {
+  background: #5a67d8;
+  transform: scale(1.05);
+}
+
+.child-reg-btn-camera {
+  background: #48bb78;
+  color: #fff;
+}
+
+.child-reg-btn-camera:hover {
+  background: #38a169;
+  transform: scale(1.05);
+}
+
+.child-reg-btn-remove {
+  background: #f56565;
+  color: #fff;
+}
+
+.child-reg-btn-remove:hover {
+  background: #e53e3e;
+  transform: scale(1.05);
+}
+
+/* Camera Preview */
+.child-reg-camera-preview { 
+  width: 100%; 
+}
+
+.child-reg-camera-video { 
+  width: 100%; 
+  border-radius: 8px; 
+  margin-bottom: 8px; 
+}
+
+.child-reg-camera-controls { 
+  display: flex; 
+  gap: 10px; 
+  justify-content: center; 
+  margin-top: 8px;
+}
+
+.child-reg-btn-capture, 
+.child-reg-btn-cancel {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-btn-capture {
+  background: #48bb78;
+  color: #fff;
+}
+
+.child-reg-btn-capture:hover {
+  background: #38a169;
+  transform: scale(1.05);
+}
+
+.child-reg-btn-cancel {
+  background: #a0aec0;
+  color: #fff;
+}
+
+.child-reg-btn-cancel:hover {
+  background: #718096;
+  transform: scale(1.05);
+}
+
+.child-reg-optional-note { 
+  font-size: 12px; 
+  color: #999; 
+  text-align: center; 
+  margin-bottom: 15px; 
+  font-style: italic;
+}
+
+/* Buttons */
+.child-reg-btn-primary, 
+.child-reg-btn-secondary {
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.child-reg-btn-primary { background: #667eea; color: #fff; }
+.child-reg-btn-primary:hover { background: #5a67d8; }
+.child-reg-btn-secondary { background: #f0f0f0; color: #333; }
+.child-reg-btn-secondary:hover { background: #e0e0e0; }
+
+/* Workflow Steps */
+.child-reg-workflow-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #e0e0e0;
+  padding: 25px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+  background: #ffffff;
+}
+
+.child-reg-workflow-step {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+}
+
+.child-reg-step-number {
+  width: 45px;
+  height: 45px;
+  background: #667eea;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.child-reg-step-content h4 { font-size: 14px; color: #1a1a2e; margin-bottom: 5px; }
+.child-reg-step-content p { font-size: 12px; color: #666; }
+.child-reg-workflow-arrow { font-size: 24px; color: #667eea; margin: 0 15px; }
+
+/* Clickable Stats Cards */
+.child-reg-clickable {
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.child-reg-clickable:hover {
+  background: #f8f9fa;
+}
+
+/* Data Table Styles */
+.child-reg-data-table-container {
+  border: 1px solid #e0e0e0;
+  overflow-x: auto;
+  margin-top: 20px;
+  background: #ffffff;
+}
+
+.child-reg-data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.child-reg-data-table th,
+.child-reg-data-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-reg-data-table th {
+  background: #f8f9fa;
+  color: #1a1a2e;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.child-reg-data-table td {
+  color: #666;
+  font-size: 13px;
+}
+
+.child-reg-data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.child-reg-data-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+/* Quality Badge */
+.child-reg-quality-badge {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 20px;
+}
+
+.child-reg-quality-excellent {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-quality-good {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+/* Dashboard Loading */
+.child-reg-dashboard-loading {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+/* Toast Notification - TOP RIGHT CORNER */
+.child-reg-toast-notification {
+  position: fixed;
+  top: 80px;
+  right: 30px;
+  min-width: 280px;
+  max-width: 350px;
+  background: white;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  animation: child-reg-slideInRight 0.3s ease;
+  border-left: 3px solid;
+}
+
+.child-reg-toast-notification.success {
+  border-left-color: #28a745;
+  background: #f0fff4;
+}
+
+.child-reg-toast-notification.success .child-reg-toast-content svg {
+  color: #28a745;
+}
+
+.child-reg-toast-notification.error {
+  border-left-color: #dc3545;
+  background: #fff5f5;
+}
+
+.child-reg-toast-notification.error .child-reg-toast-content svg {
+  color: #dc3545;
+}
+
+.child-reg-toast-notification.info {
+  border-left-color: #17a2b8;
+  background: #e8f7f9;
+}
+
+.child-reg-toast-notification.info .child-reg-toast-content svg {
+  color: #17a2b8;
+}
+
+.child-reg-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.child-reg-toast-content svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.child-reg-toast-content span {
+  color: #333;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.child-reg-toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s ease;
+}
+
+.child-reg-toast-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.child-reg-toast-close:hover {
+  color: #333;
+}
+
+@keyframes child-reg-slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Search Bar */
+.child-reg-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  padding: 10px 15px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+}
+
+.child-reg-search-bar svg {
+  stroke: #999;
+  flex-shrink: 0;
+}
+
+.child-reg-search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: transparent;
+}
+
+.child-reg-search-bar input::placeholder {
+  color: #999;
+}
+
+/* Pictures Gallery in Verify Page */
+.child-reg-pictures-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.child-reg-gallery-image {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f0f0f0;
+  border: 1px solid #e0e0e0;
+}
+
+.child-reg-gallery-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Header Actions - for title and buttons on same line */
+.child-reg-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.child-reg-header-actions h1 {
+  margin-bottom: 0;
+}
+
+/* Header Button Group - For multiple buttons side by side */
+.child-reg-header-button-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ============================================
+   ADD REGISTRATION BUTTON - Same style as Print Report
+   ============================================ */
+.child-reg-add-registration-btn {
+  background: none;
+  border: 1px solid #28a745;
+  color: #28a745;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.child-reg-add-registration-btn:hover {
+  background: #28a745;
+  color: #fff;
+}
+
+.child-reg-add-registration-btn svg {
+  stroke: currentColor;
+}
+
+/* ============================================
+   VERIFY FINGERPRINT BUTTON - Same style as Print Report
+   ============================================ */
+.child-reg-verify-btn-header {
+  background: none;
+  border: 1px solid #17a2b8;
+  color: #17a2b8;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.child-reg-verify-btn-header:hover {
+  background: #17a2b8;
+  color: #fff;
+}
+
+.child-reg-verify-btn-header svg {
+  stroke: currentColor;
+}
+
+/* Print Button inside page (Existing) */
+.child-reg-print-btn-page {
+  background: none;
+  border: 1px solid #667eea;
+  color: #667eea;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.child-reg-print-btn-page:hover {
+  background: #667eea;
+  color: #fff;
+}
+
+.child-reg-print-btn-page svg {
+  stroke: currentColor;
+}
+
+/* ============================================
+   VERIFY FINGERPRINT MODAL / PAGE
+   ============================================ */
+
+/* Verify Area inside Modal */
+.child-reg-verify-area {
+  width: 100%;
+  padding: 20px 0;
+}
+
+.child-reg-fingerprint-scanner-area {
+  text-align: center;
+  padding: 50px 30px;
+  background: #f8f9fa;
+  border: 2px dashed #e0e0e0;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.child-reg-fingerprint-scanner-area svg {
+  margin-bottom: 20px;
+}
+
+.child-reg-fingerprint-scanner-area p {
+  color: #666;
+  margin-bottom: 25px;
+  font-size: 14px;
+}
+
+/* Verification Result */
+.child-reg-verification-result {
+  margin-top: 20px;
+}
+
+/* Verify Button inside modal - uses generate-btn style */
+.child-reg-verify-area .child-reg-generate-btn {
+  padding: 10px 28px;
+  background: #667eea;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
+
+.child-reg-verify-area .child-reg-generate-btn:hover {
+  background: #5a67d8;
+}
+
+/* ============================================
+   RESPONSIVE BUTTON GROUP
+   ============================================ */
+@media (max-width: 768px) {
+  .child-reg-header-button-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .child-reg-header-button-group button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .child-reg-add-registration-btn,
+  .child-reg-verify-btn-header,
+  .child-reg-print-btn-page {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .child-reg-add-registration-btn,
+  .child-reg-verify-btn-header,
+  .child-reg-print-btn-page {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  
+  .child-reg-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Print Page Styles (continued) */
+.child-reg-print-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100vh;
+  background: #ffffff;
+  padding: 0;
+  overflow-y: auto;
+  z-index: 9999;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.child-reg-print-page::-webkit-scrollbar {
+  display: none;
+}
+
+.child-reg-print-header {
+  width: 100%;
+  padding: 30px 30px 20px 30px;
+  border-bottom: 2px solid #e0e0e0;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.child-reg-print-header .child-reg-back-btn {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.child-reg-print-header .child-reg-back-btn:hover {
+  color: #5a67d8;
+  transform: translateX(-5px);
+}
+
+.child-reg-print-title-section h1 {
+  font-size: 28px;
+  color: #1a1a2e;
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.child-reg-print-title-section p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.child-reg-print-content {
+  width: 100%;
+  padding: 0 30px 30px 30px;
+  box-sizing: border-box;
+}
+
+/* Filters Section - NO BACKGROUND */
+.child-reg-filters-section {
+  background: transparent !important;
+  padding: 0 !important;
+  margin-bottom: 30px;
+  border: none !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.child-reg-filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.child-reg-filters-header h3 {
+  font-size: 18px;
+  color: #1a1a2e;
+  margin: 0;
+  font-weight: 600;
+}
+
+.child-reg-reset-filters-btn {
+  background: none;
+  border: 1px solid #e0e0e0;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.child-reg-reset-filters-btn:hover {
+  background: #e0e0e0;
+}
+
+.child-reg-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 25px;
+  width: 100%;
+}
+
+.child-reg-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.child-reg-filter-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.child-reg-filter-field input,
+.child-reg-filter-field select {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  background: white;
+  transition: all 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.child-reg-filter-field input:focus,
+.child-reg-filter-field select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* Gender Buttons */
+.child-reg-gender-buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.child-reg-gender-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.child-reg-gender-btn:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.child-reg-gender-btn.active {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+/* Status Buttons */
+.child-reg-status-buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.child-reg-status-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.child-reg-status-btn:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.child-reg-status-btn.active.captured {
+  background: #28a745;
+  border-color: #28a745;
+  color: white;
+}
+
+.child-reg-status-btn.active.pending {
+  background: #ffc107;
+  border-color: #ffc107;
+  color: #333;
+}
+
+/* Filter Actions */
+.child-reg-filters-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+  width: 100%;
+}
+
+.child-reg-cancel-btn {
+  padding: 10px 24px;
+  background: #f0f0f0;
+  border: 1px solid #e0e0e0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.child-reg-cancel-btn:hover {
+  background: #e0e0e0;
+}
+
+.child-reg-generate-btn {
+  padding: 10px 24px;
+  background: #667eea;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.child-reg-generate-btn:hover {
+  background: #5a67d8;
+}
+
+/* User Info Display */
+.child-reg-user-info {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-left: 3px solid #667eea;
+  font-size: 13px;
+  color: #666;
+}
+
+.child-reg-user-info strong {
+  color: #667eea;
+}
+
+/* Generated ID Display */
+.child-reg-generated-id {
+  margin-top: 15px;
+  padding: 10px 15px;
+  background: #e8f0fe;
+  border: 1px solid #667eea;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #667eea;
+}
+
+.child-reg-generated-id strong {
+  color: #1a1a2e;
+}
+
+/* Verify Page Images */
+.child-reg-verify-images {
+  margin: 20px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.child-reg-verify-images h5 {
+  font-size: 14px;
+  color: #1a1a2e;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.child-reg-verify-images-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.child-reg-verify-image {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+}
+
+.child-reg-verify-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.child-reg-no-images-message {
+  padding: 40px 20px;
+  text-align: center;
+  background: #f8f9fa;
+  border: 1px dashed #e0e0e0;
+  border-radius: 8px;
+}
+
+.child-reg-no-images-message p {
+  color: #999;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* S/N Column Styling */
+.child-reg-data-table th:first-child,
+.child-reg-data-table td:first-child {
+  width: 60px;
+  text-align: center;
+}
+
+.child-reg-recent-table th:first-child,
+.child-reg-recent-table td:first-child {
+  width: 60px;
+  text-align: center;
+}
+
+/* Error Styles */
+.error-input {
+  border-color: #dc3545 !important;
+  background-color: #fff5f5 !important;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .child-reg-page-content {
+    padding: 15px;
+  }
+  
+  .child-reg-print-header {
+    padding: 20px 15px;
+  }
+  
+  .child-reg-print-content {
+    padding: 0 15px 20px 15px;
+  }
+  
+  .child-reg-filters-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .child-reg-filters-header {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+  .child-reg-filters-actions {
+    flex-direction: column;
+  }
+  
+  .child-reg-cancel-btn,
+  .child-reg-generate-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .child-reg-gender-buttons,
+  .child-reg-status-buttons {
+    flex-direction: column;
+  }
+  
+  .child-reg-verify-images-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .child-reg-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .child-reg-pictures-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .child-reg-workflow-steps {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .child-reg-workflow-arrow {
+    transform: rotate(90deg);
+    margin: 5px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .child-reg-page-header h1 {
+    font-size: 24px;
+  }
+  
+  .child-reg-stat-info h3 {
+    font-size: 22px;
+  }
+  
+  .child-reg-section-title {
+    font-size: 16px;
+  }
+  
+  .child-reg-verify-images-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .child-reg-pictures-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .child-reg-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .child-reg-toast-notification {
+    top: 60px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+    max-width: none;
+  }
+}
+
+/* Sync Spinner */
+.child-reg-sync-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e0e0e0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: child-reg-sync-spin 0.8s linear infinite;
+}
+
+@keyframes child-reg-sync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================
+   LOCATIONS MANAGEMENT - CLEAN STYLES
+   ============================================ */
+
+/* Add New Location Button */
+.child-reg-add-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.3s ease;
+}
+
+.child-reg-add-btn:hover {
+  background: #5a67d8;
+}
+
+.child-reg-add-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Location Form Container */
+.child-reg-location-form-container {
+  border: 1px solid #e0e0e0;
+  padding: 25px;
+  margin-bottom: 30px;
+  background: #ffffff;
+}
+
+.child-reg-location-form-container h3 {
+  margin: 0 0 20px 0;
+  color: #1a1a2e;
+  font-size: 18px;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Action Buttons for Locations Table */
+.child-reg-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  margin: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+
+.child-reg-edit-btn {
+  color: #3b82f6;
+}
+
+.child-reg-edit-btn:hover {
+  background: #eff6ff;
+}
+
+.child-reg-delete-btn {
+  color: #ef4444;
+}
+
+.child-reg-delete-btn:hover {
+  background: #fee2e2;
+}
+
+/* No Data Message */
+.child-reg-no-data {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  font-size: 14px;
+  border: 1px solid #e0e0e0;
+  background: #ffffff;
+  margin-top: 0;
+}
+
+.child-reg-no-data p {
+  margin: 0;
+}
+
+/* Form Actions */
+.child-reg-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Form Grid for Location Form */
+.child-reg-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* Form Group Styling */
+.child-reg-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.child-reg-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.child-reg-form-group input,
+.child-reg-form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  background: #ffffff;
+  transition: border-color 0.3s ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.child-reg-form-group input:focus,
+.child-reg-form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.child-reg-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Button Styles */
+.child-reg-btn-primary,
+.child-reg-btn-secondary {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.3s ease;
+}
+
+.child-reg-btn-primary {
+  background: #667eea;
+  color: #fff;
+}
+
+.child-reg-btn-primary:hover {
+  background: #5a67d8;
+}
+
+.child-reg-btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #e0e0e0;
+}
+
+.child-reg-btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+/* Search Bar */
+.child-reg-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  padding: 10px 15px;
+  margin-bottom: 20px;
+}
+
+.child-reg-search-bar svg {
+  stroke: #999;
+  flex-shrink: 0;
+}
+
+.child-reg-search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: transparent;
+}
+
+.child-reg-search-bar input::placeholder {
+  color: #999;
+}
+
+/* Data Table Container */
+.child-reg-data-table-container {
+  border: 1px solid #e0e0e0;
+  overflow-x: auto;
+  background: #ffffff;
+}
+
+.child-reg-data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.child-reg-data-table thead {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-reg-data-table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 13px;
+}
+
+.child-reg-data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  color: #666;
+  font-size: 13px;
+}
+
+.child-reg-data-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.child-reg-data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .child-reg-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .child-reg-header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .child-reg-form-actions {
+    flex-direction: column;
+  }
+  
+  .child-reg-form-actions button {
+    width: 100%;
+  }
+}
+
+.child-reg-action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.child-reg-action-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+
+.child-reg-view-btn {
+  color: #17a2b8;
+}
+
+.child-reg-view-btn:hover {
+  background: #e8f7f9;
+}
+
+.child-reg-edit-btn {
+  color: #ffc107;
+}
+
+.child-reg-edit-btn:hover {
+  background: #fff3cd;
+}
+
+.child-reg-fingerprint-btn {
+  color: #28a745;
+}
+
+.child-reg-fingerprint-btn:hover {
+  background: #d4edda;
+}
+
+.child-reg-delete-btn {
+  color: #dc3545;
+}
+
+.child-reg-delete-btn:hover {
+  background: #f8d7da;
+}
+
+/* Modal Styles */
+.child-reg-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.child-reg-modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.child-reg-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-reg-modal-header h3 {
+  margin: 0;
+  color: #1a1a2e;
+}
+
+.child-reg-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+}
+
+.child-reg-modal-body {
+  padding: 20px;
+}
+
+.child-reg-modal-footer {
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Fingerprint Progress */
+.child-reg-fingerprint-progress {
+  margin: 20px 0;
+}
+
+.child-reg-progress-bar {
+  background: #e0e0e0;
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.child-reg-progress-fill {
+  background: #28a745;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.child-reg-finger-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.child-reg-finger-badge {
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 600;
+  color: #999;
+}
+
+.child-reg-finger-badge.captured {
+  background: #28a745;
+  color: white;
+}
+
+.child-reg-finger-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.child-reg-enrolled-fingers {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.child-reg-enrolled-fingers h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #1a1a2e;
+}
+
+/* ============================================
+   FINGERPRINT ENROLLMENT PAGE STYLES
+   ============================================ */
+
+/* Enrollment Container - Two Column Layout */
+.child-reg-enrollment-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+/* Fingerprint Scanner Area */
+.child-reg-fingerprint-scanner {
+  border: 1px solid #e0e0e0;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.child-reg-scanner-area {
+  text-align: center;
+  padding: 50px 30px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-scanner-area svg {
+  margin-bottom: 25px;
+}
+
+.child-reg-scanner-area p {
+  color: #666;
+  margin-bottom: 25px;
+  font-size: 14px;
+}
+
+/* Scanning Animation */
+.child-reg-scanning-animation {
+  margin: 20px 0;
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+}
+
+.child-reg-scan-line {
+  position: relative;
+  height: 2px;
+  background: #667eea;
+  animation: child-reg-scan 1.5s ease-in-out infinite;
+  width: 100%;
+  margin: 20px 0;
+}
+
+@keyframes child-reg-scan {
+  0% {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+}
+
+/* Capture Success Area */
+.child-reg-capture-success {
+  text-align: center;
+  width: 100%;
+}
+
+.child-reg-capture-success svg {
+  margin-bottom: 20px;
+}
+
+.child-reg-capture-success h3 {
+  color: #28a745;
+  margin-bottom: 15px;
+  font-size: 20px;
+}
+
+/* Quality Bar */
+.child-reg-quality-bar {
+  width: 100%;
+  max-width: 300px;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 15px auto;
+}
+
+.child-reg-quality-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.child-reg-quality-fill.excellent {
+  background: #28a745;
+}
+
+.child-reg-quality-fill.good {
+  background: #ffc107;
+}
+
+.child-reg-quality-fill.poor {
+  background: #dc3545;
+}
+
+/* Enrollment Info Sidebar */
+.child-reg-enrollment-info {
+  border: 1px solid #e0e0e0;
+  padding: 25px;
+  background: #ffffff;
+}
+
+.child-reg-enrollment-info h3 {
+  margin: 0 0 20px 0;
+  color: #1a1a2e;
+  font-size: 18px;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-reg-enrollment-info ul {
+  margin: 0 0 25px 0;
+  padding-left: 20px;
+}
+
+.child-reg-enrollment-info li {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+/* Fingerprint Tips */
+.child-reg-fingerprint-tips {
+  background: #f8f9fa;
+  padding: 20px;
+  margin-top: 20px;
+  border-left: 3px solid #667eea;
+}
+
+.child-reg-fingerprint-tips h4 {
+  margin: 0 0 12px 0;
+  color: #1a1a2e;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.child-reg-fingerprint-tips p {
+  margin: 8px 0;
+  color: #666;
+  font-size: 13px;
+}
+
+/* Enrollment Actions */
+.child-reg-enrollment-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 25px;
+}
+
+/* Disabled Button State */
+.child-reg-btn-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.child-reg-btn-primary:disabled:hover {
+  background: #ccc;
+  transform: none;
+}
+
+/* Modal Body Scroll */
+.child-reg-modal-body {
+  padding: 20px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Modal Footer */
+.child-reg-modal-footer {
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* View Images Section in Modal */
+.child-reg-view-images {
+  margin-bottom: 20px;
+}
+
+/* Modal Animation */
+@keyframes child-reg-modal-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.child-reg-modal-content {
+  animation: child-reg-modal-fade-in 0.2s ease;
+}
+
+/* Action Icon Buttons */
+.child-reg-action-icon-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Table Action Column Width */
+.child-reg-data-table th:last-child,
+.child-reg-data-table td:last-child {
+  text-align: center;
+  min-width: 120px;
+}
+
+.child-reg-recent-table th:last-child,
+.child-reg-recent-table td:last-child {
+  text-align: center;
+  min-width: 100px;
+}
+
+/* Hover Effects for Table Rows */
+.child-reg-data-table tbody tr:hover .child-reg-action-icon-btn,
+.child-reg-recent-table tbody tr:hover .child-reg-action-icon-btn {
+  opacity: 1;
+}
+
+/* ============================================
+   PRINT STYLES (Hide Action Buttons in Print)
+   ============================================ */
+@media print {
+  .child-reg-action-buttons,
+  .child-reg-action-icon-btn,
+  .child-reg-print-btn-page,
+  .child-reg-add-registration-btn,
+  .child-reg-verify-btn-header,
+  .child-reg-add-btn,
+  .child-reg-back-btn,
+  .child-reg-modal-overlay,
+  .child-reg-toast-notification,
+  .child-reg-header-button-group {
+    display: none !important;
+  }
+  
+  .child-reg-data-table th:last-child,
+  .child-reg-data-table td:last-child,
+  .child-reg-recent-table th:last-child,
+  .child-reg-recent-table td:last-child {
+    display: none;
+  }
+}
+
+/* Loading State for Buttons */
+.child-reg-action-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tooltip Styles */
+.child-reg-action-icon-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 10001;
+  pointer-events: none;
+}
+
+/* Responsive Enrollment Page */
+@media (max-width: 768px) {
+  .child-reg-enrollment-container {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .child-reg-scanner-area {
+    padding: 30px 20px;
+    min-height: 350px;
+  }
+  
+  .child-reg-enrollment-info {
+    padding: 20px;
+  }
+  
+  .child-reg-enrollment-actions {
+    flex-direction: column;
+  }
+  
+  .child-reg-enrollment-actions button {
+    width: 100%;
+  }
+  
+  .child-reg-quality-bar {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .child-reg-scanner-area svg {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .child-reg-capture-success h3 {
+    font-size: 18px;
+  }
+  
+  .child-reg-enrollment-info ul {
+    padding-left: 15px;
+  }
+  
+  .child-reg-enrollment-info li {
+    font-size: 13px;
+  }
+}
+
+/* Quality Badge Variations */
+.child-reg-quality-excellent {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-quality-good {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.child-reg-quality-fair {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.child-reg-quality-poor {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Status Badge Variations */
+.child-reg-status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Modal Form Group Spacing */
+.child-reg-modal-body .child-reg-form-group {
+  margin-bottom: 15px;
+}
+
+.child-reg-modal-body .child-reg-form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Modal Info Grid */
+.child-reg-modal-body .child-reg-info-grid {
+  margin-bottom: 0;
+}
+
+/* Success/Info Messages in Modal */
+.child-reg-modal-body .child-reg-success-message {
+  margin: 0;
+  padding: 20px;
+}
+
+.child-reg-modal-body .child-reg-info-message {
+  margin: 0;
+  padding: 20px;
+}
+
+/* Fingerprint Area in Modal */
+.child-reg-modal-body .child-reg-fingerprint-area {
+  margin: 0 0 20px 0;
+  padding: 30px;
+}
+
+/* Responsive Finger List */
+@media (max-width: 480px) {
+  .child-reg-finger-list {
+    gap: 6px;
+  }
+  
+  .child-reg-finger-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+  
+  .child-reg-action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .child-reg-action-icon-btn {
+    padding: 4px 6px;
+  }
+  
+  .child-reg-data-table th:last-child,
+  .child-reg-data-table td:last-child {
+    min-width: 80px;
+  }
+}
+
+/* ============================================
+   CHILD VIEW PAGE - THREE COLUMN IMAGES
+   ============================================ */
+
+/* View Container */
+.child-reg-view-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* View Images Section */
+.child-reg-view-images-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.child-reg-view-images-section h3 {
+  margin: 0 0 15px 0;
+  color: #1a1a2e;
+  font-size: 16px;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Three Column Grid for Images */
+.child-reg-view-images-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* Image Card */
+.child-reg-view-image-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.child-reg-view-image-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.child-reg-view-image-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  background: #f0f0f0;
+}
+
+.child-reg-view-image-card span {
+  display: block;
+  padding: 10px;
+  background: #f8f9fa;
+  color: #666;
+  font-size: 12px;
+  font-weight: 500;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* View Info Section */
+.child-reg-view-info-section {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+/* Info Grid */
+.child-reg-view-info-section .child-reg-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* Info Item */
+.child-reg-view-info-section .child-reg-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.child-reg-view-info-section .child-reg-info-item label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.child-reg-view-info-section .child-reg-info-item span {
+  font-size: 15px;
+  color: #1a1a2e;
+  font-weight: 500;
+}
+
+/* View Actions */
+.child-reg-view-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* No Images Message */
+.child-reg-no-images-message {
+  text-align: center;
+  padding: 60px 20px;
+  background: #f8f9fa;
+  border: 1px dashed #e0e0e0;
+  border-radius: 8px;
+}
+
+.child-reg-no-images-message p {
+  color: #999;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Responsive - Two columns on tablet */
+@media (max-width: 768px) {
+  .child-reg-view-images-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  
+  .child-reg-view-image-card img {
+    height: 180px;
+  }
+  
+  .child-reg-view-info-section .child-reg-info-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
+
+/* Responsive - One column on mobile */
+@media (max-width: 480px) {
+  .child-reg-view-images-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .child-reg-view-image-card img {
+    height: 250px;
+  }
+  
+  .child-reg-view-actions {
+    flex-direction: column;
+  }
+  
+  .child-reg-view-actions button {
+    width: 100%;
+  }
+}
+
+/* Age & Birth Year Layout Styles */
+.child-reg-age-year-group {
+  grid-column: span 1;
+}
+
+.child-reg-age-year-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.child-reg-input-with-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.child-reg-input-sublabel {
+  font-size: 11px;
+  color: #888;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.child-reg-age-year-divider {
+  align-self: flex-start;
+  height: 44px; /* Center-aligns vertically with inputs */
+  display: flex;
+  align-items: center;
+  color: #a0aec0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+@media (max-width: 400px) {
+  .child-reg-age-year-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+  }
+  .child-reg-age-year-divider {
+    align-self: center;
+    height: auto;
+    padding: 2px 0;
+  }
+}
+
+
+/* Age Categories Styles */
+.child-reg-age-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.child-reg-age-category-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.child-reg-age-category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.child-reg-age-category-card.young-card {
+  border-left: 4px solid #4caf50;
+}
+
+.child-reg-age-category-card.older-card {
+  border-left: 4px solid #ff9800;
+}
+
+.child-reg-category-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-category-icon.young-icon {
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+  color: white;
+}
+
+.child-reg-category-icon.older-icon {
+  background: linear-gradient(135deg, #ff9800, #ffb74d);
+  color: white;
+}
+
+.child-reg-category-info {
+  flex: 1;
+}
+
+.child-reg-category-info h3 {
+  font-size: 32px;
+  margin: 0;
+  color: #1a1a2e;
+}
+
+.child-reg-category-info p {
+  margin: 5px 0;
+  font-size: 16px;
+  color: #666;
+  font-weight: 500;
+}
+
+.child-reg-category-info small {
+  font-size: 12px;
+  color: #999;
+}
+
+
+/* ============================================
+   FINGERPRINT ENROLLMENT - 10 FINGERS
+   ============================================ */
+
+/* Enrollment Container */
+.child-reg-enrollment-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  padding: 20px 0;
+}
+
+@media (max-width: 992px) {
+  .child-reg-enrollment-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Finger Grid */
+.child-reg-finger-grid {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+}
+
+.child-reg-finger-grid h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+
+.child-reg-finger-grid-buttons {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .child-reg-finger-grid-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Finger Button */
+.child-reg-finger-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 10px;
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 80px;
+}
+
+.child-reg-finger-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.child-reg-finger-btn.selected {
+  border-color: #667eea;
+  background: #eef1ff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.child-reg-finger-btn.captured {
+  border-color: #28a745;
+  background: #d4edda;
+}
+
+.child-reg-finger-btn.captured.selected {
+  border-color: #28a745;
+  background: #c3e6cb;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.child-reg-finger-icon {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.child-reg-finger-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  text-align: center;
+}
+
+.child-reg-finger-hand {
+  font-weight: 600;
+  color: #495057;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.child-reg-finger-name {
+  color: #212529;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.child-reg-finger-quality {
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* Scanner Area */
+.child-reg-fingerprint-scanner {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  min-height: 400px;
+}
+
+.child-reg-scanner-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 350px;
+  background: white;
+  border-radius: 10px;
+  padding: 30px;
+  border: 2px dashed #dee2e6;
+}
+
+.child-reg-scanner-instructions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.child-reg-scanner-instructions p {
+  margin: 10px 0;
+  color: #495057;
+}
+
+.child-reg-scanner-hint {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+/* Scanning Animation */
+.child-reg-scanning-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 15px 0;
+  width: 100%;
+}
+
+.child-reg-scan-line {
+  width: 80%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+  animation: child-reg-scan 1.5s ease-in-out infinite;
+  border-radius: 2px;
+}
+
+@keyframes child-reg-scan {
+  0% { transform: translateY(-30px); opacity: 0; }
+  50% { transform: translateY(30px); opacity: 1; }
+  100% { transform: translateY(-30px); opacity: 0; }
+}
+
+/* Capture Success */
+.child-reg-capture-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.child-reg-capture-success h3 {
+  margin: 10px 0 5px;
+  color: #28a745;
+}
+
+.child-reg-capture-success p {
+  margin: 5px 0;
+  color: #495057;
+}
+
+/* Quality Bar */
+.child-reg-quality-bar {
+  width: 100%;
+  max-width: 300px;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.child-reg-quality-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.child-reg-quality-fill.excellent {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.child-reg-quality-fill.good {
+  background: linear-gradient(90deg, #ffc107, #fd7e14);
+}
+
+.child-reg-quality-fill.poor {
+  background: linear-gradient(90deg, #dc3545, #e83e8c);
+}
+
+/* Enrollment Actions */
+.child-reg-enrollment-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.child-reg-btn-danger {
+  padding: 10px 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.child-reg-btn-danger:hover {
+  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Enrollment Summary */
+.child-reg-enrollment-summary {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+  margin-top: 20px;
+}
+
+.child-reg-enrollment-summary h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+
+.child-reg-captured-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.child-reg-captured-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  font-size: 13px;
+}
+
+.child-reg-captured-name {
+  font-weight: 500;
+  color: #212529;
+}
+
+.child-reg-captured-quality {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.child-reg-captured-remove {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.child-reg-captured-remove:hover {
+  color: #c82333;
+}
+
+.child-reg-no-captures {
+  color: #6c757d;
+  font-size: 14px;
+  margin: 10px 0;
+}
+
+.child-reg-enrollment-summary-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+/* Enrollment Progress */
+.child-reg-enrollment-progress {
+  display: inline-block;
+  padding: 6px 14px;
+  background: #e9ecef;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.child-reg-enrollment-hint {
+  font-size: 13px;
+  color: #6c757d;
+  font-style: italic;
+  margin: 5px 0;
+}
+
+/* ============================================
+   FINGERPRINT SUMMARY IN PATIENT LIST
+   ============================================ */
+
+.child-reg-fingerprint-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.child-reg-fingerprint-count {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.child-reg-fingerprint-count.has-fingerprints {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-fingerprint-count.no-fingerprints {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.child-reg-fingerprint-dots {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.child-reg-finger-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #dee2e6;
+  display: inline-block;
+}
+
+.child-reg-finger-dot.captured {
+  background: #28a745;
+  border-color: #28a745;
+}
+
+.child-reg-finger-dot.missing {
+  background: #dc3545;
+  border-color: #dc3545;
+}
+
+/* ============================================
+   FINGERPRINT STATUS BADGE
+   ============================================ */
+
+.child-reg-status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.child-reg-status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* ============================================
+   FINGERPRINT QUALITY BADGE
+   ============================================ */
+
+.child-reg-quality-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.child-reg-quality-excellent {
+  background: #d4edda;
+  color: #155724;
+}
+
+.child-reg-quality-good {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.child-reg-quality-fair {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.child-reg-quality-poor {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 768px) {
+  .child-reg-finger-grid-buttons {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .child-reg-enrollment-summary-actions {
+    flex-direction: column;
+  }
+  
+  .child-reg-enrollment-summary-actions button {
+    width: 100%;
+  }
+  
+  .child-reg-scanner-area {
+    min-height: 250px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .child-reg-finger-grid-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .child-reg-finger-btn {
+    padding: 10px 5px;
+    min-height: 60px;
+  }
+  
+  .child-reg-finger-icon {
+    font-size: 18px;
+  }
+  
+  .child-reg-finger-label {
+    font-size: 9px;
+  }
+  
+  .child-reg-finger-name {
+    font-size: 10px;
+  }
+  
+  .child-reg-enrollment-container {
+    gap: 15px;
+    padding: 10px 0;
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.child-reg-text-center {
+  text-align: center;
+}
+
+.child-reg-mt-10 {
+  margin-top: 10px;
+}
+
+.child-reg-mb-10 {
+  margin-bottom: 10px;
+}
+
+.child-reg-gap-10 {
+  gap: 10px;
+}
+
+.child-reg-flex-wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.child-reg-align-center {
+  align-items: center;
+}
+
+.child-reg-justify-center {
+  justify-content: center;
+}
+
+/* Minimal Sync Status - Only shows when there are pending items */
+.child-reg-sync-status-mini {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  margin: 4px 0 12px 0;
+  background: #fff8e1;
+  border: 1px solid #ffcc02;
+  border-radius: 16px;
+  font-size: 12px;
+  color: #856404;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.child-reg-sync-status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.child-reg-sync-status-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Status text */
+.child-reg-sync-status-text {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.child-reg-sync-status-text.syncing {
+  color: #1565c0;
+}
+
+.child-reg-sync-status-text.active {
+  color: #2e7d32;
+}
+
+.child-reg-sync-status-text.pending {
+  color: #e65100;
+}
+
+/* Small dot indicator */
+.child-reg-sync-dot-small {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+}
+
+.child-reg-sync-dot-small.warning {
+  background: #ff9800;
+  animation: sync-pulse 1.5s infinite;
+}
+
+.child-reg-sync-status-text.syncing .child-reg-sync-dot-small {
+  background: #2196f3;
+  animation: sync-pulse 0.8s infinite;
+}
+
+/* Sync time */
+.child-reg-sync-time {
+  font-size: 10px;
+  color: #999;
+  padding: 0 4px;
+}
+
+/* Toggle button - small dot */
+.child-reg-sync-toggle-mini {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-sync-toggle-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  border: 2px solid #ddd;
+}
+
+.child-reg-sync-toggle-dot.on {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.child-reg-sync-toggle-dot.off {
+  background: #ef5350;
+  border-color: #ef5350;
+}
+
+.child-reg-sync-toggle-mini:hover .child-reg-sync-toggle-dot {
+  transform: scale(1.1);
+}
+
+/* Sync now button - tiny icon */
+.child-reg-sync-now-mini {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: #666;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-sync-now-mini:hover:not(:disabled) {
+  color: #2196f3;
+  transform: rotate(45deg);
+}
+
+.child-reg-sync-now-mini:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Offline banner */
+.child-reg-offline-banner {
+  background: #fff8e1;
+  border: 1px solid #ffcc02;
+  border-radius: 4px;
+  padding: 6px 12px;
+  margin: 4px 0 12px 0;
+  color: #856404;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+/* Spinner for sync action card */
+.child-reg-sync-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #2196f3;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Animations */
+@keyframes sync-pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .child-reg-sync-status-mini {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 10px;
+  }
+  
+  .child-reg-sync-status-left {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}

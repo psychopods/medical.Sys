@@ -1,0 +1,855 @@
+/* NurseDashboard.css - Unique class names for Nurse Dashboard */
+
+/* Main Wrapper */
+.nurse-dashboard-wrapper {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+/* Offline Banner */
+.nurse-dashboard-offline-banner {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #856404;
+  margin-bottom: 20px;
+  border-radius: 4px;
+}
+
+.nurse-dashboard-sync-btn {
+  margin-left: auto;
+  background: #ffc107;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #856404;
+  font-weight: 500;
+}
+
+.nurse-dashboard-sync-btn:hover {
+  background: #e0a800;
+}
+
+/* Welcome Section */
+.nurse-dashboard-welcome-section {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.nurse-dashboard-welcome-section h1 {
+  font-size: 28px;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.nurse-dashboard-welcome-section p {
+  color: #666;
+  font-size: 14px;
+}
+
+/* Stats Grid */
+.nurse-dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.nurse-dashboard-stat-card {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+}
+
+.nurse-dashboard-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.nurse-dashboard-stat-icon {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border-radius: 12px;
+  color: #667eea;
+}
+
+.nurse-dashboard-stat-info h3 {
+  font-size: 28px;
+  color: #1a1a2e;
+  margin-bottom: 4px;
+}
+
+.nurse-dashboard-stat-info p {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+
+/* Section Title */
+.nurse-dashboard-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+/* Two Column Layout */
+.nurse-dashboard-two-column-layout {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.nurse-dashboard-data-card {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  padding: 20px;
+}
+
+.nurse-dashboard-data-card-header {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.nurse-dashboard-data-card-header h3 {
+  font-size: 16px;
+  color: #1a1a2e;
+  margin-bottom: 5px;
+}
+
+.nurse-dashboard-data-card-subtitle {
+  font-size: 12px;
+  color: #999;
+}
+
+/* Location List */
+.nurse-dashboard-location-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.nurse-dashboard-location-item {
+  width: 100%;
+}
+
+.nurse-dashboard-location-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.nurse-dashboard-location-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.nurse-dashboard-location-count {
+  font-size: 12px;
+  color: #666;
+}
+
+.nurse-dashboard-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.nurse-dashboard-progress-fill {
+  height: 100%;
+  background: #667eea;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Monthly Chart Container */
+.nurse-dashboard-monthly-chart-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Monthly Chart with Y-Axis */
+.nurse-dashboard-monthly-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 280px;
+  padding: 20px 0 10px 0;
+  position: relative;
+  margin-left: 50px;
+  min-width: 500px;
+}
+
+/* Y-Axis Line and Labels */
+.nurse-dashboard-chart-y-axis {
+  position: absolute;
+  left: -50px;
+  top: 0;
+  bottom: 20px;
+  width: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #666;
+  text-align: right;
+  padding-right: 8px;
+}
+
+.nurse-dashboard-chart-y-axis span {
+  line-height: 1;
+}
+
+/* Y-Axis Line */
+.nurse-dashboard-chart-y-axis-line {
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 20px;
+  width: 1px;
+  background: #d0d0d0;
+}
+
+/* X-Axis Line */
+.nurse-dashboard-chart-x-axis-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 20px;
+  height: 1px;
+  background: #d0d0d0;
+}
+
+.nurse-dashboard-chart-bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.nurse-dashboard-chart-label {
+  font-size: 11px;
+  color: #666;
+  margin-top: 10px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.nurse-dashboard-chart-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  height: 200px;
+  width: 100%;
+  position: relative;
+}
+
+.nurse-dashboard-chart-bar {
+  width: 70%;
+  max-width: 35px;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+  position: relative;
+  min-height: 4px;
+  cursor: pointer;
+}
+
+.nurse-dashboard-chart-bar:hover {
+  opacity: 0.85;
+  transform: scaleX(1.05);
+}
+
+.nurse-dashboard-chart-value {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: #667eea;
+  font-weight: 600;
+  white-space: nowrap;
+  background: white;
+  padding: 2px 5px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Loading Text */
+.nurse-dashboard-loading-text {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 14px;
+}
+
+/* Recent Table */
+.nurse-dashboard-recent-table {
+  border: 1px solid #e0e0e0;
+  overflow-x: auto;
+  margin-bottom: 30px;
+  background: #ffffff;
+}
+
+.nurse-dashboard-recent-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.nurse-dashboard-recent-table th,
+.nurse-dashboard-recent-table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.nurse-dashboard-recent-table th {
+  background: #f8f9fa;
+  color: #1a1a2e;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.nurse-dashboard-recent-table td {
+  color: #666;
+  font-size: 13px;
+}
+
+.nurse-dashboard-recent-table tr:last-child td {
+  border-bottom: none;
+}
+
+.nurse-dashboard-recent-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+/* Status Badges */
+.nurse-dashboard-status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 20px;
+}
+
+.nurse-dashboard-status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.nurse-dashboard-status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Workflow Steps */
+.nurse-dashboard-workflow-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #e0e0e0;
+  padding: 25px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+  background: #ffffff;
+}
+
+.nurse-dashboard-workflow-step {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.nurse-dashboard-workflow-step:first-child {
+  cursor: pointer;
+}
+
+.nurse-dashboard-workflow-step:nth-child(3) {
+  cursor: pointer;
+}
+
+.nurse-dashboard-step-number {
+  width: 45px;
+  height: 45px;
+  background: #667eea;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.nurse-dashboard-step-content h4 {
+  font-size: 14px;
+  color: #1a1a2e;
+  margin-bottom: 5px;
+}
+
+.nurse-dashboard-step-content p {
+  font-size: 12px;
+  color: #666;
+}
+
+.nurse-dashboard-workflow-arrow {
+  font-size: 24px;
+  color: #667eea;
+  margin: 0 15px;
+}
+
+/* Modal Styles */
+.nurse-dashboard-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.nurse-dashboard-modal-content {
+  background: #fff;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.nurse-dashboard-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.nurse-dashboard-modal-header h2 {
+  font-size: 20px;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.nurse-dashboard-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #999;
+}
+
+/* Form Styles */
+.nurse-dashboard-registration-form {
+  padding: 20px;
+}
+
+.nurse-dashboard-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.nurse-dashboard-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nurse-dashboard-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.nurse-dashboard-form-group input,
+.nurse-dashboard-form-group select {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.nurse-dashboard-form-group input:focus,
+.nurse-dashboard-form-group select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* Error Styles */
+.error-input {
+  border-color: #dc3545 !important;
+  background-color: #fff5f5 !important;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Fingerprint Area */
+.nurse-dashboard-fingerprint-section {
+  padding: 20px;
+  text-align: center;
+}
+
+.nurse-dashboard-fingerprint-area {
+  text-align: center;
+  padding: 40px;
+  background: #f8f9fa;
+  margin: 20px 0;
+  border-radius: 8px;
+}
+
+.nurse-dashboard-fingerprint-area svg {
+  margin-bottom: 20px;
+}
+
+.nurse-dashboard-fingerprint-area p {
+  color: #666;
+  margin-bottom: 25px;
+}
+
+/* Buttons */
+.nurse-dashboard-btn-primary,
+.nurse-dashboard-btn-secondary {
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.nurse-dashboard-btn-primary {
+  background: #667eea;
+  color: #fff;
+}
+
+.nurse-dashboard-btn-primary:hover {
+  background: #5a67d8;
+}
+
+.nurse-dashboard-btn-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.nurse-dashboard-btn-secondary {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.nurse-dashboard-btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.nurse-dashboard-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Success and Info Messages */
+.nurse-dashboard-success-message {
+  background: #d4edda;
+  padding: 30px;
+  text-align: center;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.nurse-dashboard-success-message h3 {
+  color: #155724;
+  margin-bottom: 10px;
+}
+
+.nurse-dashboard-info-message {
+  background: #d1ecf1;
+  padding: 30px;
+  text-align: center;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.nurse-dashboard-info-message h3 {
+  color: #0c5460;
+  margin-bottom: 10px;
+}
+
+.nurse-dashboard-child-info {
+  text-align: left;
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 15px 0;
+}
+
+.nurse-dashboard-child-info p {
+  margin: 8px 0;
+  color: #333;
+}
+
+/* Verification Result */
+.nurse-dashboard-verification-result {
+  margin-top: 20px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .nurse-dashboard-two-column-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .nurse-dashboard-wrapper {
+    padding: 15px;
+  }
+  
+  .nurse-dashboard-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+  }
+  
+  .nurse-dashboard-workflow-steps {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .nurse-dashboard-workflow-arrow {
+    transform: rotate(90deg);
+    margin: 5px 0;
+  }
+  
+  .nurse-dashboard-stat-card {
+    padding: 15px;
+  }
+  
+  .nurse-dashboard-stat-icon {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .nurse-dashboard-stat-info h3 {
+    font-size: 22px;
+  }
+  
+  .nurse-dashboard-monthly-chart {
+    height: 220px;
+    margin-left: 45px;
+    min-width: 400px;
+  }
+  
+  .nurse-dashboard-chart-y-axis {
+    left: -45px;
+    font-size: 10px;
+    width: 45px;
+  }
+  
+  .nurse-dashboard-chart-bar-wrapper {
+    height: 160px;
+  }
+  
+  .nurse-dashboard-chart-label {
+    font-size: 9px;
+  }
+  
+  .nurse-dashboard-chart-value {
+    font-size: 8px;
+    top: -18px;
+  }
+  
+  .nurse-dashboard-form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .nurse-dashboard-recent-table th,
+  .nurse-dashboard-recent-table td {
+    padding: 10px;
+    font-size: 12px;
+  }
+  
+  .nurse-dashboard-modal-content {
+    width: 95%;
+    max-width: 95%;
+  }
+}
+
+@media (max-width: 480px) {
+  .nurse-dashboard-welcome-section h1 {
+    font-size: 24px;
+  }
+  
+  .nurse-dashboard-section-title {
+    font-size: 18px;
+  }
+  
+  .nurse-dashboard-fingerprint-area {
+    padding: 25px;
+  }
+  
+  .nurse-dashboard-chart-bar-container {
+    min-width: 35px;
+  }
+  
+  .nurse-dashboard-chart-label {
+    font-size: 8px;
+  }
+  
+  .nurse-dashboard-monthly-chart {
+    margin-left: 40px;
+  }
+  
+  .nurse-dashboard-chart-y-axis {
+    left: -40px;
+    font-size: 8px;
+    width: 40px;
+  }
+}
+
+
+/* Welcome Header with Greeting and DateTime */
+.nurse-dashboard-welcome-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.nurse-dashboard-greeting h1 {
+  font-size: 28px;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.nurse-dashboard-greeting p {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+.nurse-dashboard-datetime {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  background: #f8f9fa;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.nurse-dashboard-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.nurse-dashboard-date svg {
+  stroke: #667eea;
+}
+
+.nurse-dashboard-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.nurse-dashboard-time svg {
+  stroke: #667eea;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .nurse-dashboard-welcome-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .nurse-dashboard-datetime {
+    align-items: flex-start;
+    width: 100%;
+  }
+  
+  .nurse-dashboard-greeting h1 {
+    font-size: 24px;
+  }
+  
+  .nurse-dashboard-time {
+    font-size: 16px;
+  }
+}
+
+
+/* Age distribution stat cards */
+.nurse-dashboard-stat-card .nurse-dashboard-stat-info small {
+  display: block;
+  font-size: 10px;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* Different border colors for age cards - add to existing .nurse-dashboard-stat-card styles */
+.nurse-dashboard-stat-card:nth-child(2) {
+  border-left: 4px solid #4caf50;
+}
+
+.nurse-dashboard-stat-card:nth-child(3) {
+  border-left: 4px solid #ff9800;
+}
+
+/* Optional: Add hover effects for these cards */
+.nurse-dashboard-stat-card:nth-child(2):hover {
+  border-left-color: #45a049;
+}
+
+.nurse-dashboard-stat-card:nth-child(3):hover {
+  border-left-color: #fb8c00;
+}
