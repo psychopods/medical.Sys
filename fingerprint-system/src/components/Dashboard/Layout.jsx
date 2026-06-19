@@ -11,12 +11,14 @@ const Layout = ({ children, user, onLogout }) => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const mainContentRef = useRef(null);
   const scrollPositions = useRef({});
   const userMenuRef = useRef(null);
   const sidebarRef = useRef(null);
+  const refreshIntervalRef = useRef(null);
 
   // Check if mobile on resize
   useEffect(() => {
@@ -83,6 +85,22 @@ const Layout = ({ children, user, onLogout }) => {
       setIsMobileSidebarOpen(false);
     }
   }, [location.pathname, isMobile]);
+
+  // ===== REFRESH NOTIFICATIONS EVERY 5 SECONDS =====
+  useEffect(() => {
+    // Start the refresh interval
+    refreshIntervalRef.current = setInterval(() => {
+      setRefreshTrigger(prev => prev + 1);
+    }, 5000); // 5 seconds
+
+    // Cleanup interval on unmount
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter(item => 
@@ -215,8 +233,8 @@ const Layout = ({ children, user, onLogout }) => {
           </button>
           <h1>{getPageTitle(location.pathname)}</h1>
           <div className="header-actions">
-            {/* Notification Bell */}
-            {user && <NotificationBell user={user} />}
+            {/* Notification Bell - Pass refreshTrigger as prop */}
+            {user && <NotificationBell user={user} refreshTrigger={refreshTrigger} />}
             
             {/* User Info in Right Corner */}
             <div className="user-menu-container" ref={userMenuRef}>

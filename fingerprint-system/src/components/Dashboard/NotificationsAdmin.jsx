@@ -28,6 +28,8 @@ const NotificationsAdmin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendingId, setResendingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   
   // Data for dropdowns
@@ -164,6 +166,39 @@ const NotificationsAdmin = () => {
     }
   };
 
+  // ===== HANDLE RESEND NOTIFICATION using existing create API =====
+  const handleResend = async (notification) => {
+    // Use the existing notification data to create a new one
+    const resendData = {
+      type: notification.type,
+      title: `[RESENT] ${notification.title}`,
+      message: notification.message,
+      targetType: notification.targetType,
+      targetUserId: notification.targetUserId || null,
+      expiresAt: notification.expiresAt || null
+    };
+
+    if (!window.confirm(`Resend notification "${notification.title}" to all recipients?`)) return;
+    
+    setResendingId(notification.id);
+    setIsResending(true);
+    try {
+      const result = await createNotification(resendData);
+      if (result) {
+        showToastMessage('Notification resent successfully');
+        await loadNotifications();
+      } else {
+        showToastMessage('Failed to resend notification', 'error');
+      }
+    } catch (error) {
+      console.error('Error resending notification:', error);
+      showToastMessage('Failed to resend notification', 'error');
+    } finally {
+      setIsResending(false);
+      setResendingId(null);
+    }
+  };
+
   const handleDelete = async (id, title) => {
     if (!window.confirm(`Delete notification "${title}"?`)) return;
     
@@ -285,7 +320,7 @@ const NotificationsAdmin = () => {
     navigate('/login');
   };
 
-  // Render Notification List with S/N
+  // Render Notification List with S/N and Resend button
   const renderList = () => (
     <div className="na-dashboard-content">
       <div className="na-dashboard-header">
@@ -343,32 +378,45 @@ const NotificationsAdmin = () => {
                           className="na-action-btn na-view" 
                           onClick={() => handleView(notif.id)} 
                           title="View Details"
-                          disabled={isLoading || isDeleting}
+                          disabled={isLoading || isDeleting || isResending}
                         >
-                          {isLoading ? (
-                            <span className="na-spinner-small"></span>
-                          ) : (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                          )}
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
                         </button>
                         <button 
                           className="na-action-btn na-edit" 
                           onClick={() => handleEdit(notif)} 
                           title="Edit"
-                          disabled={isLoading || isDeleting}
+                          disabled={isLoading || isDeleting || isResending}
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M17 3L21 7L7 21H3V17L17 3Z" />
                           </svg>
                         </button>
                         <button 
+                          className="na-action-btn na-resend" 
+                          onClick={() => handleResend(notif)} 
+                          title="Resend Notification"
+                          disabled={isResending && resendingId === notif.id || isDeleting}
+                        >
+                          {isResending && resendingId === notif.id ? (
+                            <span className="na-spinner-small"></span>
+                          ) : (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M1 4v6h6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M23 20v-6h-6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M20.49 9a9 9 0 0 0-5.85-4.84A9 9 0 0 0 4.01 11" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M3.51 15a9 9 0 0 0 5.85 4.84A9 9 0 0 0 19.99 13" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                        </button>
+                        <button 
                           className="na-action-btn na-delete" 
                           onClick={() => handleDelete(notif.id, notif.title)} 
                           title="Delete"
-                          disabled={isDeleting && deletingId === notif.id}
+                          disabled={isDeleting && deletingId === notif.id || isResending}
                         >
                           {isDeleting && deletingId === notif.id ? (
                             <span className="na-spinner-small"></span>
@@ -394,7 +442,7 @@ const NotificationsAdmin = () => {
     </div>
   );
 
-  // Render Notification Form
+  // Render Notification Form with Resend option in edit mode
   const renderForm = () => (
     <div className="na-dashboard-content">
       <div className="na-dashboard-header">
@@ -485,6 +533,26 @@ const NotificationsAdmin = () => {
           />
         </div>
 
+        {/* Optional Resend option when editing */}
+        {editingNotification && (
+          <div className="na-form-group na-resend-option">
+            <div className="na-resend-checkbox-wrapper">
+              <input 
+                type="checkbox" 
+                id="resendCheckbox"
+                onChange={(e) => {
+                  setFormData({...formData, shouldResend: e.target.checked});
+                }}
+                disabled={isSaving}
+              />
+              <label htmlFor="resendCheckbox">
+                <strong>Resend this notification</strong>
+                <span className="na-resend-hint">(Send again to all recipients after updating)</span>
+              </label>
+            </div>
+          </div>
+        )}
+
         <div className="na-form-actions">
           <button 
             className="na-btn-secondary" 
@@ -495,7 +563,21 @@ const NotificationsAdmin = () => {
           </button>
           <button 
             className="na-btn-primary" 
-            onClick={editingNotification ? handleUpdate : handleCreate}
+            onClick={async () => {
+              if (editingNotification) {
+                // If editing and checkbox is checked, resend after update
+                await handleUpdate();
+                if (formData.shouldResend) {
+                  // Get the updated notification data
+                  const updatedNotif = notifications.find(n => n.id === editingNotification.id);
+                  if (updatedNotif) {
+                    await handleResend(updatedNotif);
+                  }
+                }
+              } else {
+                await handleCreate();
+              }
+            }}
             disabled={isSaving}
           >
             {isSaving ? (
@@ -504,7 +586,7 @@ const NotificationsAdmin = () => {
                 {editingNotification ? 'Updating...' : 'Creating...'}
               </>
             ) : (
-              editingNotification ? 'Update' : 'Create'
+              editingNotification ? (formData.shouldResend ? 'Update & Resend' : 'Update') : 'Create'
             )}
           </button>
         </div>
@@ -512,7 +594,7 @@ const NotificationsAdmin = () => {
     </div>
   );
 
-  // Render Notification View Page with Creator and Readers List
+  // Render Notification View Page with Resend button
   const renderView = () => {
     const readers = getReaders(viewingNotification?.id);
     const creatorName = getCreatorName(viewingNotification?.createdByStaffId);
@@ -620,6 +702,20 @@ const NotificationsAdmin = () => {
                 disabled={isLoading}
               >
                 Edit Notification
+              </button>
+              <button 
+                className="na-btn-resend" 
+                onClick={() => handleResend(viewingNotification)}
+                disabled={isResending && resendingId === viewingNotification.id}
+              >
+                {isResending && resendingId === viewingNotification.id ? (
+                  <>
+                    <span className="na-spinner-small"></span>
+                    Resending...
+                  </>
+                ) : (
+                  'Resend Notification'
+                )}
               </button>
             </div>
           </div>

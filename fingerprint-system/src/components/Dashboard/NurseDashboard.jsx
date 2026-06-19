@@ -88,6 +88,47 @@ const NurseDashboard = ({ user, onLogout }) => {
     return currentYear - estimatedBirthYear;
   };
 
+  // Helper function to check if a date is today or in the future
+  const isTodayOrFuture = (dateString) => {
+    if (!dateString) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const date = new Date(dateString);
+    date.setHours(0, 0, 0, 0);
+    return date >= today;
+  };
+
+  // Helper function to format date with time
+  const formatDateTimeWithTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
+  // Helper function to get relative time
+  const getRelativeTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return formatDateTimeWithTime(dateString);
+  };
+
   // Get greeting based on time of day
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -186,7 +227,7 @@ const NurseDashboard = ({ user, onLogout }) => {
       // Calculate monthly registrations
       calculateMonthlyRegistrations(childrenArray);
 
-      // Generate recent activities from children data
+      // Generate recent activities from children data (only today and future)
       generateRecentActivities(childrenArray);
     } catch (error) {
       console.error("Error fetching children:", error);
@@ -194,12 +235,21 @@ const NurseDashboard = ({ user, onLogout }) => {
     }
   };
 
-  // Generate recent activities from children data
+  // Generate recent activities from children data (only today and future)
   const generateRecentActivities = (children) => {
-    const activities = children
-      .filter((child) => child.createdAt)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 10)
+    // Filter children to only show today and future registrations
+    const todayAndFutureChildren = children.filter(child => 
+      child.createdAt && isTodayOrFuture(child.createdAt)
+    );
+
+    // Sort by date and time (most recent first - newest to oldest)
+    const sortedActivities = todayAndFutureChildren
+      .sort((a, b) => {
+        const dateA = new Date(a.createdAt);
+        const dateB = new Date(b.createdAt);
+        return dateB - dateA; // Newest first
+      })
+      .slice(0, 20) // Show up to 20 most recent activities
       .map((child) => {
         const date = new Date(child.createdAt);
         return {
@@ -211,11 +261,13 @@ const NurseDashboard = ({ user, onLogout }) => {
             hour: "2-digit",
             minute: "2-digit",
           }),
+          fullDateTime: date,
+          relativeTime: getRelativeTime(child.createdAt),
           status: "completed",
         };
       });
 
-    setRecentActivities(activities);
+    setRecentActivities(sortedActivities);
   };
 
   // Calculate location statistics from children data
@@ -1012,8 +1064,11 @@ const NurseDashboard = ({ user, onLogout }) => {
         </div>
       </div>
 
-      {/* Recent Activities */}
-      <div className="nurse-dashboard-section-title">Recent Activities</div>
+      {/* Recent Activities - Updated with time filtering and sorting */}
+      <div className="nurse-dashboard-section-title">
+        Recent Activities
+       
+      </div>
       <div className="nurse-dashboard-recent-table">
         <table>
           <thead>
@@ -1029,8 +1084,14 @@ const NurseDashboard = ({ user, onLogout }) => {
             {recentActivities.length > 0 ? (
               recentActivities.map((activity) => (
                 <tr key={activity.id}>
-                  <td>{activity.childName}</td>
-                  <td>{activity.activity}</td>
+                  <td className="nurse-dashboard-patient-name">
+                    {activity.childName}
+                  </td>
+                  <td>
+                    <span className="nurse-dashboard-activity-type">
+                      {activity.activity}
+                    </span>
+                  </td>
                   <td>{activity.date}</td>
                   <td>{activity.time}</td>
                   <td>
@@ -1046,8 +1107,11 @@ const NurseDashboard = ({ user, onLogout }) => {
               ))
             ) : (
               <tr>
-                <td colSpan="5" style={{ textAlign: "center" }}>
-                  No recent activities
+                <td colSpan="6" style={{ textAlign: "center", padding: "40px" }}>
+                  <div className="nurse-dashboard-no-activities">
+                    <p>No recent activities today</p>
+                    <small>New registrations will appear here</small>
+                  </div>
                 </td>
               </tr>
             )}

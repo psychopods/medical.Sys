@@ -249,6 +249,47 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     return currentYear - estimatedBirthYear;
   };
 
+  // Helper function to check if a date is today or in the future
+  const isTodayOrFuture = (dateString) => {
+    if (!dateString) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const date = new Date(dateString);
+    date.setHours(0, 0, 0, 0);
+    return date >= today;
+  };
+
+  // Helper function to format date with time
+  const formatDateTimeWithTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
+  // Helper function to get relative time
+  const getRelativeTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return formatDateTimeWithTime(dateString);
+  };
+
   // Check database health - GET /health
   const checkDatabaseHealth = async () => {
     const startTime = performance.now();
@@ -324,12 +365,27 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     setApiStatus(results);
   };
 
-  // Fetch children data with age categorization
+  // Fetch children data with age categorization and date filtering
   const fetchChildrenData = async () => {
     try {
       const children = await getChildren();
       
+      // Get today's date for filtering
       const today = new Date().toISOString().split('T')[0];
+      
+      // Filter patients registered today or in the future
+      const todayAndFutureRegistrations = children.filter(child => 
+        child.createdAt && isTodayOrFuture(child.createdAt)
+      );
+      
+      // Sort by date and time (most recent first)
+      const sortedRecentChildren = [...todayAndFutureRegistrations].sort((a, b) => {
+        const dateA = new Date(a.createdAt);
+        const dateB = new Date(b.createdAt);
+        return dateB - dateA; // Newest first
+      });
+      
+      // Get today's registrations count
       const todayRegistrations = children.filter(child => 
         child.createdAt && child.createdAt.split('T')[0] === today
       );
@@ -393,7 +449,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         totalChildren: children.length,
         registeredToday: todayRegistrations.length,
         fingerprintsCaptured: captured,
-        recentChildren: children.slice(0, 5),
+        recentChildren: sortedRecentChildren.slice(0, 10), // Show up to 10 most recent
         youngPatients: youngCount,
         olderPatients: olderCount
       };
@@ -1543,27 +1599,41 @@ const SuperUserDashboard = ({ user, onLogout }) => {
               <h3>Recently Registered Patients</h3>
             </div>
             <div className="sd-recent-table-container">
-              <table className="sd-recent-table">
-                <thead>
-                  <tr><th>Name</th><th>Age</th><th>Registration Date</th><th>Fingerprint</th></tr>
-                </thead>
-                <tbody>
-                  {recentChildren && recentChildren.length > 0 ? (
-                    recentChildren.map((child, index) => (
+              {recentChildren && recentChildren.length > 0 ? (
+                <table className="sd-recent-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Age</th>
+                      <th>Registration Date & Time</th>
+                      <th>Fingerprint</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentChildren.map((child, index) => (
                       <tr key={child.id || index}>
-                        <td>{child.fullName}</td>
+                        <td className="sd-patient-name">{child.fullName}</td>
                         <td>{calculateAge(child.estimatedBirthYear)}</td>
-                        <td>{formatDate(child.createdAt)}</td>
-                        <td><span className={`sd-status-badge ${child.fingerprintCaptured ? 'sd-status-captured' : 'sd-status-pending'}`}>
-                            {child.fingerprintCaptured ? 'Captured' : 'Pending'}
-                          </span></td>
+                        <td>
+                          <div className="sd-registration-datetime">
+                            {formatDateTimeWithTime(child.createdAt)}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`sd-status-badge ${child.fingerprintCaptured ? 'sd-status-captured' : 'sd-status-pending'}`}>
+                            {child.fingerprintCaptured ? '✓ Captured' : '⏳ Pending'}
+                          </span>
+                        </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr><td colSpan="4" className="sd-no-data">No patients registered yet</td></tr>
-                  )}
-                </tbody>
-              </table>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="sd-no-data">
+                  <p>No patients registered today</p>
+                  <small>New registrations will appear here</small>
+                </div>
+              )}
             </div>
           </div>
 

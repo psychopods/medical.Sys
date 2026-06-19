@@ -506,3 +506,308 @@ textarea:disabled {
   cursor: not-allowed;
   background-color: #f5f5f5;
 }
+
+/* ===== RESEND BUTTON STYLES ===== */
+
+/* Resend button in action buttons */
+.na-action-btn.na-resend {
+  color: #f59e0b;
+  transition: all 0.2s ease;
+}
+
+.na-action-btn.na-resend:hover:not(:disabled) {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.na-action-btn.na-resend:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Resend button in view page */
+.na-btn-resend {
+  background-color: #f59e0b;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.na-btn-resend:hover:not(:disabled) {
+  background-color: #d97706;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.na-btn-resend:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ===== RESEND OPTION IN EDIT FORM ===== */
+.na-resend-option {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  padding: 16px 20px;
+  border-radius: 8px;
+  border: 1px solid #f59e0b;
+  margin-top: 8px;
+  transition: all 0.3s ease;
+}
+
+.na-resend-option:hover {
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+
+.na-resend-checkbox-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.na-resend-checkbox-wrapper input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.na-resend-checkbox-wrapper input[type="checkbox"]:checked {
+  background-color: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.na-resend-checkbox-wrapper label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.4;
+}
+
+.na-resend-checkbox-wrapper label strong {
+  color: #1a1a2e;
+  font-size: 14px;
+}
+
+.na-resend-hint {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: normal;
+  font-style: italic;
+}
+
+/* ===== SPINNER FOR RESEND ACTION ===== */
+.na-spinner-small {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #667eea;
+  border-radius: 50%;
+  animation: na-spin 0.8s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* Spinner for resend button (yellow theme) */
+.na-btn-resend .na-spinner-small {
+  border-top-color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes na-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ===== VIEW PAGE ACTION BUTTONS LAYOUT ===== */
+.na-view-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+/* ===== TOAST NOTIFICATIONS ===== */
+.na-toast-notification {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  padding: 14px 20px;
+  min-width: 300px;
+  max-width: 450px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  animation: na-toast-slide-in 0.3s ease;
+  border-left: 4px solid #10b981;
+}
+
+.na-toast-notification.error {
+  border-left-color: #ef4444;
+}
+
+.na-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  font-size: 14px;
+  color: #1a1a2e;
+}
+
+.na-toast-content span:first-child {
+  font-size: 18px;
+  font-weight: bold;
+  color: #10b981;
+}
+
+.na-toast-notification.error .na-toast-content span:first-child {
+  color: #ef4444;
+}
+
+.na-toast-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #999;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.2s ease;
+}
+
+.na-toast-close:hover {
+  color: #333;
+}
+
+@keyframes na-toast-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ===== RESPONSIVE STYLES ===== */
+@media (max-width: 768px) {
+  .na-resend-option {
+    padding: 12px 16px;
+  }
+  
+  .na-resend-checkbox-wrapper {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .na-resend-checkbox-wrapper input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .na-view-actions {
+    flex-direction: column;
+  }
+  
+  .na-view-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .na-btn-resend {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .na-toast-notification {
+    top: 80px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+    max-width: none;
+  }
+}
+
+/* ===== TOOLTIP STYLES ===== */
+.na-action-btn[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.na-action-btn {
+  position: relative;
+}
+
+/* ===== DISABLED STATE ENHANCEMENTS ===== */
+.na-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ===== HOVER EFFECTS FOR ACTION BUTTONS ===== */
+.na-action-buttons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.na-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background: transparent;
+  position: relative;
+}
+
+.na-action-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+/* ===== RESEND BUTTON TOOLTIP COLOR ===== */
+.na-action-btn.na-resend:hover:not(:disabled)::after {
+  background: #f59e0b;
+}

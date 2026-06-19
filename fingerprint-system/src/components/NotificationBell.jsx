@@ -1,4 +1,5 @@
 // /home/labdoo/medical.Sys/fingerprint-system/src/components/NotificationBell.jsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchNotifications, markNotificationAsRead } from './services/notificationService';
 import './NotificationBell.css';
@@ -6,7 +7,7 @@ import { getUsers } from '../services/api.js';
 
 import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 
-const NotificationBell = ({ user }) => {
+const NotificationBell = ({ user, refreshTrigger }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -14,6 +15,9 @@ const NotificationBell = ({ user }) => {
   const [expandedNotification, setExpandedNotification] = useState(null);
   const [users, setUsers] = useState([]);
   const dropdownRef = useRef(null);
+  const loadTimeoutRef = useRef(null);
+  const intervalRef = useRef(null);
+  const isMountedRef = useRef(true);
 
   // Fetch users for getting creator names
   const fetchUsers = async () => {
@@ -26,7 +30,7 @@ const NotificationBell = ({ user }) => {
   };
 
   const loadNotifications = async () => {
-    if (!user) return;
+    if (!user || !isMountedRef.current) return;
     setLoading(true);
     try {
       const data = await fetchNotifications(false);
@@ -40,25 +44,104 @@ const NotificationBell = ({ user }) => {
     }
   };
 
+  // Load notifications with debounce to prevent multiple rapid calls
+  const debouncedLoadNotifications = () => {
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current);
+    }
+    loadTimeoutRef.current = setTimeout(() => {
+      loadNotifications();
+    }, 100);
+  };
+
+  // Start/stop the refresh interval based on dropdown state
+  const startRefreshInterval = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (!isOpen && user) {
+      intervalRef.current = setInterval(() => {
+        loadNotifications();
+      }, 5000);
+    }
+  };
+
+  const stopRefreshInterval = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  // Load notifications on mount and when refreshTrigger changes
   useEffect(() => {
     if (user) {
       loadNotifications();
       fetchUsers();
-      const interval = setInterval(loadNotifications, 30000);
-      return () => clearInterval(interval);
     }
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [user]);
+
+  // Handle refresh interval based on dropdown state
+  useEffect(() => {
+    if (isOpen) {
+      stopRefreshInterval();
+    } else {
+      startRefreshInterval();
+    }
+    return () => {
+      if (!isOpen) {
+      }
+    };
+  }, [isOpen, user]);
+
+  // Refresh when refreshTrigger changes from Layout (but only if dropdown is closed)
+  useEffect(() => {
+    if (user && refreshTrigger !== undefined && !isOpen) {
+      debouncedLoadNotifications();
+    }
+  }, [refreshTrigger, user, isOpen]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopRefreshInterval();
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Toggle dropdown and manage refresh interval
+  const toggleDropdown = () => {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+    
+    if (newIsOpen) {
+      stopRefreshInterval();
+      loadNotifications();
+    } else {
+      startRefreshInterval();
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-        setExpandedNotification(null);
+        if (isOpen) {
+          setIsOpen(false);
+          setExpandedNotification(null);
+          startRefreshInterval();
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
   const handleMarkAsRead = async (id, event) => {
     event.stopPropagation();
@@ -93,6 +176,47 @@ const NotificationBell = ({ user }) => {
     }
     if (userFound?.username) return userFound.username;
     return 'Unknown';
+  };
+
+  // ===== FIXED DATE FORMATTING WITH PROPER TIME HANDLING =====
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown';
+    
+    try {
+      // Parse the date string - handle both ISO and timestamp formats
+      const date = new Date(dateString);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      
+      const now = new Date();
+      
+      // Calculate time difference in milliseconds
+      const diffMs = now.getTime() - date.getTime();
+      
+      // If the date is in the future, show the actual date and time
+      if (diffMs < 0) {
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      // Show relative time for recent notifications
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins} min ago`;
+      if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+      if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+      
+      // For older notifications, show the actual date and time
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Unknown';
+    }
   };
 
   // SVG Icons for notification types
@@ -156,26 +280,12 @@ const NotificationBell = ({ user }) => {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMins = Math.floor((now - date) / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    return date.toLocaleDateString();
-  };
-
   return (
     <div className="notification-bell" ref={dropdownRef}>
       <button 
         className={`notification-bell-btn ${unreadCount > 0 ? 'has-unread' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleDropdown}
+        title="Notifications"
       >
         <IconAnnouncement />
         {unreadCount > 0 && <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
@@ -194,7 +304,10 @@ const NotificationBell = ({ user }) => {
           
           <div className="notification-list">
             {loading ? (
-              <div className="notification-loading">Loading...</div>
+              <div className="notification-loading">
+                <div className="notification-spinner"></div>
+                <p>Loading notifications...</p>
+              </div>
             ) : notifications.length === 0 ? (
               <div className="notification-empty">
                 <IconEmptyBell />
