@@ -74,8 +74,8 @@ const RenderListPage = ({
     // Check if auto-refresh is happening
     if (refreshing) {
       return (
-        <span className="child-reg-sync-status-text refreshing">
-          <span className="child-reg-sync-dot-small refreshing"></span>
+        <span className="cr-sync-status-text cr-refreshing">
+          <span className="cr-sync-dot-small cr-refreshing"></span>
           Refreshing data...
         </span>
       );
@@ -83,8 +83,8 @@ const RenderListPage = ({
     // Check if auto-sync is happening
     if (isSyncing || isAutoSyncing) {
       return (
-        <span className="child-reg-sync-status-text syncing">
-          <span className="child-reg-sync-dot-small"></span>
+        <span className="cr-sync-status-text cr-syncing">
+          <span className="cr-sync-dot-small"></span>
           Syncing...
         </span>
       );
@@ -92,16 +92,16 @@ const RenderListPage = ({
     // Check if there are pending items to sync
     if (pendingSyncCount > 0) {
       return (
-        <span className="child-reg-sync-status-text pending">
-          <span className="child-reg-sync-dot-small warning"></span>
+        <span className="cr-sync-status-text cr-pending">
+          <span className="cr-sync-dot-small cr-warning"></span>
           {pendingSyncCount} pending
         </span>
       );
     }
     // All good - everything is synced
     return (
-      <span className="child-reg-sync-status-text active">
-        <span className="child-reg-sync-dot-small"></span>
+      <span className="cr-sync-status-text cr-active">
+        <span className="cr-sync-dot-small"></span>
         All synced
       </span>
     );
@@ -128,30 +128,31 @@ const RenderListPage = ({
 
   return (
     <div className="child-reg-page-content">
-      <div className="child-reg-page-header">
-        <div className="child-reg-header-left">
+      {/* Page Header with Refresh */}
+      <div className="cr-page-header">
+        <div className="cr-header-left">
           <h1 className="child-reg-page-title">Patient Registration</h1>
           <p className="child-reg-page-subtitle">Register new Patient and capture fingerprint data</p>
         </div>
-        <div className="child-reg-header-right">
+        <div className="cr-header-right">
           {/* Refresh Button with Indicator */}
-          <div className="child-reg-refresh-section">
-            <div className="child-reg-refresh-indicator">
+          <div className="cr-refresh-section">
+            <div className="cr-refresh-indicator">
               {refreshing ? (
-                <span className="child-reg-refreshing">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="child-reg-spinning">
+                <span className="cr-refreshing">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="cr-spinning">
                     <path d="M12 2v4M12 22v-4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M22 12h-4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
                   </svg>
                   Refreshing...
                 </span>
               ) : lastRefreshed ? (
-                <span className="child-reg-last-refreshed">
+                <span className="cr-last-refreshed">
                   {getLastRefreshedText()}
                 </span>
               ) : null}
             </div>
             <button 
-              className="child-reg-refresh-btn" 
+              className="cr-refresh-btn" 
               onClick={handleManualRefresh} 
               disabled={refreshing || isLoading || isSyncing}
               title="Refresh data"
@@ -173,6 +174,7 @@ const RenderListPage = ({
         </div>
       </div>
       
+      {/* Stats Grid */}
       <div className="child-reg-stats-grid">
         <div className="child-reg-stat-card" onClick={() => !isLoading && handleStatClick('childrenList', 'All Children')} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
           <div className="child-reg-stat-info-wrapper">
@@ -218,6 +220,7 @@ const RenderListPage = ({
         </div>
       </div>
 
+      {/* Age Categories */}
       <div className="child-reg-section-title">Patients by Age Group</div>
       <div className="child-reg-age-categories-grid">
         <div className="child-reg-age-category-card young-card" onClick={() => !isLoading && handleStatClick('youngPatients', 'Young Patients')} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
@@ -251,33 +254,33 @@ const RenderListPage = ({
       </div>
 
       {/* Sync Status with Auto-Sync Every 5 Seconds */}
-      <div className="child-reg-sync-status-mini">
-        <div className="child-reg-sync-status-left">
+      <div className="cr-sync-status-mini">
+        <div className="cr-sync-status-left">
           {getStatusDisplay()}
           {lastSyncTime && (
-            <span className="child-reg-sync-time">
+            <span className="cr-sync-time">
               {getLastSyncText()}
             </span>
           )}
           {lastRefreshed && (
-            <span className="child-reg-sync-time child-reg-refresh-time">
+            <span className="cr-sync-time cr-refresh-time">
               • {getLastRefreshedText()}
             </span>
           )}
         </div>
-        <div className="child-reg-sync-status-right">
+        <div className="cr-sync-status-right">
           <button 
-            className="child-reg-sync-toggle-mini"
+            className="cr-sync-toggle-mini"
             onClick={toggleAutoSync}
             title={autoSyncEnabled ? 'Auto-sync is ON (every 5s) - Click to pause' : 'Auto-sync is OFF - Click to resume'}
           >
-            <span className={`child-reg-sync-toggle-dot ${autoSyncEnabled ? 'on' : 'off'}`}></span>
-            <span className="child-reg-sync-toggle-label">
+            <span className={`cr-sync-toggle-dot ${autoSyncEnabled ? 'cr-on' : 'cr-off'}`}></span>
+            <span className="cr-sync-toggle-label">
               {getAutoSyncLabel()}
             </span>
           </button>
           <button 
-            className="child-reg-sync-now-mini"
+            className="cr-sync-now-mini"
             onClick={handleManualSync}
             disabled={isSyncing || isLoading || refreshing}
             title="Sync now"
@@ -293,7 +296,7 @@ const RenderListPage = ({
       </div>
 
       {offlineMode && (
-        <div className="child-reg-offline-banner">
+        <div className="cr-offline-banner">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#856404" strokeWidth="2">
             <circle cx="12" cy="12" r="10"/>
             <line x1="12" y1="8" x2="12" y2="12"/>
@@ -303,6 +306,7 @@ const RenderListPage = ({
         </div>
       )}
 
+      {/* Quick Actions */}
       <div className="child-reg-section-title">Quick Actions</div>
       <div className="child-reg-actions-grid">
         <div className="child-reg-action-card" onClick={() => { if (!isLoading) { handleActionClick('Register New Child'); navigateToPage('register'); } }} style={{ cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}>
@@ -344,7 +348,7 @@ const RenderListPage = ({
         <div className="child-reg-action-card" onClick={handleManualSync} style={{ cursor: (isLoading || isSyncing || refreshing) ? 'not-allowed' : 'pointer', opacity: (isLoading || isSyncing || refreshing) ? 0.6 : 1 }}>
           <div className="child-reg-action-icon">
             {isSyncing || isAutoSyncing ? (
-              <div className="child-reg-sync-spinner"></div>
+              <div className="cr-sync-spinner"></div>
             ) : (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M2 12H22"/>
@@ -365,6 +369,7 @@ const RenderListPage = ({
         </div>
       </div>
 
+      {/* Workflow Steps */}
       <div className="child-reg-section-title">Registration Workflow</div>
       <div className="child-reg-workflow-steps">
         <div className="child-reg-workflow-step">
