@@ -500,44 +500,63 @@ const ChildRegistration = () => {
   const generateRandomSuffix = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
   };
 
-  const generateRegistrationId = async () => {
+  const getLocationInitials = (locationId) => {
+    if (!locationId || !locations || locations.length === 0) return "LOC";
+    const locObj = locations.find((l) => l.id === locationId);
+    if (!locObj || !locObj.name) return "LOC";
+    const cleanName = locObj.name.replace(/[^a-zA-Z]/g, "").toUpperCase();
+    return cleanName.substring(0, 3).padEnd(3, "X");
+  };
+
+  const generateRegistrationId = async (locationId = formData.primaryLocationId) => {
     try {
+      const locInitials = getLocationInitials(locationId);
       const childrenArray = await getChildren();
+      const currentYear = new Date().getFullYear();
+      
+      let nextNumber = "0001";
       if (childrenArray && childrenArray.length > 0) {
         const matches = childrenArray
           .map((c) => c.customSerialId || c.custom_serial_id || "")
-          .filter((id) => id.startsWith("KID-"))
+          .filter((id) => id.startsWith("KD-") || id.startsWith("KID-"))
           .map((id) => {
             const parts = id.split("-");
-            // Backward-compatible parser: the sequence number is always the third part (index 2)
-            // regardless of whether there is a suffix (length 4) or not (length 3).
-            return parts.length >= 3 ? parseInt(parts[2]) : 0;
+            if (parts.length === 3) {
+              return parseInt(parts[2]) || 0;
+            } else if (parts.length === 4) {
+              if (parts[0] === "KID") {
+                return parseInt(parts[2]) || 0;
+              }
+              return parseInt(parts[3]) || 0;
+            } else if (parts.length >= 5) {
+              return parseInt(parts[3]) || 0;
+            }
+            return 0;
           })
           .filter((num) => !isNaN(num) && num > 0);
 
         if (matches.length > 0) {
           const lastNumber = Math.max(...matches);
-          const nextNumber = (lastNumber + 1).toString().padStart(4, "0");
-          const currentYear = new Date().getFullYear();
-          setGeneratedId(`KID-${currentYear}-${nextNumber}-${generateRandomSuffix()}`);
-          return;
+          nextNumber = (lastNumber + 1).toString().padStart(4, "0");
         }
       }
-      const currentYear = new Date().getFullYear();
-      setGeneratedId(`KID-${currentYear}-0001-${generateRandomSuffix()}`);
+      
+      setGeneratedId(`KD-${currentYear}-${locInitials}-${nextNumber}-${generateRandomSuffix()}`);
     } catch (error) {
       console.error("Error generating registration ID:", error);
       const currentYear = new Date().getFullYear();
       const nextNumber = (childrenData.length + 1).toString().padStart(4, "0");
-      setGeneratedId(`KID-${currentYear}-${nextNumber}-${generateRandomSuffix()}`);
+      const locInitials = getLocationInitials(locationId);
+      setGeneratedId(`KD-${currentYear}-${locInitials}-${nextNumber}-${generateRandomSuffix()}`);
     }
   };
+
 
 
   // ===== FORM VALIDATION FUNCTIONS =====
@@ -610,12 +629,14 @@ const ChildRegistration = () => {
     return isValid;
   };
 
-  // ===== FORM HANDLERS =====
   const handleFormChangeWithValidation = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     if (formErrors[name]) {
       setFormErrors({ ...formErrors, [name]: "" });
+    }
+    if (name === "primaryLocationId") {
+      generateRegistrationId(value);
     }
   };
 
@@ -1239,7 +1260,7 @@ const ChildRegistration = () => {
     setRegIsCapturing(false);
     fetchChildren();
     fetchTodayRegistrations();
-    generateRegistrationId();
+    generateRegistrationId("");
   };
 
   // ===== LOCATION HANDLERS =====
