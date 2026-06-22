@@ -66,6 +66,21 @@ export async function getDB() {
       if (cachedBuffer) {
         console.log('SQLite: Loaded existing database from IndexedDB.');
         dbInstance = new SQL.Database(new Uint8Array(cachedBuffer));
+        
+        // Dynamic migration: execute schema SQL to ensure any new/missing tables are created in the cached database
+        try {
+          const schemaRes = await fetch(`${baseUrl}SQLite_SYS_Database.sqlite.txt`);
+          if (schemaRes.ok) {
+            const schemaSql = await schemaRes.text();
+            if (!schemaSql.trim().startsWith('<')) {
+              console.log('SQLite: Checking and migrating database schema...');
+              dbInstance.exec(schemaSql);
+              await saveDB();
+            }
+          }
+        } catch (migrationError) {
+          console.warn('SQLite: Dynamic schema migration skipped (device may be offline):', migrationError);
+        }
       } else {
         console.log('SQLite: No existing database found. Initializing a new one...');
         dbInstance = new SQL.Database();
