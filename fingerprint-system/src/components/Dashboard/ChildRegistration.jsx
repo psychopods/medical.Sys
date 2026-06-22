@@ -1217,7 +1217,6 @@ const ChildRegistration = () => {
         );
         await fetchChildren();
         await fetchTodayRegistrations();
-        await generateRegistrationId();
         setRegistrationStep(3);
       } else {
         showToast("Failed to register child. Please try again.", "error");
@@ -1459,6 +1458,7 @@ const ChildRegistration = () => {
     setRegCapturedFingers([]);
     setRegSelectedFinger(null);
     setRegIsCapturing(false);
+    generateRegistrationId("");
     navigateToPage("register");
   };
 
@@ -1946,11 +1946,7 @@ const ChildRegistration = () => {
     initData();
   }, [navigate]);
 
-  useEffect(() => {
-    if (user) {
-      generateRegistrationId();
-    }
-  }, [childrenData.length, user]);
+
 
   useEffect(() => {
     const handleOnline = () => setOfflineMode(false);
