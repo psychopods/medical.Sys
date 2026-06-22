@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./NurseDashboard.css";
 import {
   getLocations,
@@ -39,6 +39,12 @@ const NurseDashboard = ({ user, onLogout }) => {
     gender: "",
     primaryLocationId: "",
   });
+
+  // ===== AUTO-REFRESH STATE =====
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
+  const refreshIntervalRef = useRef(null);
+  const isRefreshingRef = useRef(false);
 
   // Current time state
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -347,6 +353,59 @@ const NurseDashboard = ({ user, onLogout }) => {
     }
   };
 
+  // ===== BACKGROUND REFRESH FUNCTION =====
+  const refreshAllData = async (showSpinner = false) => {
+    // Prevent multiple simultaneous refreshes
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+    
+    if (showSpinner) {
+      setRefreshing(true);
+    }
+    
+    try {
+      await Promise.all([
+        fetchChildren(),
+        fetchLocations(),
+        fetchFingerprints()
+      ]);
+      setLastRefreshed(new Date());
+    } catch (error) {
+      console.error('Background refresh error:', error);
+    } finally {
+      isRefreshingRef.current = false;
+      if (showSpinner) {
+        setRefreshing(false);
+      }
+    }
+  };
+
+  // ===== MANUAL REFRESH WITH SPINNER =====
+  const handleManualRefresh = async () => {
+    await refreshAllData(true);
+  };
+
+  // ===== START BACKGROUND REFRESH =====
+  const startBackgroundRefresh = () => {
+    // Clear any existing interval
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+    }
+    
+    // Set up background refresh every 30 seconds
+    refreshIntervalRef.current = setInterval(() => {
+      refreshAllData(false);
+    }, 30000);
+  };
+
+  // ===== STOP BACKGROUND REFRESH =====
+  const stopBackgroundRefresh = () => {
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+  };
+
   // Generate registration ID
   const generateRegistrationId = async () => {
     const currentYear = new Date().getFullYear();
@@ -546,8 +605,7 @@ const NurseDashboard = ({ user, onLogout }) => {
       });
 
       // Refresh data
-      await fetchChildren();
-      await fetchFingerprints();
+      await refreshAllData(true);
       generateRegistrationId();
       sessionStorage.removeItem("captured_fingerprint");
     }
@@ -566,6 +624,7 @@ const NurseDashboard = ({ user, onLogout }) => {
     setIsSyncing(true);
     try {
       await triggerSync();
+      await refreshAllData(true);
     } catch (error) {
       console.error("Error triggering sync:", error);
     }
@@ -577,6 +636,13 @@ const NurseDashboard = ({ user, onLogout }) => {
     return Math.max(...monthlyRegistrations.map((m) => m.count), 1);
   };
 
+  // Format last refreshed time
+  const getLastRefreshedText = () => {
+    if (!lastRefreshed) return 'Never refreshed';
+    const date = new Date(lastRefreshed);
+    return `Data updated: ${date.toLocaleTimeString()}`;
+  };
+
   // Initialize data and sync worker on mount
   useEffect(() => {
     const initData = async () => {
@@ -584,11 +650,15 @@ const NurseDashboard = ({ user, onLogout }) => {
       await fetchChildren();
       await fetchFingerprints();
       generateRegistrationId();
+      setLastRefreshed(new Date());
     };
 
     initData();
     setGreeting(getGreeting());
     initSyncWorker();
+
+    // Start background refresh
+    startBackgroundRefresh();
 
     const unsubscribe = registerSyncListener((state) => {
       setSyncState(state);
@@ -597,6 +667,7 @@ const NurseDashboard = ({ user, onLogout }) => {
 
     return () => {
       unsubscribe();
+      stopBackgroundRefresh();
     };
   }, []);
 
@@ -632,7 +703,7 @@ const NurseDashboard = ({ user, onLogout }) => {
   // Sync completion listener: refresh lists
   useEffect(() => {
     if (syncState.state === "idle" && syncState.message.includes("complete")) {
-      fetchChildren();
+      refreshAllData(false);
     }
   }, [syncState]);
 
@@ -804,6 +875,38 @@ const NurseDashboard = ({ user, onLogout }) => {
 
   return (
     <div className="nurse-dashboard-wrapper">
+      {/* Refresh Indicator */}
+      <div className="nd-refresh-section">
+        <div className="nd-refresh-indicator">
+          {refreshing ? (
+            <span className="nd-refreshing">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="nd-spinning">
+                <path d="M12 2v4M12 22v-4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M22 12h-4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              Refreshing...
+            </span>
+          ) : lastRefreshed ? (
+            <span className="nd-last-refreshed">
+              {getLastRefreshedText()}
+            </span>
+          ) : null}
+        </div>
+        <button 
+          className="nd-refresh-btn" 
+          onClick={handleManualRefresh} 
+          disabled={refreshing || isSyncing}
+          title="Refresh data"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M23 4v6h-6"/>
+            <path d="M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+            <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+
       {/* Network & Sync Status Banner */}
       {(offlineMode ||
         syncState.state === "running" ||
@@ -1067,7 +1170,6 @@ const NurseDashboard = ({ user, onLogout }) => {
       {/* Recent Activities - Updated with time filtering and sorting */}
       <div className="nurse-dashboard-section-title">
         Recent Activities
-       
       </div>
       <div className="nurse-dashboard-recent-table">
         <table>

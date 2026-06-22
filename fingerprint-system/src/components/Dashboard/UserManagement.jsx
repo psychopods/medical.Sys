@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import './UserManagement.css';
@@ -97,6 +97,12 @@ const UserManagement = () => {
   const [isManagingPermissions, setIsManagingPermissions] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
+  // ===== AUTO-REFRESH STATE =====
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
+  const refreshIntervalRef = useRef(null);
+  const isRefreshingRef = useRef(false);
+
   // ===== ONLINE USERS STATE =====
   const [onlineUsersList, setOnlineUsersList] = useState([]);
   const [loadingOnlineUsers, setLoadingOnlineUsers] = useState(false);
@@ -110,6 +116,64 @@ const UserManagement = () => {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
+  };
+
+  // ===== BACKGROUND REFRESH FUNCTION =====
+  const refreshAllData = async (showSpinner = false) => {
+    // Prevent multiple simultaneous refreshes
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+    
+    if (showSpinner) {
+      setRefreshing(true);
+    }
+    
+    try {
+      await Promise.all([
+        fetchCategories(),
+        fetchAllPermissions(),
+        fetchRoles(),
+        fetchUsers(),
+        fetchOnlineUsers()
+      ]);
+      setLastRefreshed(new Date());
+    } catch (error) {
+      console.error('Background refresh error:', error);
+    } finally {
+      isRefreshingRef.current = false;
+      if (showSpinner) {
+        setRefreshing(false);
+      }
+    }
+  };
+
+  // ===== MANUAL REFRESH WITH SPINNER =====
+  const handleManualRefresh = async () => {
+    await refreshAllData(true);
+  };
+
+  // ===== START BACKGROUND REFRESH =====
+  const startBackgroundRefresh = () => {
+    // Clear any existing interval
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+    }
+    
+    // Set up background refresh every 30 seconds
+    refreshIntervalRef.current = setInterval(() => {
+      // Only refresh on list, users, roles, permissions, categories pages
+      if (['list', 'users', 'roles', 'permissions', 'categories'].includes(activePage)) {
+        refreshAllData(false);
+      }
+    }, 30000);
+  };
+
+  // ===== STOP BACKGROUND REFRESH =====
+  const stopBackgroundRefresh = () => {
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
   };
 
   // API Calls - Categories
@@ -633,16 +697,23 @@ const UserManagement = () => {
   // Initialize data on mount
   useEffect(() => {
     const initData = async () => {
-      await Promise.all([
-        fetchCategories(),
-        fetchAllPermissions(),
-        fetchRoles(),
-        fetchUsers(),
-        fetchOnlineUsers()
-      ]);
+      await refreshAllData(true);
     };
     initData();
+
+    // Start background refresh
+    startBackgroundRefresh();
+
+    return () => {
+      stopBackgroundRefresh();
+    };
   }, []);
+
+  // Restart refresh when active page changes
+  useEffect(() => {
+    stopBackgroundRefresh();
+    startBackgroundRefresh();
+  }, [activePage]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
@@ -784,6 +855,13 @@ const UserManagement = () => {
     sessionStorage.removeItem('user');
     sessionStorage.removeItem('token');
     navigate('/login');
+  };
+
+  // Format last refreshed time
+  const getLastRefreshedText = () => {
+    if (!lastRefreshed) return 'Never refreshed';
+    const date = new Date(lastRefreshed);
+    return `Data updated: ${date.toLocaleTimeString()}`;
   };
 
   // Category CRUD Operations
@@ -2460,6 +2538,38 @@ const UserManagement = () => {
     <Layout user={user} onLogout={handleLogout}>
       <ToastNotification />
       <div className="um-user-management-container">
+        {/* Refresh Indicator */}
+        <div className="um-refresh-section">
+          <div className="um-refresh-indicator">
+            {refreshing ? (
+              <span className="um-refreshing">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="um-spinning">
+                  <path d="M12 2v4M12 22v-4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M22 12h-4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+                Refreshing...
+              </span>
+            ) : lastRefreshed ? (
+              <span className="um-last-refreshed">
+                {getLastRefreshedText()}
+              </span>
+            ) : null}
+          </div>
+          <button 
+            className="um-refresh-btn" 
+            onClick={handleManualRefresh} 
+            disabled={refreshing || isLoading}
+            title="Refresh data"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M23 4v6h-6"/>
+              <path d="M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+              <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+
         {activePage === 'list' && (
           <>
             <div className="um-page-header">

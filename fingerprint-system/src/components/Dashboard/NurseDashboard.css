@@ -853,3 +853,115 @@
 .nurse-dashboard-stat-card:nth-child(3):hover {
   border-left-color: #fb8c00;
 }
+
+/* ============================================
+   REFRESH INDICATOR STYLES - NURSE DASHBOARD
+   ============================================ */
+
+.nd-refresh-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.nd-refresh-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #666;
+}
+
+.nd-refreshing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.nd-last-refreshed {
+  color: #17a2b8;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.nd-spinning {
+  animation: nd-spin 1s linear infinite;
+}
+
+@keyframes nd-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.nd-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.nd-refresh-btn:hover:not(:disabled) {
+  background: #5a67d8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.nd-refresh-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.nd-refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .nd-refresh-section {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .nd-refresh-indicator {
+    justify-content: center;
+  }
+  
+  .nd-refresh-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .nd-refresh-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .nd-refresh-indicator {
+    justify-content: center;
+  }
+  
+  .nd-refresh-btn {
+    justify-content: center;
+    width: 100%;
+  }
+}
