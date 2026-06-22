@@ -10,6 +10,9 @@ const RenderListPage = ({
   offlineMode,
   isSyncing,
   isLoading,
+  refreshing,
+  lastRefreshed,
+  handleManualRefresh,
   handleStatClick,
   handleActionClick,
   handleAddRegistrationClick,
@@ -25,7 +28,7 @@ const RenderListPage = ({
   const syncTimerRef = useRef(null);
   const [isAutoSyncing, setIsAutoSyncing] = useState(false);
 
-  // Start auto-sync timer - runs silently in background
+  // ===== AUTO-SYNC EVERY 5 SECONDS =====
   useEffect(() => {
     if (autoSyncEnabled && !offlineMode) {
       // Clear any existing timer
@@ -33,12 +36,13 @@ const RenderListPage = ({
         clearInterval(syncTimerRef.current);
       }
 
-      // Start sync timer - runs every 5 seconds silently
+      // Start sync timer - runs every 5 seconds
       syncTimerRef.current = setInterval(() => {
-        if (!isSyncing && !isLoading && !isAutoSyncing) {
+        // Don't sync if already syncing, loading, auto-syncing, or refreshing
+        if (!isSyncing && !isLoading && !isAutoSyncing && !refreshing) {
           setIsAutoSyncing(true);
           // Silent sync - no toast messages
-          handleSyncOfflineData(true); // Pass silent flag
+          handleSyncOfflineData(true);
           setTimeout(() => {
             setIsAutoSyncing(false);
           }, 1000);
@@ -51,15 +55,32 @@ const RenderListPage = ({
         }
       };
     }
-  }, [autoSyncEnabled, offlineMode, isSyncing, isLoading]);
+  }, [autoSyncEnabled, offlineMode, isSyncing, isLoading, refreshing]);
 
-  // Toggle auto-sync
+  // ===== TOGGLE AUTO-SYNC =====
   const toggleAutoSync = () => {
     setAutoSyncEnabled(prev => !prev);
   };
 
-  // Get status display text - minimal and non-intrusive
+  // ===== MANUAL SYNC =====
+  const handleManualSync = () => {
+    if (!isSyncing && !isLoading && !refreshing) {
+      handleSyncOfflineData(false); // Show toast for manual sync
+    }
+  };
+
+  // ===== GET STATUS DISPLAY =====
   const getStatusDisplay = () => {
+    // Check if auto-refresh is happening
+    if (refreshing) {
+      return (
+        <span className="child-reg-sync-status-text refreshing">
+          <span className="child-reg-sync-dot-small refreshing"></span>
+          Refreshing data...
+        </span>
+      );
+    }
+    // Check if auto-sync is happening
     if (isSyncing || isAutoSyncing) {
       return (
         <span className="child-reg-sync-status-text syncing">
@@ -68,6 +89,7 @@ const RenderListPage = ({
         </span>
       );
     }
+    // Check if there are pending items to sync
     if (pendingSyncCount > 0) {
       return (
         <span className="child-reg-sync-status-text pending">
@@ -76,24 +98,79 @@ const RenderListPage = ({
         </span>
       );
     }
+    // All good - everything is synced
     return (
       <span className="child-reg-sync-status-text active">
         <span className="child-reg-sync-dot-small"></span>
-        Synced
+        All synced
       </span>
     );
+  };
+
+  // ===== FORMAT LAST REFRESHED TIME =====
+  const getLastRefreshedText = () => {
+    if (!lastRefreshed) return null;
+    const date = new Date(lastRefreshed);
+    return `Data updated: ${date.toLocaleTimeString()}`;
+  };
+
+  // ===== FORMAT LAST SYNC TIME =====
+  const getLastSyncText = () => {
+    if (!lastSyncTime) return null;
+    const date = new Date(lastSyncTime);
+    return `Last sync: ${date.toLocaleTimeString()}`;
+  };
+
+  // ===== GET AUTO-SYNC LABEL =====
+  const getAutoSyncLabel = () => {
+    return autoSyncEnabled ? 'Auto' : 'Paused';
   };
 
   return (
     <div className="child-reg-page-content">
       <div className="child-reg-page-header">
-        <h1 className="child-reg-page-title">Patient Registration</h1>
-        <p className="child-reg-page-subtitle">Register new Patient and capture fingerprint data</p>
-        {user && (
-          <div className="child-reg-user-info">
-            <span>Logged in as: <strong>{getUserDisplayName(user)}</strong> ({user.role || 'Staff'})</span>
+        <div className="child-reg-header-left">
+          <h1 className="child-reg-page-title">Patient Registration</h1>
+          <p className="child-reg-page-subtitle">Register new Patient and capture fingerprint data</p>
+        </div>
+        <div className="child-reg-header-right">
+          {/* Refresh Button with Indicator */}
+          <div className="child-reg-refresh-section">
+            <div className="child-reg-refresh-indicator">
+              {refreshing ? (
+                <span className="child-reg-refreshing">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="child-reg-spinning">
+                    <path d="M12 2v4M12 22v-4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M22 12h-4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                  Refreshing...
+                </span>
+              ) : lastRefreshed ? (
+                <span className="child-reg-last-refreshed">
+                  {getLastRefreshedText()}
+                </span>
+              ) : null}
+            </div>
+            <button 
+              className="child-reg-refresh-btn" 
+              onClick={handleManualRefresh} 
+              disabled={refreshing || isLoading || isSyncing}
+              title="Refresh data"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M23 4v6h-6"/>
+                <path d="M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+                <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/>
+              </svg>
+              Refresh
+            </button>
           </div>
-        )}
+          {user && (
+            <div className="child-reg-user-info">
+              <span>Logged in as: <strong>{getUserDisplayName(user)}</strong> ({user.role || 'Staff'})</span>
+            </div>
+          )}
+        </div>
       </div>
       
       <div className="child-reg-stats-grid">
@@ -173,13 +250,18 @@ const RenderListPage = ({
         </div>
       </div>
 
-      {/* Minimal Sync Status - No toasts, silent background sync */}
+      {/* Sync Status with Auto-Sync Every 5 Seconds */}
       <div className="child-reg-sync-status-mini">
         <div className="child-reg-sync-status-left">
           {getStatusDisplay()}
           {lastSyncTime && (
             <span className="child-reg-sync-time">
-              {new Date(lastSyncTime).toLocaleTimeString()}
+              {getLastSyncText()}
+            </span>
+          )}
+          {lastRefreshed && (
+            <span className="child-reg-sync-time child-reg-refresh-time">
+              • {getLastRefreshedText()}
             </span>
           )}
         </div>
@@ -187,18 +269,17 @@ const RenderListPage = ({
           <button 
             className="child-reg-sync-toggle-mini"
             onClick={toggleAutoSync}
-            title={autoSyncEnabled ? 'Auto-sync is ON - Click to pause' : 'Auto-sync is OFF - Click to resume'}
+            title={autoSyncEnabled ? 'Auto-sync is ON (every 5s) - Click to pause' : 'Auto-sync is OFF - Click to resume'}
           >
             <span className={`child-reg-sync-toggle-dot ${autoSyncEnabled ? 'on' : 'off'}`}></span>
+            <span className="child-reg-sync-toggle-label">
+              {getAutoSyncLabel()}
+            </span>
           </button>
           <button 
             className="child-reg-sync-now-mini"
-            onClick={() => {
-              if (!isSyncing && !isLoading) {
-                handleSyncOfflineData(true); // Silent sync - no toast
-              }
-            }}
-            disabled={isSyncing || isLoading}
+            onClick={handleManualSync}
+            disabled={isSyncing || isLoading || refreshing}
             title="Sync now"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -218,7 +299,7 @@ const RenderListPage = ({
             <line x1="12" y1="8" x2="12" y2="12"/>
             <circle cx="12" cy="16" r="1" fill="#856404"/>
           </svg>
-          Offline Mode - Auto-sync paused
+          Offline Mode - Auto-sync paused. Data will sync when back online.
         </div>
       )}
 
@@ -260,9 +341,9 @@ const RenderListPage = ({
             <p>Add, edit, or delete locations</p>
           </div>
         </div>
-        <div className="child-reg-action-card" onClick={() => { if (!isLoading && !isSyncing) { handleActionClick('Sync Offline Data'); handleSyncOfflineData(true); } }} style={{ cursor: (isLoading || isSyncing) ? 'not-allowed' : 'pointer', opacity: (isLoading || isSyncing) ? 0.6 : 1 }}>
+        <div className="child-reg-action-card" onClick={handleManualSync} style={{ cursor: (isLoading || isSyncing || refreshing) ? 'not-allowed' : 'pointer', opacity: (isLoading || isSyncing || refreshing) ? 0.6 : 1 }}>
           <div className="child-reg-action-icon">
-            {isSyncing ? (
+            {isSyncing || isAutoSyncing ? (
               <div className="child-reg-sync-spinner"></div>
             ) : (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -273,8 +354,13 @@ const RenderListPage = ({
             )}
           </div>
           <div className="child-reg-action-info">
-            <h4>{isSyncing ? 'Syncing...' : 'Sync Offline Data'}</h4>
-            <p>{isSyncing ? 'Please wait while syncing...' : 'Synchronize local records with central database'}</p>
+            <h4>{isSyncing || isAutoSyncing ? 'Syncing...' : 'Sync Offline Data'}</h4>
+            <p>
+              {isSyncing || isAutoSyncing 
+                ? 'Please wait while syncing...' 
+                : `${pendingSyncCount > 0 ? `${pendingSyncCount} items pending` : 'All data synced'}`
+              }
+            </p>
           </div>
         </div>
       </div>

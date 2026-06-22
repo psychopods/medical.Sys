@@ -82,6 +82,12 @@ const ChildRegistration = () => {
   const [deletingChildId, setDeletingChildId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // ===== AUTO-REFRESH STATE =====
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
+  const refreshIntervalRef = useRef(null);
+  const isRefreshingRef = useRef(false);
+
   const [youngPatients, setYoungPatients] = useState([]);
   const [olderPatients, setOlderPatients] = useState([]);
   const [searchYoung, setSearchYoung] = useState("");
@@ -557,8 +563,6 @@ const ChildRegistration = () => {
       setGeneratedId(`KD-${yy}-${locInitials}-${randomDigits}-${suffix}`);
     }
   };
-
-
 
   // ===== FORM VALIDATION FUNCTIONS =====
   const validateForm = () => {
@@ -1746,6 +1750,63 @@ const ChildRegistration = () => {
     navigate("/login");
   };
 
+  // ===== BACKGROUND REFRESH FUNCTION =====
+  const refreshAllData = async (showSpinner = false) => {
+    // Prevent multiple simultaneous refreshes
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+    
+    if (showSpinner) {
+      setRefreshing(true);
+    }
+    
+    try {
+      await Promise.all([
+        fetchChildren(),
+        fetchTodayRegistrations(),
+        fetchFingerprints(),
+        fetchLocations()
+      ]);
+      setLastRefreshed(new Date());
+    } catch (error) {
+      console.error('Background refresh error:', error);
+    } finally {
+      isRefreshingRef.current = false;
+      if (showSpinner) {
+        setRefreshing(false);
+      }
+    }
+  };
+
+  // ===== MANUAL REFRESH WITH SPINNER =====
+  const handleManualRefresh = async () => {
+    await refreshAllData(true);
+  };
+
+  // ===== START BACKGROUND REFRESH =====
+  const startBackgroundRefresh = () => {
+    // Clear any existing interval
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+    }
+    
+    // Set up background refresh every 30 seconds
+    refreshIntervalRef.current = setInterval(() => {
+      // Only refresh if on list page (dashboard) or today registrations page
+      if (activePage === 'list' || activePage === 'todayList' || activePage === 'childrenList') {
+        refreshAllData(false);
+      }
+    }, 30000);
+  };
+
+  // ===== STOP BACKGROUND REFRESH =====
+  const stopBackgroundRefresh = () => {
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+  };
+
   // ===== PRINT PAGE COMPONENT WITH ENHANCED FILTERS =====
   const PrintPage = () => {
     if (!showPrintPage) return null;
@@ -1946,7 +2007,23 @@ const ChildRegistration = () => {
     initData();
   }, [navigate]);
 
+  // ===== AUTO-REFRESH EFFECT =====
+  useEffect(() => {
+    // Start background refresh after initial load
+    startBackgroundRefresh();
+    
+    // Cleanup on unmount
+    return () => {
+      stopBackgroundRefresh();
+    };
+  }, []);
 
+  // ===== RESTART REFRESH WHEN ACTIVE PAGE CHANGES =====
+  useEffect(() => {
+    // Restart background refresh when page changes
+    stopBackgroundRefresh();
+    startBackgroundRefresh();
+  }, [activePage]);
 
   useEffect(() => {
     const handleOnline = () => setOfflineMode(false);
@@ -1987,6 +2064,9 @@ const ChildRegistration = () => {
             offlineMode={offlineMode}
             isSyncing={isSyncing}
             isLoading={isLoading || isDeleting || isAddingChild || isSavingChild}
+            refreshing={refreshing}
+            lastRefreshed={lastRefreshed}
+            handleManualRefresh={handleManualRefresh}
             handleStatClick={handleStatClick}
             handleActionClick={handleActionClick}
             handleAddRegistrationClick={handleAddRegistrationClick}
