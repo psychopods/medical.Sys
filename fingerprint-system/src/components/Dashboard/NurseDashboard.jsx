@@ -235,6 +235,9 @@ const NurseDashboard = ({ user, onLogout }) => {
 
       // Generate recent activities from children data (only today and future)
       generateRecentActivities(childrenArray);
+      
+      // Update fingerprint stats after children data is loaded
+      await fetchFingerprints();
     } catch (error) {
       console.error("Error fetching children:", error);
       setChildrenData([]);
@@ -336,20 +339,70 @@ const NurseDashboard = ({ user, onLogout }) => {
     setMonthlyRegistrations(chartData);
   };
 
-  // Fetch fingerprints for stats
+  // ===== FETCH FINGERPRINTS - FIXED TO GET FROM API AND SQLITE =====
   const fetchFingerprints = async () => {
     try {
-      const result = await executeQuery(
-        "SELECT COUNT(*) as count FROM biometric_fingerprints",
-      );
-      const count = result[0]?.count || 0;
+      let totalFingerprints = 0;
+      const isOnline = navigator.onLine;
+
+      // Try to get from API first if online
+      if (isOnline) {
+        try {
+          // Fetch all children to get their fingerprints
+          const children = await getChildren();
+          let apiCount = 0;
+          
+          for (const child of children) {
+            if (child.id) {
+              try {
+                const fingerprints = await getBiometricsForChild(child.id);
+                if (fingerprints && fingerprints.length > 0) {
+                  apiCount += fingerprints.length;
+                }
+              } catch (e) {
+                console.error('Error fetching fingerprints for child:', e);
+              }
+            }
+          }
+          
+          totalFingerprints = apiCount;
+        } catch (apiError) {
+          console.warn('API fingerprint fetch failed, using SQLite fallback:', apiError);
+          // Fallback to SQLite
+          const result = await executeQuery(
+            "SELECT COUNT(*) as count FROM biometric_fingerprints",
+          );
+          totalFingerprints = result[0]?.count || 0;
+        }
+      } else {
+        // Offline - use SQLite
+        const result = await executeQuery(
+          "SELECT COUNT(*) as count FROM biometric_fingerprints",
+        );
+        totalFingerprints = result[0]?.count || 0;
+      }
+
       setStatsData((prev) => ({
         ...prev,
-        fingerprintsCaptured: count,
-        pendingFingerprints: Math.max(0, childrenData.length - count),
+        fingerprintsCaptured: totalFingerprints,
+        pendingFingerprints: Math.max(0, childrenData.length - totalFingerprints),
       }));
     } catch (error) {
       console.error("Error fetching fingerprints:", error);
+      // Fallback to SQLite
+      try {
+        const result = await executeQuery(
+          "SELECT COUNT(*) as count FROM biometric_fingerprints",
+        );
+        const count = result[0]?.count || 0;
+        setStatsData((prev) => ({
+          ...prev,
+          fingerprintsCaptured: count,
+          pendingFingerprints: Math.max(0, childrenData.length - count),
+        }));
+      } catch (dbError) {
+        console.error("SQLite fallback failed:", dbError);
+      }
     }
   };
 
@@ -364,11 +417,10 @@ const NurseDashboard = ({ user, onLogout }) => {
     }
     
     try {
-      await Promise.all([
-        fetchChildren(),
-        fetchLocations(),
-        fetchFingerprints()
-      ]);
+      await fetchChildren();
+      await fetchLocations();
+      // fetchChildren already calls fetchFingerprints, but we call it again to be safe
+      await fetchFingerprints();
       setLastRefreshed(new Date());
     } catch (error) {
       console.error('Background refresh error:', error);
