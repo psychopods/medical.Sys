@@ -500,7 +500,7 @@ const ChildRegistration = () => {
   const generateRandomSuffix = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 2; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
@@ -518,6 +518,7 @@ const ChildRegistration = () => {
     try {
       const locInitials = getLocationInitials(locationId);
       const currentYear = new Date().getFullYear();
+      const yy = currentYear.toString().slice(-2);
       
       // Load current children to run local uniqueness/collision check
       const childrenArray = await getChildren();
@@ -525,13 +526,41 @@ const ChildRegistration = () => {
         (childrenArray || []).map((c) => (c.customSerialId || c.custom_serial_id || "").toUpperCase())
       );
       
+      let nextNumber = "000001";
+      if (childrenArray && childrenArray.length > 0) {
+        const matches = childrenArray
+          .map((c) => (c.customSerialId || c.custom_serial_id || "").trim().toUpperCase())
+          .filter((id) => id.startsWith("KD-") || id.startsWith("KID-"))
+          .map((id) => {
+            const parts = id.split("-");
+            if (parts[0] === "KID") {
+              // KID-YYYY-NNNN or KID-YYYY-NNNN-XXX
+              if (parts.length >= 3) {
+                return parseInt(parts[2], 10);
+              }
+            } else if (parts[0] === "KD") {
+              // KD-YYYY-LOC-NNNN-XX, KD-YYYY-LOC-XXXX, or KD-YY-LOC-NNNNNN-XX
+              if (parts.length === 5) {
+                return parseInt(parts[3], 10);
+              }
+            }
+            return 0;
+          })
+          .filter((num) => !isNaN(num) && num > 0);
+
+        if (matches.length > 0) {
+          const lastNumber = Math.max(...matches);
+          nextNumber = (lastNumber + 1).toString().padStart(6, "0");
+        }
+      }
+      
       let uniqueId = "";
       let attempts = 0;
       const maxAttempts = 10;
       
       do {
         const suffix = generateRandomSuffix();
-        uniqueId = `KD-${currentYear}-${locInitials}-${suffix}`;
+        uniqueId = `KD-${yy}-${locInitials}-${nextNumber}-${suffix}`;
         attempts++;
       } while (existingIds.has(uniqueId.toUpperCase()) && attempts < maxAttempts);
       
@@ -539,8 +568,10 @@ const ChildRegistration = () => {
     } catch (error) {
       console.error("Error generating registration ID:", error);
       const currentYear = new Date().getFullYear();
+      const yy = currentYear.toString().slice(-2);
       const locInitials = getLocationInitials(locationId);
-      setGeneratedId(`KD-${currentYear}-${locInitials}-${generateRandomSuffix()}`);
+      const nextNum = (childrenData.length + 1).toString().padStart(6, "0");
+      setGeneratedId(`KD-${yy}-${locInitials}-${nextNum}-${generateRandomSuffix()}`);
     }
   };
 
