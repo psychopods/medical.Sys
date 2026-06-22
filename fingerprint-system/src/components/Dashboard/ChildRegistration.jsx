@@ -500,7 +500,7 @@ const ChildRegistration = () => {
   const generateRandomSuffix = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 4; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
@@ -517,43 +517,30 @@ const ChildRegistration = () => {
   const generateRegistrationId = async (locationId = formData.primaryLocationId) => {
     try {
       const locInitials = getLocationInitials(locationId);
-      const childrenArray = await getChildren();
       const currentYear = new Date().getFullYear();
       
-      let nextNumber = "0001";
-      if (childrenArray && childrenArray.length > 0) {
-        const matches = childrenArray
-          .map((c) => c.customSerialId || c.custom_serial_id || "")
-          .filter((id) => id.startsWith("KD-") || id.startsWith("KID-"))
-          .map((id) => {
-            const parts = id.split("-");
-            if (parts.length === 3) {
-              return parseInt(parts[2]) || 0;
-            } else if (parts.length === 4) {
-              if (parts[0] === "KID") {
-                return parseInt(parts[2]) || 0;
-              }
-              return parseInt(parts[3]) || 0;
-            } else if (parts.length >= 5) {
-              return parseInt(parts[3]) || 0;
-            }
-            return 0;
-          })
-          .filter((num) => !isNaN(num) && num > 0);
-
-        if (matches.length > 0) {
-          const lastNumber = Math.max(...matches);
-          nextNumber = (lastNumber + 1).toString().padStart(4, "0");
-        }
-      }
+      // Load current children to run local uniqueness/collision check
+      const childrenArray = await getChildren();
+      const existingIds = new Set(
+        (childrenArray || []).map((c) => (c.customSerialId || c.custom_serial_id || "").toUpperCase())
+      );
       
-      setGeneratedId(`KD-${currentYear}-${locInitials}-${nextNumber}-${generateRandomSuffix()}`);
+      let uniqueId = "";
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      do {
+        const suffix = generateRandomSuffix();
+        uniqueId = `KD-${currentYear}-${locInitials}-${suffix}`;
+        attempts++;
+      } while (existingIds.has(uniqueId.toUpperCase()) && attempts < maxAttempts);
+      
+      setGeneratedId(uniqueId);
     } catch (error) {
       console.error("Error generating registration ID:", error);
       const currentYear = new Date().getFullYear();
-      const nextNumber = (childrenData.length + 1).toString().padStart(4, "0");
       const locInitials = getLocationInitials(locationId);
-      setGeneratedId(`KD-${currentYear}-${locInitials}-${nextNumber}-${generateRandomSuffix()}`);
+      setGeneratedId(`KD-${currentYear}-${locInitials}-${generateRandomSuffix()}`);
     }
   };
 
