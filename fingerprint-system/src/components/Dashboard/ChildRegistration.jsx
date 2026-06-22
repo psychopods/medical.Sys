@@ -497,6 +497,15 @@ const ChildRegistration = () => {
     setOlderPatients(older);
   };
 
+  const generateRandomSuffix = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 3; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
+
   const generateRegistrationId = async () => {
     try {
       const childrenArray = await getChildren();
@@ -506,7 +515,9 @@ const ChildRegistration = () => {
           .filter((id) => id.startsWith("KID-"))
           .map((id) => {
             const parts = id.split("-");
-            return parts.length === 3 ? parseInt(parts[2]) : 0;
+            // Backward-compatible parser: the sequence number is always the third part (index 2)
+            // regardless of whether there is a suffix (length 4) or not (length 3).
+            return parts.length >= 3 ? parseInt(parts[2]) : 0;
           })
           .filter((num) => !isNaN(num) && num > 0);
 
@@ -514,19 +525,20 @@ const ChildRegistration = () => {
           const lastNumber = Math.max(...matches);
           const nextNumber = (lastNumber + 1).toString().padStart(4, "0");
           const currentYear = new Date().getFullYear();
-          setGeneratedId(`KID-${currentYear}-${nextNumber}`);
+          setGeneratedId(`KID-${currentYear}-${nextNumber}-${generateRandomSuffix()}`);
           return;
         }
       }
       const currentYear = new Date().getFullYear();
-      setGeneratedId(`KID-${currentYear}-0001`);
+      setGeneratedId(`KID-${currentYear}-0001-${generateRandomSuffix()}`);
     } catch (error) {
       console.error("Error generating registration ID:", error);
       const currentYear = new Date().getFullYear();
       const nextNumber = (childrenData.length + 1).toString().padStart(4, "0");
-      setGeneratedId(`KID-${currentYear}-${nextNumber}`);
+      setGeneratedId(`KID-${currentYear}-${nextNumber}-${generateRandomSuffix()}`);
     }
   };
+
 
   // ===== FORM VALIDATION FUNCTIONS =====
   const validateForm = () => {
