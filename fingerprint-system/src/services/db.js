@@ -64,7 +64,6 @@ export async function getDB() {
       const cachedBuffer = await getCachedDbBuffer();
 
       if (cachedBuffer) {
-        console.log('SQLite: Loaded existing database from IndexedDB.');
         dbInstance = new SQL.Database(new Uint8Array(cachedBuffer));
         
         // Dynamic migration: execute schema SQL to ensure any new/missing tables are created in the cached database
@@ -73,16 +72,14 @@ export async function getDB() {
           if (schemaRes.ok) {
             const schemaSql = await schemaRes.text();
             if (!schemaSql.trim().startsWith('<')) {
-              console.log('SQLite: Checking and migrating database schema...');
               dbInstance.exec(schemaSql);
               await saveDB();
             }
           }
         } catch (migrationError) {
-          console.warn('SQLite: Dynamic schema migration skipped (device may be offline):', migrationError);
+          // Silent fail for migration errors (device may be offline)
         }
       } else {
-        console.log('SQLite: No existing database found. Initializing a new one...');
         dbInstance = new SQL.Database();
 
         // Fetch schema and seeds from public directory
@@ -104,21 +101,17 @@ export async function getDB() {
         }
 
         // Execute schema and seed data
-        console.log('SQLite: Creating tables...');
         dbInstance.exec(schemaSql);
-        console.log('SQLite: Seeding initial data...');
         dbInstance.exec(seedSql);
 
         // Save fresh database state
         await saveDB();
-        console.log('SQLite: Database initialized and saved successfully.');
       }
 
       isInitializing = false;
       return dbInstance;
     } catch (error) {
       isInitializing = false;
-      console.error('SQLite: Failed to initialize database:', error);
       throw error;
     }
   })();
@@ -146,7 +139,6 @@ export async function executeQuery(sql, params = []) {
     }
     return results;
   } catch (error) {
-    console.error(`SQLite query error on SQL "${sql}":`, error);
     throw error;
   } finally {
     if (stmt) stmt.free();
@@ -163,7 +155,6 @@ export async function executeRun(sql, params = []) {
       changes: db.getRowsModified(),
     };
   } catch (error) {
-    console.error(`SQLite run error on SQL "${sql}":`, error);
     throw error;
   }
 }
@@ -175,7 +166,6 @@ export async function executeBatch(sql) {
     db.exec(sql);
     await saveDB();
   } catch (error) {
-    console.error('SQLite batch execution error:', error);
     throw error;
   }
 }
