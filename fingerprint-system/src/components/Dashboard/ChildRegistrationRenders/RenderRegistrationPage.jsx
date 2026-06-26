@@ -84,9 +84,13 @@ const RenderRegistrationPage = ({
   setRegistrationStep,
   handleCompleteRegistration,
   isSubmitting,
-  isAddingChild // Add loading prop
+  isAddingChild,
+  user // Add user prop
 }) => {
   const totalCaptured = capturedFingers.length;
+  
+  // Check if user is superadmin
+  const isSuperAdmin = user?.role === 'superadmin' || user?.role === 'superuser' || user?.role === 'admin';
 
   return (
     <div className="child-reg-page-content">
@@ -329,7 +333,15 @@ const RenderRegistrationPage = ({
 
       {registrationStep === 2 && (
         <div className="child-reg-fingerprint-section-full">
-          <h3 className="child-reg-form-step-title">Step 2: Enroll Fingerprints <span style={{ color: '#6c757d', fontSize: '14px' }}>(Optional - Capture any number of fingers)</span></h3>
+          <h3 className="child-reg-form-step-title">
+            Step 2: Enroll Fingerprints 
+            <span style={{ color: '#6c757d', fontSize: '14px' }}>(Optional - Capture any number of fingers)</span>
+            {!isSuperAdmin && (
+              <span style={{ color: '#dc3545', fontSize: '13px', marginLeft: '10px' }}>
+                ⚠️ Fingerprints required for non-admin users
+              </span>
+            )}
+          </h3>
           
           <div className="child-reg-enrollment-container">
             {/* Finger Selection Grid */}
@@ -494,13 +506,28 @@ const RenderRegistrationPage = ({
             
             <div className="child-reg-enrollment-summary-actions">
               <div className="child-reg-enrollment-buttons">
-                <button 
-                  className="child-reg-btn-secondary" 
-                  onClick={handleSkipFingerprints}
-                  disabled={isSavingFingerprints || isAddingChild}
-                >
-                  Skip (Continue without fingerprints)
-                </button>
+                {/* Skip button - only shown to superadmin */}
+                {isSuperAdmin ? (
+                  <button 
+                    className="child-reg-btn-secondary" 
+                    onClick={handleSkipFingerprints}
+                    disabled={isSavingFingerprints || isAddingChild}
+                    title="Super Admin: You can skip fingerprint capture"
+                  >
+                    Skip (Continue without fingerprints)
+                  </button>
+                ) : (
+                  // Non-admin users: Show restricted skip button
+                  <button 
+                    className="child-reg-btn-secondary" 
+                    disabled={true}
+                    style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                    title="Only Super Admins can skip fingerprint capture. Please capture at least one fingerprint."
+                  >
+                    <span className="child-reg-restricted-icon">🔒</span> Skip (Restricted)
+                  </button>
+                )}
+                
                 <button 
                   className="child-reg-btn-primary" 
                   onClick={handleSaveFingerprints}
@@ -516,6 +543,16 @@ const RenderRegistrationPage = ({
                   )}
                 </button>
               </div>
+              
+              {/* Show info message for non-admin users with no fingerprints */}
+              {!isSuperAdmin && totalCaptured === 0 && (
+                <p className="child-reg-skip-restriction-info">
+                  <span className="child-reg-info-icon">ℹ️</span> 
+                  Only Super Administrators can skip fingerprint enrollment. 
+                  Please capture at least one fingerprint to continue.
+                </p>
+              )}
+              
               <button 
                 className="child-reg-btn-text" 
                 onClick={() => setRegistrationStep(1)}
@@ -536,6 +573,11 @@ const RenderRegistrationPage = ({
           <p>Patient <strong>{formData.fullName}</strong> has been successfully registered.</p>
           {totalCaptured > 0 && (
             <p>✓ {totalCaptured} fingerprint{totalCaptured !== 1 ? 's' : ''} enrolled successfully</p>
+          )}
+          {totalCaptured === 0 && isSuperAdmin && (
+            <p style={{ color: '#856404', background: '#fff3cd', padding: '8px 12px', borderRadius: '6px', display: 'inline-block' }}>
+              ℹ️ Registered without fingerprints (Super Admin override)
+            </p>
           )}
           <div className="child-reg-form-actions">
             <button 

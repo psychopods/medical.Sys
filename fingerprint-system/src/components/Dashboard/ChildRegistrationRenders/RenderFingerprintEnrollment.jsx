@@ -57,9 +57,8 @@ const RenderFingerprintEnrollment = ({
   handleSelectFinger,
   handleCaptureFingerprint,
   handleRemoveFingerprint,
-  handleSkipFingerprints,
   handleSaveFingerprints,
-  isSavingFingerprints // Add loading prop for save
+  isSavingFingerprints
 }) => {
   const totalCaptured = capturedFingers.length;
   const isComplete = totalCaptured >= 10;
@@ -84,7 +83,7 @@ const RenderFingerprintEnrollment = ({
         <p className="child-reg-page-subtitle">
           Enrolling fingerprints for: <strong>{enrollingChild?.fullName}</strong> (ID: {enrollingChild?.customSerialId})
         </p>
-        <p className="child-reg-enrollment-hint">* All fingers are optional. Capture as many as you need.</p>
+        <p className="child-reg-enrollment-hint">* Fingerprints are required. Please capture at least one fingerprint.</p>
       </div>
 
       <div className="child-reg-enrollment-container">
@@ -230,13 +229,6 @@ const RenderFingerprintEnrollment = ({
           
           <div className="child-reg-enrollment-summary-actions">
             <button 
-              className="child-reg-btn-secondary" 
-              onClick={handleSkipFingerprints}
-              disabled={isCapturing || isSavingFingerprints}
-            >
-              Skip (Continue without fingerprints)
-            </button>
-            <button 
               className="child-reg-btn-primary" 
               onClick={handleSaveFingerprints}
               disabled={totalCaptured === 0 || isCapturing || isSavingFingerprints}
@@ -247,10 +239,17 @@ const RenderFingerprintEnrollment = ({
                   Saving...
                 </>
               ) : (
-                totalCaptured === 0 ? 'No fingerprints to save' : `Save ${totalCaptured} Fingerprint(s)`
+                totalCaptured === 0 ? 'Please capture at least one fingerprint' : `Save ${totalCaptured} Fingerprint(s)`
               )}
             </button>
           </div>
+          
+          {/* Show message if no fingerprints captured */}
+          {totalCaptured === 0 && (
+            <p className="child-reg-required-message">
+              ⚠️ At least one fingerprint is required to complete enrollment.
+            </p>
+          )}
         </div>
       </div>
     </div>

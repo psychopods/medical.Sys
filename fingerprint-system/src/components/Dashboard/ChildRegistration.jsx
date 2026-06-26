@@ -2123,6 +2123,7 @@ const ChildRegistration = () => {
             handleCompleteRegistration={handleRegComplete}
             isSubmitting={isSavingFingerprints}
             isAddingChild={isAddingChild}
+            user={user}
           />
         )}
         {!showPrintPage && activePage === "verify" && (
