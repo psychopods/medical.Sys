@@ -12,11 +12,13 @@ const Layout = ({ children, user, onLogout }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const location = useLocation();
   const navigate = useNavigate();
   const mainContentRef = useRef(null);
   const scrollPositions = useRef({});
   const userMenuRef = useRef(null);
+  const userButtonRef = useRef(null);
   const sidebarRef = useRef(null);
   const refreshIntervalRef = useRef(null);
 
@@ -33,6 +35,17 @@ const Layout = ({ children, user, onLogout }) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Calculate dropdown position
+  useEffect(() => {
+    if (showUserMenu && userButtonRef.current) {
+      const rect = userButtonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.right - 280 + window.scrollX,
+      });
+    }
+  }, [showUserMenu]);
 
   // Save scroll position before navigation
   useEffect(() => {
@@ -88,12 +101,10 @@ const Layout = ({ children, user, onLogout }) => {
 
   // ===== REFRESH NOTIFICATIONS EVERY 5 SECONDS =====
   useEffect(() => {
-    // Start the refresh interval
     refreshIntervalRef.current = setInterval(() => {
       setRefreshTrigger(prev => prev + 1);
-    }, 5000); // 5 seconds
+    }, 5000);
 
-    // Cleanup interval on unmount
     return () => {
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current);
@@ -126,7 +137,6 @@ const Layout = ({ children, user, onLogout }) => {
     onLogout();
   };
 
-  // Helper function to get user display name
   const getUserDisplayName = () => {
     if (!user) return 'User';
     if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
@@ -136,13 +146,11 @@ const Layout = ({ children, user, onLogout }) => {
     return 'Staff User';
   };
 
-  // Helper function to get user avatar initial
   const getUserInitial = () => {
     const name = getUserDisplayName();
     return name.charAt(0).toUpperCase();
   };
 
-  // Helper function to get user role display name
   const getUserRoleDisplay = () => {
     if (!user) return 'Staff';
     if (user.roleName) return user.roleName;
@@ -151,17 +159,16 @@ const Layout = ({ children, user, onLogout }) => {
     return 'Staff';
   };
 
-  // Determine sidebar classes
   const sidebarClasses = `dashboard-sidebar ${isMobile ? 'mobile' : ''} ${isMobileSidebarOpen ? 'mobile-open' : 'mobile-closed'} ${!isMobile && !isSidebarOpen ? 'sidebar-closed' : ''}`;
+
+  const isSmallMobile = window.innerWidth <= 480;
 
   return (
     <div className={`dashboard-layout ${!isMobile && !isSidebarOpen ? 'sidebar-closed' : ''}`}>
-      {/* Mobile Overlay */}
       {isMobile && isMobileSidebarOpen && (
         <div className="mobile-sidebar-overlay" onClick={closeMobileSidebar}></div>
       )}
 
-      {/* Sidebar */}
       <aside className={sidebarClasses} ref={sidebarRef}>
         <div className="sidebar-header">
           <div className="logo-section">
@@ -220,10 +227,8 @@ const Layout = ({ children, user, onLogout }) => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="dashboard-main" ref={mainContentRef}>
         <div className="main-header">
-          {/* Mobile Menu Button */}
           <button className="mobile-menu-btn" onClick={toggleSidebar}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" strokeLinecap="round"/>
@@ -233,22 +238,55 @@ const Layout = ({ children, user, onLogout }) => {
           </button>
           <h1>{getPageTitle(location.pathname)}</h1>
           <div className="header-actions">
-            {/* Notification Bell - Pass refreshTrigger as prop */}
             {user && <NotificationBell user={user} refreshTrigger={refreshTrigger} />}
             
-            {/* User Info in Right Corner */}
-            <div className="user-menu-container" ref={userMenuRef}>
+            {/* User Dropdown - FORCED DOWN */}
+            <div 
+              ref={userMenuRef}
+              style={{ 
+                position: 'relative', 
+                display: 'inline-block',
+                zIndex: 9999
+              }}
+            >
               <button 
-                className="user-badge" 
+                ref={userButtonRef}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: isSmallMobile ? '6px' : '8px 12px',
+                  background: '#f5f5f5',
+                  border: 'none',
+                  borderRadius: '40px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  position: 'relative',
+                  zIndex: 10000
+                }}
                 onClick={() => setShowUserMenu(!showUserMenu)}
               >
-                <div className="user-avatar-small">
+                <div style={{
+                  width: isSmallMobile ? '32px' : '36px',
+                  height: isSmallMobile ? '32px' : '36px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: isSmallMobile ? '12px' : '14px',
+                  flexShrink: 0,
+                }}>
                   {getUserInitial()}
                 </div>
-                <div className="user-info-text">
-                  <span className="user-name-text">{getUserDisplayName()}</span>
-                  <span className="user-role-text">{getUserRoleDisplay()}</span>
-                </div>
+                {!isSmallMobile && (
+                  <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>{getUserDisplayName()}</span>
+                    <span style={{ fontSize: '11px', color: '#888' }}>{getUserRoleDisplay()}</span>
+                  </div>
+                )}
                 <svg 
                   width="16" 
                   height="16" 
@@ -256,36 +294,131 @@ const Layout = ({ children, user, onLogout }) => {
                   fill="none" 
                   stroke="currentColor" 
                   strokeWidth="2"
-                  className={`dropdown-arrow ${showUserMenu ? 'open' : ''}`}
+                  style={{
+                    transition: 'transform 0.2s ease',
+                    flexShrink: 0,
+                    transform: showUserMenu ? 'rotate(180deg)' : 'rotate(0deg)'
+                  }}
                 >
                   <polyline points="6 9 12 15 18 9"/>
                 </svg>
               </button>
               
-              {/* Dropdown Menu */}
               {showUserMenu && (
-                <div className="user-dropdown">
-                  <div className="dropdown-header">
-                    <div className="dropdown-avatar">
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: '0',
+                  marginTop: '8px',
+                  width: '280px',
+                  maxHeight: '80vh',
+                  background: '#ffffff',
+                  border: '1px solid #e8e8e8',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  zIndex: 99999,
+                  overflow: 'hidden',
+                  transform: 'translateY(0)',
+                  opacity: 1,
+                  visibility: 'visible',
+                  pointerEvents: 'auto',
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    gap: '12px',
+                    padding: '16px',
+                    background: '#fafafa',
+                  }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontWeight: '600',
+                      fontSize: '18px',
+                      flexShrink: 0,
+                    }}>
                       {getUserInitial()}
                     </div>
-                    <div className="dropdown-info">
-                      <div className="dropdown-name">{getUserDisplayName()}</div>
-                      <div className="dropdown-email">{user?.email || 'No email'}</div>
-                      <div className="dropdown-role">{getUserRoleDisplay()}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontSize: '15px',
+                        fontWeight: '600',
+                        color: '#333',
+                        marginBottom: '4px',
+                        wordBreak: 'break-word',
+                      }}>{getUserDisplayName()}</div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#888',
+                        marginBottom: '4px',
+                        wordBreak: 'break-word',
+                      }}>{user?.email || 'No email'}</div>
+                      <div style={{
+                        fontSize: '11px',
+                        color: '#667eea',
+                        fontWeight: '500',
+                      }}>{getUserRoleDisplay()}</div>
                     </div>
                   </div>
-                  <div className="dropdown-divider"></div>
-                  <button className="dropdown-item" onClick={() => navigate('/profile')}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  
+                  <div style={{ height: '1px', background: '#e8e8e8' }}></div>
+                  
+                  <button 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'white',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: '#333',
+                      textAlign: 'left',
+                      transition: 'background 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                    onMouseLeave={(e) => e.target.style.background = 'white'}
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate('/profile');
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, stroke: '#888' }}>
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                       <circle cx="12" cy="7" r="4"/>
                     </svg>
                     My Profile
                   </button>
-                  <div className="dropdown-divider"></div>
-                  <button className="dropdown-item dropdown-logout" onClick={handleLogout}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  
+                  <div style={{ height: '1px', background: '#e8e8e8' }}></div>
+                  
+                  <button 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: 'white',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: '#dc3545',
+                      textAlign: 'left',
+                      transition: 'background 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = '#fff5f5'}
+                    onMouseLeave={(e) => e.target.style.background = 'white'}
+                    onClick={handleLogout}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, stroke: '#dc3545' }}>
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                       <polyline points="16 17 21 12 16 7"/>
                       <line x1="21" y1="12" x2="9" y2="12"/>
