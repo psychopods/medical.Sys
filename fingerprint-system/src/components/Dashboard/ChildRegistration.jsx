@@ -153,12 +153,20 @@ const ChildRegistration = () => {
   const [searchFingerprints, setSearchFingerprints] = useState("");
   const [searchLocations, setSearchLocations] = useState("");
 
+  // Camera states
   const [preview1, setPreview1] = useState(null);
   const [preview2, setPreview2] = useState(null);
   const [preview3, setPreview3] = useState(null);
   const [showCamera1, setShowCamera1] = useState(false);
   const [showCamera2, setShowCamera2] = useState(false);
   const [showCamera3, setShowCamera3] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const [isCameraStarting, setIsCameraStarting] = useState(false);
+
+  // Camera switching states
+  const [cameraFacingMode1, setCameraFacingMode1] = useState('user');
+  const [cameraFacingMode2, setCameraFacingMode2] = useState('user');
+  const [cameraFacingMode3, setCameraFacingMode3] = useState('user');
 
   const videoRef1 = useRef(null);
   const videoRef2 = useRef(null);
@@ -535,7 +543,6 @@ const ChildRegistration = () => {
       const currentYear = new Date().getFullYear();
       const yy = currentYear.toString().slice(-2);
       
-      // Load current children to run local uniqueness/collision check
       const childrenArray = await getChildren();
       const existingIds = new Set(
         (childrenArray || []).map((c) => (c.customSerialId || c.custom_serial_id || "").toUpperCase())
@@ -699,15 +706,12 @@ const ChildRegistration = () => {
     }
   };
 
-  // ===== FIX: Reset location form without closing it =====
   const resetLocationForm = () => {
     setEditingLocation(null);
     setLocationFormData({ name: "", description: "" });
     setLocationFormErrors({ name: "" });
-    // DO NOT set showLocationForm(false) here
   };
 
-  // ===== FIX: Add new location handler =====
   const handleAddNewLocation = () => {
     setEditingLocation(null);
     setLocationFormData({ name: "", description: "" });
@@ -715,32 +719,65 @@ const ChildRegistration = () => {
     setShowLocationForm(true);
   };
 
-  // ===== CAMERA FUNCTIONS =====
+  // ===== CAMERA FUNCTIONS WITH SWITCHING =====
   const checkCameraSupport = () => {
+    setCameraError(null);
+    
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showToast(
-        "Your browser does not support camera access. Please use Chrome, Firefox, or Edge.",
-        "error",
-      );
+      const errorMsg = "Your browser does not support camera access. Please use Chrome, Firefox, or Edge.";
+      setCameraError(errorMsg);
+      showToast(errorMsg, "error");
       return false;
     }
+    
     if (
       window.location.protocol !== "https:" &&
       window.location.hostname !== "localhost" &&
       window.location.hostname !== "127.0.0.1"
     ) {
-      showToast(
-        "Camera access requires HTTPS. Please use HTTPS or localhost.",
-        "error",
-      );
+      const errorMsg = "Camera access requires HTTPS. Please use HTTPS or localhost.";
+      setCameraError(errorMsg);
+      showToast(errorMsg, "error");
       return false;
     }
     return true;
   };
 
+  const getCameraFacingMode = (num) => {
+    if (num === 1) return cameraFacingMode1;
+    if (num === 2) return cameraFacingMode2;
+    return cameraFacingMode3;
+  };
+
+  const setCameraFacingMode = (num, mode) => {
+    if (num === 1) setCameraFacingMode1(mode);
+    else if (num === 2) setCameraFacingMode2(mode);
+    else setCameraFacingMode3(mode);
+  };
+
+  const switchCamera = async (num) => {
+    const currentMode = getCameraFacingMode(num);
+    const newMode = currentMode === 'user' ? 'environment' : 'user';
+    setCameraFacingMode(num, newMode);
+    
+    if (num === 1 && showCamera1) {
+      await startCamera(num);
+    } else if (num === 2 && showCamera2) {
+      await startCamera(num);
+    } else if (num === 3 && showCamera3) {
+      await startCamera(num);
+    }
+  };
+
   const startCamera = async (num) => {
+    if (isCameraStarting) return;
     if (!checkCameraSupport()) return;
+    
+    setIsCameraStarting(true);
+    
     let videoRef, setShowCamera;
+    let facingMode = getCameraFacingMode(num);
+    
     if (num === 1) {
       videoRef = videoRef1;
       setShowCamera = setShowCamera1;
@@ -751,33 +788,64 @@ const ChildRegistration = () => {
       videoRef = videoRef3;
       setShowCamera = setShowCamera3;
     }
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     if (videoRef.current && videoRef.current.srcObject) {
       videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
     }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          facingMode: facingMode,
+          width: { ideal: 640 },
+          height: { ideal: 480 },
         },
+        audio: false,
       });
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setShowCamera(true);
-        showToast("Camera started successfully!", "success");
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().then(() => {
+            setShowCamera(true);
+            setCameraError(null);
+            setIsCameraStarting(false);
+            showToast(`Camera ${num} started successfully!`, "success");
+          }).catch(() => {
+            setCameraError('Failed to play video stream');
+            setIsCameraStarting(false);
+          });
+        };
+      } else {
+        setCameraError('Video element not found');
+        setIsCameraStarting(false);
+        setTimeout(() => {
+          if (videoRef.current) {
+            startCamera(num);
+          }
+        }, 500);
       }
     } catch (err) {
-      console.error("Camera error:", err);
-      showToast(
-        `Unable to access camera: ${err.message || "Please check permissions."}`,
-        "error",
-      );
+      let errorMessage = "Unable to access camera. ";
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        errorMessage += "Please grant camera permission in your browser settings.";
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        errorMessage += "No camera found on this device.";
+      } else {
+        errorMessage += err.message || "Please check permissions and try again.";
+      }
+      setCameraError(errorMessage);
+      showToast(errorMessage, "error");
+      setIsCameraStarting(false);
     }
   };
 
   const capturePhoto = (num) => {
     let canvas, video, setPreview, setShowCamera;
+    
     if (num === 1) {
       canvas = canvasRef1.current;
       video = videoRef1.current;
@@ -794,21 +862,37 @@ const ChildRegistration = () => {
       setPreview = setPreview3;
       setShowCamera = setShowCamera3;
     }
-    if (!video || !video.videoWidth || !video.videoHeight) {
+
+    if (!video) {
+      showToast("Camera not initialized. Please start the camera first.", "error");
+      return;
+    }
+
+    if (!video.videoWidth || !video.videoHeight) {
       showToast("Camera not ready. Please wait and try again.", "error");
       return;
     }
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageDataUrl = canvas.toDataURL("image/jpeg", 0.9);
-    setPreview(imageDataUrl);
-    setShowCamera(false);
-    if (video.srcObject) {
-      video.srcObject.getTracks().forEach((track) => track.stop());
+
+    try {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const imageDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      setPreview(imageDataUrl);
+      
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach((track) => track.stop());
+        video.srcObject = null;
+      }
+      
+      setShowCamera(false);
+      showToast(`Photo ${num} captured successfully!`, "success");
+    } catch (err) {
+      showToast("Failed to capture photo. Please try again.", "error");
     }
-    showToast(`Photo ${num} captured successfully!`, "success");
   };
 
   const stopCamera = (num) => {
@@ -823,22 +907,64 @@ const ChildRegistration = () => {
       video = videoRef3.current;
       setShowCamera = setShowCamera3;
     }
+    
     setShowCamera(false);
     if (video && video.srcObject) {
       video.srcObject.getTracks().forEach((track) => track.stop());
+      video.srcObject = null;
     }
+    setIsCameraStarting(false);
   };
 
   const handleFileUpload = (num, file) => {
     if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      showToast("Please upload a valid image file.", "error");
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Image size should be less than 5MB.", "error");
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onloadend = () => {
-      if (num === 1) setPreview1(reader.result);
-      else if (num === 2) setPreview2(reader.result);
-      else setPreview3(reader.result);
+      const result = reader.result;
+      if (num === 1) {
+        setPreview1(result);
+      } else if (num === 2) {
+        setPreview2(result);
+      } else {
+        setPreview3(result);
+      }
       showToast(`Photo ${num} uploaded successfully!`, "success");
     };
+    reader.onerror = () => {
+      showToast("Failed to read file. Please try again.", "error");
+    };
     reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = (num) => {
+    if (num === 1) {
+      setPreview1(null);
+      if (showCamera1) {
+        stopCamera(1);
+      }
+    } else if (num === 2) {
+      setPreview2(null);
+      if (showCamera2) {
+        stopCamera(2);
+      }
+    } else if (num === 3) {
+      setPreview3(null);
+      if (showCamera3) {
+        stopCamera(3);
+      }
+    }
+    showToast(`Photo ${num} removed`, "info");
   };
 
   // ===== CHILD CRUD OPERATIONS =====
@@ -1137,7 +1263,6 @@ const ChildRegistration = () => {
     setIsSavingFingerprints(true);
     setIsAddingChild(true);
     try {
-      // First register the child
       const newChild = {
         fullName: formData.fullName,
         estimatedBirthYear: formData.estimatedBirthYear,
@@ -1155,7 +1280,6 @@ const ChildRegistration = () => {
 
       if (childId) {
         let successCount = 0;
-        // Save fingerprints for this child
         for (const fingerIndex of regCapturedFingers) {
           try {
             const enrollResult = await apiEnrollBiometric({
@@ -1204,7 +1328,6 @@ const ChildRegistration = () => {
   const handleRegSkipFingerprints = async () => {
     setIsAddingChild(true);
     try {
-      // Register child without fingerprints
       const newChild = {
         fullName: formData.fullName,
         estimatedBirthYear: formData.estimatedBirthYear,
@@ -1256,7 +1379,6 @@ const ChildRegistration = () => {
     setPreview1(null);
     setPreview2(null);
     setPreview3(null);
-    // Reset registration fingerprint state
     setRegFingerCaptures({});
     setRegFingerQuality({});
     setRegCapturedFingers([]);
@@ -1322,7 +1444,6 @@ const ChildRegistration = () => {
     }
   };
 
-  // ===== FIX: Edit location handler =====
   const handleEditLocation = (location) => {
     setEditingLocation(location);
     setLocationFormData({
@@ -1333,7 +1454,6 @@ const ChildRegistration = () => {
     setShowLocationForm(true);
   };
 
-  // ===== FIX: Save location handler =====
   const handleSaveLocation = async () => {
     if (!validateLocationForm()) return;
 
@@ -1345,7 +1465,6 @@ const ChildRegistration = () => {
         if (result) {
           showToast('Location updated successfully!', 'success');
           await fetchLocations();
-          // Close form after successful update
           setShowLocationForm(false);
           resetLocationForm();
         } else {
@@ -1356,7 +1475,6 @@ const ChildRegistration = () => {
         if (result) {
           showToast('Location added successfully!', 'success');
           await fetchLocations();
-          // Close form after successful add
           setShowLocationForm(false);
           resetLocationForm();
         } else {
@@ -1371,7 +1489,6 @@ const ChildRegistration = () => {
     }
   };
 
-  // ===== FIX: Delete location handler =====
   const handleDeleteLocation = async (location) => {
     if (!window.confirm(`Are you sure you want to delete location "${location.name}"?`)) {
       return;
@@ -1456,12 +1573,12 @@ const ChildRegistration = () => {
     setPreview1(null);
     setPreview2(null);
     setPreview3(null);
-    // Reset registration fingerprint state
     setRegFingerCaptures({});
     setRegFingerQuality({});
     setRegCapturedFingers([]);
     setRegSelectedFinger(null);
     setRegIsCapturing(false);
+    setCameraError(null);
     generateRegistrationId("");
     navigateToPage("register");
   };
@@ -1549,7 +1666,6 @@ const ChildRegistration = () => {
 
     let filteredData = [...dataToPrint];
 
-    // Apply date filters
     if (printFilters.date_from) {
       const fromDate = new Date(printFilters.date_from);
       fromDate.setHours(0, 0, 0, 0);
@@ -1568,7 +1684,6 @@ const ChildRegistration = () => {
       });
     }
 
-    // Apply location filter
     if (printFilters.location) {
       filteredData = filteredData.filter(item => {
         const locationName = getLocationName(item.primaryLocationId);
@@ -1576,12 +1691,10 @@ const ChildRegistration = () => {
       });
     }
 
-    // Apply gender filter
     if (printFilters.gender) {
       filteredData = filteredData.filter(item => item.gender === printFilters.gender);
     }
 
-    // Apply age group filter
     if (printFilters.age_group) {
       filteredData = filteredData.filter(item => {
         const age = calculateAgeValue(item.estimatedBirthYear);
@@ -1597,7 +1710,6 @@ const ChildRegistration = () => {
       });
     }
 
-    // Apply fingerprint status filter
     if (printFilters.fingerprint_status) {
       const isCaptured = printFilters.fingerprint_status === 'captured';
       filteredData = filteredData.filter(item => {
@@ -1752,7 +1864,6 @@ const ChildRegistration = () => {
 
   // ===== BACKGROUND REFRESH FUNCTION =====
   const refreshAllData = async (showSpinner = false) => {
-    // Prevent multiple simultaneous refreshes
     if (isRefreshingRef.current) return;
     isRefreshingRef.current = true;
     
@@ -1778,28 +1889,22 @@ const ChildRegistration = () => {
     }
   };
 
-  // ===== MANUAL REFRESH WITH SPINNER =====
   const handleManualRefresh = async () => {
     await refreshAllData(true);
   };
 
-  // ===== START BACKGROUND REFRESH =====
   const startBackgroundRefresh = () => {
-    // Clear any existing interval
     if (refreshIntervalRef.current) {
       clearInterval(refreshIntervalRef.current);
     }
     
-    // Set up background refresh every 30 seconds
     refreshIntervalRef.current = setInterval(() => {
-      // Only refresh if on list page (dashboard) or today registrations page
       if (activePage === 'list' || activePage === 'todayList' || activePage === 'childrenList') {
         refreshAllData(false);
       }
     }, 30000);
   };
 
-  // ===== STOP BACKGROUND REFRESH =====
   const stopBackgroundRefresh = () => {
     if (refreshIntervalRef.current) {
       clearInterval(refreshIntervalRef.current);
@@ -1871,7 +1976,6 @@ const ChildRegistration = () => {
               <button className="child-reg-reset-filters-btn" onClick={handleResetFilters}>Reset Filters</button>
             </div>
             <div className="child-reg-filters-grid">
-              {/* Date Filters */}
               <div className="child-reg-filter-field">
                 <label>Date From</label>
                 <input 
@@ -1889,7 +1993,6 @@ const ChildRegistration = () => {
                 />
               </div>
               
-              {/* Location Filter */}
               <div className="child-reg-filter-field">
                 <label>Location</label>
                 <select 
@@ -1903,7 +2006,6 @@ const ChildRegistration = () => {
                 </select>
               </div>
 
-              {/* Gender Filter */}
               <div className="child-reg-filter-field">
                 <label>Gender</label>
                 <select 
@@ -1916,7 +2018,6 @@ const ChildRegistration = () => {
                 </select>
               </div>
 
-              {/* Age Group Filter */}
               <div className="child-reg-filter-field">
                 <label>Age Group</label>
                 <select 
@@ -1929,7 +2030,6 @@ const ChildRegistration = () => {
                 </select>
               </div>
 
-              {/* Fingerprint Status Filter */}
               <div className="child-reg-filter-field">
                 <label>Fingerprint Status</label>
                 <select 
@@ -2007,20 +2107,14 @@ const ChildRegistration = () => {
     initData();
   }, [navigate]);
 
-  // ===== AUTO-REFRESH EFFECT =====
   useEffect(() => {
-    // Start background refresh after initial load
     startBackgroundRefresh();
-    
-    // Cleanup on unmount
     return () => {
       stopBackgroundRefresh();
     };
   }, []);
 
-  // ===== RESTART REFRESH WHEN ACTIVE PAGE CHANGES =====
   useEffect(() => {
-    // Restart background refresh when page changes
     stopBackgroundRefresh();
     startBackgroundRefresh();
   }, [activePage]);
@@ -2113,9 +2207,11 @@ const ChildRegistration = () => {
             handleFormChangeWithValidation={handleFormChangeWithValidation}
             handleAgeChange={handleAgeChange}
             handleFileUpload={handleFileUpload}
+            handleRemovePhoto={handleRemovePhoto}
             startCamera={startCamera}
             capturePhoto={capturePhoto}
             stopCamera={stopCamera}
+            switchCamera={switchCamera}
             validateForm={validateForm}
             showToast={showToast}
             goBack={goBack}
@@ -2124,6 +2220,11 @@ const ChildRegistration = () => {
             isSubmitting={isSavingFingerprints}
             isAddingChild={isAddingChild}
             user={user}
+            cameraError={cameraError}
+            isCameraStarting={isCameraStarting}
+            cameraFacingMode1={cameraFacingMode1}
+            cameraFacingMode2={cameraFacingMode2}
+            cameraFacingMode3={cameraFacingMode3}
           />
         )}
         {!showPrintPage && activePage === "verify" && (

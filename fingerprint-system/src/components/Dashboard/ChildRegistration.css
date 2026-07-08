@@ -3814,3 +3814,479 @@
     justify-content: center;
   }
 }
+
+/* Add to ChildRegistration.css */
+.child-reg-picture-upload {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+}
+
+.child-reg-picture-upload .error-input {
+  border-color: #dc3545 !important;
+}
+
+.child-reg-camera-preview {
+  position: relative;
+  width: 100%;
+}
+
+.child-reg-camera-video {
+  width: 100%;
+  max-width: 300px;
+  border-radius: 8px;
+  background: #000;
+  border: 2px solid #667eea;
+}
+
+.child-reg-camera-controls {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+.child-reg-btn-capture {
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.child-reg-btn-capture:hover {
+  transform: scale(1.1);
+}
+
+.child-reg-btn-cancel {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.child-reg-btn-cancel:hover {
+  transform: scale(1.1);
+}
+
+.child-reg-upload-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.child-reg-btn-upload,
+.child-reg-btn-camera,
+.child-reg-btn-remove {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.child-reg-btn-upload {
+  background: #667eea;
+  color: white;
+}
+
+.child-reg-btn-camera {
+  background: #28a745;
+  color: white;
+}
+
+.child-reg-btn-remove {
+  background: #dc3545;
+  color: white;
+}
+
+.child-reg-btn-upload:hover,
+.child-reg-btn-camera:hover {
+  transform: scale(1.05);
+}
+
+.child-reg-btn-remove:hover {
+  transform: scale(1.05);
+}
+
+/* Camera permission denied state */
+.child-reg-camera-error {
+  color: #dc3545;
+  font-size: 14px;
+  padding: 10px;
+  background: #f8d7da;
+  border-radius: 6px;
+  text-align: center;
+  width: 100%;
+}
+
+/* Camera status debug with SVG icons */
+.child-reg-camera-status-debug {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 4px 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  color: #666;
+  text-align: center;
+  width: 100%;
+  border: 1px solid #e9ecef;
+  font-family: monospace;
+  margin: 4px 0;
+}
+
+.child-reg-camera-status-debug svg {
+  flex-shrink: 0;
+}
+
+/* Camera error with SVG icon */
+.child-reg-camera-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #dc3545;
+  font-size: 13px;
+  padding: 10px 14px;
+  background: #f8d7da;
+  border-radius: 8px;
+  text-align: center;
+  width: 100%;
+  border: 1px solid #f5c6cb;
+  margin-top: 10px;
+}
+
+.child-reg-camera-error svg {
+  flex-shrink: 0;
+}
+
+/* Skip restriction info with SVG icon */
+.child-reg-skip-restriction-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #856404;
+}
+
+.child-reg-skip-restriction-info svg {
+  flex-shrink: 0;
+}
+
+/* Restricted icon in button */
+.child-reg-restricted-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+}
+
+/* Success message icons */
+.child-reg-success-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: #d4edda;
+  padding: 30px;
+  text-align: center;
+  border: 1px solid #c3e6cb;
+  border-radius: 8px;
+}
+
+.child-reg-success-message svg {
+  flex-shrink: 0;
+}
+
+/* Enrollment buttons with icons */
+.child-reg-enrollment-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.child-reg-enrollment-buttons button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Camera Switch Button */
+.child-reg-btn-switch-camera {
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.4);
+  position: relative;
+}
+
+.child-reg-btn-switch-camera:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+}
+
+.child-reg-btn-switch-camera:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.child-reg-camera-mode-label {
+  position: absolute;
+  bottom: -18px;
+  font-size: 9px;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Camera Mode Indicator */
+.child-reg-camera-mode-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 12px;
+  color: white;
+  font-size: 11px;
+  font-weight: 500;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  backdrop-filter: blur(4px);
+}
+
+.child-reg-camera-mode-indicator svg {
+  flex-shrink: 0;
+}
+
+.child-reg-camera-mode-text {
+  font-size: 11px;
+  color: #667eea;
+  font-weight: 600;
+  margin-left: 4px;
+  padding: 2px 8px;
+  background: #eef1ff;
+  border-radius: 10px;
+}
+
+/* ===== SIMPLE CAMERA CONTROLS - COMPACT ===== */
+
+/* Camera controls - simple and compact */
+.child-reg-camera-controls {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 16px;
+  border-radius: 30px;
+  z-index: 10;
+}
+
+/* All control buttons - small and simple */
+.child-reg-btn-capture,
+.child-reg-btn-switch-camera,
+.child-reg-btn-cancel {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.child-reg-btn-capture svg,
+.child-reg-btn-switch-camera svg,
+.child-reg-btn-cancel svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Capture button - green */
+.child-reg-btn-capture {
+  background: #28a745;
+  color: white;
+}
+
+.child-reg-btn-capture:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+/* Switch camera button - white/transparent */
+.child-reg-btn-switch-camera {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.child-reg-btn-switch-camera:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Cancel button - red */
+.child-reg-btn-cancel {
+  background: #dc3545;
+  color: white;
+}
+
+.child-reg-btn-cancel:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+/* Disabled state */
+.child-reg-btn-capture:disabled,
+.child-reg-btn-switch-camera:disabled,
+.child-reg-btn-cancel:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Camera mode indicator - tiny badge */
+.child-reg-camera-mode-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  color: white;
+  font-size: 10px;
+  font-weight: 500;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.child-reg-camera-mode-indicator svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Hide label */
+.child-reg-camera-mode-label {
+  display: none;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .child-reg-camera-controls {
+    gap: 8px;
+    padding: 6px 12px;
+    bottom: 12px;
+  }
+  
+  .child-reg-btn-capture,
+  .child-reg-btn-switch-camera,
+  .child-reg-btn-cancel {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .child-reg-btn-capture svg,
+  .child-reg-btn-switch-camera svg,
+  .child-reg-btn-cancel svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .child-reg-camera-mode-indicator {
+    font-size: 9px;
+    padding: 2px 8px;
+    top: 6px;
+    right: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .child-reg-camera-controls {
+    gap: 6px;
+    padding: 5px 10px;
+    bottom: 10px;
+    border-radius: 25px;
+  }
+  
+  .child-reg-btn-capture,
+  .child-reg-btn-switch-camera,
+  .child-reg-btn-cancel {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .child-reg-btn-capture svg,
+  .child-reg-btn-switch-camera svg,
+  .child-reg-btn-cancel svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .child-reg-camera-mode-indicator {
+    font-size: 8px;
+    padding: 1px 6px;
+    top: 4px;
+    right: 4px;
+  }
+  
+  .child-reg-camera-mode-indicator svg {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Touch feedback */
+.child-reg-btn-capture:active:not(:disabled),
+.child-reg-btn-switch-camera:active:not(:disabled),
+.child-reg-btn-cancel:active:not(:disabled) {
+  transform: scale(0.9);
+}
