@@ -17,7 +17,22 @@ import { HttpError, toHttpError } from './utils/httpError.ts';
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+    'https://streetmedicine.mitzkits.co.tz',
+    'http://localhost:5173',
+    'http://localhost:3000'
+];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.mitzkits.co.tz')) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 
 app.get('/health', (_request: Request, response: Response) => {

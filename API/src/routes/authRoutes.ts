@@ -46,6 +46,15 @@ export function createAuthRouter(pool: Pool): Router {
 
                 const mappedRole = user.roleName.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
+                const secure = !request.hostname.includes('localhost') && !request.hostname.includes('127.0.0.1');
+                const ttlSeconds = Number(process.env.SESSION_TTL_SECONDS) || 43200;
+                response.cookie('token', accessToken, {
+                    httpOnly: true,
+                    secure: secure,
+                    sameSite: secure ? 'none' : 'lax',
+                    maxAge: ttlSeconds * 1000
+                });
+
                 response.status(200).json({
                     accessToken,
                     session,
@@ -108,9 +117,15 @@ export function createAuthRouter(pool: Pool): Router {
         response.status(200).json({ session: request.authSession });
     });
 
-    router.post('/logout', (_request: Request, response: Response): void => {
+    router.post('/logout', (request: Request, response: Response): void => {
+        const secure = !request.hostname.includes('localhost') && !request.hostname.includes('127.0.0.1');
+        response.clearCookie('token', {
+            httpOnly: true,
+            secure: secure,
+            sameSite: secure ? 'none' : 'lax'
+        });
         response.status(200).json({
-            message: 'Local session cleared by client. Bearer token should be discarded from local storage.'
+            message: 'Local session cleared and cookie revoked.'
         });
     });
 

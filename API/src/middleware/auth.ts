@@ -4,16 +4,33 @@ import { buildSessionFromToken, loadCurrentPermissions, verifyAccessToken } from
 import { HttpError, toHttpError } from '../utils/httpError.ts';
 
 function readBearerToken(request: Request): string {
+    // 1. Try to read from cookies (if express cookie-parser is active)
+    // @ts-ignore
+    const cookieToken = request.cookies?.token;
+    if (cookieToken) {
+        return cookieToken;
+    }
+
+    // 2. Fallback: Parse cookie manually from raw header
+    const rawCookie = request.headers.cookie;
+    if (rawCookie) {
+        const match = rawCookie.match(/(^|; )token=([^;]*)/);
+        if (match) {
+            return decodeURIComponent(match[2]);
+        }
+    }
+
+    // 3. Fallback: Authorization header
     const header = request.header('authorization');
 
     if (!header?.startsWith('Bearer ')) {
-        throw new HttpError(401, 'Missing bearer session token.');
+        throw new HttpError(401, 'Missing session token.');
     }
 
     const token = header.slice('Bearer '.length).trim();
 
     if (!token) {
-        throw new HttpError(401, 'Missing bearer session token.');
+        throw new HttpError(401, 'Missing session token.');
     }
 
     return token;

@@ -4,11 +4,59 @@ import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 
 export { API_BASE_URL };
 
+// Global Fetch Interceptor for Secure Cookies
+const originalFetch = window.fetch;
+window.fetch = async function (url, options = {}) {
+  const urlStr = typeof url === 'string' ? url : (url instanceof URL ? url.href : '');
+  // Force credentials: 'include' for same-origin or backend API calls
+  const isTargetApi = urlStr.startsWith('/') || urlStr.includes('mitzkits.co.tz') || urlStr.includes('localhost');
+
+  if (isTargetApi) {
+    options.credentials = 'include';
+    
+    // Clean up unnecessary Authorization header since we now use HttpOnly cookies
+    if (options.headers) {
+      if (options.headers instanceof Headers) {
+        options.headers.delete('Authorization');
+      } else if (typeof options.headers === 'object') {
+        delete options.headers['Authorization'];
+      }
+    }
+  }
+
+  return originalFetch(url, options);
+};
+
+// Global Storage Interceptors to automatically trigger backend logout
+const originalRemoveItem = localStorage.removeItem;
+localStorage.removeItem = function (key) {
+  if (key === 'user' || key === 'token') {
+    if (navigator.onLine) {
+      originalFetch(`${API_BASE_URL}/api/auth/logout`, { 
+        method: 'POST',
+        credentials: 'include' 
+      }).catch(err => console.warn('Background logout error:', err));
+    }
+  }
+  return originalRemoveItem.apply(this, arguments);
+};
+
+const originalSessionRemoveItem = sessionStorage.removeItem;
+sessionStorage.removeItem = function (key) {
+  if (key === 'user' || key === 'token') {
+    if (navigator.onLine) {
+      originalFetch(`${API_BASE_URL}/api/auth/logout`, { 
+        method: 'POST',
+        credentials: 'include' 
+      }).catch(err => console.warn('Background logout error:', err));
+    }
+  }
+  return originalSessionRemoveItem.apply(this, arguments);
+};
+
 // Helper to get authorization headers
 export function getAuthHeaders() {
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   return {
-    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   };
 }

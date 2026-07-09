@@ -17,13 +17,12 @@ const Dashboard = () => {
   useEffect(() => {
     // Get user from storage
     const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     
-    // Check both user AND token for better security
-    if (storedUser && token) {
+    // Check user for security
+    if (storedUser) {
       setUser(JSON.parse(storedUser));
     } else {
-      console.log('No user or token found, redirecting to login');
+      console.log('No active user session found, redirecting to login');
       navigate('/login');
     }
     setLoading(false);

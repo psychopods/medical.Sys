@@ -93,21 +93,17 @@ const Login = () => {
       const data = await login(identifier, password);
       
       if (data.success) {
-        const tokenToStore = data.accessToken || data.token;
-        
         // Save user ID to localStorage for local writes attribution
         if (data.user?.id) {
           localStorage.setItem('userId', data.user.id);
         }
 
         if (rememberMe) {
-          localStorage.setItem('token', tokenToStore);
           localStorage.setItem('user', JSON.stringify(data.user));
           if (data.session) {
             localStorage.setItem('session', JSON.stringify(data.session));
           }
         } else {
-          sessionStorage.setItem('token', tokenToStore);
           sessionStorage.setItem('user', JSON.stringify(data.user));
           if (data.session) {
             sessionStorage.setItem('session', JSON.stringify(data.session));
