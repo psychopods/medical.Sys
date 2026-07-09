@@ -13,14 +13,39 @@ const Partners = () => {
   };
 
   const partners = [
-    { id: 1, name: 'TRHM', logo: '/trhm.jpg' },
-    { id: 2, name: 'Mwanza EV', logo: '/mwanza_ev.jpg' },
-    { id: 3, name: 'MITzKITS', logo: '/mitz-logo.png' }
+    { 
+      id: 1, 
+      name: 'TRHM', 
+      logo: '/trhm.jpg',
+      website: 'https://tanzaniaruralhealth.or.tz/'
+    },
+    { 
+      id: 2, 
+      name: 'Mwanza EV', 
+      logo: '/mwanza_ev.jpg',
+      website: 'https://mwanza.de/wps/'
+    },
+    { 
+      id: 3, 
+      name: 'MITzKITS', 
+      logo: '/mitz-logo.png',
+      website: 'https://www.mitzkits.co.tz/'
+    }
   ];
 
   // Handle image error - show placeholder with first letter
   const handleImageError = (partnerId, partnerName) => {
     setImageErrors(prev => ({ ...prev, [partnerId]: true }));
+  };
+
+  // Handle logo click - open website in new tab
+  const handleLogoClick = (website, partnerName) => {
+    if (website) {
+      window.open(website, '_blank', 'noopener,noreferrer');
+      showToast(`Opening ${partnerName} website...`, 'success');
+    } else {
+      showToast(`Website for ${partnerName} not available`, 'error');
+    }
   };
 
   // Duplicate partners for seamless looping
@@ -58,7 +83,18 @@ const Partners = () => {
             <div className="marquee-content">
               {duplicatedPartners.map((partner, index) => (
                 <div className="partner-logo-item" key={`${partner.id}-${index}`}>
-                  <div className="partner-logo">
+                  <div 
+                    className="partner-logo"
+                    onClick={() => handleLogoClick(partner.website, partner.name)}
+                    style={{ cursor: 'pointer' }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        handleLogoClick(partner.website, partner.name);
+                      }
+                    }}
+                  >
                     {imageErrors[partner.id] ? (
                       <div className="partner-logo-placeholder">
                         <span className="placeholder-text">{partner.name.charAt(0)}</span>
@@ -73,6 +109,7 @@ const Partners = () => {
                     )}
                     <div className="partner-name-tooltip">
                       <span>{partner.name}</span>
+                      <span className="tooltip-sub">Click to visit</span>
                     </div>
                   </div>
                 </div>

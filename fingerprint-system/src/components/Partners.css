@@ -83,6 +83,7 @@
   border: 3px solid #ffd700;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  cursor: pointer;
 }
 
 .partner-image {
@@ -118,12 +119,12 @@
 /* Tooltip on hover */
 .partner-name-tooltip {
   position: absolute;
-  bottom: -35px;
+  bottom: -45px;
   left: 50%;
   transform: translateX(-50%);
   background: #1e293b;
   color: white;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
@@ -133,6 +134,16 @@
   transition: all 0.3s ease;
   z-index: 10;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.tooltip-sub {
+  font-size: 10px;
+  font-weight: 400;
+  color: #94a3b8;
 }
 
 .partner-name-tooltip::before {
@@ -140,30 +151,25 @@
   position: absolute;
   top: -6px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) rotate(45deg);
   width: 12px;
   height: 12px;
   background: #1e293b;
-  transform: rotate(45deg);
 }
 
 .partner-logo:hover .partner-name-tooltip {
   opacity: 1;
   visibility: visible;
-  bottom: -45px;
 }
 
 .partner-logo:hover {
-  transform: scale(1.05);
+  transform: scale(1.08);
+  border-color: #4f46e5;
+  box-shadow: 0 8px 30px rgba(79, 70, 229, 0.3);
 }
 
 .partner-logo:hover .partner-image {
   transform: scale(1.02);
-}
-
-.partner-logo:hover {
-  border-color: #4f46e5;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 /* Marquee Animation - Slow moving */
@@ -201,6 +207,10 @@
   border-left-color: #10b981;
 }
 
+.toast-notification.error {
+  border-left-color: #ef4444;
+}
+
 .toast-content {
   display: flex;
   align-items: center;
@@ -210,6 +220,10 @@
 
 .toast-content svg {
   color: #10b981;
+}
+
+.toast-notification.error .toast-content svg {
+  color: #ef4444;
 }
 
 .toast-content span {
@@ -288,6 +302,7 @@
   .partner-name-tooltip {
     font-size: 10px;
     padding: 4px 8px;
+    bottom: -38px;
   }
   
   .toast-notification {
@@ -326,13 +341,9 @@
   }
   
   .partner-name-tooltip {
-    bottom: -30px;
+    bottom: -32px;
     font-size: 9px;
     padding: 3px 6px;
-  }
-  
-  .partner-logo:hover .partner-name-tooltip {
-    bottom: -38px;
   }
 }
 
