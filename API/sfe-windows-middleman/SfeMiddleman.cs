@@ -120,7 +120,8 @@ namespace SfeWindowsProxy
         // ----------------------------------------------------------------------------------
         static void Main(string[] args)
         {
-            if (args.Length > 0 && int.TryParse(args[0], out int customPort))
+            int customPort = 0;
+            if (args.Length > 0 && int.TryParse(args[0], out customPort))
             {
                 port = customPort;
             }
@@ -128,24 +129,24 @@ namespace SfeWindowsProxy
             Console.WriteLine("=====================================================");
             Console.WriteLine("        SFE Windows Biometric Proxy Server           ");
             Console.WriteLine("=====================================================");
-            Console.WriteLine($"Running as {(Environment.Is64BitProcess ? "64-bit" : "32-bit")} process.");
+            Console.WriteLine("Running as " + (Environment.Is64BitProcess ? "64-bit" : "32-bit") + " process.");
             Console.WriteLine("Make sure appropriate DLLs are in this directory:");
             Console.WriteLine("- 32-bit: SFE.dll, SFEMediator.dll");
             Console.WriteLine("- 64-bit: SFE64.dll, SFEMediator64.dll");
             Console.WriteLine("=====================================================\n");
 
             listener = new HttpListener();
-            listener.Prefixes.Add($"http://localhost:{port}/");
+            listener.Prefixes.Add("http://localhost:" + port + "/");
             
             try
             {
                 listener.Start();
-                Console.WriteLine($"Proxy server is listening on http://localhost:{port}/");
+                Console.WriteLine("Proxy server is listening on http://localhost:" + port + "/");
                 Console.WriteLine("Press Ctrl+C to exit...\n");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error starting HTTP listener: {ex.Message}");
+                Console.WriteLine("Error starting HTTP listener: " + ex.Message);
                 Console.WriteLine("Make sure you are running as Administrator if required, or port is free.");
                 return;
             }
@@ -159,7 +160,7 @@ namespace SfeWindowsProxy
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Listener error: {ex.Message}");
+                    Console.WriteLine("Listener error: " + ex.Message);
                     break;
                 }
             }
@@ -212,7 +213,8 @@ namespace SfeWindowsProxy
             catch (Exception ex)
             {
                 response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                jsonResponse = $"{{\"success\":false,\"error\":\"Internal Server Error: {ex.Message.Replace("\"", "\\\"")}\"}}";
+                string cleanMsg = ex.Message.Replace("\"", "\\\"");
+                jsonResponse = "{\"success\":false,\"error\":\"Internal Server Error: " + cleanMsg + "\"}";
             }
 
             byte[] buffer = Encoding.UTF8.GetBytes(jsonResponse);
@@ -224,7 +226,7 @@ namespace SfeWindowsProxy
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error writing response: {ex.Message}");
+                Console.WriteLine("Error writing response: " + ex.Message);
             }
         }
 
@@ -235,21 +237,22 @@ namespace SfeWindowsProxy
         {
             // Parse sensor type from query string (default is SENSOR_EB6048 = 4)
             int sensorType = SENSOR_EB6048;
+            int parsedSensor = 0;
             string sensorParam = request.QueryString["sensorType"];
-            if (!string.IsNullOrEmpty(sensorParam) && int.TryParse(sensorParam, out int parsedSensor))
+            if (!string.IsNullOrEmpty(sensorParam) && int.TryParse(sensorParam, out parsedSensor))
             {
                 sensorType = parsedSensor;
             }
 
-            Console.WriteLine($"[Capture] Starting scan (Sensor Type: {sensorType})...");
+            Console.WriteLine("[Capture] Starting scan (Sensor Type: " + sensorType + ")...");
 
             // Open device
             // We use a dummy file name "temp.db" to initialize the SFE mediator
             int openRet = SfemOpen("temp.db", sensorType, 0);
             if (openRet < 0)
             {
-                Console.WriteLine($"[Capture] Open failed (code: {openRet})");
-                return $"{{\"success\":false,\"error\":\"Failed to open biometric reader (code: {openRet})\"}}";
+                Console.WriteLine("[Capture] Open failed (code: " + openRet + ")");
+                return "{\"success\":false,\"error\":\"Failed to open biometric reader (code: " + openRet + ")\"}";
             }
 
             try
@@ -264,9 +267,9 @@ namespace SfeWindowsProxy
                     int isFinger = SfemIsFinger();
                     if (isFinger < 0)
                     {
-                        Console.WriteLine($"[Capture] IsFinger error (code: {isFinger})");
+                        Console.WriteLine("[Capture] IsFinger error (code: " + isFinger + ")");
                         SfemClose();
-                        return $"{{\"success\":false,\"error\":\"Sensor read error (code: {isFinger})\"}}";
+                        return "{\"success\":false,\"error\":\"Sensor read error (code: " + isFinger + ")\"}";
                     }
 
                     if (isFinger > 0)
@@ -289,9 +292,9 @@ namespace SfeWindowsProxy
                 int capRet = SfemCapture();
                 if (capRet < 0)
                 {
-                    Console.WriteLine($"[Capture] Capture failed (code: {capRet})");
+                    Console.WriteLine("[Capture] Capture failed (code: " + capRet + ")");
                     SfemClose();
-                    return $"{{\"success\":false,\"error\":\"Failed to capture image (code: {capRet})\"}}";
+                    return "{\"success\":false,\"error\":\"Failed to capture image (code: " + capRet + ")\"}";
                 }
 
                 // Extract template
@@ -299,21 +302,22 @@ namespace SfeWindowsProxy
                 int extRet = SfemTemplateGetFromImage(template);
                 if (extRet < 0)
                 {
-                    Console.WriteLine($"[Capture] Template extraction failed (code: {extRet})");
+                    Console.WriteLine("[Capture] Template extraction failed (code: " + extRet + ")");
                     SfemClose();
-                    return $"{{\"success\":false,\"error\":\"Failed to extract template (code: {extRet})\"}}";
+                    return "{\"success\":false,\"error\":\"Failed to extract template (code: " + extRet + ")\"}";
                 }
 
                 Console.WriteLine("[Capture] Fingerprint successfully captured!");
                 string base64Template = Convert.ToBase64String(template);
                 SfemClose();
 
-                return $"{{\"success\":true,\"template\":\"{base64Template}\"}}";
+                return "{\"success\":true,\"template\":\"" + base64Template + "\"}";
             }
             catch (Exception ex)
             {
                 SfemClose();
-                return $"{{\"success\":false,\"error\":\"Capture Exception: {ex.Message.Replace("\"", "\\\"")}\"}}";
+                string cleanMsg = ex.Message.Replace("\"", "\\\"");
+                return "{\"success\":false,\"error\":\"Capture Exception: " + cleanMsg + "\"}";
             }
         }
 
@@ -343,7 +347,7 @@ namespace SfeWindowsProxy
 
                 if (tempA.Length < FEATURE_SIZE || tempB.Length < FEATURE_SIZE)
                 {
-                    return $"{{\"success\":false,\"error\":\"Invalid template size. Must decode to {FEATURE_SIZE} bytes.\"}}";
+                    return "{\"success\":false,\"error\":\"Invalid template size. Must decode to " + FEATURE_SIZE + " bytes.\"}";
                 }
 
                 Console.WriteLine("[Verify] Matching templates...");
@@ -352,7 +356,7 @@ namespace SfeWindowsProxy
                 int openRet = SfemOpen("temp.db", SENSOR_EB6048, 0);
                 if (openRet < 0 && openRet != -100)
                 {
-                    return $"{{\"success\":false,\"error\":\"Failed to open engine (code: {openRet})\"}}";
+                    return "{\"success\":false,\"error\":\"Failed to open engine (code: " + openRet + ")\"}";
                 }
 
                 // Load template B into slot 0
@@ -360,21 +364,21 @@ namespace SfeWindowsProxy
                 if (setRet.ToInt64() < 0)
                 {
                     SfemClose();
-                    return $"{{\"success\":false,\"error\":\"Failed to load template (code: {setRet.ToInt64()})\"}}";
+                    return "{\"success\":false,\"error\":\"Failed to load template (code: " + setRet.ToInt64() + ")\"}";
                 }
 
                 // Verify template A against slot 0
                 IntPtr verifyRet = SfeFp(FP_VERIFYFPDATA, tempA, IntPtr.Zero, IntPtr.Zero);
                 bool matched = verifyRet.ToInt64() > 0;
 
-                Console.WriteLine($"[Verify] Finished. Match: {matched} (code: {verifyRet.ToInt64()})");
+                Console.WriteLine("[Verify] Finished. Match: " + matched + " (code: " + verifyRet.ToInt64() + ")");
 
                 SfemClose();
-                return $"{{\"success\":true,\"matched\":{(matched ? "true" : "false")},\"code\":{verifyRet.ToInt64()}}}";
+                return "{\"success\":true,\"matched\":" + (matched ? "true" : "false") + ",\"code\":" + verifyRet.ToInt64() + "}";
             }
             catch (Exception ex)
             {
-                return $"{{\"success\":false,\"error\":\"Verification failed: {ex.Message.Replace("\"", "\\\"")}\"}}";
+                return "{\"success\":false,\"error\":\"Verification failed: " + ex.Message.Replace("\"", "\\\"") + "\"}";
             }
         }
 
@@ -382,7 +386,7 @@ namespace SfeWindowsProxy
         private static string ExtractJsonValue(string json, string key)
         {
             string pattern = "\"" + key + "\"[\\s]*:[\\s]*\"([^\"]+)\"";
-            var match = Regex.Match(json, pattern);
+            Match match = Regex.Match(json, pattern);
             if (match.Success)
             {
                 return match.Groups[1].Value;
