@@ -1562,19 +1562,38 @@ const ChildRegistration = () => {
       const captured = await captureFromHardware(4);
       if (captured.success && captured.templateBase64) {
         let matchedChild = null;
+        let checkedCount = 0;
+        let skippedCount = 0;
+        let lastDiagnostics = "";
         if (Array.isArray(fingerprintData)) {
           for (const fp of fingerprintData) {
             const candidateTemplate = fp.templateBase64 || fp.template_data || fp.templateData;
             if (candidateTemplate) {
               try {
+                checkedCount++;
                 const check = await verifyWithHardware(captured.templateBase64, candidateTemplate);
+                lastDiagnostics = check.diagnostics || `code=${check.code}`;
+                console.debug("Fingerprint verify candidate", {
+                  childId: fp.childId || fp.child_id,
+                  fingerIndex: fp.fingerIndex || fp.finger_index,
+                  matched: check.matched,
+                  code: check.code,
+                  diagnostics: check.diagnostics,
+                });
                 if (check && check.matched) {
                   matchedChild = childrenData.find(c => c.id === (fp.childId || fp.child_id));
                   break;
                 }
               } catch (e) {
-                // Ignore single template format mismatches
+                lastDiagnostics = e.message;
+                console.warn("Fingerprint verify candidate failed", {
+                  childId: fp.childId || fp.child_id,
+                  fingerIndex: fp.fingerIndex || fp.finger_index,
+                  error: e.message,
+                });
               }
+            } else {
+              skippedCount++;
             }
           }
         }
@@ -1607,7 +1626,13 @@ const ChildRegistration = () => {
           setFingerprintExists(false);
           setExistingChild(null);
           setExistingChildImages(null);
-          showToast("✗ Fingerprint not found. No matching record.", "info");
+          console.warn("Fingerprint verification finished without match", {
+            storedFingerprintRows: Array.isArray(fingerprintData) ? fingerprintData.length : 0,
+            checkedCount,
+            skippedCount,
+            lastDiagnostics,
+          });
+          showToast(`Fingerprint not found. Checked ${checkedCount}, skipped ${skippedCount}.`, "info");
         }
       }
     } catch (error) {

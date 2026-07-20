@@ -73,6 +73,24 @@ namespace SfeWindowsProxy
         [DllImport("SFEMediator64.dll", EntryPoint = "sfem_TemplateGetFromImage", CallingConvention = CallingConvention.Cdecl)]
         private static extern int sfem64_TemplateGetFromImage([In, Out, MarshalAs(UnmanagedType.LPArray, SizeConst = FEATURE_SIZE)] byte[] pTemplate);
 
+        [DllImport("SFEMediator.dll", EntryPoint = "sfem_TemplateEnroll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sfem32_TemplateEnroll(int nID, int nFingerNum, int Manager, [In, Out, MarshalAs(UnmanagedType.LPArray, SizeConst = FEATURE_SIZE)] byte[] pTemplate);
+
+        [DllImport("SFEMediator64.dll", EntryPoint = "sfem_TemplateEnroll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sfem64_TemplateEnroll(int nID, int nFingerNum, int Manager, [In, Out, MarshalAs(UnmanagedType.LPArray, SizeConst = FEATURE_SIZE)] byte[] pTemplate);
+
+        [DllImport("SFEMediator.dll", EntryPoint = "sfem_TemplateVerify", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sfem32_TemplateVerify(int nID, int nFingerNum, [In, Out, MarshalAs(UnmanagedType.LPArray, SizeConst = FEATURE_SIZE)] byte[] pTemplate);
+
+        [DllImport("SFEMediator64.dll", EntryPoint = "sfem_TemplateVerify", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sfem64_TemplateVerify(int nID, int nFingerNum, [In, Out, MarshalAs(UnmanagedType.LPArray, SizeConst = FEATURE_SIZE)] byte[] pTemplate);
+
+        [DllImport("SFEMediator.dll", EntryPoint = "sfem_DeleteAll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sfem32_DeleteAll();
+
+        [DllImport("SFEMediator64.dll", EntryPoint = "sfem_DeleteAll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sfem64_DeleteAll();
+
         // ----------------------------------------------------------------------------------
         // DllImports for SFE
         // ----------------------------------------------------------------------------------
@@ -110,6 +128,21 @@ namespace SfeWindowsProxy
         private static int SfemTemplateGetFromImage(byte[] template)
         {
             return Environment.Is64BitProcess ? sfem64_TemplateGetFromImage(template) : sfem32_TemplateGetFromImage(template);
+        }
+
+        private static int SfemTemplateEnroll(int id, int fingerNum, int manager, byte[] template)
+        {
+            return Environment.Is64BitProcess ? sfem64_TemplateEnroll(id, fingerNum, manager, template) : sfem32_TemplateEnroll(id, fingerNum, manager, template);
+        }
+
+        private static int SfemTemplateVerify(int id, int fingerNum, byte[] template)
+        {
+            return Environment.Is64BitProcess ? sfem64_TemplateVerify(id, fingerNum, template) : sfem32_TemplateVerify(id, fingerNum, template);
+        }
+
+        private static int SfemDeleteAll()
+        {
+            return Environment.Is64BitProcess ? sfem64_DeleteAll() : sfem32_DeleteAll();
         }
 
         private static IntPtr SfeFp(int funcNo, IntPtr param1, IntPtr param2, IntPtr param3)
@@ -516,24 +549,50 @@ namespace SfeWindowsProxy
                     return "{\"success\":false,\"error\":\"Invalid template size. Must decode to " + FEATURE_SIZE + " bytes.\"}";
                 }
 
-                int openRet = SfemOpen("temp.db", SENSOR_EB6048, 0);
-                if (openRet < 0 && openRet != -100)
+                string verifyDb = "verify_temp.db";
+                try
                 {
-                    return "{\"success\":false,\"error\":\"Failed to open engine (code: " + openRet + ")\"}";
+                    if (File.Exists(verifyDb))
+                    {
+                        File.Delete(verifyDb);
+                    }
+                }
+                catch
+                {
+                    verifyDb = "";
                 }
 
-                IntPtr setRet = SfeFp(FP_SETFPDATA, tempB, IntPtr.Zero, IntPtr.Zero);
-                if (setRet.ToInt64() < 0)
+                int openRet = -100;
+                int openedSensor = -1;
+                for (int i = 0; i < SENSOR_PROBE_ORDER.Length; i++)
+                {
+                    openRet = SfemOpen(verifyDb, SENSOR_PROBE_ORDER[i], 0);
+                    if (openRet == 0)
+                    {
+                        openedSensor = SENSOR_PROBE_ORDER[i];
+                        break;
+                    }
+                    SfemClose();
+                }
+
+                if (openRet != 0)
+                {
+                    return "{\"success\":false,\"error\":\"Failed to open engine for template verification (code: " + openRet + ")\",\"diagnostics\":\"lenA=" + tempA.Length + ",lenB=" + tempB.Length + ",open=" + openRet + "\"}";
+                }
+
+                int clearRet = SfemDeleteAll();
+                int enrollRet = SfemTemplateEnroll(1, 1, 0, tempB);
+                if (enrollRet < 0)
                 {
                     SfemClose();
-                    return "{\"success\":false,\"error\":\"Failed to load template (code: " + setRet.ToInt64() + ")\"}";
+                    return "{\"success\":false,\"error\":\"Failed to enroll candidate template (code: " + enrollRet + ")\",\"diagnostics\":\"lenA=" + tempA.Length + ",lenB=" + tempB.Length + ",sensor=" + openedSensor + ",open=" + openRet + ",clear=" + clearRet + ",enroll=" + enrollRet + "\"}";
                 }
 
-                IntPtr verifyRet = SfeFp(FP_VERIFYFPDATA, tempA, IntPtr.Zero, IntPtr.Zero);
-                bool matched = verifyRet.ToInt64() > 0;
+                int verifyRet = SfemTemplateVerify(1, 1, tempA);
+                bool matched = verifyRet == 0;
 
                 SfemClose();
-                return "{\"success\":true,\"matched\":" + (matched ? "true" : "false") + ",\"code\":" + verifyRet.ToInt64() + "}";
+                return "{\"success\":true,\"matched\":" + (matched ? "true" : "false") + ",\"code\":" + verifyRet + ",\"diagnostics\":\"lenA=" + tempA.Length + ",lenB=" + tempB.Length + ",sensor=" + openedSensor + ",open=" + openRet + ",clear=" + clearRet + ",enroll=" + enrollRet + ",verify=" + verifyRet + "\"}";
             }
             catch (Exception ex)
             {

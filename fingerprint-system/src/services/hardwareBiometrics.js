@@ -73,8 +73,15 @@ export async function verifyWithHardware(templateA, templateB) {
       },
       body: JSON.stringify({ templateA, templateB })
     });
-    return await response.json();
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.diagnostics ? `${result.error} Diagnostics: ${result.diagnostics}` : result.error);
+    }
+    return result;
   } catch (error) {
+    if (error.message && !error.message.includes('Failed to communicate')) {
+      throw error;
+    }
     throw new Error("Failed to communicate with local biometric engine.");
   }
 }
