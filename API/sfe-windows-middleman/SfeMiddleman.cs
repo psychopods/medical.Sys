@@ -175,7 +175,7 @@ namespace SfeWindowsProxy
                 int fingerArea = SfemIsFinger();
                 diagnostics.Append("capture=").Append(capRet).Append(",area=").Append(fingerArea).Append(",");
 
-                if (fingerArea >= 0)
+                if (fingerArea > 0)
                 {
                     sawFinger = true;
 
@@ -184,7 +184,8 @@ namespace SfeWindowsProxy
                         maxFingerArea = fingerArea;
                     }
 
-                    if (fingerArea > 45 || fingerArea < maxFingerArea + 2)
+                    // Only proceed when finger contact area is significant (>25)
+                    if (fingerArea >= 25 || (maxFingerArea >= 20 && fingerArea >= maxFingerArea - 3))
                     {
                         byte[] image = new byte[256 * 256];
                         int imgRet = SfemGetImage(image);
@@ -199,6 +200,7 @@ namespace SfeWindowsProxy
             diagnostics.Append(sawFinger ? "fingerNeverStabilized; " : "fingerTimeout; ");
             return false;
         }
+
 
         private static string TryCaptureWithSensor(int sensorType, StringBuilder diagnostics)
         {
