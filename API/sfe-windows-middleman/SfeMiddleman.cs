@@ -29,7 +29,7 @@ namespace SfeWindowsProxy
         private const int FP_VERIFYFPDATA = 44;
 
         private const int FEATURE_SIZE = 1404;
-        private static readonly int[] SENSOR_PROBE_ORDER = new int[] { 4, 5, 6, 0, 1, 2, 3, 7, 8 };
+        private static readonly int[] SENSOR_PROBE_ORDER = new int[] { 5, 1, 4, 6, 0, 2, 3, 7, 8 };
 
         // ----------------------------------------------------------------------------------
         // DllImports for SFEMediator
@@ -117,10 +117,10 @@ namespace SfeWindowsProxy
             }
         }
 
-        private static string EscapeJson(string value)
+        private static string EscapeJson(string str)
         {
-            if (value == null) return "";
-            return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            if (string.IsNullOrEmpty(str)) return "";
+            return str.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
         }
 
         private static List<int> BuildSensorProbeOrder(int requestedSensorType)
@@ -166,61 +166,102 @@ namespace SfeWindowsProxy
         {
             diagnostics.Append("sensor=").Append(sensorType).Append(":");
 
-            int openRet = SfemOpen("temp.db", sensorType, 0);
-            if (openRet < 0)
+            int[] brValues = new int[] { 0, 10, 20, -10, -20 };
+
+            for (int brIdx = 0; brIdx < brValues.Length; brIdx++)
             {
-                IntPtr fpOpenRet = SfeFp(FP_OPEN, (IntPtr)sensorType, IntPtr.Zero, IntPtr.Zero);
-                if (fpOpenRet.ToInt64() >= 0)
+                int br = brValues[brIdx];
+                int openRet = SfemOpen("temp.db", sensorType, br);
+                if (openRet < 0)
                 {
-                    openRet = (int)fpOpenRet.ToInt64();
-                    diagnostics.Append("fpOpen=").Append(openRet).Append(",");
-                }
-            }
-
-            if (openRet < 0)
-            {
-                diagnostics.Append("open=").Append(openRet).Append("; ");
-                return null;
-            }
-
-            diagnostics.Append("open=").Append(openRet).Append(",");
-
-            try
-            {
-                if (!WaitForFinger(diagnostics))
-                {
-                    return null;
-                }
-
-                for (int attempt = 1; attempt <= 3; attempt++)
-                {
-                    int capRet = SfemCapture();
-                    diagnostics.Append("attempt=").Append(attempt).Append(",capture=").Append(capRet).Append(",");
-
-                    if (capRet < 0)
+                    IntPtr fpOpenRet = SfeFp(FP_OPEN, (IntPtr)sensorType, (IntPtr)br, IntPtr.Zero);
+                    if (fpOpenRet.ToInt64() >= 0)
                     {
-                        Thread.Sleep(250);
-                        continue;
+                        openRet = (int)fpOpenRet.ToInt64();
+                    }
+                }
+
+                if (openRet < 0)
+                {
+                    if (brIdx == 0) diagnostics.Append("open=").Append(openRet).Append("; ");
+                    continue;
+                }
+
+                diagnostics.Append("open=").Append(openRet).Append("(br=").Append(br).Append("),");
+
+                try
+                {
+                    if (!WaitForFinger(diagnostics))
+                    {
+                        return null;
                     }
 
-                    byte[] template = new byte[FEATURE_SIZE];
-                    int extRet = SfemTemplateGetFromImage(template);
-                    diagnostics.Append("extract=").Append(extRet).Append("; ");
-
-                    if (extRet >= 0)
+                    for (int attempt = 1; attempt <= 3; attempt++)
                     {
-                        return Convert.ToBase64String(template);
+                        int capRet = SfemCapture();
+                        if (capRet < 0)
+                        {
+                            IntPtr fpCapRet = SfeFp(4 /* FP_CAPTURE */, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                            capRet = (int)fpCapRet.ToInt64();
+                        }
+
+                        diagnostics.Append("attempt=").Append(attempt).Append(",capture=").Append(capRet).Append(",");
+
+                        if (capRet < 0)
+                        {
+                            Thread.Sleep(200);
+                            continue;
+                        }
+
+                        byte[] template = new byte[FEATURE_SIZE];
+                        int extRet = SfemTemplateGetFromImage(template);
+
+                        // Low-level SFE.dll FP_FEATUREGETFROMIMAGE (Func 10)
+                        if (extRet < 0)
+                        {
+                            IntPtr fpExtRet = SfeFp(10, template, IntPtr.Zero, IntPtr.Zero);
+                            if (fpExtRet.ToInt64() >= 0)
+                            {
+                                extRet = (int)fpExtRet.ToInt64();
+                            }
+                        }
+
+                        // Low-level SFE.dll FP_GETFPDATA (Func 11)
+                        if (extRet < 0)
+                        {
+                            IntPtr fpExtRet2 = SfeFp(11, template, IntPtr.Zero, IntPtr.Zero);
+                            if (fpExtRet2.ToInt64() >= 0)
+                            {
+                                extRet = (int)fpExtRet2.ToInt64();
+                            }
+                        }
+
+                        diagnostics.Append("extract=").Append(extRet).Append("; ");
+
+                        bool hasData = false;
+                        if (extRet >= 0)
+                        {
+                            for (int k = 0; k < template.Length; k++)
+                            {
+                                if (template[k] != 0) { hasData = true; break; }
+                            }
+                        }
+
+                        if (hasData)
+                        {
+                            return Convert.ToBase64String(template);
+                        }
+
+                        Thread.Sleep(200);
                     }
-
-                    Thread.Sleep(350);
                 }
+                finally
+                {
+                    SfemClose();
+                }
+            }
 
-                return null;
-            }
-            finally
-            {
-                SfemClose();
-            }
+            return null;
         }
 
         [STAThread]
