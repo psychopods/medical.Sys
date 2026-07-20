@@ -10,7 +10,9 @@ import {
   triggerSync,
   initSyncWorker,
 } from "../../services/api.js";
+import { captureFromHardware, verifyWithHardware } from "../../services/hardwareBiometrics.js";
 import { executeQuery } from "../../services/db.js";
+
 
 // API base URL
 import { API_ENDPOINTS, API_BASE_URL } from '../../config/endpoints.js';
@@ -538,45 +540,76 @@ const NurseDashboard = ({ user, onLogout }) => {
   // Enroll fingerprint
   const enrollFingerprint = async (childId, qualityScore) => {
     try {
-      const res = await enrollBiometric({
-        childId: childId,
-        fingerIndex: 1,
-        templateBase64: "sample_fingerprint_template_base64",
-        qualityScore: qualityScore,
-        status: "PENDING",
-      });
-      return res.biometric;
+      const captured = await captureFromHardware(4);
+      if (captured.success && captured.templateBase64) {
+        const res = await enrollBiometric({
+          childId: childId,
+          fingerIndex: 1,
+          templateBase64: captured.templateBase64,
+          qualityScore: captured.qualityScore || qualityScore || 85,
+          status: "PENDING",
+        });
+        return res.biometric;
+      }
     } catch (error) {
-      console.error("Error enrolling fingerprint:", error);
+      console.error("Error enrolling fingerprint from scanner:", error);
     }
     return null;
   };
 
-  // Verify fingerprint (simulated for now)
+  // Verify fingerprint
   const verifyFingerprint = async () => {
     setIsVerifying(true);
-    setTimeout(() => {
-      const matched = Math.random() > 0.5;
-      if (matched && childrenData.length > 0) {
-        const child = childrenData[0];
-        setExistingChild({
-          id: child.id,
-          customSerialId: child.customSerialId,
-          fullName: child.fullName,
-          estimatedBirthYear: child.estimatedBirthYear,
-          age: calculateAgeFromYear(child.estimatedBirthYear),
-          gender: child.gender,
-          locationName: getLocationName(child.primaryLocationId),
-          createdAt: child.createdAt,
-          lastVisit: new Date().toLocaleDateString(),
-        });
-        setFingerprintExists(true);
+    try {
+      const captured = await captureFromHardware(4);
+      if (captured.success && captured.templateBase64) {
+        // Query stored biometrics to find match
+        const biometricsList = await executeQuery('SELECT * FROM biometric_fingerprints');
+        let matchedChild = null;
+
+        if (Array.isArray(biometricsList)) {
+          for (const bio of biometricsList) {
+            if (bio.template_data) {
+              try {
+                const check = await verifyWithHardware(captured.templateBase64, bio.template_data);
+                if (check && check.matched) {
+                  matchedChild = childrenData.find(c => c.id === bio.child_id);
+                  break;
+                }
+              } catch (e) {
+                // Ignore mismatch
+              }
+            }
+          }
+        }
+
+        if (matchedChild) {
+          setExistingChild({
+            id: matchedChild.id,
+            customSerialId: matchedChild.customSerialId,
+            fullName: matchedChild.fullName,
+            estimatedBirthYear: matchedChild.estimatedBirthYear,
+            age: calculateAgeFromYear(matchedChild.estimatedBirthYear),
+            gender: matchedChild.gender,
+            locationName: getLocationName(matchedChild.primaryLocationId),
+            createdAt: matchedChild.createdAt,
+            lastVisit: new Date().toLocaleDateString(),
+          });
+          setFingerprintExists(true);
+        } else {
+          setFingerprintExists(false);
+        }
       } else {
         setFingerprintExists(false);
       }
+    } catch (error) {
+      console.error("Verification error:", error);
+      setFingerprintExists(false);
+    } finally {
       setIsVerifying(false);
-    }, 1500);
+    }
   };
+
 
   // Get location name
   const getLocationName = (locationId) => {

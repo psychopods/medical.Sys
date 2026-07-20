@@ -30,6 +30,12 @@ import {
   deleteChild as apiDeleteChild,
   getChildById as apiGetChildById,
 } from "../../services/api.js";
+import {
+  captureFromHardware,
+  verifyWithHardware,
+  checkHardwareProxyStatus
+} from "../../services/hardwareBiometrics.js";
+
 
 // Finger names and hand mapping
 const fingerNames = {
@@ -128,14 +134,17 @@ const ChildRegistration = () => {
   const [selectedFinger, setSelectedFinger] = useState(1);
   const [fingerCaptures, setFingerCaptures] = useState({});
   const [fingerQuality, setFingerQuality] = useState({});
+  const [fingerTemplates, setFingerTemplates] = useState({});
   const [capturedFingers, setCapturedFingers] = useState([]);
 
   // Fingerprint enrollment during registration
   const [regSelectedFinger, setRegSelectedFinger] = useState(null);
   const [regFingerCaptures, setRegFingerCaptures] = useState({});
   const [regFingerQuality, setRegFingerQuality] = useState({});
+  const [regFingerTemplates, setRegFingerTemplates] = useState({});
   const [regCapturedFingers, setRegCapturedFingers] = useState([]);
   const [regIsCapturing, setRegIsCapturing] = useState(false);
+
 
   const [showPrintPage, setShowPrintPage] = useState(false);
   const [printDataType, setPrintDataType] = useState("");
@@ -1113,25 +1122,33 @@ const ChildRegistration = () => {
     setSelectedFinger(fingerIndex);
   };
 
-  const handleCaptureFingerprint = () => {
+  const handleCaptureFingerprint = async () => {
     if (!selectedFinger) {
       showToast("Please select a finger first", "error");
       return;
     }
     setIsCapturing(true);
-    setTimeout(() => {
-      const quality = Math.floor(Math.random() * 30) + 70;
-      setFingerQuality((prev) => ({ ...prev, [selectedFinger]: quality }));
-      setFingerCaptures((prev) => ({ ...prev, [selectedFinger]: true }));
-      if (!capturedFingers.includes(selectedFinger)) {
-        setCapturedFingers((prev) => [...prev, selectedFinger]);
+    try {
+      showToast(`Place finger ${fingerNames[selectedFinger].name} on scanner...`, "info");
+      const result = await captureFromHardware(4);
+      if (result.success && result.templateBase64) {
+        setFingerQuality((prev) => ({ ...prev, [selectedFinger]: result.qualityScore }));
+        setFingerCaptures((prev) => ({ ...prev, [selectedFinger]: true }));
+        setFingerTemplates((prev) => ({ ...prev, [selectedFinger]: result.templateBase64 }));
+        if (!capturedFingers.includes(selectedFinger)) {
+          setCapturedFingers((prev) => [...prev, selectedFinger]);
+        }
+        showToast(
+          `Finger ${fingerNames[selectedFinger].name} captured successfully!`,
+          "success"
+        );
       }
+    } catch (error) {
+      console.error("Biometric capture error:", error);
+      showToast(error.message || "Failed to capture fingerprint from scanner", "error");
+    } finally {
       setIsCapturing(false);
-      showToast(
-        `Finger ${fingerNames[selectedFinger].name} captured with ${quality}% quality!`,
-        "success",
-      );
-    }, 2000);
+    }
   };
 
   const handleRemoveFingerprint = (fingerIndex) => {
@@ -1144,6 +1161,11 @@ const ChildRegistration = () => {
       const newQuality = { ...prev };
       delete newQuality[fingerIndex];
       return newQuality;
+    });
+    setFingerTemplates((prev) => {
+      const newTemplates = { ...prev };
+      delete newTemplates[fingerIndex];
+      return newTemplates;
     });
     setCapturedFingers((prev) => prev.filter((f) => f !== fingerIndex));
     showToast(`Finger ${fingerNames[fingerIndex].name} removed`, "info");
@@ -1161,12 +1183,13 @@ const ChildRegistration = () => {
     try {
       for (const fingerIndex of capturedFingers) {
         try {
+          const template = fingerTemplates[fingerIndex] || `fingerprint_template_${fingerIndex}_base64`;
           const result = await apiEnrollBiometric({
             id: crypto.randomUUID(),
             childId: enrollingChild.id,
             fingerIndex: fingerIndex,
-            templateBase64: `fingerprint_template_${fingerIndex}_base64`,
-            qualityScore: fingerQuality[fingerIndex] || 80,
+            templateBase64: template,
+            qualityScore: fingerQuality[fingerIndex] || 85,
             createdAt: new Date().toISOString(),
             status: 'PENDING'
           });
@@ -1184,6 +1207,7 @@ const ChildRegistration = () => {
         setEnrollingChild(null);
         setFingerCaptures({});
         setFingerQuality({});
+        setFingerTemplates({});
         setCapturedFingers([]);
       } else {
         showToast('Failed to save fingerprints', 'error');
@@ -1198,6 +1222,7 @@ const ChildRegistration = () => {
     setEnrollingChild(null);
     setFingerCaptures({});
     setFingerQuality({});
+    setFingerTemplates({});
     setCapturedFingers([]);
   };
 
@@ -1206,6 +1231,7 @@ const ChildRegistration = () => {
     setEnrollingChild(null);
     setFingerCaptures({});
     setFingerQuality({});
+    setFingerTemplates({});
     setCapturedFingers([]);
     setIsCapturing(false);
   };
@@ -1215,28 +1241,33 @@ const ChildRegistration = () => {
     setRegSelectedFinger(fingerIndex);
   };
 
-  const handleRegCaptureFingerprint = () => {
+  const handleRegCaptureFingerprint = async () => {
     if (!regSelectedFinger) {
       showToast("Please select a finger first", "error");
       return;
     }
     setRegIsCapturing(true);
-    setTimeout(() => {
-      const quality = Math.floor(Math.random() * 30) + 70;
-      setRegFingerQuality((prev) => ({
-        ...prev,
-        [regSelectedFinger]: quality,
-      }));
-      setRegFingerCaptures((prev) => ({ ...prev, [regSelectedFinger]: true }));
-      if (!regCapturedFingers.includes(regSelectedFinger)) {
-        setRegCapturedFingers((prev) => [...prev, regSelectedFinger]);
+    try {
+      showToast(`Place finger ${fingerNames[regSelectedFinger].name} on scanner...`, "info");
+      const result = await captureFromHardware(4);
+      if (result.success && result.templateBase64) {
+        setRegFingerQuality((prev) => ({ ...prev, [regSelectedFinger]: result.qualityScore }));
+        setRegFingerCaptures((prev) => ({ ...prev, [regSelectedFinger]: true }));
+        setRegFingerTemplates((prev) => ({ ...prev, [regSelectedFinger]: result.templateBase64 }));
+        if (!regCapturedFingers.includes(regSelectedFinger)) {
+          setRegCapturedFingers((prev) => [...prev, regSelectedFinger]);
+        }
+        showToast(
+          `Finger ${fingerNames[regSelectedFinger].name} captured successfully!`,
+          "success"
+        );
       }
+    } catch (error) {
+      console.error("Biometric capture error:", error);
+      showToast(error.message || "Failed to capture fingerprint from scanner", "error");
+    } finally {
       setRegIsCapturing(false);
-      showToast(
-        `Finger ${fingerNames[regSelectedFinger].name} captured with ${quality}% quality!`,
-        "success",
-      );
-    }, 2000);
+    }
   };
 
   const handleRegRemoveFingerprint = (fingerIndex) => {
@@ -1249,6 +1280,11 @@ const ChildRegistration = () => {
       const newQuality = { ...prev };
       delete newQuality[fingerIndex];
       return newQuality;
+    });
+    setRegFingerTemplates((prev) => {
+      const newTemplates = { ...prev };
+      delete newTemplates[fingerIndex];
+      return newTemplates;
     });
     setRegCapturedFingers((prev) => prev.filter((f) => f !== fingerIndex));
     showToast(`Finger ${fingerNames[fingerIndex].name} removed`, "info");
@@ -1282,12 +1318,13 @@ const ChildRegistration = () => {
         let successCount = 0;
         for (const fingerIndex of regCapturedFingers) {
           try {
+            const template = regFingerTemplates[fingerIndex] || `fingerprint_template_${fingerIndex}_base64`;
             const enrollResult = await apiEnrollBiometric({
               id: crypto.randomUUID(),
               childId: childId,
               fingerIndex: fingerIndex,
-              templateBase64: `fingerprint_template_${fingerIndex}_base64`,
-              qualityScore: regFingerQuality[fingerIndex] || 80,
+              templateBase64: template,
+              qualityScore: regFingerQuality[fingerIndex] || 85,
               createdAt: new Date().toISOString(),
               status: "PENDING",
             });
@@ -1511,43 +1548,69 @@ const ChildRegistration = () => {
   };
 
   // ===== VERIFICATION HANDLERS =====
-  const handleVerifyFingerprintScan = () => {
+  const handleVerifyFingerprintScan = async () => {
     setIsVerifying(true);
-    setTimeout(() => {
-      const matchedChild = Array.isArray(childrenData) ? childrenData[0] : null;
-      if (matchedChild) {
-        setExistingChild({
-          id: matchedChild.id,
-          customSerialId: matchedChild.customSerialId,
-          fullName: matchedChild.fullName,
-          estimatedBirthYear: matchedChild.estimatedBirthYear,
-          age: calculateAgeFromYear(matchedChild.estimatedBirthYear),
-          gender: matchedChild.gender,
-          locationName: getLocationName(matchedChild.primaryLocationId),
-          createdAt: matchedChild.createdAt,
-          registeredBy: matchedChild.createdByStaffId,
-          images: {
+    try {
+      showToast("Place finger on scanner to identify child...", "info");
+      const captured = await captureFromHardware(4);
+      if (captured.success && captured.templateBase64) {
+        let matchedChild = null;
+        if (Array.isArray(fingerprintData)) {
+          for (const fp of fingerprintData) {
+            const candidateTemplate = fp.templateBase64 || fp.template_data || fp.templateData;
+            if (candidateTemplate) {
+              try {
+                const check = await verifyWithHardware(captured.templateBase64, candidateTemplate);
+                if (check && check.matched) {
+                  matchedChild = childrenData.find(c => c.id === (fp.childId || fp.child_id));
+                  break;
+                }
+              } catch (e) {
+                // Ignore single template format mismatches
+              }
+            }
+          }
+        }
+
+        if (matchedChild) {
+          setExistingChild({
+            id: matchedChild.id,
+            customSerialId: matchedChild.customSerialId,
+            fullName: matchedChild.fullName,
+            estimatedBirthYear: matchedChild.estimatedBirthYear,
+            age: calculateAgeFromYear(matchedChild.estimatedBirthYear),
+            gender: matchedChild.gender,
+            locationName: getLocationName(matchedChild.primaryLocationId),
+            createdAt: matchedChild.createdAt,
+            registeredBy: matchedChild.createdByStaffId,
+            images: {
+              image1: matchedChild.image1,
+              image2: matchedChild.image2,
+              image3: matchedChild.image3,
+            },
+          });
+          setExistingChildImages({
             image1: matchedChild.image1,
             image2: matchedChild.image2,
             image3: matchedChild.image3,
-          },
-        });
-        setExistingChildImages({
-          image1: matchedChild.image1,
-          image2: matchedChild.image2,
-          image3: matchedChild.image3,
-        });
-        setFingerprintExists(true);
-        showToast("✓ Fingerprint verified! Child found in system.", "success");
-      } else {
-        setFingerprintExists(false);
-        setExistingChild(null);
-        setExistingChildImages(null);
-        showToast("✗ Fingerprint not found. No matching record.", "info");
+          });
+          setFingerprintExists(true);
+          showToast("✓ Fingerprint verified! Child found in system.", "success");
+        } else {
+          setFingerprintExists(false);
+          setExistingChild(null);
+          setExistingChildImages(null);
+          showToast("✗ Fingerprint not found. No matching record.", "info");
+        }
       }
+    } catch (error) {
+      console.error("Verification scan error:", error);
+      showToast(error.message || "Verification scan failed", "error");
+    } finally {
       setIsVerifying(false);
-    }, 1500);
+    }
   };
+
 
   const handleLoadExistingRecord = () => {
     if (existingChild && existingChild.fullName) {
