@@ -1,18 +1,21 @@
 using System;
+using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
 namespace SfeWindowsProxy
 {
     class Program
     {
-        // Port to listen on
         private static int port = 5000;
         private static HttpListener listener;
+        private static NotifyIcon trayIcon;
+        private static ContextMenu trayMenu;
 
         // Constants from SFE.h
         private const int SENSOR_EB6048 = 4;
@@ -27,7 +30,7 @@ namespace SfeWindowsProxy
         private const int FEATURE_SIZE = 1404;
 
         // ----------------------------------------------------------------------------------
-        // DllImports for SFEMediator (Handles scanning & image processing)
+        // DllImports for SFEMediator
         // ----------------------------------------------------------------------------------
         [DllImport("SFEMediator.dll", EntryPoint = "sfem_Open", CallingConvention = CallingConvention.Cdecl)]
         private static extern int sfem32_Open([MarshalAs(UnmanagedType.LPWStr)]string strDBFileName, int nSensorType, int nSensorBrAdjust);
@@ -60,7 +63,7 @@ namespace SfeWindowsProxy
         private static extern int sfem64_TemplateGetFromImage([MarshalAs(UnmanagedType.LPArray)] byte[] pTemplate);
 
         // ----------------------------------------------------------------------------------
-        // DllImports for SFE (Handles raw template comparisons)
+        // DllImports for SFE
         // ----------------------------------------------------------------------------------
         [DllImport("SFE.dll", EntryPoint = "fp", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr fp32(IntPtr FuncNo, IntPtr Param1, IntPtr Param2, IntPtr Param3);
@@ -68,9 +71,6 @@ namespace SfeWindowsProxy
         [DllImport("SFE64.dll", EntryPoint = "fp", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr fp64(IntPtr FuncNo, IntPtr Param1, IntPtr Param2, IntPtr Param3);
 
-        // ----------------------------------------------------------------------------------
-        // Wrapper Methods helper to load 32-bit or 64-bit DLL depending on runtime process
-        // ----------------------------------------------------------------------------------
         private static int SfemOpen(string dbFile, int sensorType, int brAdjust)
         {
             return Environment.Is64BitProcess ? sfem64_Open(dbFile, sensorType, brAdjust) : sfem32_Open(dbFile, sensorType, brAdjust);
@@ -115,67 +115,110 @@ namespace SfeWindowsProxy
             }
         }
 
-        // ----------------------------------------------------------------------------------
-        // HTTP Server Entry Point
-        // ----------------------------------------------------------------------------------
+        [STAThread]
         static void Main(string[] args)
         {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
             int customPort = 0;
             if (args.Length > 0 && int.TryParse(args[0], out customPort))
             {
                 port = customPort;
             }
 
-            Console.WriteLine("=====================================================");
-            Console.WriteLine("        SFE Windows Biometric Proxy Server           ");
-            Console.WriteLine("=====================================================");
-            Console.WriteLine("Running as " + (Environment.Is64BitProcess ? "64-bit" : "32-bit") + " process.");
-            Console.WriteLine("Make sure appropriate DLLs are in this directory:");
-            Console.WriteLine("- 32-bit: SFE.dll, SFEMediator.dll");
-            Console.WriteLine("- 64-bit: SFE64.dll, SFEMediator64.dll");
-            Console.WriteLine("=====================================================\n");
+            // Create System Tray Context Menu
+            trayMenu = new ContextMenu();
+            trayMenu.MenuItems.Add("SFE Biometric Proxy (Active)", (s, e) => { }).Enabled = false;
+            trayMenu.MenuItems.Add("-");
+            trayMenu.MenuItems.Add("Check Status", OnCheckStatus);
+            trayMenu.MenuItems.Add("Exit Server", OnExit);
 
+            // Create System Tray Icon
+            trayIcon = new NotifyIcon();
+            trayIcon.Text = "SFE Biometric Proxy Server";
+            trayIcon.Icon = SystemIcons.Shield;
+            trayIcon.ContextMenu = trayMenu;
+            trayIcon.Visible = true;
+
+            // Start HTTP Server
             listener = new HttpListener();
             listener.Prefixes.Add("http://localhost:" + port + "/");
-            
+
             try
             {
                 listener.Start();
-                Console.WriteLine("Proxy server is listening on http://localhost:" + port + "/");
-                Console.WriteLine("Press Ctrl+C to exit...\n");
+                trayIcon.ShowBalloonTip(3000, "SFE Biometric Proxy", "Server is running silently in background on http://localhost:" + port + "/", ToolTipIcon.Info);
+            }
+            catch (HttpListenerException ex)
+            {
+                string msg = "Port " + port + " conflict or permission error: " + ex.Message;
+                trayIcon.ShowBalloonTip(5000, "SFE Proxy Startup Error", msg, ToolTipIcon.Error);
+                MessageBox.Show(msg + "\n\nPlease check if port " + port + " is already in use by another app.", "SFE Proxy Startup Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                trayIcon.Visible = false;
+                return;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error starting HTTP listener: " + ex.Message);
-                Console.WriteLine("Make sure you are running as Administrator if required, or port is free.");
+                string msg = "Startup Error: " + ex.Message;
+                trayIcon.ShowBalloonTip(5000, "SFE Proxy Startup Error", msg, ToolTipIcon.Error);
+                trayIcon.Visible = false;
                 return;
             }
 
-            while (true)
+            // Accept Requests Loop
+            ThreadPool.QueueUserWorkItem((state) =>
+            {
+                while (listener.IsListening)
+                {
+                    try
+                    {
+                        HttpListenerContext context = listener.GetContext();
+                        ThreadPool.QueueUserWorkItem(ProcessRequest, context);
+                    }
+                    catch
+                    {
+                        break;
+                    }
+                }
+            });
+
+            // Run Windows Forms loop (keeps app alive in tray)
+            Application.Run();
+        }
+
+        private static void OnCheckStatus(object sender, EventArgs e)
+        {
+            bool running = listener != null && listener.IsListening;
+            string statusMsg = running ? "SFE Biometric Proxy Server is active and listening on http://localhost:" + port + "/" : "Server is currently stopped.";
+            MessageBox.Show(statusMsg, "SFE Proxy Status", MessageBoxButtons.OK, running ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+        }
+
+        private static void OnExit(object sender, EventArgs e)
+        {
+            if (MessageBox.Show("Are you sure you want to stop the SFE Biometric Proxy Server?", "Exit SFE Proxy", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 try
                 {
-                    HttpListenerContext context = listener.GetContext();
-                    ThreadPool.QueueUserWorkItem(ProcessRequest, context);
+                    if (listener != null)
+                    {
+                        listener.Stop();
+                        listener.Close();
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Listener error: " + ex.Message);
-                    break;
-                }
+                catch { }
+
+                trayIcon.Visible = false;
+                Application.Exit();
             }
         }
 
-        // ----------------------------------------------------------------------------------
-        // Process HTTP Request
-        // ----------------------------------------------------------------------------------
         private static void ProcessRequest(object state)
         {
             HttpListenerContext context = (HttpListenerContext)state;
             HttpListenerRequest request = context.Request;
             HttpListenerResponse response = context.Response;
 
-            // Enable CORS so browser apps can communicate with localhost proxy
             response.AddHeader("Access-Control-Allow-Origin", "*");
             response.AddHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
             response.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -224,18 +267,11 @@ namespace SfeWindowsProxy
                 response.OutputStream.Write(buffer, 0, buffer.Length);
                 response.OutputStream.Close();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error writing response: " + ex.Message);
-            }
+            catch { }
         }
 
-        // ----------------------------------------------------------------------------------
-        // API Handler: /capture
-        // ----------------------------------------------------------------------------------
         private static string HandleCaptureRequest(HttpListenerRequest request)
         {
-            // Parse sensor type from query string (default is SENSOR_EB6048 = 4)
             int sensorType = SENSOR_EB6048;
             int parsedSensor = 0;
             string sensorParam = request.QueryString["sensorType"];
@@ -244,30 +280,25 @@ namespace SfeWindowsProxy
                 sensorType = parsedSensor;
             }
 
-            Console.WriteLine("[Capture] Starting scan (Sensor Type: " + sensorType + ")...");
-
-            // Open device
-            // We use a dummy file name "temp.db" to initialize the SFE mediator
             int openRet = SfemOpen("temp.db", sensorType, 0);
             if (openRet < 0)
             {
-                Console.WriteLine("[Capture] Open failed (code: " + openRet + ")");
+                trayIcon.ShowBalloonTip(3000, "Scanner Error", "Failed to open reader (Code: " + openRet + ")", ToolTipIcon.Warning);
                 return "{\"success\":false,\"error\":\"Failed to open biometric reader (code: " + openRet + ")\"}";
             }
 
             try
             {
-                Console.WriteLine("[Capture] Waiting for finger on sensor...");
+                trayIcon.ShowBalloonTip(2000, "Fingerprint Scanner", "Please place finger on sensor...", ToolTipIcon.Info);
+
                 DateTime startTime = DateTime.Now;
                 bool fingerDetected = false;
 
-                // Loop for up to 10 seconds waiting for a finger
                 while ((DateTime.Now - startTime).TotalSeconds < 10.0)
                 {
                     int isFinger = SfemIsFinger();
                     if (isFinger < 0)
                     {
-                        Console.WriteLine("[Capture] IsFinger error (code: " + isFinger + ")");
                         SfemClose();
                         return "{\"success\":false,\"error\":\"Sensor read error (code: " + isFinger + ")\"}";
                     }
@@ -283,31 +314,27 @@ namespace SfeWindowsProxy
 
                 if (!fingerDetected)
                 {
-                    Console.WriteLine("[Capture] Timeout: No finger detected");
+                    trayIcon.ShowBalloonTip(3000, "Scanner Timeout", "No finger placed on sensor", ToolTipIcon.Warning);
                     SfemClose();
                     return "{\"success\":false,\"error\":\"Timeout waiting for finger placement\"}";
                 }
 
-                // Capture image
                 int capRet = SfemCapture();
                 if (capRet < 0)
                 {
-                    Console.WriteLine("[Capture] Capture failed (code: " + capRet + ")");
                     SfemClose();
                     return "{\"success\":false,\"error\":\"Failed to capture image (code: " + capRet + ")\"}";
                 }
 
-                // Extract template
                 byte[] template = new byte[FEATURE_SIZE];
                 int extRet = SfemTemplateGetFromImage(template);
                 if (extRet < 0)
                 {
-                    Console.WriteLine("[Capture] Template extraction failed (code: " + extRet + ")");
                     SfemClose();
                     return "{\"success\":false,\"error\":\"Failed to extract template (code: " + extRet + ")\"}";
                 }
 
-                Console.WriteLine("[Capture] Fingerprint successfully captured!");
+                trayIcon.ShowBalloonTip(2000, "Fingerprint Scanner", "Fingerprint captured successfully!", ToolTipIcon.Info);
                 string base64Template = Convert.ToBase64String(template);
                 SfemClose();
 
@@ -321,9 +348,6 @@ namespace SfeWindowsProxy
             }
         }
 
-        // ----------------------------------------------------------------------------------
-        // API Handler: /verify
-        // ----------------------------------------------------------------------------------
         private static string HandleVerifyRequest(HttpListenerRequest request)
         {
             string bodyText = "";
@@ -350,16 +374,12 @@ namespace SfeWindowsProxy
                     return "{\"success\":false,\"error\":\"Invalid template size. Must decode to " + FEATURE_SIZE + " bytes.\"}";
                 }
 
-                Console.WriteLine("[Verify] Matching templates...");
-
-                // Open the engine (we don't need real hardware for matching, so ignore any hardware -100 error)
                 int openRet = SfemOpen("temp.db", SENSOR_EB6048, 0);
                 if (openRet < 0 && openRet != -100)
                 {
                     return "{\"success\":false,\"error\":\"Failed to open engine (code: " + openRet + ")\"}";
                 }
 
-                // Load template B into slot 0
                 IntPtr setRet = SfeFp(FP_SETFPDATA, tempB, IntPtr.Zero, IntPtr.Zero);
                 if (setRet.ToInt64() < 0)
                 {
@@ -367,11 +387,8 @@ namespace SfeWindowsProxy
                     return "{\"success\":false,\"error\":\"Failed to load template (code: " + setRet.ToInt64() + ")\"}";
                 }
 
-                // Verify template A against slot 0
                 IntPtr verifyRet = SfeFp(FP_VERIFYFPDATA, tempA, IntPtr.Zero, IntPtr.Zero);
                 bool matched = verifyRet.ToInt64() > 0;
-
-                Console.WriteLine("[Verify] Finished. Match: " + matched + " (code: " + verifyRet.ToInt64() + ")");
 
                 SfemClose();
                 return "{\"success\":true,\"matched\":" + (matched ? "true" : "false") + ",\"code\":" + verifyRet.ToInt64() + "}";
@@ -382,7 +399,6 @@ namespace SfeWindowsProxy
             }
         }
 
-        // Helper to extract JSON values without external libraries
         private static string ExtractJsonValue(string json, string key)
         {
             string pattern = "\"" + key + "\"[\\s]*:[\\s]*\"([^\"]+)\"";
