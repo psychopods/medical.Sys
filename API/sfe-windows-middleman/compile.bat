@@ -48,28 +48,33 @@ echo Found compiler at: !CSC_PATH!
 echo Progress: [========            ] 40%%
 echo.
 
-:COMPILE_STEPS
 :: Step 2: Compile 64-Bit
-echo [Step 2/3] Compiling 64-bit executable...
+echo [Step 2/3] Compiling 64-bit executable (sfe_middleman64.exe)...
 "!CSC_PATH!" /nologo /platform:x64 /out:sfe_middleman64.exe SfeMiddleman.cs > compile_log_x64.txt 2>&1
 
 if !errorlevel! equ 0 (
     echo [SUCCESS] 64-bit binary compiled successfully.
     echo Progress: [============        ] 70%%
 ) else (
-    echo [WARNING] 64-bit compilation failed. See compile_log_x64.txt for details.
+    echo [WARNING] 64-bit compilation returned errors. Details below:
+    echo -----------------------------------------------------------------------
+    type compile_log_x64.txt
+    echo -----------------------------------------------------------------------
 )
 echo.
 
 :: Step 3: Compile 32-Bit
-echo [Step 3/3] Compiling 32-bit executable...
+echo [Step 3/3] Compiling 32-bit executable (sfe_middleman32.exe)...
 "!CSC_PATH!" /nologo /platform:x86 /out:sfe_middleman32.exe SfeMiddleman.cs > compile_log_x86.txt 2>&1
 
 if !errorlevel! equ 0 (
     echo [SUCCESS] 32-bit binary compiled successfully.
     echo Progress: [====================] 100%%
 ) else (
-    echo [WARNING] 32-bit compilation failed. See compile_log_x86.txt for details.
+    echo [WARNING] 32-bit compilation returned errors. Details below:
+    echo -----------------------------------------------------------------------
+    type compile_log_x86.txt
+    echo -----------------------------------------------------------------------
 )
 echo.
 
@@ -80,7 +85,7 @@ if exist sfe_middleman64.exe (
     echo STATUS: COMPILATION COMPLETE! - sfe_middleman32.exe created
 ) else (
     color 0C
-    echo STATUS: COMPILATION FAILED! Check compile_log_x64.txt or compile_log_x86.txt
+    echo STATUS: COMPILATION FAILED!
 )
 echo =======================================================================
 echo.
