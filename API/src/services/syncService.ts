@@ -33,6 +33,37 @@ function decodeBase64ToBuffer(data: string): Buffer {
     return decoded;
 }
 
+function normalizeTemplateBase64(templateData: Buffer | string | null | undefined): string {
+    if (templateData === null || templateData === undefined) {
+        return '';
+    }
+
+    if (Buffer.isBuffer(templateData)) {
+        const asText = templateData.toString('utf8').trim();
+        if (asText) {
+            try {
+                decodeBase64ToBuffer(asText);
+                return asText;
+            } catch {
+                return templateData.toString('base64');
+            }
+        }
+        return templateData.toString('base64');
+    }
+
+    const asText = String(templateData).trim();
+    if (!asText) {
+        return '';
+    }
+
+    try {
+        decodeBase64ToBuffer(asText);
+        return asText;
+    } catch {
+        return Buffer.from(asText, 'binary').toString('base64');
+    }
+}
+
 function parseSinceTimestamp(since?: string): Date {
     if (!since) {
         return new Date(0);
@@ -158,7 +189,8 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
             try {
                 validateUUIDv4(bio.id, 'biometric template ID');
                 validateUUIDv4(bio.childId, 'child profile ID');
-                const templateBytes = decodeBase64ToBuffer(bio.templateBase64);
+                decodeBase64ToBuffer(bio.templateBase64);
+                const templateData = bio.templateBase64.trim();
 
                 if (!Number.isInteger(bio.fingerIndex) || bio.fingerIndex < 1 || bio.fingerIndex > 10) {
                     throw new HttpError(400, 'fingerIndex must be an integer between 1 and 10.');
@@ -182,7 +214,7 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
                         `INSERT INTO biometric_fingerprints
                         (id, child_id, finger_index, template_data, quality_score, status, version)
                         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                        [bio.id, bio.childId, bio.fingerIndex, templateBytes, bio.qualityScore, bio.status, bio.version]
+                        [bio.id, bio.childId, bio.fingerIndex, templateData, bio.qualityScore, bio.status, bio.version]
                     );
                     await connection.execute(`RELEASE SAVEPOINT ${savepointName}`);
                     continue;
@@ -209,7 +241,7 @@ export async function pushSyncBatch(pool: Pool, payload: SyncPushRequestBody): P
                     `UPDATE biometric_fingerprints
                      SET template_data = ?, quality_score = ?, status = ?, version = ?
                      WHERE id = ? AND version = ?`,
-                    [templateBytes, bio.qualityScore, bio.status, bio.version, current.id, localVersion]
+                    [templateData, bio.qualityScore, bio.status, bio.version, current.id, localVersion]
                 );
                 if (updateResult.affectedRows === 0) {
                     conflicts.push({
@@ -285,7 +317,7 @@ export async function getSyncDelta(pool: Pool, since?: string): Promise<{
     );
 
     const [biometricRows] = await pool.execute<RowDataPacket[]>(
-        `SELECT id, child_id, finger_index, template_data, quality_score, status, version, last_modified_at
+        `SELECT id, child_id, finger_index, CAST(template_data AS BINARY) AS template_data, quality_score, status, version, last_modified_at
          FROM biometric_fingerprints
          WHERE last_modified_at > ?
          ORDER BY last_modified_at ASC`,
@@ -320,7 +352,7 @@ export async function getSyncDelta(pool: Pool, since?: string): Promise<{
             id: row.id,
             childId: row.child_id,
             fingerIndex: row.finger_index,
-            templateBase64: Buffer.from(row.template_data as Buffer).toString('base64'),
+            templateBase64: normalizeTemplateBase64(row.template_data as Buffer | string | null),
             qualityScore: row.quality_score,
             status: row.status,
             version: row.version,

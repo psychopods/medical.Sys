@@ -2,6 +2,7 @@ export interface FingerprintTemplateRecord {
     id: string;
     childId: string;
     fingerIndex: number;
+    templateBase64?: string;
     qualityScore: number | null;
     status: 'PENDING' | 'VERIFIED' | 'REJECTED';
     version: number;

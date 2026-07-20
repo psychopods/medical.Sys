@@ -104,7 +104,10 @@ const RenderOlderPatientsList = ({
           </thead>
           <tbody>
             {filteredOlderPatients.map((child, index) => {
-              const childFingerprints = fingerprintData.filter(fp => fp.childId === child.id || fp.customSerialId === child.customSerialId);
+              const childFingerprints = fingerprintData.filter(fp =>
+                (fp.childId || fp.child_id) === child.id ||
+                fp.customSerialId === child.customSerialId
+              );
               const fingerCount = childFingerprints.length;
               const isDeletingThis = isDeleting && deletingChildId === child.id;
               

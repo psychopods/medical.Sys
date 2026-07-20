@@ -87,7 +87,10 @@ const RenderAllChildrenList = ({
           </thead>
           <tbody>
             {filteredAllChildren.map((child, index) => {
-              const childFingerprints = fingerprintData.filter(fp => fp.childId === child.id || fp.customSerialId === child.customSerialId);
+              const childFingerprints = fingerprintData.filter(fp =>
+                (fp.childId || fp.child_id) === child.id ||
+                fp.customSerialId === child.customSerialId
+              );
               const fingerCount = childFingerprints.length;
               const fingerStatus = fingerCount > 0 ? `${fingerCount}/10` : '0/10';
               const isDeletingThis = isDeleting && deletingChildId === child.id;
@@ -109,7 +112,7 @@ const RenderAllChildrenList = ({
                       <div className="child-reg-fingerprint-dots">
                         {Array.from({ length: 10 }, (_, i) => {
                           const fingerIndex = i + 1;
-                          const hasFinger = childFingerprints.some(fp => fp.fingerIndex === fingerIndex);
+                          const hasFinger = childFingerprints.some(fp => Number(fp.fingerIndex ?? fp.finger_index) === fingerIndex);
                           return (
                             <span 
                               key={fingerIndex} 

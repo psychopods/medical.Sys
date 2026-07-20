@@ -408,9 +408,12 @@ const ChildRegistration = () => {
       }));
       setChildrenData(childrenArray);
       filterPatientsByAge(childrenArray);
+      return childrenArray;
     } catch (error) {
       console.error("Error fetching children:", error);
       setChildrenData([]);
+      filterPatientsByAge([]);
+      return [];
     }
   };
 
@@ -434,10 +437,11 @@ const ChildRegistration = () => {
     }
   };
 
-  const fetchFingerprints = async () => {
+  const fetchFingerprints = async (childrenOverride = childrenData) => {
     try {
       const allFingerprints = [];
       const isOnline = navigator.onLine;
+      const knownChildren = Array.isArray(childrenOverride) ? childrenOverride : [];
 
       if (!isOnline) {
         try {
@@ -446,7 +450,7 @@ const ChildRegistration = () => {
             "SELECT * FROM biometric_fingerprints",
           );
           rows.forEach((fp) => {
-            const child = childrenData.find((c) => c.id === fp.child_id);
+            const child = knownChildren.find((c) => c.id === fp.child_id);
             allFingerprints.push({
               id: fp.id,
               childId: fp.child_id,
@@ -472,7 +476,7 @@ const ChildRegistration = () => {
         }
       }
 
-      for (const child of childrenData) {
+      for (const child of knownChildren) {
         if (child.id) {
           try {
             const fingerprints = await getBiometricsForChild(child.id);
@@ -483,6 +487,9 @@ const ChildRegistration = () => {
                   childName: child.fullName,
                   childId: child.id,
                   customSerialId: child.customSerialId,
+                  fingerIndex: Number(fp.fingerIndex ?? fp.finger_index),
+                  templateBase64: fp.templateBase64 || fp.templateData || fp.template_data,
+                  templateData: fp.templateData || fp.templateBase64 || fp.template_data,
                   capturedAt: fp.capturedAt || fp.captured_at || fp.createdAt,
                   qualityScore: fp.qualityScore || fp.quality,
                   capturedByName:
@@ -1200,9 +1207,9 @@ const ChildRegistration = () => {
       }
       if (successCount > 0) {
         showToast(`${successCount} fingerprint(s) enrolled successfully for ${enrollingChild.fullName}!`, 'success');
-        await fetchChildren();
+        const latestChildren = await fetchChildren();
         await fetchTodayRegistrations();
-        await fetchFingerprints();
+        await fetchFingerprints(latestChildren);
         goBack();
         setEnrollingChild(null);
         setFingerCaptures({});
@@ -1339,9 +1346,9 @@ const ChildRegistration = () => {
             `✓ ${successCount} fingerprint(s) enrolled successfully!`,
             "success",
           );
-          await fetchChildren();
+          const latestChildren = await fetchChildren();
           await fetchTodayRegistrations();
-          await fetchFingerprints();
+          await fetchFingerprints(latestChildren);
           setRegistrationStep(3);
         } else {
           showToast(
@@ -1421,7 +1428,7 @@ const ChildRegistration = () => {
     setRegCapturedFingers([]);
     setRegSelectedFinger(null);
     setRegIsCapturing(false);
-    fetchChildren();
+    fetchChildren().then((latestChildren) => fetchFingerprints(latestChildren));
     fetchTodayRegistrations();
     generateRegistrationId("");
   };
@@ -1667,9 +1674,9 @@ const ChildRegistration = () => {
       showToast("Error occurred during synchronization", "error");
     } finally {
       setIsSyncing(false);
-      await fetchChildren();
+      const latestChildren = await fetchChildren();
       await fetchTodayRegistrations();
-      await fetchFingerprints();
+      await fetchFingerprints(latestChildren);
       await generateRegistrationId();
     }
   };
@@ -1935,12 +1942,12 @@ const ChildRegistration = () => {
     }
     
     try {
-      await Promise.all([
+      const [latestChildren] = await Promise.all([
         fetchChildren(),
         fetchTodayRegistrations(),
-        fetchFingerprints(),
         fetchLocations()
       ]);
+      await fetchFingerprints(latestChildren);
       setLastRefreshed(new Date());
     } catch (error) {
       console.error('Background refresh error:', error);
@@ -2158,9 +2165,9 @@ const ChildRegistration = () => {
         setUser(parsedUser);
         await fetchStaffUsers();
         await fetchLocations();
-        await fetchChildren();
+        const latestChildren = await fetchChildren();
         await fetchTodayRegistrations();
-        await fetchFingerprints();
+        await fetchFingerprints(latestChildren);
         await generateRegistrationId();
       } else {
         navigate("/login");

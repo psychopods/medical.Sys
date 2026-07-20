@@ -13,6 +13,7 @@ type FingerprintRow = RowDataPacket & {
     id: string;
     child_id: string;
     finger_index: number;
+    template_data?: Buffer | string | null;
     quality_score: number | null;
     status: 'PENDING' | 'VERIFIED' | 'REJECTED';
     version: number;
@@ -62,6 +63,37 @@ function decodeTemplateBase64(templateBase64: string): Buffer {
     return decoded;
 }
 
+function normalizeTemplateBase64(templateData: Buffer | string | null | undefined): string | undefined {
+    if (templateData === null || templateData === undefined) {
+        return undefined;
+    }
+
+    if (Buffer.isBuffer(templateData)) {
+        const asText = templateData.toString('utf8').trim();
+        if (asText) {
+            try {
+                decodeTemplateBase64(asText);
+                return asText;
+            } catch {
+                return templateData.toString('base64');
+            }
+        }
+        return templateData.toString('base64');
+    }
+
+    const asText = String(templateData).trim();
+    if (!asText) {
+        return undefined;
+    }
+
+    try {
+        decodeTemplateBase64(asText);
+        return asText;
+    } catch {
+        return Buffer.from(asText, 'binary').toString('base64');
+    }
+}
+
 async function assertChildExists(pool: Pool, childId: string): Promise<void> {
     const [rows] = await pool.execute<RowDataPacket[]>(
         'SELECT 1 FROM children_profiles WHERE id = ? LIMIT 1',
@@ -77,6 +109,7 @@ function mapFingerprintRow(row: FingerprintRow): FingerprintTemplateRecord {
         id: row.id,
         childId: row.child_id,
         fingerIndex: row.finger_index,
+        templateBase64: normalizeTemplateBase64(row.template_data),
         qualityScore: row.quality_score,
         status: row.status,
         version: row.version,
@@ -121,12 +154,13 @@ export async function enrollFingerprint(
     validateUUIDv4(childId, 'child ID');
     validateFingerIndex(fingerIndex);
     validateOptionalQualityScore(qualityScore);
-    const templateData = decodeTemplateBase64(templateBase64);
+    decodeTemplateBase64(templateBase64);
+    const templateData = templateBase64.trim();
 
     await assertChildExists(pool, childId);
 
     const [existingRows] = await pool.execute<FingerprintRow[]>(
-        `SELECT id, child_id, finger_index, quality_score, status, version, created_at, last_modified_at
+        `SELECT id, child_id, finger_index, CAST(template_data AS BINARY) AS template_data, quality_score, status, version, created_at, last_modified_at
          FROM biometric_fingerprints
          WHERE child_id = ? AND finger_index = ?
          LIMIT 1`,
@@ -170,7 +204,7 @@ export async function listChildFingerprints(
     const enrollment = await getEnrollmentStatus(pool, childId);
 
     const [rows] = await pool.execute<FingerprintRow[]>(
-        `SELECT id, child_id, finger_index, quality_score, status, version, created_at, last_modified_at
+        `SELECT id, child_id, finger_index, CAST(template_data AS BINARY) AS template_data, quality_score, status, version, created_at, last_modified_at
          FROM biometric_fingerprints
          WHERE child_id = ?
          ORDER BY finger_index`,
@@ -290,7 +324,7 @@ export async function deleteFingerprint(pool: Pool, fingerprintId: string): Prom
 
 export async function listAllFingerprints(pool: Pool): Promise<FingerprintTemplateRecord[]> {
     const [rows] = await pool.execute<FingerprintRow[]>(
-        `SELECT id, child_id, finger_index, quality_score, status, version, created_at, last_modified_at
+        `SELECT id, child_id, finger_index, CAST(template_data AS BINARY) AS template_data, quality_score, status, version, created_at, last_modified_at
          FROM biometric_fingerprints
          ORDER BY created_at DESC`
     );
@@ -300,7 +334,7 @@ export async function listAllFingerprints(pool: Pool): Promise<FingerprintTempla
 export async function getFingerprint(pool: Pool, id: string): Promise<FingerprintTemplateRecord> {
     validateUUIDv4(id, 'fingerprint ID');
     const [rows] = await pool.execute<FingerprintRow[]>(
-        `SELECT id, child_id, finger_index, quality_score, status, version, created_at, last_modified_at
+        `SELECT id, child_id, finger_index, CAST(template_data AS BINARY) AS template_data, quality_score, status, version, created_at, last_modified_at
          FROM biometric_fingerprints
          WHERE id = ? LIMIT 1`,
         [id]
@@ -322,7 +356,8 @@ export async function updateFingerprint(
     validateUUIDv4(id, 'fingerprint ID');
     validateFingerIndex(fingerIndex);
     validateOptionalQualityScore(qualityScore);
-    const templateData = decodeTemplateBase64(templateBase64);
+    decodeTemplateBase64(templateBase64);
+    const templateData = templateBase64.trim();
 
     if (!['PENDING', 'VERIFIED', 'REJECTED'].includes(status)) {
         throw new HttpError(400, "status must be 'PENDING', 'VERIFIED', or 'REJECTED'.");
