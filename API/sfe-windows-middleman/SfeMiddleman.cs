@@ -281,11 +281,41 @@ namespace SfeWindowsProxy
             }
 
             int openRet = SfemOpen("temp.db", sensorType, 0);
+            
+            // If default sensor (4) failed, auto-probe all known sensor models (0..8)
             if (openRet < 0)
             {
-                trayIcon.ShowBalloonTip(3000, "Scanner Error", "Failed to open reader (Code: " + openRet + ")", ToolTipIcon.Warning);
-                return "{\"success\":false,\"error\":\"Failed to open biometric reader (code: " + openRet + ")\"}";
+                int[] probeSensors = new int[] { 0, 1, 2, 3, 5, 6, 7, 8 };
+                for (int i = 0; i < probeSensors.Length; i++)
+                {
+                    int st = probeSensors[i];
+                    int tryRet = SfemOpen("temp.db", st, 0);
+                    if (tryRet >= 0)
+                    {
+                        openRet = tryRet;
+                        sensorType = st;
+                        break;
+                    }
+                }
             }
+
+            // Fallback: Low-level SFE.dll fp(FP_OPEN)
+            if (openRet < 0)
+            {
+                IntPtr fpOpenRet = SfeFp(FP_OPEN, (IntPtr)sensorType, IntPtr.Zero, IntPtr.Zero);
+                if (fpOpenRet.ToInt64() >= 0)
+                {
+                    openRet = (int)fpOpenRet.ToInt64();
+                }
+            }
+
+            if (openRet < 0)
+            {
+                string diagMsg = "Biometric reader USB device not found (Code -100). Please check that your Smackbio USB Fingerprint Scanner is plugged into a USB port on this laptop.";
+                trayIcon.ShowBalloonTip(4000, "Scanner Not Found", diagMsg, ToolTipIcon.Warning);
+                return "{\"success\":false,\"error\":\"Biometric reader USB device not found (Code -100). Please verify your USB fingerprint scanner is securely plugged in.\"}";
+            }
+
 
             try
             {
