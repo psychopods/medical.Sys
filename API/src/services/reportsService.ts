@@ -1,5 +1,6 @@
 import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { HttpError } from '../utils/httpError.ts';
+import { uploadRawFileToCloudinary } from './cloudinaryService.ts';
 import type {
     AnnualReport,
     QuarterlyReport,
@@ -232,10 +233,12 @@ export async function createAnnualReport(
         throw new HttpError(409, `An annual report for year '${year}' already exists.`);
     }
 
+    const uploadedUrl = await uploadRawFileToCloudinary(trimmedUrl, 'reports_annual') || trimmedUrl;
+
     await pool.execute(
         `INSERT INTO reports_annual (id, year, title, description, file_size, page_count, download_url)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [id, year, trimmedTitle, trimmedDesc, trimmedSize, pageCount, trimmedUrl]
+        [id, year, trimmedTitle, trimmedDesc, trimmedSize, pageCount, uploadedUrl]
     );
 
     const [rows] = await pool.execute<RowDataPacket[]>(
@@ -293,11 +296,13 @@ export async function updateAnnualReport(
         throw new HttpError(409, `An annual report for year '${year}' already exists.`);
     }
 
+    const uploadedUrl = await uploadRawFileToCloudinary(trimmedUrl, 'reports_annual') || trimmedUrl;
+
     await pool.execute(
         `UPDATE reports_annual 
          SET year = ?, title = ?, description = ?, file_size = ?, page_count = ?, download_url = ?
          WHERE id = ?`,
-        [year, trimmedTitle, trimmedDesc, trimmedSize, pageCount, trimmedUrl, id]
+        [year, trimmedTitle, trimmedDesc, trimmedSize, pageCount, uploadedUrl, id]
     );
 
     const [rows] = await pool.execute<RowDataPacket[]>(
@@ -377,10 +382,12 @@ export async function createQuarterlyReport(
         throw new HttpError(400, 'All report fields are required.');
     }
 
+    const uploadedUrl = await uploadRawFileToCloudinary(trimmedUrl, 'reports_quarterly') || trimmedUrl;
+
     await pool.execute(
         `INSERT INTO reports_quarterly (id, quarter, title, period, description, file_size, download_url)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [id, trimmedQuarter, trimmedTitle, trimmedPeriod, trimmedDesc, trimmedSize, trimmedUrl]
+        [id, trimmedQuarter, trimmedTitle, trimmedPeriod, trimmedDesc, trimmedSize, uploadedUrl]
     );
 
     const [rows] = await pool.execute<RowDataPacket[]>(
@@ -432,11 +439,13 @@ export async function updateQuarterlyReport(
         throw new HttpError(404, `Quarterly report with ID '${id}' not found.`);
     }
 
+    const uploadedUrl = await uploadRawFileToCloudinary(trimmedUrl, 'reports_quarterly') || trimmedUrl;
+
     await pool.execute(
         `UPDATE reports_quarterly 
          SET quarter = ?, title = ?, period = ?, description = ?, file_size = ?, download_url = ?
          WHERE id = ?`,
-        [trimmedQuarter, trimmedTitle, trimmedPeriod, trimmedDesc, trimmedSize, trimmedUrl, id]
+        [trimmedQuarter, trimmedTitle, trimmedPeriod, trimmedDesc, trimmedSize, uploadedUrl, id]
     );
 
     const [rows] = await pool.execute<RowDataPacket[]>(

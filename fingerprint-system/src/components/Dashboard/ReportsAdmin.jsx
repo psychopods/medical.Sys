@@ -387,6 +387,47 @@ const ReportsAdmin = () => {
     }
   };
 
+  // Handle file selection and base64 conversion
+  const handleFileChange = (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate size (limit to 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showToastMessage('File size exceeds the 10MB limit', 'error');
+      return;
+    }
+
+    // Auto-calculate size display string (e.g. "2.4 MB")
+    const sizeInMB = file.size / (1024 * 1024);
+    const sizeStr = sizeInMB >= 1 
+      ? `${sizeInMB.toFixed(1)} MB` 
+      : `${(file.size / 1024).toFixed(0)} KB`;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Data = event.target.result;
+      if (type === 'annual') {
+        setAnnualFormData({
+          ...annualFormData,
+          downloadUrl: base64Data,
+          fileSize: sizeStr
+        });
+      } else {
+        setQuarterlyFormData({
+          ...quarterlyFormData,
+          downloadUrl: base64Data,
+          fileSize: sizeStr
+        });
+      }
+      showToastMessage(`File "${file.name}" loaded successfully (${sizeStr})`);
+    };
+    reader.onerror = () => {
+      showToastMessage('Error reading file', 'error');
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Create Annual Report
   const createAnnualReport = async () => {
     setIsSaving(true);
@@ -397,40 +438,49 @@ const ReportsAdmin = () => {
       year: parseInt(annualFormData.year),
       title: annualFormData.title,
       description: annualFormData.description,
-      fileSize: annualFormData.fileSize,
-      pageCount: parseInt(annualFormData.pageCount),
+      fileSize: annualFormData.fileSize || 'External',
+      pageCount: parseInt(annualFormData.pageCount) || 0,
       downloadUrl: annualFormData.downloadUrl
     };
+
+    let isSuccess = false;
+    let isOffline = false;
 
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnual, {
         method: 'POST',
         body: JSON.stringify(payload)
-      });
+      }, 60000); // 60s timeout for raw document uploads
       const data = await response.json();
       if (response.ok && data.success) {
         showToastMessage('Annual report created successfully');
+        isSuccess = true;
       } else {
-        throw new Error(data.message || 'Failed to create report online');
+        showToastMessage(data.message || 'Failed to create report online', 'error');
       }
     } catch (error) {
       console.warn('Error creating annual report online, saving locally:', error);
       showToastMessage('Saved to local storage (Offline)', 'warning');
+      isOffline = true;
     } finally {
-      // Mirror to SQLite
-      try {
-        await executeRun(
-          `INSERT OR REPLACE INTO reports_annual (id, year, title, description, file_size, page_count, download_url)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [payload.id, payload.year, payload.title, payload.description, payload.fileSize, payload.pageCount, payload.downloadUrl]
-        );
-      } catch (dbErr) {
-        console.error('Failed to mirror to SQLite:', dbErr);
+      if (isSuccess || isOffline) {
+        // Mirror to SQLite
+        try {
+          await executeRun(
+            `INSERT OR REPLACE INTO reports_annual (id, year, title, description, file_size, page_count, download_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [payload.id, payload.year, payload.title, payload.description, payload.fileSize, payload.pageCount, payload.downloadUrl]
+          );
+        } catch (dbErr) {
+          console.error('Failed to mirror to SQLite:', dbErr);
+        }
+        setIsSaving(false);
+        fetchAnnualReports();
+        setActivePage('annual');
+        resetAnnualForm();
+      } else {
+        setIsSaving(false);
       }
-      setIsSaving(false);
-      fetchAnnualReports();
-      setActivePage('annual');
-      resetAnnualForm();
     }
   };
 
@@ -442,41 +492,50 @@ const ReportsAdmin = () => {
       year: parseInt(annualFormData.year),
       title: annualFormData.title,
       description: annualFormData.description,
-      fileSize: annualFormData.fileSize,
-      pageCount: parseInt(annualFormData.pageCount),
+      fileSize: annualFormData.fileSize || 'External',
+      pageCount: parseInt(annualFormData.pageCount) || 0,
       downloadUrl: annualFormData.downloadUrl
     };
+
+    let isSuccess = false;
+    let isOffline = false;
 
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsAnnualId(editingAnnual.id), {
         method: 'PUT',
         body: JSON.stringify(payload)
-      });
+      }, 60000); // 60s timeout for raw document uploads
       const data = await response.json();
       if (response.ok && data.success) {
         showToastMessage('Annual report updated successfully');
+        isSuccess = true;
       } else {
-        throw new Error(data.message || 'Failed to update report online');
+        showToastMessage(data.message || 'Failed to update report online', 'error');
       }
     } catch (error) {
       console.warn('Error updating annual report online, saving locally:', error);
       showToastMessage('Updated in local storage (Offline)', 'warning');
+      isOffline = true;
     } finally {
-      // Mirror to SQLite
-      try {
-        await executeRun(
-          `INSERT OR REPLACE INTO reports_annual (id, year, title, description, file_size, page_count, download_url)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [editingAnnual.id, payload.year, payload.title, payload.description, payload.fileSize, payload.pageCount, payload.downloadUrl]
-        );
-      } catch (dbErr) {
-        console.error('Failed to mirror to SQLite:', dbErr);
+      if (isSuccess || isOffline) {
+        // Mirror to SQLite
+        try {
+          await executeRun(
+            `INSERT OR REPLACE INTO reports_annual (id, year, title, description, file_size, page_count, download_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [editingAnnual.id, payload.year, payload.title, payload.description, payload.fileSize, payload.pageCount, payload.downloadUrl]
+          );
+        } catch (dbErr) {
+          console.error('Failed to mirror to SQLite:', dbErr);
+        }
+        setIsSaving(false);
+        fetchAnnualReports();
+        setActivePage('annual');
+        setEditingAnnual(null);
+        resetAnnualForm();
+      } else {
+        setIsSaving(false);
       }
-      setIsSaving(false);
-      fetchAnnualReports();
-      setActivePage('annual');
-      setEditingAnnual(null);
-      resetAnnualForm();
     }
   };
 
@@ -523,39 +582,48 @@ const ReportsAdmin = () => {
       title: quarterlyFormData.title,
       period: quarterlyFormData.period,
       description: quarterlyFormData.description,
-      fileSize: quarterlyFormData.fileSize,
+      fileSize: quarterlyFormData.fileSize || 'External',
       downloadUrl: quarterlyFormData.downloadUrl
     };
+
+    let isSuccess = false;
+    let isOffline = false;
 
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterly, {
         method: 'POST',
         body: JSON.stringify(payload)
-      });
+      }, 60000); // 60s timeout for raw document uploads
       const data = await response.json();
       if (response.ok && data.success) {
         showToastMessage('Quarterly report created successfully');
+        isSuccess = true;
       } else {
-        throw new Error(data.message || 'Failed to create report online');
+        showToastMessage(data.message || 'Failed to create report online', 'error');
       }
     } catch (error) {
       console.warn('Error creating quarterly report online, saving locally:', error);
       showToastMessage('Saved to local storage (Offline)', 'warning');
+      isOffline = true;
     } finally {
-      // Mirror to SQLite
-      try {
-        await executeRun(
-          `INSERT OR REPLACE INTO reports_quarterly (id, quarter, title, period, description, file_size, download_url)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [payload.id, payload.quarter, payload.title, payload.period, payload.description, payload.fileSize, payload.downloadUrl]
-        );
-      } catch (dbErr) {
-        console.error('Failed to mirror to SQLite:', dbErr);
+      if (isSuccess || isOffline) {
+        // Mirror to SQLite
+        try {
+          await executeRun(
+            `INSERT OR REPLACE INTO reports_quarterly (id, quarter, title, period, description, file_size, download_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [payload.id, payload.quarter, payload.title, payload.period, payload.description, payload.fileSize, payload.downloadUrl]
+          );
+        } catch (dbErr) {
+          console.error('Failed to mirror to SQLite:', dbErr);
+        }
+        setIsSaving(false);
+        fetchQuarterlyReports();
+        setActivePage('quarterly');
+        resetQuarterlyForm();
+      } else {
+        setIsSaving(false);
       }
-      setIsSaving(false);
-      fetchQuarterlyReports();
-      setActivePage('quarterly');
-      resetQuarterlyForm();
     }
   };
 
@@ -568,40 +636,49 @@ const ReportsAdmin = () => {
       title: quarterlyFormData.title,
       period: quarterlyFormData.period,
       description: quarterlyFormData.description,
-      fileSize: quarterlyFormData.fileSize,
+      fileSize: quarterlyFormData.fileSize || 'External',
       downloadUrl: quarterlyFormData.downloadUrl
     };
+
+    let isSuccess = false;
+    let isOffline = false;
 
     try {
       const response = await fetchWithTimeout(API_ENDPOINTS.reportsQuarterlyId(editingQuarterly.id), {
         method: 'PUT',
         body: JSON.stringify(payload)
-      });
+      }, 60000); // 60s timeout for raw document uploads
       const data = await response.json();
       if (response.ok && data.success) {
         showToastMessage('Quarterly report updated successfully');
+        isSuccess = true;
       } else {
-        throw new Error(data.message || 'Failed to update report online');
+        showToastMessage(data.message || 'Failed to update report online', 'error');
       }
     } catch (error) {
       console.warn('Error updating quarterly report online, saving locally:', error);
       showToastMessage('Updated in local storage (Offline)', 'warning');
+      isOffline = true;
     } finally {
-      // Mirror to SQLite
-      try {
-        await executeRun(
-          `INSERT OR REPLACE INTO reports_quarterly (id, quarter, title, period, description, file_size, download_url)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [editingQuarterly.id, payload.quarter, payload.title, payload.period, payload.description, payload.fileSize, payload.downloadUrl]
-        );
-      } catch (dbErr) {
-        console.error('Failed to mirror to SQLite:', dbErr);
+      if (isSuccess || isOffline) {
+        // Mirror to SQLite
+        try {
+          await executeRun(
+            `INSERT OR REPLACE INTO reports_quarterly (id, quarter, title, period, description, file_size, download_url)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [editingQuarterly.id, payload.quarter, payload.title, payload.period, payload.description, payload.fileSize, payload.downloadUrl]
+          );
+        } catch (dbErr) {
+          console.error('Failed to mirror to SQLite:', dbErr);
+        }
+        setIsSaving(false);
+        fetchQuarterlyReports();
+        setActivePage('quarterly');
+        setEditingQuarterly(null);
+        resetQuarterlyForm();
+      } else {
+        setIsSaving(false);
       }
-      setIsSaving(false);
-      fetchQuarterlyReports();
-      setActivePage('quarterly');
-      setEditingQuarterly(null);
-      resetQuarterlyForm();
     }
   };
 
@@ -1012,9 +1089,19 @@ const ReportsAdmin = () => {
               {viewingAnnual.download_url && (
                 <div className="ra-view-info-item full-width">
                   <label>Download Link:</label>
-                  <a href={viewingAnnual.download_url} target="_blank" rel="noopener noreferrer" className="ra-download-link">
-                    <IconDownload /> Download Report
-                  </a>
+                  {viewingAnnual.download_url.startsWith('data:') ? (
+                    <a 
+                      href={viewingAnnual.download_url} 
+                      download={`${viewingAnnual.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`} 
+                      className="ra-download-link"
+                    >
+                      <IconDownload /> Download Report
+                    </a>
+                  ) : (
+                    <a href={viewingAnnual.download_url} target="_blank" rel="noopener noreferrer" className="ra-download-link">
+                      <IconDownload /> Download Report
+                    </a>
+                  )}
                 </div>
               )}
             </div>
@@ -1092,9 +1179,19 @@ const ReportsAdmin = () => {
               {viewingQuarterly.download_url && (
                 <div className="ra-view-info-item full-width">
                   <label>Download Link:</label>
-                  <a href={viewingQuarterly.download_url} target="_blank" rel="noopener noreferrer" className="ra-download-link">
-                    <IconDownload /> Download Report
-                  </a>
+                  {viewingQuarterly.download_url.startsWith('data:') ? (
+                    <a 
+                      href={viewingQuarterly.download_url} 
+                      download={`${viewingQuarterly.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`} 
+                      className="ra-download-link"
+                    >
+                      <IconDownload /> Download Report
+                    </a>
+                  ) : (
+                    <a href={viewingQuarterly.download_url} target="_blank" rel="noopener noreferrer" className="ra-download-link">
+                      <IconDownload /> Download Report
+                    </a>
+                  )}
                 </div>
               )}
             </div>
@@ -1708,16 +1805,6 @@ const ReportsAdmin = () => {
               <label>Year *</label>
               <input type="number" value={annualFormData.year} onChange={(e) => setAnnualFormData({...annualFormData, year: e.target.value})} required placeholder="2024" disabled={isSaving} />
             </div>
-            
-            <div className="ra-form-group">
-              <label>File Size *</label>
-              <input type="text" value={annualFormData.fileSize} onChange={(e) => setAnnualFormData({...annualFormData, fileSize: e.target.value})} required placeholder="e.g., 2.4 MB" disabled={isSaving} />
-            </div>
-            
-            <div className="ra-form-group">
-              <label>Page Count *</label>
-              <input type="number" value={annualFormData.pageCount} onChange={(e) => setAnnualFormData({...annualFormData, pageCount: e.target.value})} required placeholder="24" disabled={isSaving} />
-            </div>
           </div>
           
           <div className="ra-form-row">
@@ -1736,8 +1823,45 @@ const ReportsAdmin = () => {
           
           <div className="ra-form-row">
             <div className="ra-form-group">
-              <label>Download URL *</label>
-              <input type="url" value={annualFormData.downloadUrl} onChange={(e) => setAnnualFormData({...annualFormData, downloadUrl: e.target.value})} required placeholder="https://..." disabled={isSaving} />
+              <label>Report Document (PDF, DOC, DOCX) *</label>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => handleFileChange(e, 'annual')}
+                  disabled={isSaving}
+                  style={{ display: 'none' }}
+                  id="annual-file-upload"
+                />
+                <label htmlFor="annual-file-upload" className="ra-btn ra-btn-secondary" style={{ cursor: 'pointer', margin: '0' }}>
+                  Choose File
+                </label>
+                {annualFormData.downloadUrl && annualFormData.downloadUrl.startsWith('data:') ? (
+                  <span style={{ fontSize: '14px', color: '#2e7d32', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    ✓ Document Loaded ({annualFormData.fileSize})
+                    <button 
+                      type="button" 
+                      onClick={() => setAnnualFormData({ ...annualFormData, downloadUrl: '', fileSize: '' })}
+                      style={{ background: 'none', border: 'none', color: '#d32f2f', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                    >
+                      Clear
+                    </button>
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>No file chosen</span>
+                )}
+              </div>
+              
+              {!annualFormData.downloadUrl.startsWith('data:') && (
+                <input 
+                  type="text" 
+                  value={annualFormData.downloadUrl} 
+                  onChange={(e) => setAnnualFormData({...annualFormData, downloadUrl: e.target.value})} 
+                  required={!annualFormData.downloadUrl.startsWith('data:')}
+                  placeholder="Or paste direct download URL (https://...)" 
+                  disabled={isSaving} 
+                />
+              )}
             </div>
           </div>
           
@@ -1781,11 +1905,6 @@ const ReportsAdmin = () => {
               <label>Period *</label>
               <input type="text" value={quarterlyFormData.period} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, period: e.target.value})} required placeholder="e.g., January - March 2024" disabled={isSaving} />
             </div>
-            
-            <div className="ra-form-group">
-              <label>File Size *</label>
-              <input type="text" value={quarterlyFormData.fileSize} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, fileSize: e.target.value})} required placeholder="e.g., 1.2 MB" disabled={isSaving} />
-            </div>
           </div>
           
           <div className="ra-form-row">
@@ -1804,8 +1923,45 @@ const ReportsAdmin = () => {
           
           <div className="ra-form-row">
             <div className="ra-form-group">
-              <label>Download URL *</label>
-              <input type="url" value={quarterlyFormData.downloadUrl} onChange={(e) => setQuarterlyFormData({...quarterlyFormData, downloadUrl: e.target.value})} required placeholder="https://..." disabled={isSaving} />
+              <label>Report Document (PDF, DOC, DOCX) *</label>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => handleFileChange(e, 'quarterly')}
+                  disabled={isSaving}
+                  style={{ display: 'none' }}
+                  id="quarterly-file-upload"
+                />
+                <label htmlFor="quarterly-file-upload" className="ra-btn ra-btn-secondary" style={{ cursor: 'pointer', margin: '0' }}>
+                  Choose File
+                </label>
+                {quarterlyFormData.downloadUrl && quarterlyFormData.downloadUrl.startsWith('data:') ? (
+                  <span style={{ fontSize: '14px', color: '#2e7d32', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    ✓ Document Loaded ({quarterlyFormData.fileSize})
+                    <button 
+                      type="button" 
+                      onClick={() => setQuarterlyFormData({ ...quarterlyFormData, downloadUrl: '', fileSize: '' })}
+                      style={{ background: 'none', border: 'none', color: '#d32f2f', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                    >
+                      Clear
+                    </button>
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>No file chosen</span>
+                )}
+              </div>
+              
+              {!quarterlyFormData.downloadUrl.startsWith('data:') && (
+                <input 
+                  type="text" 
+                  value={quarterlyFormData.downloadUrl} 
+                  onChange={(e) => setQuarterlyFormData({...quarterlyFormData, downloadUrl: e.target.value})} 
+                  required={!quarterlyFormData.downloadUrl.startsWith('data:')}
+                  placeholder="Or paste direct download URL (https://...)" 
+                  disabled={isSaving} 
+                />
+              )}
             </div>
           </div>
           

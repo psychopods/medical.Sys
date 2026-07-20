@@ -121,9 +121,9 @@ const ReportsImpact = () => {
           year: report.year,
           title: report.title,
           description: report.description,
-          size: report.file_size,
-          pages: report.page_count,
-          download_url: report.download_url
+          size: report.fileSize || report.file_size || '',
+          pages: report.pageCount || report.page_count || 0,
+          download_url: report.downloadUrl || report.download_url || ''
         }));
         setYearlyReports(reports);
 
@@ -132,7 +132,15 @@ const ReportsImpact = () => {
           await executeRun(
             `INSERT OR REPLACE INTO reports_annual (id, year, title, description, file_size, page_count, download_url)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [report.id || crypto.randomUUID(), report.year, report.title, report.description, report.file_size, report.page_count, report.download_url]
+            [
+              report.id || crypto.randomUUID(),
+              report.year,
+              report.title,
+              report.description,
+              report.fileSize || report.file_size || '',
+              report.pageCount || report.page_count || 0,
+              report.downloadUrl || report.download_url || ''
+            ]
           );
         }
       } else {
@@ -147,9 +155,9 @@ const ReportsImpact = () => {
             year: report.year,
             title: report.title,
             description: report.description,
-            size: report.file_size,
-            pages: report.page_count,
-            download_url: report.download_url
+            size: report.file_size || report.fileSize || '',
+            pages: report.page_count || report.pageCount || 0,
+            download_url: report.download_url || report.downloadUrl || ''
           }));
           setYearlyReports(reports);
           return;
@@ -174,8 +182,8 @@ const ReportsImpact = () => {
           title: report.title,
           period: report.period,
           description: report.description,
-          size: report.file_size,
-          download_url: report.download_url
+          size: report.fileSize || report.file_size || '',
+          download_url: report.downloadUrl || report.download_url || ''
         }));
         setQuarterlyReports(reports);
 
@@ -184,7 +192,15 @@ const ReportsImpact = () => {
           await executeRun(
             `INSERT OR REPLACE INTO reports_quarterly (id, quarter, title, period, description, file_size, download_url)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [report.id || crypto.randomUUID(), report.quarter, report.title, report.period, report.description, report.file_size, report.download_url]
+            [
+              report.id || crypto.randomUUID(),
+              report.quarter,
+              report.title,
+              report.period,
+              report.description,
+              report.fileSize || report.file_size || '',
+              report.downloadUrl || report.download_url || ''
+            ]
           );
         }
       } else {
@@ -200,8 +216,8 @@ const ReportsImpact = () => {
             title: report.title,
             period: report.period,
             description: report.description,
-            size: report.file_size,
-            download_url: report.download_url
+            size: report.file_size || report.fileSize || '',
+            download_url: report.download_url || report.downloadUrl || ''
           }));
           setQuarterlyReports(reports);
         }
@@ -321,8 +337,35 @@ const ReportsImpact = () => {
   };
 
   const handleDownload = (report) => {
-    window.open(report.download_url, '_blank');
-    showToast(`Downloading ${report.title}...`, 'success');
+    const url = report.download_url;
+    if (!url) {
+      showToast('No download link available', 'error');
+      return;
+    }
+    
+    if (url.startsWith('data:')) {
+      try {
+        const link = document.createElement('a');
+        link.href = url;
+        const mimeMatch = url.match(/^data:([^;]+);/);
+        const mimeType = mimeMatch ? mimeMatch[1] : '';
+        let ext = '.pdf';
+        if (mimeType.includes('word') || mimeType.includes('docx')) ext = '.docx';
+        else if (mimeType.includes('msword') || mimeType.includes('doc')) ext = '.doc';
+        
+        link.download = `${report.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}${ext}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast(`Downloading ${report.title}...`, 'success');
+      } catch (err) {
+        console.error('Failed to trigger download from base64:', err);
+        showToast('Failed to download file', 'error');
+      }
+    } else {
+      window.open(url, '_blank');
+      showToast(`Downloading ${report.title}...`, 'success');
+    }
   };
 
   // No Data Component

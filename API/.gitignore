@@ -29,3 +29,7 @@ Thumbs.db
 .idea/
 yes
 yes.pub
+
+*.rar
+*.db
+*.log

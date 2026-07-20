@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -78,3 +79,65 @@ export async function uploadImageToCloudinary(imageStr: string | null | undefine
 
     return trimmed;
 }
+
+function getExtensionFromBase64(base64Str: string): string {
+    const match = base64Str.match(/^data:([^;]+);/);
+    if (!match) return '';
+    const mime = match[1].toLowerCase();
+    if (mime === 'application/pdf') return '.pdf';
+    if (mime === 'application/msword') return '.doc';
+    if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return '.docx';
+    if (mime === 'application/vnd.ms-powerpoint') return '.ppt';
+    if (mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return '.pptx';
+    if (mime === 'application/vnd.ms-excel') return '.xls';
+    if (mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return '.xlsx';
+    if (mime === 'text/plain') return '.txt';
+    const parts = mime.split('/');
+    if (parts.length === 2) {
+        return `.${parts[1]}`;
+    }
+    return '';
+}
+
+/**
+ * Uploads a base64 document/raw file to Cloudinary.
+ * If the input is empty/null, returns null.
+ * If the input is already a URL, returns it as-is.
+ * If Cloudinary is not configured or upload fails, returns the original input.
+ */
+export async function uploadRawFileToCloudinary(fileStr: string | null | undefined, folderName: string = 'reports'): Promise<string | null> {
+    if (!fileStr) {
+        return null;
+    }
+    const trimmed = fileStr.trim();
+    if (!trimmed) {
+        return null;
+    }
+
+    // If it's already an HTTP/HTTPS URL, return as-is
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        return trimmed;
+    }
+
+    // If it's a base64 document
+    if (trimmed.startsWith('data:')) {
+        if (isConfigured) {
+            try {
+                const ext = getExtensionFromBase64(trimmed);
+                const uniqueId = crypto.randomUUID();
+                const uploadResult = await cloudinary.uploader.upload(trimmed, {
+                    folder: folderName,
+                    resource_type: 'raw',
+                    public_id: `${uniqueId}${ext}`
+                });
+                return uploadResult.secure_url;
+            } catch (error) {
+                console.error('Cloudinary Service: Raw file upload failed. Falling back to storing raw base64 string.', error);
+                return trimmed;
+            }
+        }
+    }
+
+    return trimmed;
+}
+
