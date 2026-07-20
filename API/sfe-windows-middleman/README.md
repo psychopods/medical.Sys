@@ -10,6 +10,8 @@ It starts a local HTTP server on `http://localhost:5000` and translates web requ
 *   **`SfeMiddleman.cs`**: The complete C# source code for the proxy server. It contains no external dependencies and compiles natively.
 *   **`compile.bat`**: Searches for the built-in Windows C# compiler (`csc.exe`) and builds both 32-bit and 64-bit executables.
 *   **`run.bat`**: Automatically runs the compiled proxy server.
+*   **`install_startup.bat`**: One-click installer that adds the proxy server to Windows Startup so it starts automatically whenever the PC boots up.
+
 
 ---
 
