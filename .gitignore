@@ -12,6 +12,9 @@ node_modules/
 dist/
 coverage/
 
+# Vendor SDKs
+API/SB1001U-SDK/
+
 # OS / Editor noise
 .DS_Store
 Thumbs.db

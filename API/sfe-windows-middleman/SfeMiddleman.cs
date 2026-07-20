@@ -25,7 +25,10 @@ namespace SfeWindowsProxy
 
         private const int FP_OPEN = 1;
         private const int FP_CLOSE = 2;
+        private const int FP_CAPTURE = 4;
+        private const int FP_FEATUREGETFROMIMAGE = 10;
         private const int FP_SETFPDATA = 11;
+        private const int FP_GETFPDATA = 12;
         private const int FP_VERIFYFPDATA = 44;
 
         private const int FEATURE_SIZE = 1404;
@@ -58,11 +61,17 @@ namespace SfeWindowsProxy
         [DllImport("SFEMediator64.dll", EntryPoint = "sfem_Capture", CallingConvention = CallingConvention.Cdecl)]
         private static extern int sfem64_Capture();
 
+        [DllImport("SFEMediator.dll", EntryPoint = "sfem_GetImage", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sfem32_GetImage([In, Out, MarshalAs(UnmanagedType.LPArray, SizeConst = 65536)] byte[] pImage);
+
+        [DllImport("SFEMediator64.dll", EntryPoint = "sfem_GetImage", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int sfem64_GetImage([In, Out, MarshalAs(UnmanagedType.LPArray, SizeConst = 65536)] byte[] pImage);
+
         [DllImport("SFEMediator.dll", EntryPoint = "sfem_TemplateGetFromImage", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int sfem32_TemplateGetFromImage([MarshalAs(UnmanagedType.LPArray)] byte[] pTemplate);
+        private static extern int sfem32_TemplateGetFromImage([In, Out, MarshalAs(UnmanagedType.LPArray, SizeConst = FEATURE_SIZE)] byte[] pTemplate);
 
         [DllImport("SFEMediator64.dll", EntryPoint = "sfem_TemplateGetFromImage", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int sfem64_TemplateGetFromImage([MarshalAs(UnmanagedType.LPArray)] byte[] pTemplate);
+        private static extern int sfem64_TemplateGetFromImage([In, Out, MarshalAs(UnmanagedType.LPArray, SizeConst = FEATURE_SIZE)] byte[] pTemplate);
 
         // ----------------------------------------------------------------------------------
         // DllImports for SFE
@@ -91,6 +100,11 @@ namespace SfeWindowsProxy
         private static int SfemCapture()
         {
             return Environment.Is64BitProcess ? sfem64_Capture() : sfem32_Capture();
+        }
+
+        private static int SfemGetImage(byte[] image)
+        {
+            return Environment.Is64BitProcess ? sfem64_GetImage(image) : sfem32_GetImage(image);
         }
 
         private static int SfemTemplateGetFromImage(byte[] template)
@@ -137,28 +151,52 @@ namespace SfeWindowsProxy
             return sensors;
         }
 
-        private static bool WaitForFinger(StringBuilder diagnostics)
+        private static bool CaptureStableImage(StringBuilder diagnostics)
         {
             DateTime startTime = DateTime.Now;
-            while ((DateTime.Now - startTime).TotalSeconds < 10.0)
+            int maxFingerArea = 0;
+            bool sawFinger = false;
+
+            while ((DateTime.Now - startTime).TotalSeconds < 12.0)
             {
-                int isFinger = SfemIsFinger();
-                if (isFinger < 0)
+                int capRet = SfemCapture();
+                if (capRet < 0)
                 {
-                    diagnostics.Append("isFinger=").Append(isFinger).Append("; ");
+                    IntPtr fpCapRet = SfeFp(FP_CAPTURE, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                    capRet = (int)fpCapRet.ToInt64();
+                }
+
+                if (capRet < 0)
+                {
+                    diagnostics.Append("capture=").Append(capRet).Append("; ");
                     return false;
                 }
 
-                if (isFinger > 0)
+                int fingerArea = SfemIsFinger();
+                diagnostics.Append("capture=").Append(capRet).Append(",area=").Append(fingerArea).Append(",");
+
+                if (fingerArea >= 0)
                 {
-                    diagnostics.Append("fingerDetected; ");
-                    return true;
+                    sawFinger = true;
+
+                    if (fingerArea > maxFingerArea)
+                    {
+                        maxFingerArea = fingerArea;
+                    }
+
+                    if (fingerArea > 45 || fingerArea < maxFingerArea + 2)
+                    {
+                        byte[] image = new byte[256 * 256];
+                        int imgRet = SfemGetImage(image);
+                        diagnostics.Append("getImage=").Append(imgRet).Append(",maxArea=").Append(maxFingerArea).Append("; ");
+                        return imgRet >= 0;
+                    }
                 }
 
                 Thread.Sleep(100);
             }
 
-            diagnostics.Append("fingerTimeout; ");
+            diagnostics.Append(sawFinger ? "fingerNeverStabilized; " : "fingerTimeout; ");
             return false;
         }
 
@@ -191,23 +229,10 @@ namespace SfeWindowsProxy
 
                 try
                 {
-                    if (!WaitForFinger(diagnostics))
-                    {
-                        return null;
-                    }
-
                     for (int attempt = 1; attempt <= 3; attempt++)
                     {
-                        int capRet = SfemCapture();
-                        if (capRet < 0)
-                        {
-                            IntPtr fpCapRet = SfeFp(4 /* FP_CAPTURE */, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-                            capRet = (int)fpCapRet.ToInt64();
-                        }
-
-                        diagnostics.Append("attempt=").Append(attempt).Append(",capture=").Append(capRet).Append(",");
-
-                        if (capRet < 0)
+                        diagnostics.Append("attempt=").Append(attempt).Append(",");
+                        if (!CaptureStableImage(diagnostics))
                         {
                             Thread.Sleep(200);
                             continue;
@@ -219,33 +244,40 @@ namespace SfeWindowsProxy
                         // Low-level SFE.dll FP_FEATUREGETFROMIMAGE (Func 10)
                         if (extRet < 0)
                         {
-                            IntPtr fpExtRet = SfeFp(10, template, IntPtr.Zero, IntPtr.Zero);
+                            IntPtr fpExtRet = SfeFp(FP_FEATUREGETFROMIMAGE, template, IntPtr.Zero, IntPtr.Zero);
                             if (fpExtRet.ToInt64() >= 0)
                             {
                                 extRet = (int)fpExtRet.ToInt64();
                             }
                         }
 
-                        // Low-level SFE.dll FP_GETFPDATA (Func 11)
+                        // Low-level SFE.dll FP_GETFPDATA (Func 12)
                         if (extRet < 0)
                         {
-                            IntPtr fpExtRet2 = SfeFp(11, template, IntPtr.Zero, IntPtr.Zero);
+                            IntPtr fpExtRet2 = SfeFp(FP_GETFPDATA, template, IntPtr.Zero, IntPtr.Zero);
                             if (fpExtRet2.ToInt64() >= 0)
                             {
                                 extRet = (int)fpExtRet2.ToInt64();
                             }
                         }
 
-                        diagnostics.Append("extract=").Append(extRet).Append("; ");
+                        diagnostics.Append("extract=").Append(extRet);
 
                         bool hasData = false;
+                        int nonZeroBytes = 0;
                         if (extRet >= 0)
                         {
                             for (int k = 0; k < template.Length; k++)
                             {
-                                if (template[k] != 0) { hasData = true; break; }
+                                if (template[k] != 0)
+                                {
+                                    hasData = true;
+                                    nonZeroBytes++;
+                                }
                             }
                         }
+
+                        diagnostics.Append(",nonZeroBytes=").Append(nonZeroBytes).Append("; ");
 
                         if (hasData)
                         {
