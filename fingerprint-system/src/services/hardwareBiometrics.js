@@ -40,10 +40,15 @@ export async function captureFromHardware(sensorType = 4) {
       return {
         success: true,
         templateBase64: data.template,
-        qualityScore: Math.floor(Math.random() * 15) + 85 // High quality score for physical scan
+        qualityScore: Math.floor(Math.random() * 15) + 85, // High quality score for physical scan
+        sensorType: data.sensorType,
+        diagnostics: data.diagnostics
       };
     } else {
-      throw new Error(data.error || "Failed to capture fingerprint from scanner.");
+      const message = data.diagnostics
+        ? `${data.error || "Failed to capture fingerprint from scanner."} Diagnostics: ${data.diagnostics}`
+        : (data.error || "Failed to capture fingerprint from scanner.");
+      throw new Error(message);
     }
   } catch (error) {
     if (error.name === 'AbortError' || error.message.includes('Failed to fetch')) {

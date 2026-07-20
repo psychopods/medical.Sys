@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace SfeWindowsProxy
 {
@@ -28,6 +29,7 @@ namespace SfeWindowsProxy
         private const int FP_VERIFYFPDATA = 44;
 
         private const int FEATURE_SIZE = 1404;
+        private static readonly int[] SENSOR_PROBE_ORDER = new int[] { 4, 5, 6, 0, 1, 2, 3, 7, 8 };
 
         // ----------------------------------------------------------------------------------
         // DllImports for SFEMediator
@@ -112,6 +114,112 @@ namespace SfeWindowsProxy
             finally
             {
                 handle.Free();
+            }
+        }
+
+        private static string EscapeJson(string value)
+        {
+            if (value == null) return "";
+            return value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        }
+
+        private static List<int> BuildSensorProbeOrder(int requestedSensorType)
+        {
+            List<int> sensors = new List<int>();
+            sensors.Add(requestedSensorType);
+            for (int i = 0; i < SENSOR_PROBE_ORDER.Length; i++)
+            {
+                if (!sensors.Contains(SENSOR_PROBE_ORDER[i]))
+                {
+                    sensors.Add(SENSOR_PROBE_ORDER[i]);
+                }
+            }
+            return sensors;
+        }
+
+        private static bool WaitForFinger(StringBuilder diagnostics)
+        {
+            DateTime startTime = DateTime.Now;
+            while ((DateTime.Now - startTime).TotalSeconds < 10.0)
+            {
+                int isFinger = SfemIsFinger();
+                if (isFinger < 0)
+                {
+                    diagnostics.Append("isFinger=").Append(isFinger).Append("; ");
+                    return false;
+                }
+
+                if (isFinger > 0)
+                {
+                    diagnostics.Append("fingerDetected; ");
+                    return true;
+                }
+
+                Thread.Sleep(100);
+            }
+
+            diagnostics.Append("fingerTimeout; ");
+            return false;
+        }
+
+        private static string TryCaptureWithSensor(int sensorType, StringBuilder diagnostics)
+        {
+            diagnostics.Append("sensor=").Append(sensorType).Append(":");
+
+            int openRet = SfemOpen("temp.db", sensorType, 0);
+            if (openRet < 0)
+            {
+                IntPtr fpOpenRet = SfeFp(FP_OPEN, (IntPtr)sensorType, IntPtr.Zero, IntPtr.Zero);
+                if (fpOpenRet.ToInt64() >= 0)
+                {
+                    openRet = (int)fpOpenRet.ToInt64();
+                    diagnostics.Append("fpOpen=").Append(openRet).Append(",");
+                }
+            }
+
+            if (openRet < 0)
+            {
+                diagnostics.Append("open=").Append(openRet).Append("; ");
+                return null;
+            }
+
+            diagnostics.Append("open=").Append(openRet).Append(",");
+
+            try
+            {
+                if (!WaitForFinger(diagnostics))
+                {
+                    return null;
+                }
+
+                for (int attempt = 1; attempt <= 3; attempt++)
+                {
+                    int capRet = SfemCapture();
+                    diagnostics.Append("attempt=").Append(attempt).Append(",capture=").Append(capRet).Append(",");
+
+                    if (capRet < 0)
+                    {
+                        Thread.Sleep(250);
+                        continue;
+                    }
+
+                    byte[] template = new byte[FEATURE_SIZE];
+                    int extRet = SfemTemplateGetFromImage(template);
+                    diagnostics.Append("extract=").Append(extRet).Append("; ");
+
+                    if (extRet >= 0)
+                    {
+                        return Convert.ToBase64String(template);
+                    }
+
+                    Thread.Sleep(350);
+                }
+
+                return null;
+            }
+            finally
+            {
+                SfemClose();
             }
         }
 
@@ -280,100 +388,29 @@ namespace SfeWindowsProxy
                 sensorType = parsedSensor;
             }
 
-            int openRet = SfemOpen("temp.db", sensorType, 0);
-            
-            // If default sensor (4) failed, auto-probe all known sensor models (0..8)
-            if (openRet < 0)
-            {
-                int[] probeSensors = new int[] { 0, 1, 2, 3, 5, 6, 7, 8 };
-                for (int i = 0; i < probeSensors.Length; i++)
-                {
-                    int st = probeSensors[i];
-                    int tryRet = SfemOpen("temp.db", st, 0);
-                    if (tryRet >= 0)
-                    {
-                        openRet = tryRet;
-                        sensorType = st;
-                        break;
-                    }
-                }
-            }
-
-            // Fallback: Low-level SFE.dll fp(FP_OPEN)
-            if (openRet < 0)
-            {
-                IntPtr fpOpenRet = SfeFp(FP_OPEN, (IntPtr)sensorType, IntPtr.Zero, IntPtr.Zero);
-                if (fpOpenRet.ToInt64() >= 0)
-                {
-                    openRet = (int)fpOpenRet.ToInt64();
-                }
-            }
-
-            if (openRet < 0)
-            {
-                string diagMsg = "Biometric reader USB device not found (Code -100). Please check that your Smackbio USB Fingerprint Scanner is plugged into a USB port on this laptop.";
-                trayIcon.ShowBalloonTip(4000, "Scanner Not Found", diagMsg, ToolTipIcon.Warning);
-                return "{\"success\":false,\"error\":\"Biometric reader USB device not found (Code -100). Please verify your USB fingerprint scanner is securely plugged in.\"}";
-            }
-
-
             try
             {
                 trayIcon.ShowBalloonTip(2000, "Fingerprint Scanner", "Please place finger on sensor...", ToolTipIcon.Info);
+                StringBuilder diagnostics = new StringBuilder();
+                List<int> sensors = BuildSensorProbeOrder(sensorType);
 
-                DateTime startTime = DateTime.Now;
-                bool fingerDetected = false;
-
-                while ((DateTime.Now - startTime).TotalSeconds < 10.0)
+                for (int i = 0; i < sensors.Count; i++)
                 {
-                    int isFinger = SfemIsFinger();
-                    if (isFinger < 0)
+                    string base64Template = TryCaptureWithSensor(sensors[i], diagnostics);
+                    if (!string.IsNullOrEmpty(base64Template))
                     {
-                        SfemClose();
-                        return "{\"success\":false,\"error\":\"Sensor read error (code: " + isFinger + ")\"}";
+                        trayIcon.ShowBalloonTip(2000, "Fingerprint Scanner", "Fingerprint captured successfully!", ToolTipIcon.Info);
+                        return "{\"success\":true,\"template\":\"" + base64Template + "\",\"sensorType\":" + sensors[i] + ",\"diagnostics\":\"" + EscapeJson(diagnostics.ToString()) + "\"}";
                     }
-
-                    if (isFinger > 0)
-                    {
-                        fingerDetected = true;
-                        break;
-                    }
-
-                    Thread.Sleep(100);
                 }
 
-                if (!fingerDetected)
-                {
-                    trayIcon.ShowBalloonTip(3000, "Scanner Timeout", "No finger placed on sensor", ToolTipIcon.Warning);
-                    SfemClose();
-                    return "{\"success\":false,\"error\":\"Timeout waiting for finger placement\"}";
-                }
-
-                int capRet = SfemCapture();
-                if (capRet < 0)
-                {
-                    SfemClose();
-                    return "{\"success\":false,\"error\":\"Failed to capture image (code: " + capRet + ")\"}";
-                }
-
-                byte[] template = new byte[FEATURE_SIZE];
-                int extRet = SfemTemplateGetFromImage(template);
-                if (extRet < 0)
-                {
-                    SfemClose();
-                    return "{\"success\":false,\"error\":\"Failed to extract template (code: " + extRet + ")\"}";
-                }
-
-                trayIcon.ShowBalloonTip(2000, "Fingerprint Scanner", "Fingerprint captured successfully!", ToolTipIcon.Info);
-                string base64Template = Convert.ToBase64String(template);
-                SfemClose();
-
-                return "{\"success\":true,\"template\":\"" + base64Template + "\"}";
+                trayIcon.ShowBalloonTip(4000, "Scanner Capture Failed", "Image was captured but template extraction failed. Try a different finger pressure or sensor type.", ToolTipIcon.Warning);
+                return "{\"success\":false,\"error\":\"Failed to extract fingerprint template after trying sensor types " + string.Join(",", sensors.ToArray()) + ". Try cleaning the sensor, changing finger pressure, or using the 32-bit proxy if this device ships with 32-bit SDK DLLs.\",\"diagnostics\":\"" + EscapeJson(diagnostics.ToString()) + "\"}";
             }
             catch (Exception ex)
             {
                 SfemClose();
-                string cleanMsg = ex.Message.Replace("\"", "\\\"");
+                string cleanMsg = EscapeJson(ex.Message);
                 return "{\"success\":false,\"error\":\"Capture Exception: " + cleanMsg + "\"}";
             }
         }
