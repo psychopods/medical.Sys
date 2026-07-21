@@ -111,9 +111,12 @@ export async function verifyTemplates(tempA_b64, tempB_b64, baseUrl = DEFAULT_MI
             try {
               const data = JSON.parse(body);
               if (data.success) {
-                resolve({ matched: data.matched, code: data.code });
+                resolve({ matched: data.matched, code: data.code, diagnostics: data.diagnostics, similarity: data.similarity });
               } else {
-                reject(new Error(data.error || 'Verification failed'));
+                const message = data.diagnostics
+                  ? `${data.error || 'Verification failed'} Diagnostics: ${data.diagnostics}`
+                  : (data.error || 'Verification failed');
+                reject(new Error(message));
               }
             } catch (err) {
               reject(new Error('Failed to parse verify response: ' + body));
@@ -137,9 +140,12 @@ export async function verifyTemplates(tempA_b64, tempB_b64, baseUrl = DEFAULT_MI
         const output = stdout.trim() ? stdout : stderr;
         const res = JSON.parse(output);
         if (res.success) {
-          resolve({ matched: res.matched, code: res.code });
+          resolve({ matched: res.matched, code: res.code, diagnostics: res.diagnostics, similarity: res.similarity });
         } else {
-          reject(new Error(res.error || "Verification failed"));
+          const message = res.diagnostics
+            ? `${res.error || "Verification failed"} Diagnostics: ${res.diagnostics}`
+            : (res.error || "Verification failed");
+          reject(new Error(message));
         }
       } catch (err) {
         reject(new Error("Failed to parse verify output: " + stdout + " err: " + err.message));
@@ -176,10 +182,13 @@ export async function identifyTemplate(candidate_b64, templates, baseUrl = DEFAU
                 if (data.matched) {
                   resolve({ id: data.id, similarity: data.similarity });
                 } else {
-                  resolve(null);
+                  resolve(data.diagnostics ? { matched: false, diagnostics: data.diagnostics } : null);
                 }
               } else {
-                reject(new Error(data.error || 'Identification failed'));
+                const message = data.diagnostics
+                  ? `${data.error || 'Identification failed'} Diagnostics: ${data.diagnostics}`
+                  : (data.error || 'Identification failed');
+                reject(new Error(message));
               }
             } catch (err) {
               reject(new Error('Failed to parse identify response: ' + body));

@@ -19,10 +19,12 @@ typedef INT_PTR (*pfp)(INT_PTR FuncNo, LONG_PTR Param1, LONG_PTR Param2, LONG_PT
 #define FP_GETFPDATA                        12
 #define FP_VERIFYFPDATA                     44
 #define FP_IDENTIFYFPDATA                   43
+#define FP_DELETEALL                        52
 #define FP_GETLIBVER                        100
 #define FP_GETMATCHDATA                     1000
 
 #define SENSOR_EB6048                       4
+#define SENSOR_GC0307                       5
 #define FEATURE_SIZE                        1404
 
 // Base64 helper character set
@@ -109,6 +111,21 @@ pfp load_sfe_library(void** handle_out) {
     return fp_func;
 }
 
+INT_PTR open_sfe_engine(pfp fp, int* selected_sensor) {
+    const int sensors[] = { SENSOR_GC0307, 1, SENSOR_EB6048, 6, 0, 2, 3, 7, 8 };
+    for (int sensor : sensors) {
+        INT_PTR ret = fp(FP_OPEN, sensor, 0, 0);
+        if (ret == 0) {
+            if (selected_sensor) *selected_sensor = sensor;
+            return ret;
+        }
+        fp(FP_CLOSE, 0, 0, 0);
+    }
+
+    if (selected_sensor) *selected_sensor = -1;
+    return -100;
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "{\"success\":false,\"error\":\"Missing command. Usage: sfe_cli [version|verify|identify] ...\"}" << std::endl;
@@ -149,28 +166,40 @@ int main(int argc, char* argv[]) {
         pfp fp = load_sfe_library(&handle);
         if (!fp) return 1;
 
-        // Open the engine
-        INT_PTR open_ret = fp(FP_OPEN, SENSOR_EB6048, 0, 0);
-        if (open_ret < 0 && open_ret != -100) { // DEV_ERR is -100, which we can ignore for template-only comparisons
-            std::cerr << "{\"success\":false,\"error\":\"Engine Open failed with code: " << open_ret << "\"}" << std::endl;
+        int selected_sensor = -1;
+        INT_PTR open_ret = open_sfe_engine(fp, &selected_sensor);
+        if (open_ret != 0) {
+            std::cerr << "{\"success\":false,\"error\":\"Engine Open failed with code: " << open_ret << "\",\"diagnostics\":\"sensor=" << selected_sensor << "\"}" << std::endl;
             dlclose(handle);
             return 1;
         }
 
-        // Load template B into database position 0
+        fp(FP_DELETEALL, 0, 0, 0);
         INT_PTR set_ret = fp(FP_SETFPDATA, (LONG_PTR)tempB.data(), 0, 0);
         if (set_ret < 0) {
-            std::cerr << "{\"success\":false,\"error\":\"Set template B failed with code: " << set_ret << "\"}" << std::endl;
+            std::cerr << "{\"success\":false,\"error\":\"Set template B failed with code: " << set_ret << "\",\"diagnostics\":\"sensor=" << selected_sensor << "\"}" << std::endl;
             fp(FP_CLOSE, 0, 0, 0);
             dlclose(handle);
             return 1;
         }
 
-        // Verify template A against position 0
         INT_PTR verify_ret = fp(FP_VERIFYFPDATA, (LONG_PTR)tempA.data(), 0, 0);
+        long long similarity = 0;
+        if (verify_ret <= 0) {
+            INT_PTR identify_ret = fp(FP_IDENTIFYFPDATA, (LONG_PTR)tempA.data(), (LONG_PTR)&similarity, 0);
+            if (identify_ret > 0) verify_ret = identify_ret;
+        }
 
         bool matched = (verify_ret > 0);
-        std::cout << "{\"success\":true,\"matched\":" << (matched ? "true" : "false") << ",\"code\":" << verify_ret << "}" << std::endl;
+        std::cout << "{\"success\":true,\"matched\":" << (matched ? "true" : "false")
+                  << ",\"code\":" << verify_ret
+                  << ",\"similarity\":" << similarity
+                  << ",\"diagnostics\":\"lenA=" << tempA.size()
+                  << ",lenB=" << tempB.size()
+                  << ",sensor=" << selected_sensor
+                  << ",open=" << open_ret
+                  << ",set=" << set_ret
+                  << ",verify=" << verify_ret << "\"}" << std::endl;
 
         fp(FP_CLOSE, 0, 0, 0);
         dlclose(handle);
@@ -202,13 +231,15 @@ int main(int argc, char* argv[]) {
         pfp fp = load_sfe_library(&handle);
         if (!fp) return 1;
 
-        // Open the engine
-        INT_PTR open_ret = fp(FP_OPEN, SENSOR_EB6048, 0, 0);
-        if (open_ret < 0 && open_ret != -100) {
-            std::cerr << "{\"success\":false,\"error\":\"Engine Open failed with code: " << open_ret << "\"}" << std::endl;
+        int selected_sensor = -1;
+        INT_PTR open_ret = open_sfe_engine(fp, &selected_sensor);
+        if (open_ret != 0) {
+            std::cerr << "{\"success\":false,\"error\":\"Engine Open failed with code: " << open_ret << "\",\"diagnostics\":\"sensor=" << selected_sensor << "\"}" << std::endl;
             dlclose(handle);
             return 1;
         }
+
+        fp(FP_DELETEALL, 0, 0, 0);
 
         // Load templates into matching database slots
         std::string line;
