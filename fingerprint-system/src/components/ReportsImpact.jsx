@@ -83,7 +83,7 @@ const ReportsImpact = () => {
     } catch (error) {
       console.warn('API: Failed to fetch impact data, checking SQLite cache...', error);
       try {
-        const localMetrics = await executeQuery('SELECT * FROM reports_impact_metrics WHERE year = ?', [currentYear]);
+        const localMetrics = await executeQueray('SELECT * FROM reports_impact_metrics WHERE year = ?', [currentYear]);
         if (localMetrics.length > 0) {
           const datasets = localMetrics.map(row => ({
             label: row.label,

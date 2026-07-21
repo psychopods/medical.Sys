@@ -34,7 +34,6 @@ typedef INT_PTR (*pfp)(INT_PTR FuncNo, LONG_PTR Param1, LONG_PTR Param2, LONG_PT
 #define FP_GETFPDATA                        12
 #define FP_IDENTIFYFPDATA                   43
 #define FP_VERIFYFPDATA                     44
-#define FP_DELETEALL                        52
 
 #define FP_SEN_ADJUST                      60
 #define FP_SEN_CAPTURE                     61
@@ -43,6 +42,7 @@ typedef INT_PTR (*pfp)(INT_PTR FuncNo, LONG_PTR Param1, LONG_PTR Param2, LONG_PT
 #define FP_SEN_GETFEATURE                  64
 
 #define FP_GETLIBVER                        100
+#define FP_DELETEALL                        52
 #define FP_GETMATCHDATA                     1000
 
 #define SENSOR_EB6048                       4
@@ -241,7 +241,7 @@ std::vector<int> build_sensor_probe_order(int requestedSensorType) {
 }
 
 // -----------------------------------------------------------------------------
-// Core Business Logic
+// Core Business Logic (With Strict Finger Presence & Minutiae Validation)
 // -----------------------------------------------------------------------------
 std::string handle_capture_request(int sensorType) {
     std::lock_guard<std::mutex> lock(g_sfe_mutex);
@@ -259,12 +259,15 @@ std::string handle_capture_request(int sensorType) {
             int isFinger = g_nativeDriver.isFingerPlaced();
             diag << "cap=" << capRet << ",isFinger=" << isFinger << ";";
 
-            std::vector<unsigned char> templ;
-            if (g_nativeDriver.getFeatureTemplate(templ)) {
-                g_nativeDriver.closeDevice();
-                std::string b64Template = base64_encode(templ.data(), templ.size());
-                diag << "extract_success=1404;";
-                return "{\"success\":true,\"template\":\"" + b64Template + "\",\"sensorType\":" + std::to_string(sensorType) + ",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
+            // Only extract if human finger is physically present (> 0)
+            if (isFinger > 0) {
+                std::vector<unsigned char> templ;
+                if (g_nativeDriver.getFeatureTemplate(templ)) {
+                    g_nativeDriver.closeDevice();
+                    std::string b64Template = base64_encode(templ.data(), templ.size());
+                    diag << "extract_success=1404;";
+                    return "{\"success\":true,\"template\":\"" + b64Template + "\",\"sensorType\":" + std::to_string(sensorType) + ",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
+                }
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(150));
@@ -284,53 +287,55 @@ std::string handle_capture_request(int sensorType) {
                 INT_PTR openRet = drv.fp_func(FP_OPEN, sType, br, 0);
                 diag << "open=" << openRet << "(br=" << br << "),";
 
-                try {
-                    drv.fp_func(FP_SEN_ADJUST, 0, 0, 0);
+                if (openRet == 0) {
+                    try {
+                        drv.fp_func(FP_SEN_ADJUST, 0, 0, 0);
 
-                    auto startTime = std::chrono::steady_clock::now();
-                    while (std::chrono::duration_cast<std::chrono::seconds>(
-                               std::chrono::steady_clock::now() - startTime).count() < 10) {
-                        INT_PTR capRet = drv.fp_func(FP_SEN_CAPTURE, 0, 0, 0);
-                        INT_PTR isFingerRet = drv.fp_func(FP_SEN_ISFINGER, 0, 0, 0);
-                        diag << "cap=" << capRet << ",isFinger=" << isFingerRet << ";";
+                        auto startTime = std::chrono::steady_clock::now();
+                        while (std::chrono::duration_cast<std::chrono::seconds>(
+                                   std::chrono::steady_clock::now() - startTime).count() < 10) {
+                            INT_PTR capRet = drv.fp_func(FP_SEN_CAPTURE, 0, 0, 0);
+                            INT_PTR isFingerRet = drv.fp_func(FP_SEN_ISFINGER, 0, 0, 0);
+                            diag << "cap=" << capRet << ",isFinger=" << isFingerRet << ";";
 
-                        std::vector<unsigned char> templateBuf(FEATURE_SIZE, 0);
-                        INT_PTR extRet = drv.fp_func(FP_SEN_GETFEATURE, (LONG_PTR)templateBuf.data(), 0, 0);
-                        if (extRet < 0) {
-                            extRet = drv.fp_func(FP_FEATUREGETFROMIMAGE, (LONG_PTR)templateBuf.data(), 0, 0);
+                            // Require isFingerRet > 0 (NOT_FINGER = -11)
+                            if (isFingerRet > 0) {
+                                std::vector<unsigned char> templateBuf(FEATURE_SIZE, 0);
+                                INT_PTR extRet = drv.fp_func(FP_SEN_GETFEATURE, (LONG_PTR)templateBuf.data(), 0, 0);
+                                if (extRet < 0) {
+                                    extRet = drv.fp_func(FP_FEATUREGETFROMIMAGE, (LONG_PTR)templateBuf.data(), 0, 0);
+                                }
+
+                                int minutiaeCount = 0;
+                                for (size_t k = 7; k < templateBuf.size(); k++) {
+                                    if (templateBuf[k] != 0) minutiaeCount++;
+                                }
+
+                                // Require at least 20 minutiae feature bytes
+                                if (extRet >= 0 && minutiaeCount >= 20) {
+                                    drv.fp_func(FP_CLOSE, 0, 0, 0);
+                                    std::string b64Template = base64_encode(templateBuf.data(), templateBuf.size());
+                                    diag << "extract=" << extRet << ",minutiaeCount=" << minutiaeCount << ";";
+                                    return "{\"success\":true,\"template\":\"" + b64Template + "\",\"sensorType\":" + std::to_string(sType) + ",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
+                                }
+                            }
+
+                            std::this_thread::sleep_for(std::chrono::milliseconds(150));
                         }
-                        if (extRet < 0) {
-                            extRet = drv.fp_func(FP_GETFPDATA, (LONG_PTR)templateBuf.data(), 0, 0);
-                        }
-
-                        int nonZeroBytes = 0;
-                        for (unsigned char b : templateBuf) {
-                            if (b != 0) nonZeroBytes++;
-                        }
-
-                        if (nonZeroBytes > 0) {
-                            drv.fp_func(FP_CLOSE, 0, 0, 0);
-                            std::string b64Template = base64_encode(templateBuf.data(), templateBuf.size());
-                            diag << "extract=" << extRet << ",nonZeroBytes=" << nonZeroBytes << ";";
-                            return "{\"success\":true,\"template\":\"" + b64Template + "\",\"sensorType\":" + std::to_string(sType) + ",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
-                        }
-
-                        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+                    } catch (...) {
+                        drv.fp_func(FP_CLOSE, 0, 0, 0);
                     }
-                } catch (...) {
-                    drv.fp_func(FP_CLOSE, 0, 0, 0);
                 }
                 drv.fp_func(FP_CLOSE, 0, 0, 0);
             }
         }
     }
 
-    return "{\"success\":false,\"error\":\"Failed to capture fingerprint from scanner. Please place finger firmly on the scanner optical window and try again.\",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
+    return "{\"success\":false,\"error\":\"Failed to capture fingerprint. Please press your finger firmly onto the scanner glass window until the light pulses.\",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
 }
 
 std::string handle_verify_request(const std::string& templateA_b64, const std::string& templateB_b64) {
     std::lock_guard<std::mutex> lock(g_sfe_mutex);
-    std::ostringstream diag;
 
     if (g_drivers.empty()) {
         return "{\"success\":false,\"error\":\"SFE driver libraries are not available.\"}";
@@ -340,55 +345,67 @@ std::string handle_verify_request(const std::string& templateA_b64, const std::s
     std::vector<unsigned char> tempB = base64_decode(templateB_b64);
 
     if (tempA.size() < FEATURE_SIZE || tempB.size() < FEATURE_SIZE) {
-        return "{\"success\":false,\"error\":\"Invalid template size. Templates must decode to at least " + std::to_string(FEATURE_SIZE) + " bytes.\"}";
+        return "{\"success\":false,\"error\":\"Invalid template size. Must decode to at least " + std::to_string(FEATURE_SIZE) + " bytes.\"}";
     }
 
-    std::vector<int> sensors = build_sensor_probe_order(SENSOR_GC0307);
+    pfp fp_func = g_drivers[0].fp_func;
+    std::ostringstream diag;
+    diag << "lenA=" << tempA.size() << ",lenB=" << tempB.size() << ";";
 
-    for (const auto& drv : g_drivers) {
-        diag << "lib=" << drv.name << ":";
-        for (int sensor : sensors) {
-            INT_PTR openRet = drv.fp_func(FP_OPEN, sensor, 0, 0);
-            diag << "sensor=" << sensor << ",open=" << openRet << ";";
-            if (openRet != 0) {
-                drv.fp_func(FP_CLOSE, 0, 0, 0);
-                continue;
+    int brValues[] = { 0, 10, 20, -10, -20 };
+    INT_PTR openRet = -100;
+
+    for (int sType : SENSOR_PROBE_ORDER) {
+        for (int br : brValues) {
+            openRet = fp_func(FP_OPEN, sType, br, 0);
+            if (openRet == 0) {
+                diag << "sensor=" << sType << ",open=0;";
+                break;
             }
+            fp_func(FP_CLOSE, 0, 0, 0);
+        }
+        if (openRet == 0) break;
+    }
 
-            INT_PTR clearRet = drv.fp_func(FP_DELETEALL, 0, 0, 0);
-            INT_PTR setRet = drv.fp_func(FP_SETFPDATA, (LONG_PTR)tempB.data(), 0, 0);
-            INT_PTR verifyRet = -9999;
-            LONG_PTR similarity = 0;
-            if (setRet == 0) {
-                verifyRet = drv.fp_func(FP_VERIFYFPDATA, (LONG_PTR)tempA.data(), 0, 0);
-                if (verifyRet <= 0) {
-                    INT_PTR identifyRet = drv.fp_func(FP_IDENTIFYFPDATA, (LONG_PTR)tempA.data(), (LONG_PTR)&similarity, 0);
-                    if (identifyRet > 0) {
-                        verifyRet = identifyRet;
-                    }
-                    diag << "identify=" << identifyRet << ";";
-                }
-            }
+    if (openRet != 0) {
+        return "{\"success\":false,\"error\":\"Engine Open failed with code: " + std::to_string(openRet) + "\",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
+    }
 
-            bool matched = (verifyRet > 0);
-            diag << "clear=" << clearRet << ",set=" << setRet << ",verify=" << verifyRet << ",similarity=" << similarity << ";";
-            drv.fp_func(FP_CLOSE, 0, 0, 0);
+    // Clear DB
+    INT_PTR clearRet = fp_func(FP_DELETEALL, 0, 0, 0);
+    diag << "clear=" << clearRet << ",";
 
-            return "{\"success\":true,\"matched\":" + std::string(matched ? "true" : "false") +
-                ",\"code\":" + std::to_string(verifyRet) +
-                ",\"similarity\":" + std::to_string(similarity) +
-                ",\"diagnostics\":\"lenA=" + std::to_string(tempA.size()) +
-                ",lenB=" + std::to_string(tempB.size()) + ";" + escape_json(diag.str()) + "\"}";
+    // Load Candidate Template B into Engine slot 0
+    INT_PTR setRet = fp_func(FP_SETFPDATA, (LONG_PTR)tempB.data(), 0, 0);
+    diag << "set=" << setRet << ",";
+
+    if (setRet < 0) {
+        fp_func(FP_CLOSE, 0, 0, 0);
+        return "{\"success\":false,\"error\":\"Failed to load candidate template into engine (code: " + std::to_string(setRet) + ")\",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
+    }
+
+    // Verify Captured Template A against slot 0
+    INT_PTR verifyRet = fp_func(FP_VERIFYFPDATA, (LONG_PTR)tempA.data(), 0, 0);
+    diag << "verify=" << verifyRet << ";";
+
+    LONG_PTR similarity = 0;
+    if (verifyRet <= 0) {
+        INT_PTR identifyRet = fp_func(FP_IDENTIFYFPDATA, (LONG_PTR)tempA.data(), (LONG_PTR)&similarity, 0);
+        diag << "identify=" << identifyRet << ",sim=" << similarity << ";";
+        if (identifyRet > 0) {
+            verifyRet = identifyRet;
         }
     }
 
-    return "{\"success\":false,\"error\":\"Could not open SFE engine for verification.\",\"diagnostics\":\"lenA=" +
-        std::to_string(tempA.size()) + ",lenB=" + std::to_string(tempB.size()) + ";" + escape_json(diag.str()) + "\"}";
+    bool matched = (verifyRet > 0);
+
+    fp_func(FP_CLOSE, 0, 0, 0);
+
+    return "{\"success\":true,\"matched\":" + std::string(matched ? "true" : "false") + ",\"code\":" + std::to_string(verifyRet) + ",\"similarity\":" + std::to_string(similarity) + ",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
 }
 
 std::string handle_identify_request(const std::string& candidate_b64, const std::string& bodyText) {
     std::lock_guard<std::mutex> lock(g_sfe_mutex);
-    std::ostringstream diag;
 
     if (g_drivers.empty()) {
         return "{\"success\":false,\"error\":\"SFE driver libraries are not available.\"}";
@@ -398,6 +415,22 @@ std::string handle_identify_request(const std::string& candidate_b64, const std:
     if (candidate.size() < FEATURE_SIZE) {
         return "{\"success\":false,\"error\":\"Invalid candidate template size.\"}";
     }
+
+    pfp fp_func = g_drivers[0].fp_func;
+
+    INT_PTR openRet = -100;
+    for (int sType : SENSOR_PROBE_ORDER) {
+        openRet = fp_func(FP_OPEN, sType, 0, 0);
+        if (openRet == 0) break;
+        fp_func(FP_CLOSE, 0, 0, 0);
+    }
+
+    if (openRet != 0) {
+        return "{\"success\":false,\"error\":\"Engine Open failed with code: " + std::to_string(openRet) + "\"}";
+    }
+
+    // Clear database memory
+    fp_func(FP_DELETEALL, 0, 0, 0);
 
     std::vector<std::pair<std::string, std::vector<unsigned char>>> candidateList;
     size_t pos = 0;
@@ -414,61 +447,40 @@ std::string handle_identify_request(const std::string& candidate_b64, const std:
     }
 
     if (candidateList.empty()) {
+        fp_func(FP_CLOSE, 0, 0, 0);
         return "{\"success\":true,\"matched\":false,\"message\":\"No valid candidate templates found in payload.\"}";
     }
 
-    std::vector<int> sensors = build_sensor_probe_order(SENSOR_GC0307);
-
-    for (const auto& drv : g_drivers) {
-        diag << "lib=" << drv.name << ":";
-        for (int sensor : sensors) {
-            INT_PTR openRet = drv.fp_func(FP_OPEN, sensor, 0, 0);
-            diag << "sensor=" << sensor << ",open=" << openRet << ";";
-            if (openRet != 0) {
-                drv.fp_func(FP_CLOSE, 0, 0, 0);
-                continue;
+    int slot_index = 0;
+    std::vector<std::string> slotIds;
+    for (auto& item : candidateList) {
+        if (item.second.size() >= FEATURE_SIZE) {
+            INT_PTR setRet = fp_func(FP_SETFPDATA, (LONG_PTR)item.second.data(), slot_index, 0);
+            if (setRet == 0) {
+                slotIds.push_back(item.first);
+                slot_index++;
             }
-
-            INT_PTR clearRet = drv.fp_func(FP_DELETEALL, 0, 0, 0);
-            int slot_index = 0;
-            std::vector<std::string> slotIds;
-            for (auto& item : candidateList) {
-                if (item.second.size() >= FEATURE_SIZE) {
-                    INT_PTR setRet = drv.fp_func(FP_SETFPDATA, (LONG_PTR)item.second.data(), slot_index, 0);
-                    diag << "slot=" << slot_index << ",set=" << setRet << ";";
-                    if (setRet == 0) {
-                        slotIds.push_back(item.first);
-                        slot_index++;
-                    }
-                }
-            }
-
-            if (slot_index == 0) {
-                drv.fp_func(FP_CLOSE, 0, 0, 0);
-                return "{\"success\":true,\"matched\":false,\"message\":\"Could not load candidate templates into engine slots.\",\"diagnostics\":\"clear=" +
-                    std::to_string(clearRet) + ";" + escape_json(diag.str()) + "\"}";
-            }
-
-            LONG_PTR similarity = 0;
-            INT_PTR identifyRet = drv.fp_func(FP_IDENTIFYFPDATA, (LONG_PTR)candidate.data(), (LONG_PTR)&similarity, 0);
-            diag << "clear=" << clearRet << ",identify=" << identifyRet << ",similarity=" << similarity << ";";
-            drv.fp_func(FP_CLOSE, 0, 0, 0);
-
-            if (identifyRet > 0) {
-                int matchedIdx = (int)(identifyRet - 1);
-                if (matchedIdx >= 0 && matchedIdx < (int)slotIds.size()) {
-                    return "{\"success\":true,\"matched\":true,\"id\":\"" + slotIds[matchedIdx] +
-                        "\",\"similarity\":" + std::to_string(similarity) +
-                        ",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
-                }
-            }
-
-            return "{\"success\":true,\"matched\":false,\"code\":" + std::to_string(identifyRet) +
-                ",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
         }
     }
 
-    return "{\"success\":false,\"error\":\"Could not open SFE engine for identification.\",\"diagnostics\":\"" + escape_json(diag.str()) + "\"}";
+    if (slot_index == 0) {
+        fp_func(FP_CLOSE, 0, 0, 0);
+        return "{\"success\":true,\"matched\":false,\"message\":\"Could not load candidate templates into engine slots.\"}";
+    }
+
+    LONG_PTR similarity = 0;
+    INT_PTR identifyRet = fp_func(FP_IDENTIFYFPDATA, (LONG_PTR)candidate.data(), (LONG_PTR)&similarity, 0);
+
+    fp_func(FP_CLOSE, 0, 0, 0);
+
+    if (identifyRet > 0) {
+        int matchedIdx = (int)(identifyRet - 1);
+        if (matchedIdx >= 0 && matchedIdx < (int)slotIds.size()) {
+            return "{\"success\":true,\"matched\":true,\"id\":\"" + slotIds[matchedIdx] + "\",\"similarity\":" + std::to_string(similarity) + "}";
+        }
+    }
+
+    return "{\"success\":true,\"matched\":false,\"code\":" + std::to_string(identifyRet) + "}";
 }
 
 // -----------------------------------------------------------------------------
@@ -580,7 +592,7 @@ void handle_client(int clientSocket) {
     if (route == "/" || route == "/status") {
         responseJson = "{\"success\":true,\"status\":\"running\",\"details\":\"SFE Linux Biometric Proxy Server (Native Driver)\"}";
     } else if (route == "/capture") {
-        int sensorType = SENSOR_EB6048;
+        int sensorType = SENSOR_GC0307;
         if (queryPos != std::string::npos) {
             std::string queryString = path.substr(queryPos + 1);
             if (queryString.find("sensorType=") != std::string::npos) {

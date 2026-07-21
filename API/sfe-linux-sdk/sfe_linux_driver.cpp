@@ -167,11 +167,17 @@ int SfeLinuxDriver::isFingerPlaced() {
         return (int)resp[0];
     }
 
-    return 0;
+    return -11; // NOT_FINGER
 }
 
 bool SfeLinuxDriver::getFeatureTemplate(std::vector<unsigned char>& outTemplate) {
     if (m_fd < 0) return false;
+
+    // 1. Strict Finger Touch Validation: Must be > 0 (NOT_FINGER = -11)
+    int fingerStatus = isFingerPlaced();
+    if (fingerStatus <= 0) {
+        return false; // Air / No finger on optical sensor!
+    }
 
     outTemplate.assign(FEATURE_SIZE, 0);
 
@@ -183,12 +189,16 @@ bool SfeLinuxDriver::getFeatureTemplate(std::vector<unsigned char>& outTemplate)
     sendScsiCmd(cdbOut, sizeof(cdbOut), payload, sizeof(payload), true);
 
     unsigned char cdbIn[10] = { 0xef, 0xff, 0x40, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00 };
-    sendScsiCmd(cdbIn, sizeof(cdbIn), outTemplate.data(), outTemplate.size(), false);
-
-    int nonZero = 0;
-    for (unsigned char b : outTemplate) {
-        if (b != 0) nonZero++;
+    if (!sendScsiCmd(cdbIn, sizeof(cdbIn), outTemplate.data(), outTemplate.size(), false)) {
+        return false;
     }
 
-    return nonZero > 0;
+    // 2. Count minutiae feature bytes starting at offset 7
+    int minutiaeCount = 0;
+    for (size_t i = 7; i < outTemplate.size(); i++) {
+        if (outTemplate[i] != 0) minutiaeCount++;
+    }
+
+    // Require at least 20 minutiae feature bytes for a valid human fingerprint!
+    return minutiaeCount >= 20;
 }
