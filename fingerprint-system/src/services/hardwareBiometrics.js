@@ -1,11 +1,12 @@
 /**
- * Service to communicate with the local Windows Biometric Proxy Server (http://localhost:5000)
+ * Cross-platform Service to communicate with the local Biometric Proxy Server (http://localhost:5000)
+ * Works on both Linux (sfe_linux_middleman) and Windows (sfe_middleman64.exe)
  */
 
 const LOCAL_PROXY_URL = 'http://localhost:5000';
 
 /**
- * Checks if the local Windows Biometric Proxy server is active
+ * Checks if the local Biometric Proxy server is active
  * @returns {Promise<boolean>}
  */
 export async function checkHardwareProxyStatus() {
@@ -13,6 +14,8 @@ export async function checkHardwareProxyStatus() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 2000);
     const response = await fetch(`${LOCAL_PROXY_URL}/status`, {
+      mode: 'cors',
+      credentials: 'omit',
       signal: controller.signal
     });
     clearTimeout(timeoutId);
@@ -33,7 +36,10 @@ export async function checkHardwareProxyStatus() {
  */
 export async function captureFromHardware(sensorType = 4) {
   try {
-    const response = await fetch(`${LOCAL_PROXY_URL}/capture?sensorType=${sensorType}`);
+    const response = await fetch(`${LOCAL_PROXY_URL}/capture?sensorType=${sensorType}`, {
+      mode: 'cors',
+      credentials: 'omit'
+    });
     const data = await response.json();
     
     if (data.success && data.template) {
@@ -51,8 +57,8 @@ export async function captureFromHardware(sensorType = 4) {
       throw new Error(message);
     }
   } catch (error) {
-    if (error.name === 'AbortError' || error.message.includes('Failed to fetch')) {
-      throw new Error("Local biometric scanner proxy server (sfe_middleman64.exe) is not running on port 5000.");
+    if (error.name === 'AbortError' || error.message.includes('Failed to fetch') || error.message.includes('ERR_CONNECTION_REFUSED')) {
+      throw new Error("Local biometric scanner proxy server (sfe_middleman) is not running on port 5000. Please start the middleman service.");
     }
     throw error;
   }
@@ -68,6 +74,8 @@ export async function verifyWithHardware(templateA, templateB) {
   try {
     const response = await fetch(`${LOCAL_PROXY_URL}/verify`, {
       method: 'POST',
+      mode: 'cors',
+      credentials: 'omit',
       headers: {
         'Content-Type': 'application/json'
       },

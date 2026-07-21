@@ -435,8 +435,17 @@ namespace SfeWindowsProxy
             HttpListenerRequest request = context.Request;
             HttpListenerResponse response = context.Response;
 
-            response.AddHeader("Access-Control-Allow-Origin", "*");
-            response.AddHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+            string clientOrigin = request.Headers["Origin"];
+            if (!string.IsNullOrEmpty(clientOrigin))
+            {
+                response.AddHeader("Access-Control-Allow-Origin", clientOrigin);
+                response.AddHeader("Access-Control-Allow-Credentials", "true");
+            }
+            else
+            {
+                response.AddHeader("Access-Control-Allow-Origin", "*");
+            }
+            response.AddHeader("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization, X-Requested-With");
             response.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
             response.ContentType = "application/json";
 

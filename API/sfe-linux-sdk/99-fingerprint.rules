@@ -1,4 +1,6 @@
-# Udev rule for Smackbio SB1001U USB Fingerprint Scanner
-# Registers the SCSI generic device (sg) node with read-write permissions for the dialout group
+# Udev rules for Smackbio SB1001U USB Fingerprint Scanner & SCSI generic nodes
+# Sets mode 0666 and dialout/disk group for seamless Linux scanner hardware access
 
-KERNEL=="sg*", ATTRS{idVendor}=="2009", ATTRS{idProduct}=="7638", MODE="0660", GROUP="dialout"
+KERNEL=="sg*", MODE="0666", GROUP="dialout"
+SUBSYSTEM=="scsi_generic", MODE="0666", GROUP="dialout"
+SUBSYSTEM=="usb", ATTRS{idVendor}=="2009", ATTRS{idProduct}=="7638", MODE="0666", GROUP="dialout"

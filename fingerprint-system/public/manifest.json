@@ -1,0 +1,21 @@
+{
+  "name": "Tanzania Rural Health Movement - Street Medicine",
+  "short_name": "TRHM Street Med",
+  "description": "Offline-first hospital management and child biometric registration system.",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/mitz-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/mitz-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

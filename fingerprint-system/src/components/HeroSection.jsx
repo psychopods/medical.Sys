@@ -136,7 +136,7 @@ const HeroSection = () => {
                 </defs>
                 <text className="circular-text">
                   <textPath href="#circlePath" startOffset="0%">
-                    CLICK HERE TO JOIN OUR MOVEMENT TODAY <tspan fill="white" fontWeight="900" textShadow="0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(255,215,0,0.6)">{currentDate}</tspan> • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • 
+                    CLICK HERE TO JOIN OUR MOVEMENT TODAY <tspan fill="white" style={{ fontWeight: 900, textShadow: '0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(255,215,0,0.6)' }}>{currentDate}</tspan> • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • 
                   </textPath>
                 </text>
               </svg>
