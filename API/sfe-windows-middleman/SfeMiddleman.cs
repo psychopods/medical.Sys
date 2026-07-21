@@ -18,6 +18,12 @@ namespace SfeWindowsProxy
         private static NotifyIcon trayIcon;
         private static ContextMenu trayMenu;
 
+        private class CaptureResult
+        {
+            public string TemplateBase64;
+            public string ImageBase64;
+        }
+
         // Constants from SFE.h
         private const int SENSOR_EB6048 = 4;
         private const int SENSOR_GC0307 = 5;
@@ -184,8 +190,32 @@ namespace SfeWindowsProxy
             return sensors;
         }
 
-        private static bool CaptureStableImage(StringBuilder diagnostics)
+        private static string GrayscaleImageToPngBase64(byte[] image)
         {
+            if (image == null || image.Length < 256 * 256) return "";
+
+            using (Bitmap bitmap = new Bitmap(256, 256))
+            {
+                for (int y = 0; y < 256; y++)
+                {
+                    for (int x = 0; x < 256; x++)
+                    {
+                        int value = image[(y * 256) + x];
+                        bitmap.SetPixel(x, y, Color.FromArgb(value, value, value));
+                    }
+                }
+
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                    return Convert.ToBase64String(stream.ToArray());
+                }
+            }
+        }
+
+        private static bool CaptureStableImage(StringBuilder diagnostics, out byte[] capturedImage)
+        {
+            capturedImage = null;
             DateTime startTime = DateTime.Now;
             int maxFingerArea = 0;
             bool sawFinger = false;
@@ -223,7 +253,12 @@ namespace SfeWindowsProxy
                         byte[] image = new byte[256 * 256];
                         int imgRet = SfemGetImage(image);
                         diagnostics.Append("getImage=").Append(imgRet).Append(",maxArea=").Append(maxFingerArea).Append("; ");
-                        return imgRet >= 0;
+                        if (imgRet >= 0)
+                        {
+                            capturedImage = image;
+                            return true;
+                        }
+                        return false;
                     }
                 }
 
@@ -235,7 +270,7 @@ namespace SfeWindowsProxy
         }
 
 
-        private static string TryCaptureWithSensor(int sensorType, StringBuilder diagnostics)
+        private static CaptureResult TryCaptureWithSensor(int sensorType, StringBuilder diagnostics)
         {
             diagnostics.Append("sensor=").Append(sensorType).Append(":");
 
@@ -267,7 +302,8 @@ namespace SfeWindowsProxy
                     for (int attempt = 1; attempt <= 3; attempt++)
                     {
                         diagnostics.Append("attempt=").Append(attempt).Append(",");
-                        if (!CaptureStableImage(diagnostics))
+                        byte[] capturedImage;
+                        if (!CaptureStableImage(diagnostics, out capturedImage))
                         {
                             Thread.Sleep(200);
                             continue;
@@ -316,7 +352,11 @@ namespace SfeWindowsProxy
 
                         if (hasData)
                         {
-                            return Convert.ToBase64String(template);
+                            return new CaptureResult
+                            {
+                                TemplateBase64 = Convert.ToBase64String(template),
+                                ImageBase64 = GrayscaleImageToPngBase64(capturedImage)
+                            };
                         }
 
                         Thread.Sleep(200);
@@ -513,11 +553,14 @@ namespace SfeWindowsProxy
 
                 for (int i = 0; i < sensors.Count; i++)
                 {
-                    string base64Template = TryCaptureWithSensor(sensors[i], diagnostics);
-                    if (!string.IsNullOrEmpty(base64Template))
+                    CaptureResult captureResult = TryCaptureWithSensor(sensors[i], diagnostics);
+                    if (captureResult != null && !string.IsNullOrEmpty(captureResult.TemplateBase64))
                     {
                         trayIcon.ShowBalloonTip(2000, "Fingerprint Scanner", "Fingerprint captured successfully!", ToolTipIcon.Info);
-                        return "{\"success\":true,\"template\":\"" + base64Template + "\",\"sensorType\":" + sensors[i] + ",\"diagnostics\":\"" + EscapeJson(diagnostics.ToString()) + "\"}";
+                        string imageJson = string.IsNullOrEmpty(captureResult.ImageBase64)
+                            ? ""
+                            : ",\"imageBase64\":\"" + captureResult.ImageBase64 + "\",\"imageMime\":\"image/png\",\"imageWidth\":256,\"imageHeight\":256";
+                        return "{\"success\":true,\"template\":\"" + captureResult.TemplateBase64 + "\",\"sensorType\":" + sensors[i] + imageJson + ",\"diagnostics\":\"" + EscapeJson(diagnostics.ToString()) + "\"}";
                     }
                 }
 

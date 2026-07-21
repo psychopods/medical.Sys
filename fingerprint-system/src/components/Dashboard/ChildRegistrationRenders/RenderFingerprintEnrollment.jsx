@@ -51,6 +51,7 @@ const RenderFingerprintEnrollment = ({
   selectedFinger,
   fingerCaptures,
   fingerQuality,
+  fingerImages,
   capturedFingers,
   fingerNames,
   handleCancelEnrollment,
@@ -162,7 +163,16 @@ const RenderFingerprintEnrollment = ({
               </>
             ) : selectedFinger && fingerCaptures[selectedFinger] ? (
               <div className="child-reg-capture-success">
-                <SuccessIcon width={80} height={80} />
+                {fingerImages?.[selectedFinger] ? (
+                  <div className="child-reg-fingerprint-preview">
+                    <img
+                      src={fingerImages[selectedFinger]}
+                      alt={`${fingerNames[selectedFinger].name} fingerprint scan`}
+                    />
+                  </div>
+                ) : (
+                  <SuccessIcon width={80} height={80} />
+                )}
                 <h3>Fingerprint Captured!</h3>
                 <p><strong>{fingerNames[selectedFinger].name}</strong></p>
                 <p>Quality Score: <strong>{fingerQuality[selectedFinger]}%</strong></p>
@@ -205,6 +215,13 @@ const RenderFingerprintEnrollment = ({
             <div className="child-reg-captured-list">
               {capturedFingers.sort((a, b) => a - b).map(fingerIndex => (
                 <div key={fingerIndex} className="child-reg-captured-item">
+                  {fingerImages?.[fingerIndex] && (
+                    <img
+                      className="child-reg-captured-thumb"
+                      src={fingerImages[fingerIndex]}
+                      alt={`${fingerNames[fingerIndex].name} scan`}
+                    />
+                  )}
                   <span className="child-reg-captured-name">{fingerNames[fingerIndex].name}</span>
                   <span className="child-reg-captured-quality" style={{
                     color: fingerQuality[fingerIndex] >= 80 ? '#28a745' : 

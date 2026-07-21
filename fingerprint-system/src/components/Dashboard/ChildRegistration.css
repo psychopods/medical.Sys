@@ -1992,6 +1992,36 @@
   font-size: 20px;
 }
 
+.child-reg-fingerprint-preview {
+  width: 176px;
+  height: 176px;
+  margin: 0 auto 18px;
+  padding: 10px;
+  border: 1px solid #d7dde8;
+  background: #10131a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.child-reg-fingerprint-preview img {
+  width: 156px;
+  height: 156px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: contrast(1.2);
+}
+
+.child-reg-captured-thumb {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border: 1px solid #d7dde8;
+  background: #10131a;
+  image-rendering: pixelated;
+  flex: 0 0 34px;
+}
+
 /* Quality Bar */
 .child-reg-quality-bar {
   width: 100%;

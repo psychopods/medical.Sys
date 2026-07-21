@@ -135,6 +135,7 @@ const ChildRegistration = () => {
   const [fingerCaptures, setFingerCaptures] = useState({});
   const [fingerQuality, setFingerQuality] = useState({});
   const [fingerTemplates, setFingerTemplates] = useState({});
+  const [fingerImages, setFingerImages] = useState({});
   const [capturedFingers, setCapturedFingers] = useState([]);
 
   // Fingerprint enrollment during registration
@@ -142,6 +143,7 @@ const ChildRegistration = () => {
   const [regFingerCaptures, setRegFingerCaptures] = useState({});
   const [regFingerQuality, setRegFingerQuality] = useState({});
   const [regFingerTemplates, setRegFingerTemplates] = useState({});
+  const [regFingerImages, setRegFingerImages] = useState({});
   const [regCapturedFingers, setRegCapturedFingers] = useState([]);
   const [regIsCapturing, setRegIsCapturing] = useState(false);
 
@@ -1142,6 +1144,7 @@ const ChildRegistration = () => {
         setFingerQuality((prev) => ({ ...prev, [selectedFinger]: result.qualityScore }));
         setFingerCaptures((prev) => ({ ...prev, [selectedFinger]: true }));
         setFingerTemplates((prev) => ({ ...prev, [selectedFinger]: result.templateBase64 }));
+        setFingerImages((prev) => ({ ...prev, [selectedFinger]: result.imageDataUrl || null }));
         if (!capturedFingers.includes(selectedFinger)) {
           setCapturedFingers((prev) => [...prev, selectedFinger]);
         }
@@ -1173,6 +1176,11 @@ const ChildRegistration = () => {
       const newTemplates = { ...prev };
       delete newTemplates[fingerIndex];
       return newTemplates;
+    });
+    setFingerImages((prev) => {
+      const newImages = { ...prev };
+      delete newImages[fingerIndex];
+      return newImages;
     });
     setCapturedFingers((prev) => prev.filter((f) => f !== fingerIndex));
     showToast(`Finger ${fingerNames[fingerIndex].name} removed`, "info");
@@ -1215,6 +1223,7 @@ const ChildRegistration = () => {
         setFingerCaptures({});
         setFingerQuality({});
         setFingerTemplates({});
+        setFingerImages({});
         setCapturedFingers([]);
       } else {
         showToast('Failed to save fingerprints', 'error');
@@ -1230,6 +1239,7 @@ const ChildRegistration = () => {
     setFingerCaptures({});
     setFingerQuality({});
     setFingerTemplates({});
+    setFingerImages({});
     setCapturedFingers([]);
   };
 
@@ -1239,6 +1249,7 @@ const ChildRegistration = () => {
     setFingerCaptures({});
     setFingerQuality({});
     setFingerTemplates({});
+    setFingerImages({});
     setCapturedFingers([]);
     setIsCapturing(false);
   };
@@ -1261,6 +1272,7 @@ const ChildRegistration = () => {
         setRegFingerQuality((prev) => ({ ...prev, [regSelectedFinger]: result.qualityScore }));
         setRegFingerCaptures((prev) => ({ ...prev, [regSelectedFinger]: true }));
         setRegFingerTemplates((prev) => ({ ...prev, [regSelectedFinger]: result.templateBase64 }));
+        setRegFingerImages((prev) => ({ ...prev, [regSelectedFinger]: result.imageDataUrl || null }));
         if (!regCapturedFingers.includes(regSelectedFinger)) {
           setRegCapturedFingers((prev) => [...prev, regSelectedFinger]);
         }
@@ -1292,6 +1304,11 @@ const ChildRegistration = () => {
       const newTemplates = { ...prev };
       delete newTemplates[fingerIndex];
       return newTemplates;
+    });
+    setRegFingerImages((prev) => {
+      const newImages = { ...prev };
+      delete newImages[fingerIndex];
+      return newImages;
     });
     setRegCapturedFingers((prev) => prev.filter((f) => f !== fingerIndex));
     showToast(`Finger ${fingerNames[fingerIndex].name} removed`, "info");
@@ -1425,6 +1442,8 @@ const ChildRegistration = () => {
     setPreview3(null);
     setRegFingerCaptures({});
     setRegFingerQuality({});
+    setRegFingerTemplates({});
+    setRegFingerImages({});
     setRegCapturedFingers([]);
     setRegSelectedFinger(null);
     setRegIsCapturing(false);
@@ -1670,6 +1689,8 @@ const ChildRegistration = () => {
     setPreview3(null);
     setRegFingerCaptures({});
     setRegFingerQuality({});
+    setRegFingerTemplates({});
+    setRegFingerImages({});
     setRegCapturedFingers([]);
     setRegSelectedFinger(null);
     setRegIsCapturing(false);
@@ -2291,6 +2312,7 @@ const ChildRegistration = () => {
             selectedFinger={regSelectedFinger}
             fingerCaptures={regFingerCaptures}
             fingerQuality={regFingerQuality}
+            fingerImages={regFingerImages}
             capturedFingers={regCapturedFingers}
             isCapturing={regIsCapturing}
             isSavingFingerprints={isSavingFingerprints}
@@ -2425,6 +2447,7 @@ const ChildRegistration = () => {
             selectedFinger={selectedFinger}
             fingerCaptures={fingerCaptures}
             fingerQuality={fingerQuality}
+            fingerImages={fingerImages}
             capturedFingers={capturedFingers}
             fingerNames={fingerNames}
             handleCancelEnrollment={handleCancelEnrollment}

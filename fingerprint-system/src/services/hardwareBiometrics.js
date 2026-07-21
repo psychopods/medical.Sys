@@ -32,7 +32,7 @@ export async function checkHardwareProxyStatus() {
 /**
  * Trigger a hardware fingerprint capture from the local scanner via the proxy server
  * @param {number} sensorType Default 4 (SENSOR_EB6048)
- * @returns {Promise<{success: boolean, templateBase64: string, qualityScore: number}>}
+ * @returns {Promise<{success: boolean, templateBase64: string, qualityScore: number, imageBase64?: string, imageDataUrl?: string}>}
  */
 export async function captureFromHardware(sensorType = 4) {
   try {
@@ -48,6 +48,11 @@ export async function captureFromHardware(sensorType = 4) {
         templateBase64: data.template,
         qualityScore: Math.floor(Math.random() * 15) + 85, // High quality score for physical scan
         sensorType: data.sensorType,
+        imageBase64: data.imageBase64,
+        imageMime: data.imageMime || (data.imageBase64 ? "image/png" : undefined),
+        imageWidth: data.imageWidth,
+        imageHeight: data.imageHeight,
+        imageDataUrl: data.imageBase64 ? `data:${data.imageMime || "image/png"};base64,${data.imageBase64}` : undefined,
         diagnostics: data.diagnostics
       };
     } else {
