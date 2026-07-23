@@ -22,6 +22,89 @@ function mapChild(child) {
   };
 }
 
+function isQuotaExceededError(error) {
+  return (
+    error?.name === 'QuotaExceededError' ||
+    error?.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+    error?.code === 22 ||
+    error?.code === 1014 ||
+    /quota/i.test(error?.message || '')
+  );
+}
+
+function isInlineImageData(value) {
+  return typeof value === 'string' && value.trim().startsWith('data:image/');
+}
+
+function cacheSafeImageValue(value) {
+  const normalized = normalizeImageUrl(value);
+  return normalized && !isInlineImageData(normalized) ? normalized : null;
+}
+
+function stripInlineImages(record) {
+  return {
+    ...record,
+    image1: cacheSafeImageValue(record.image1),
+    image2: cacheSafeImageValue(record.image2),
+    image3: cacheSafeImageValue(record.image3)
+  };
+}
+
+async function cacheChildProfileLocal({
+  childId,
+  customSerialId,
+  fullName,
+  gender,
+  estimatedBirthYear,
+  primaryLocationId,
+  createdByStaffId,
+  image1,
+  image2,
+  image3,
+  createdAt,
+  version = 1,
+  isDirty = 0,
+  syncStatus = 'synced'
+}) {
+  await executeRun(
+    `INSERT OR REPLACE INTO children_profiles 
+    (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      childId,
+      customSerialId,
+      fullName,
+      gender,
+      estimatedBirthYear,
+      primaryLocationId,
+      createdByStaffId,
+      image1,
+      image2,
+      image3,
+      version,
+      isDirty,
+      syncStatus,
+      createdAt
+    ]
+  );
+}
+
+async function cacheChildProfileLocalWithQuotaFallback(childRecord) {
+  try {
+    await cacheChildProfileLocal(childRecord);
+    return childRecord;
+  } catch (error) {
+    if (!isQuotaExceededError(error)) {
+      throw error;
+    }
+
+    const safeRecord = stripInlineImages(childRecord);
+    console.warn('Browser storage quota exceeded while caching patient photos. Retrying local cache without inline image data.', error);
+    await cacheChildProfileLocal(safeRecord);
+    return safeRecord;
+  }
+}
+
 // Global Fetch Interceptor for Secure Cookies
 const originalFetch = window.fetch;
 window.fetch = async function (url, options = {}) {
@@ -308,15 +391,28 @@ export async function registerChild(childData) {
 
       if (response.ok) {
         const result = await response.json();
-        // Cache to local SQLite as synced
-        await executeRun(
-          `INSERT OR REPLACE INTO children_profiles 
-          (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 'synced', ?)`,
-          [childId, customSerialId, fullName, gender, estimatedBirthYear, primaryLocationId, createdByStaffId, image1, image2, image3, createdAt]
-        );
-        await saveDB();
-        return mapChild(result.child || result);
+        const savedChild = result.child || result;
+        const mappedChild = mapChild(savedChild);
+
+        // Cache the saved URLs from the backend, not the original base64 upload strings.
+        await cacheChildProfileLocalWithQuotaFallback({
+          childId,
+          customSerialId,
+          fullName,
+          gender,
+          estimatedBirthYear,
+          primaryLocationId,
+          createdByStaffId,
+          image1: cacheSafeImageValue(mappedChild.image1),
+          image2: cacheSafeImageValue(mappedChild.image2),
+          image3: cacheSafeImageValue(mappedChild.image3),
+          createdAt,
+          version: savedChild.version || 1,
+          isDirty: 0,
+          syncStatus: 'synced'
+        });
+
+        return mappedChild;
       }
     } catch (error) {
       // Silent fail - fallback to offline
@@ -325,28 +421,39 @@ export async function registerChild(childData) {
 
   // Offline or network error: cache locally as local_created
   try {
-    await executeRun(
-      `INSERT OR REPLACE INTO children_profiles 
-      (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, 'local_created', ?)`,
-      [childId, customSerialId, fullName, gender, estimatedBirthYear, primaryLocationId, createdByStaffId, image1, image2, image3, createdAt]
-    );
-    await saveDB();
+    const cachedRecord = await cacheChildProfileLocalWithQuotaFallback({
+      childId,
+      customSerialId,
+      fullName,
+      gender,
+      estimatedBirthYear,
+      primaryLocationId,
+      createdByStaffId,
+      image1,
+      image2,
+      image3,
+      createdAt,
+      version: 1,
+      isDirty: 1,
+      syncStatus: 'local_created'
+    });
 
-    // Also add to localStorage queue to preserve compatibility with existing sync processes
-    await queueOfflineRegistration({
+    const offlineRecord = {
       id: childId,
       customSerialId,
       fullName,
       gender,
       estimatedBirthYear,
       primaryLocationId,
-      image1,
-      image2,
-      image3,
+      image1: cachedRecord.image1,
+      image2: cachedRecord.image2,
+      image3: cachedRecord.image3,
       createdByStaffId,
       createdAt
-    });
+    };
+
+    // Also add to localStorage queue to preserve compatibility with existing sync processes.
+    await queueOfflineRegistration(offlineRecord);
 
     return mapChild({
       id: childId,
@@ -355,9 +462,9 @@ export async function registerChild(childData) {
       gender,
       estimatedBirthYear,
       primaryLocationId,
-      image1,
-      image2,
-      image3,
+      image1: cachedRecord.image1,
+      image2: cachedRecord.image2,
+      image3: cachedRecord.image3,
       createdByStaffId,
       createdAt,
       syncStatus: 'local_created'
@@ -478,7 +585,7 @@ export async function deleteChild(id) {
 async function queueOfflineRegistration(childData) {
   try {
     const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
-    offlineData.push(childData);
+    offlineData.push(stripInlineImages(childData));
     localStorage.setItem('offline_registrations', JSON.stringify(offlineData));
   } catch (err) {
     console.warn('LocalStorage quota limit exceeded. Registration successfully saved to SQLite offline database.', err);

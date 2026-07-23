@@ -7,13 +7,26 @@ import path from 'path';
 
 dotenv.config();
 
+function cleanEnvValue(value: string | undefined): string | undefined {
+    const trimmed = value?.trim();
+    if (!trimmed) {
+        return undefined;
+    }
+    return trimmed.replace(/^['"]|['"]$/g, '');
+}
+
+const cloudinaryUrl = cleanEnvValue(process.env.CLOUDINARY_URL);
+const cloudinaryCloudName = cleanEnvValue(process.env.CLOUDINARY_CLOUD_NAME);
+const cloudinaryApiKey = cleanEnvValue(process.env.CLOUDINARY_API_KEY);
+const cloudinaryApiSecret = cleanEnvValue(process.env.CLOUDINARY_API_SECRET);
+
 const isConfigured = !!(
-    process.env.CLOUDINARY_URL ||
-    (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET)
+    cloudinaryUrl ||
+    (cloudinaryCloudName && cloudinaryApiKey && cloudinaryApiSecret)
 );
 
 if (isConfigured) {
-    const url = process.env.CLOUDINARY_URL;
+    const url = cloudinaryUrl;
     if (url) {
         const match = url.match(/cloudinary:\/\/([^:]+):([^@]+)@(.+)/);
         if (match) {
@@ -31,9 +44,9 @@ if (isConfigured) {
         }
     } else {
         cloudinary.config({
-            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-            api_key: process.env.CLOUDINARY_API_KEY,
-            api_secret: process.env.CLOUDINARY_API_SECRET,
+            cloud_name: cloudinaryCloudName,
+            api_key: cloudinaryApiKey,
+            api_secret: cloudinaryApiSecret,
             secure: true
         });
         console.log('Cloudinary Service: Initialized using individual credentials.');
