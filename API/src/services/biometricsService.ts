@@ -1,5 +1,6 @@
 import type { Pool, RowDataPacket } from 'mysql2/promise';
 import { HttpError } from '../utils/httpError.ts';
+import { uploadImageToCloudinary } from './cloudinaryService.ts';
 import type {
     EnrollmentStatus,
     FingerprintTemplateRecord,
@@ -19,6 +20,7 @@ type FingerprintRow = RowDataPacket & {
     version: number;
     created_at: string | null;
     last_modified_at: string | null;
+    image_data?: string | null;
 };
 
 function validateUUIDv4(id: string, fieldName: string): void {
@@ -114,7 +116,8 @@ function mapFingerprintRow(row: FingerprintRow): FingerprintTemplateRecord {
         status: row.status,
         version: row.version,
         createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
-        lastModifiedAt: row.last_modified_at ? new Date(row.last_modified_at).toISOString() : undefined
+        lastModifiedAt: row.last_modified_at ? new Date(row.last_modified_at).toISOString() : undefined,
+        imageDataUrl: row.image_data ?? null
     };
 }
 
@@ -148,7 +151,8 @@ export async function enrollFingerprint(
     childId: string,
     fingerIndex: number,
     templateBase64: string,
-    qualityScore: number | null
+    qualityScore: number | null,
+    imageDataUrl?: string | null
 ): Promise<{ fingerprint: FingerprintTemplateRecord; enrollment: EnrollmentStatus }> {
     validateUUIDv4(id, 'fingerprint template ID');
     validateUUIDv4(childId, 'child ID');
@@ -159,8 +163,10 @@ export async function enrollFingerprint(
 
     await assertChildExists(pool, childId);
 
+    const processedImageDataUrl = await uploadImageToCloudinary(imageDataUrl);
+
     const [existingRows] = await pool.execute<FingerprintRow[]>(
-        `SELECT id, child_id, finger_index, CAST(template_data AS BINARY) AS template_data, quality_score, status, version, created_at, last_modified_at
+        `SELECT id, child_id, finger_index, CAST(template_data AS BINARY) AS template_data, quality_score, status, version, created_at, last_modified_at, image_data
          FROM biometric_fingerprints
          WHERE child_id = ? AND finger_index = ?
          LIMIT 1`,
@@ -169,27 +175,27 @@ export async function enrollFingerprint(
 
     if (existingRows.length === 0) {
         await pool.execute(
-            `INSERT INTO biometric_fingerprints (id, child_id, finger_index, template_data, quality_score, status, version)
-             VALUES (?, ?, ?, ?, ?, 'PENDING', 1)`,
-            [id, childId, fingerIndex, templateData, qualityScore]
+            `INSERT INTO biometric_fingerprints (id, child_id, finger_index, template_data, quality_score, status, version, image_data)
+             VALUES (?, ?, ?, ?, ?, 'PENDING', 1, ?)`,
+            [id, childId, fingerIndex, templateData, qualityScore, processedImageDataUrl]
         );
     } else {
         const existing = existingRows[0];
         const nextVersion = existing.version + 1;
         await pool.execute(
             `UPDATE biometric_fingerprints
-             SET template_data = ?, quality_score = ?, status = 'PENDING', version = ?
+             SET template_data = ?, quality_score = ?, status = 'PENDING', version = ?, image_data = ?
              WHERE id = ?`,
-            [templateData, qualityScore, nextVersion, existing.id]
+            [templateData, qualityScore, nextVersion, processedImageDataUrl, existing.id]
         );
     }
 
     const [fingerprintRows] = await pool.execute<FingerprintRow[]>(
-        `SELECT id, child_id, finger_index, quality_score, status, version, created_at, last_modified_at
+        `SELECT id, child_id, finger_index, quality_score, status, version, created_at, last_modified_at, image_data
          FROM biometric_fingerprints
          WHERE child_id = ? AND finger_index = ?
          LIMIT 1`,
-        [childId, fingerIndex]
+         [childId, fingerIndex]
     );
 
     const fingerprint = mapFingerprintRow(fingerprintRows[0]);
@@ -204,7 +210,7 @@ export async function listChildFingerprints(
     const enrollment = await getEnrollmentStatus(pool, childId);
 
     const [rows] = await pool.execute<FingerprintRow[]>(
-        `SELECT id, child_id, finger_index, CAST(template_data AS BINARY) AS template_data, quality_score, status, version, created_at, last_modified_at
+        `SELECT id, child_id, finger_index, CAST(template_data AS BINARY) AS template_data, quality_score, status, version, created_at, last_modified_at, image_data
          FROM biometric_fingerprints
          WHERE child_id = ?
          ORDER BY finger_index`,

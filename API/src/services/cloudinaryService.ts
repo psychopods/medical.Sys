@@ -1,6 +1,9 @@
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+
 
 dotenv.config();
 
@@ -39,11 +42,13 @@ if (isConfigured) {
     console.warn('Cloudinary Service: Configuration credentials not found. Image storage will fallback to base64 database strings.');
 }
 
+const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+
 /**
  * Uploads a base64 image data URL to Cloudinary.
  * If the input is empty/null, returns null.
  * If the input is already a Cloudinary/HTTP URL, returns it as-is.
- * If Cloudinary is not configured or the upload fails, falls back to returning the original base64 string.
+ * If Cloudinary is not configured or the upload fails, falls back to local disk storage.
  */
 export async function uploadImageToCloudinary(imageStr: string | null | undefined): Promise<string | null> {
     if (!imageStr) {
@@ -54,8 +59,8 @@ export async function uploadImageToCloudinary(imageStr: string | null | undefine
         return null;
     }
 
-    // If it's already an HTTP/HTTPS URL, return as-is
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    // If it's already an HTTP/HTTPS URL or local path, return as-is
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/uploads/')) {
         return trimmed;
     }
 
@@ -68,12 +73,31 @@ export async function uploadImageToCloudinary(imageStr: string | null | undefine
                     resource_type: 'image',
                 });
                 return uploadResult.secure_url;
-            } catch (error) {
-                console.error('Cloudinary Service: Upload failed. Falling back to storing raw base64 string.', error);
-                return trimmed;
+            } catch (error: any) {
+                console.error('Cloudinary Service: Upload failed. Falling back to local storage.', error.message || error);
             }
-        } else {
-            return trimmed;
+        }
+
+        // Local Storage Fallback to prevent huge Base64 strings in MySQL
+        try {
+            if (!fs.existsSync(UPLOADS_DIR)) {
+                fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+            }
+
+            const matches = trimmed.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+            if (matches) {
+                const mimeType = matches[1];
+                const ext = mimeType === 'jpeg' ? 'jpg' : (mimeType === 'svg+xml' ? 'svg' : mimeType);
+                const base64Data = matches[2];
+                const filename = `img_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
+                const filepath = path.join(UPLOADS_DIR, filename);
+
+                await fs.promises.writeFile(filepath, Buffer.from(base64Data, 'base64'));
+                console.log(`Cloudinary Service Fallback: Saved image locally to ${filepath}`);
+                return `/uploads/${filename}`;
+            }
+        } catch (localError) {
+            console.error('Cloudinary Service: Local fallback save failed:', localError);
         }
     }
 
@@ -114,8 +138,8 @@ export async function uploadRawFileToCloudinary(fileStr: string | null | undefin
         return null;
     }
 
-    // If it's already an HTTP/HTTPS URL, return as-is
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    // If it's already an HTTP/HTTPS URL or local path, return as-is
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/uploads/')) {
         return trimmed;
     }
 
@@ -132,9 +156,29 @@ export async function uploadRawFileToCloudinary(fileStr: string | null | undefin
                 });
                 return uploadResult.secure_url;
             } catch (error) {
-                console.error('Cloudinary Service: Raw file upload failed. Falling back to storing raw base64 string.', error);
-                return trimmed;
+                console.error('Cloudinary Service: Raw file upload failed. Falling back to local storage.', error);
             }
+        }
+
+        // Local Storage Fallback
+        try {
+            if (!fs.existsSync(UPLOADS_DIR)) {
+                fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+            }
+
+            const ext = getExtensionFromBase64(trimmed);
+            const matches = trimmed.match(/^data:[^;]+;base64,(.+)$/);
+            if (matches) {
+                const base64Data = matches[1];
+                const filename = `doc_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext || '.bin'}`;
+                const filepath = path.join(UPLOADS_DIR, filename);
+
+                await fs.promises.writeFile(filepath, Buffer.from(base64Data, 'base64'));
+                console.log(`Cloudinary Service Fallback: Saved document locally to ${filepath}`);
+                return `/uploads/${filename}`;
+            }
+        } catch (localError) {
+            console.error('Cloudinary Service: Local fallback document save failed:', localError);
         }
     }
 

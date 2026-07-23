@@ -84,6 +84,10 @@ export function createBiometricsRouter(pool: Pool): Router {
                 const fingerIndex = requireInteger(request.body.fingerIndex, 'fingerIndex');
                 const templateBase64 = requireString(request.body.templateBase64, 'templateBase64');
                 const qualityScore = optionalInteger(request.body.qualityScore, 'qualityScore');
+                const imageDataUrl = optionalString(
+                    request.body.imageDataUrl || request.body.imageBase64 || request.body.image_data || request.body.image,
+                    'imageDataUrl'
+                );
 
                 const result = await biometricsService.enrollFingerprint(
                     pool,
@@ -91,7 +95,8 @@ export function createBiometricsRouter(pool: Pool): Router {
                     childId,
                     fingerIndex,
                     templateBase64,
-                    qualityScore
+                    qualityScore,
+                    imageDataUrl
                 );
 
                 response.status(201).json(result);

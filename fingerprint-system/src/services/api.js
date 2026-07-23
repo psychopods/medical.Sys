@@ -4,6 +4,24 @@ import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
 
 export { API_BASE_URL };
 
+export function normalizeImageUrl(url) {
+  if (!url) return null;
+  if (url.startsWith('/uploads/')) {
+    return `${API_BASE_URL}${url}`;
+  }
+  return url;
+}
+
+function mapChild(child) {
+  if (!child) return child;
+  return {
+    ...child,
+    image1: normalizeImageUrl(child.image1),
+    image2: normalizeImageUrl(child.image2),
+    image3: normalizeImageUrl(child.image3)
+  };
+}
+
 // Global Fetch Interceptor for Secure Cookies
 const originalFetch = window.fetch;
 window.fetch = async function (url, options = {}) {
@@ -209,7 +227,7 @@ export async function getChildren() {
           }
         }
         await saveDB();
-        return children;
+        return children.map(mapChild);
       }
     } catch (error) {
       // Silent fail - fallback to cache
@@ -219,7 +237,7 @@ export async function getChildren() {
   // Fallback to SQLite cache
   try {
     const cachedChildren = await executeQuery('SELECT * FROM children_profiles ORDER BY created_at DESC');
-    return cachedChildren.map(child => ({
+    return cachedChildren.map(child => mapChild({
       id: child.id,
       customSerialId: child.custom_serial_id,
       fullName: child.full_name,
@@ -247,7 +265,7 @@ export async function getChildById(id) {
 
     if (response.ok) {
       const data = await response.json();
-      return data.child || data;
+      return mapChild(data.child || data);
     }
     return null;
   } catch (error) {
@@ -298,7 +316,7 @@ export async function registerChild(childData) {
           [childId, customSerialId, fullName, gender, estimatedBirthYear, primaryLocationId, createdByStaffId, image1, image2, image3, createdAt]
         );
         await saveDB();
-        return result;
+        return mapChild(result.child || result);
       }
     } catch (error) {
       // Silent fail - fallback to offline
@@ -330,23 +348,20 @@ export async function registerChild(childData) {
       createdAt
     });
 
-    return {
-      success: true,
-      message: "Patient registered offline.",
-      child: {
-        id: childId,
-        customSerialId,
-        fullName,
-        gender,
-        estimatedBirthYear,
-        primaryLocationId,
-        image1: image1,
-        image2: image2,
-        image3: image3,
-        createdByStaffId,
-        createdAt
-      }
-    };
+    return mapChild({
+      id: childId,
+      customSerialId,
+      fullName,
+      gender,
+      estimatedBirthYear,
+      primaryLocationId,
+      image1,
+      image2,
+      image3,
+      createdByStaffId,
+      createdAt,
+      syncStatus: 'local_created'
+    });
   } catch (err) {
     throw err;
   }
@@ -461,9 +476,13 @@ export async function deleteChild(id) {
 
 
 async function queueOfflineRegistration(childData) {
-  const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
-  offlineData.push(childData);
-  localStorage.setItem('offline_registrations', JSON.stringify(offlineData));
+  try {
+    const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
+    offlineData.push(childData);
+    localStorage.setItem('offline_registrations', JSON.stringify(offlineData));
+  } catch (err) {
+    console.warn('LocalStorage quota limit exceeded. Registration successfully saved to SQLite offline database.', err);
+  }
 }
 
 /* ==========================================
@@ -1127,8 +1146,8 @@ export async function getBiometricsForChild(childId) {
           if (fp && fp.id) {
             await executeRun(
               `INSERT OR REPLACE INTO biometric_fingerprints 
-              (id, child_id, finger_index, template_data, quality_score, status, version, is_dirty, sync_status, created_at) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'synced', ?)`,
+              (id, child_id, finger_index, template_data, quality_score, status, version, is_dirty, sync_status, created_at, image_data) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'synced', ?, ?)`,
               [
                 fp.id,
                 fp.childId || childId,
@@ -1137,13 +1156,17 @@ export async function getBiometricsForChild(childId) {
                 fp.qualityScore || 80,
                 fp.status || 'PENDING',
                 fp.version || 1,
-                fp.createdAt || new Date().toISOString()
+                fp.createdAt || new Date().toISOString(),
+                fp.imageDataUrl || fp.image_data || null
               ]
             );
           }
         }
         await saveDB();
-        return fingerprints;
+        return fingerprints.map(fp => ({
+          ...fp,
+          imageDataUrl: normalizeImageUrl(fp.imageDataUrl || fp.image_data)
+        }));
       }
     } catch (error) {
       // Silent fail - fallback to cache
@@ -1163,7 +1186,8 @@ export async function getBiometricsForChild(childId) {
       status: fp.status,
       version: fp.version,
       syncStatus: fp.sync_status,
-      createdAt: fp.created_at
+      createdAt: fp.created_at,
+      imageDataUrl: normalizeImageUrl(fp.image_data)
     }));
   } catch (err) {
     return [];
@@ -1179,6 +1203,7 @@ export async function enrollBiometric(bioData) {
   const status = bioData.status || 'PENDING';
   const childId = bioData.childId;
   const createdAt = bioData.createdAt || new Date().toISOString();
+  const imageDataUrl = bioData.imageDataUrl || bioData.imageBase64 || null;
 
   if (isOnline) {
     try {
@@ -1192,7 +1217,8 @@ export async function enrollBiometric(bioData) {
           templateBase64: template,
           qualityScore: quality,
           capturedAt: createdAt,
-          matcherVersion: "1.0"
+          matcherVersion: "1.0",
+          imageDataUrl: imageDataUrl
         })
       });
 
@@ -1201,12 +1227,15 @@ export async function enrollBiometric(bioData) {
         // Cache to local SQLite as synced
         await executeRun(
           `INSERT OR REPLACE INTO biometric_fingerprints 
-          (id, child_id, finger_index, template_data, quality_score, status, version, is_dirty, sync_status, created_at) 
-          VALUES (?, ?, ?, ?, ?, ?, 1, 0, 'synced', ?)`,
-          [bioId, childId, fingerIndex, template, quality, status, createdAt]
+          (id, child_id, finger_index, template_data, quality_score, status, version, is_dirty, sync_status, created_at, image_data) 
+          VALUES (?, ?, ?, ?, ?, ?, 1, 0, 'synced', ?, ?)`,
+          [bioId, childId, fingerIndex, template, quality, status, createdAt, imageDataUrl]
         );
         await saveDB();
-        return result;
+        return {
+          ...result,
+          imageDataUrl: normalizeImageUrl(result.imageDataUrl || result.image_data || imageDataUrl)
+        };
       }
     } catch (error) {
       // Silent fail - fallback to offline
@@ -1217,9 +1246,9 @@ export async function enrollBiometric(bioData) {
   try {
     await executeRun(
       `INSERT OR REPLACE INTO biometric_fingerprints 
-      (id, child_id, finger_index, template_data, quality_score, status, version, is_dirty, sync_status, created_at) 
-      VALUES (?, ?, ?, ?, ?, ?, 1, 1, 'local_created', ?)`,
-      [bioId, childId, fingerIndex, template, quality, status, createdAt]
+      (id, child_id, finger_index, template_data, quality_score, status, version, is_dirty, sync_status, created_at, image_data) 
+      VALUES (?, ?, ?, ?, ?, ?, 1, 1, 'local_created', ?, ?)`,
+      [bioId, childId, fingerIndex, template, quality, status, createdAt, imageDataUrl]
     );
     await saveDB();
     return {
@@ -1230,9 +1259,13 @@ export async function enrollBiometric(bioData) {
         childId: childId,
         fingerIndex: fingerIndex,
         templateBase64: template,
+        templateData: template,
         qualityScore: quality,
         status: status,
-        createdAt: createdAt
+        version: 1,
+        syncStatus: 'local_created',
+        createdAt: createdAt,
+        imageDataUrl: imageDataUrl
       }
     };
   } catch (err) {
@@ -1480,7 +1513,8 @@ export async function triggerSync() {
             templateBase64: row.template_data,
             qualityScore: row.quality_score,
             capturedAt: row.created_at,
-            matcherVersion: "1.0"
+            matcherVersion: "1.0",
+            imageDataUrl: row.image_data
           })
         });
 

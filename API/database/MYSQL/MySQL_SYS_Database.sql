@@ -145,6 +145,7 @@ CREATE TABLE `biometric_fingerprints` (
     `quality_score` TINYINT NULL,
     `status` ENUM('PENDING','VERIFIED','REJECTED') DEFAULT 'PENDING',
     `version` INT NOT NULL DEFAULT 1,
+    `image_data` MEDIUMTEXT NULL, -- Added to store grayscale fingerprint preview image path/URL
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),

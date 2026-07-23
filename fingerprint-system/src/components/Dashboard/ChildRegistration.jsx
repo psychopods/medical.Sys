@@ -1206,7 +1206,8 @@ const ChildRegistration = () => {
             templateBase64: template,
             qualityScore: fingerQuality[fingerIndex] || 85,
             createdAt: new Date().toISOString(),
-            status: 'PENDING'
+            status: 'PENDING',
+            imageDataUrl: fingerImages[fingerIndex] || null
           });
           if (result) successCount++;
         } catch (error) {
@@ -1351,6 +1352,7 @@ const ChildRegistration = () => {
               qualityScore: regFingerQuality[fingerIndex] || 85,
               createdAt: new Date().toISOString(),
               status: "PENDING",
+              imageDataUrl: regFingerImages[fingerIndex] || null
             });
             if (enrollResult) successCount++;
           } catch (error) {

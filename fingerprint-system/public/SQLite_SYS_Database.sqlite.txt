@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS biometric_fingerprints (
     sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK (sync_status IN ('local_created', 'synced', 'local_updated')), 
     last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, 
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+    image_data TEXT NULL,
     FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE, 
     UNIQUE(child_id, finger_index) 
 ); 

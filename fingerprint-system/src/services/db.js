@@ -73,6 +73,14 @@ export async function getDB() {
             const schemaSql = await schemaRes.text();
             if (!schemaSql.trim().startsWith('<')) {
               dbInstance.exec(schemaSql);
+              
+              // Safe column migration for existing user databases
+              try {
+                dbInstance.exec("ALTER TABLE biometric_fingerprints ADD COLUMN image_data TEXT NULL;");
+              } catch (colErr) {
+                // Column already exists, safe to ignore
+              }
+              
               await saveDB();
             }
           }

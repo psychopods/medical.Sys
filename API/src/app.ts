@@ -35,6 +35,10 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
+import path from 'path';
+app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
+
+
 app.get('/health', (_request: Request, response: Response) => {
     response.status(200).json({ status: 'ok' });
 });

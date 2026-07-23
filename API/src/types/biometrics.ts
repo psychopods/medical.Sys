@@ -8,6 +8,7 @@ export interface FingerprintTemplateRecord {
     version: number;
     createdAt?: string;
     lastModifiedAt?: string;
+    imageDataUrl?: string | null;
 }
 
 export interface EnrollmentStatus {
@@ -25,6 +26,10 @@ export interface EnrollFingerprintRequestBody {
     qualityScore?: unknown;
     capturedAt?: unknown;
     matcherVersion?: unknown;
+    imageDataUrl?: unknown;
+    imageBase64?: unknown;
+    image_data?: unknown;
+    image?: unknown;
 }
 
 export interface VerifyOneToOneRequestBody {
