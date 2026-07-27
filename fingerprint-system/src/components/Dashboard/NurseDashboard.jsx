@@ -10,7 +10,7 @@ import {
   triggerSync,
   initSyncWorker,
 } from "../../services/api.js";
-import { captureFromHardware, verifyWithHardware } from "../../services/hardwareBiometrics.js";
+import { captureFromHardware, verifyWithHardware, identifyWithHardware } from "../../services/hardwareBiometrics.js";
 import { executeQuery } from "../../services/db.js";
 
 
@@ -544,24 +544,50 @@ const NurseDashboard = ({ user, onLogout }) => {
       if (captured.success && captured.templateBase64) {
         // Query stored biometrics to check for duplicate
         const biometricsList = await executeQuery('SELECT * FROM biometric_fingerprints');
+        const candidates = [];
         if (Array.isArray(biometricsList)) {
           for (const bio of biometricsList) {
-            // Skip checking against same child (if they are re-enrolling)
             if (bio.child_id === childId) continue;
-            
             if (bio.template_data) {
-              try {
-                const check = await verifyWithHardware(captured.templateBase64, bio.template_data);
-                if (check && check.matched) {
-                  // Find the matched child name
-                  const matchedChild = childrenData.find(c => c.id === bio.child_id);
-                  const matchedName = matchedChild ? matchedChild.fullName : "another patient";
-                  const matchedSerial = matchedChild?.customSerialId ? ` (ID: ${matchedChild.customSerialId})` : "";
-                  alert(`Biometric Enrollment Failed: This fingerprint is already registered to ${matchedName}${matchedSerial}! The child was registered without biometrics.`);
-                  return null;
+              candidates.push({
+                id: bio.id || bio.child_id,
+                template: bio.template_data
+              });
+            }
+          }
+        }
+
+        if (candidates.length > 0) {
+          try {
+            const check = await identifyWithHardware(captured.templateBase64, candidates);
+            if (check && check.matched && check.matchedId) {
+              const matchedBio = biometricsList.find(b => (b.id || b.child_id) === check.matchedId);
+              if (matchedBio) {
+                const matchedChild = childrenData.find(c => c.id === matchedBio.child_id);
+                const matchedName = matchedChild ? matchedChild.fullName : "another patient";
+                const matchedSerial = matchedChild?.customSerialId ? ` (ID: ${matchedChild.customSerialId})` : "";
+                alert(`Biometric Enrollment Failed: This fingerprint is already registered to ${matchedName}${matchedSerial}! The child was registered without biometrics.`);
+                return null;
+              }
+            }
+          } catch (e) {
+            console.warn("Fast duplicate check failed, falling back to sequential:", e);
+            // Fallback
+            for (const bio of biometricsList) {
+              if (bio.child_id === childId) continue;
+              if (bio.template_data) {
+                try {
+                  const check = await verifyWithHardware(captured.templateBase64, bio.template_data);
+                  if (check && check.matched) {
+                    const matchedChild = childrenData.find(c => c.id === bio.child_id);
+                    const matchedName = matchedChild ? matchedChild.fullName : "another patient";
+                    const matchedSerial = matchedChild?.customSerialId ? ` (ID: ${matchedChild.customSerialId})` : "";
+                    alert(`Biometric Enrollment Failed: This fingerprint is already registered to ${matchedName}${matchedSerial}! The child was registered without biometrics.`);
+                    return null;
+                  }
+                } catch (err) {
+                  console.warn("Failed session fingerprint verify:", err);
                 }
-              } catch (e) {
-                console.warn("Failed session fingerprint verify:", e);
               }
             }
           }
@@ -592,17 +618,40 @@ const NurseDashboard = ({ user, onLogout }) => {
         const biometricsList = await executeQuery('SELECT * FROM biometric_fingerprints');
         let matchedChild = null;
 
+        const candidates = [];
         if (Array.isArray(biometricsList)) {
           for (const bio of biometricsList) {
             if (bio.template_data) {
-              try {
-                const check = await verifyWithHardware(captured.templateBase64, bio.template_data);
-                if (check && check.matched) {
-                  matchedChild = childrenData.find(c => c.id === bio.child_id);
-                  break;
+              candidates.push({
+                id: bio.id || bio.child_id,
+                template: bio.template_data
+              });
+            }
+          }
+        }
+
+        if (candidates.length > 0) {
+          try {
+            const check = await identifyWithHardware(captured.templateBase64, candidates);
+            if (check && check.matched && check.matchedId) {
+              const matchedBio = biometricsList.find(b => (b.id || b.child_id) === check.matchedId);
+              if (matchedBio) {
+                matchedChild = childrenData.find(c => c.id === matchedBio.child_id);
+              }
+            }
+          } catch (e) {
+            console.warn("Fast identify failed, falling back to sequential:", e);
+            for (const bio of biometricsList) {
+              if (bio.template_data) {
+                try {
+                  const check = await verifyWithHardware(captured.templateBase64, bio.template_data);
+                  if (check && check.matched) {
+                    matchedChild = childrenData.find(c => c.id === bio.child_id);
+                    break;
+                  }
+                } catch (err) {
+                  // Ignore mismatch
                 }
-              } catch (e) {
-                // Ignore mismatch
               }
             }
           }

@@ -33,7 +33,8 @@ import {
 import {
   captureFromHardware,
   verifyWithHardware,
-  checkHardwareProxyStatus
+  checkHardwareProxyStatus,
+  identifyWithHardware
 } from "../../services/hardwareBiometrics.js";
 
 
@@ -1136,26 +1137,56 @@ const ChildRegistration = () => {
       return null;
     }
 
+    const candidates = [];
     for (const fp of fingerprintData) {
       const dbChildId = fp.childId || fp.child_id;
-      // Skip if it belongs to the child we are currently enrolling
       if (currentChildId && dbChildId === currentChildId) {
         continue;
       }
 
       const candidateTemplate = fp.templateBase64 || fp.template_data || fp.templateData;
       if (candidateTemplate) {
-        try {
-          const check = await verifyWithHardware(scannedTemplate, candidateTemplate);
-          if (check && check.matched) {
-            const matchedChild = childrenData.find(c => c.id === dbChildId);
-            return {
-              child: matchedChild,
-              fingerName: fp.fingerName || `Finger ${fp.fingerIndex}`
-            };
+        candidates.push({
+          id: fp.id || fp.childId || dbChildId,
+          template: candidateTemplate
+        });
+      }
+    }
+
+    if (candidates.length === 0) return null;
+
+    try {
+      const check = await identifyWithHardware(scannedTemplate, candidates);
+      if (check && check.matched && check.matchedId) {
+        const matchedFp = fingerprintData.find(fp => (fp.id || fp.childId || fp.child_id) === check.matchedId);
+        if (matchedFp) {
+          const matchedChild = childrenData.find(c => c.id === (matchedFp.childId || matchedFp.child_id));
+          return {
+            child: matchedChild,
+            fingerName: matchedFp.fingerName || `Finger ${matchedFp.fingerIndex}`
+          };
+        }
+      }
+    } catch (e) {
+      console.warn("Fast identification failed, falling back to sequential checks:", e);
+      for (const fp of fingerprintData) {
+        const dbChildId = fp.childId || fp.child_id;
+        if (currentChildId && dbChildId === currentChildId) continue;
+
+        const candidateTemplate = fp.templateBase64 || fp.template_data || fp.templateData;
+        if (candidateTemplate) {
+          try {
+            const check = await verifyWithHardware(scannedTemplate, candidateTemplate);
+            if (check && check.matched) {
+              const matchedChild = childrenData.find(c => c.id === dbChildId);
+              return {
+                child: matchedChild,
+                fingerName: fp.fingerName || `Finger ${fp.fingerIndex}`
+              };
+            }
+          } catch (err) {
+            console.warn("Failed sequential verify:", err);
           }
-        } catch (e) {
-          console.warn("Failed to compare for duplicate check:", e);
         }
       }
     }
@@ -1662,38 +1693,44 @@ const ChildRegistration = () => {
       const captured = await captureFromHardware(4);
       if (captured.success && captured.templateBase64) {
         let matchedChild = null;
-        let checkedCount = 0;
-        let skippedCount = 0;
-        let lastDiagnostics = "";
+        
+        const candidates = [];
         if (Array.isArray(fingerprintData)) {
           for (const fp of fingerprintData) {
             const candidateTemplate = fp.templateBase64 || fp.template_data || fp.templateData;
             if (candidateTemplate) {
-              try {
-                checkedCount++;
-                const check = await verifyWithHardware(captured.templateBase64, candidateTemplate);
-                lastDiagnostics = check.diagnostics || `code=${check.code}`;
-                console.debug("Fingerprint verify candidate", {
-                  childId: fp.childId || fp.child_id,
-                  fingerIndex: fp.fingerIndex || fp.finger_index,
-                  matched: check.matched,
-                  code: check.code,
-                  diagnostics: check.diagnostics,
-                });
-                if (check && check.matched) {
-                  matchedChild = childrenData.find(c => c.id === (fp.childId || fp.child_id));
-                  break;
-                }
-              } catch (e) {
-                lastDiagnostics = e.message;
-                console.warn("Fingerprint verify candidate failed", {
-                  childId: fp.childId || fp.child_id,
-                  fingerIndex: fp.fingerIndex || fp.finger_index,
-                  error: e.message,
-                });
+              candidates.push({
+                id: fp.id || fp.childId || fp.child_id,
+                template: candidateTemplate
+              });
+            }
+          }
+        }
+
+        if (candidates.length > 0) {
+          try {
+            const check = await identifyWithHardware(captured.templateBase64, candidates);
+            if (check && check.matched && check.matchedId) {
+              const matchedFp = fingerprintData.find(fp => (fp.id || fp.childId || fp.child_id) === check.matchedId);
+              if (matchedFp) {
+                matchedChild = childrenData.find(c => c.id === (matchedFp.childId || matchedFp.child_id));
               }
-            } else {
-              skippedCount++;
+            }
+          } catch (e) {
+            console.warn("Fast identify failed, falling back to sequential:", e);
+            for (const fp of fingerprintData) {
+              const candidateTemplate = fp.templateBase64 || fp.template_data || fp.templateData;
+              if (candidateTemplate) {
+                try {
+                  const check = await verifyWithHardware(captured.templateBase64, candidateTemplate);
+                  if (check && check.matched) {
+                    matchedChild = childrenData.find(c => c.id === (fp.childId || fp.child_id));
+                    break;
+                  }
+                } catch (err) {
+                  console.warn("Sequential verify failed:", err);
+                }
+              }
             }
           }
         }
@@ -1726,13 +1763,7 @@ const ChildRegistration = () => {
           setFingerprintExists(false);
           setExistingChild(null);
           setExistingChildImages(null);
-          console.warn("Fingerprint verification finished without match", {
-            storedFingerprintRows: Array.isArray(fingerprintData) ? fingerprintData.length : 0,
-            checkedCount,
-            skippedCount,
-            lastDiagnostics,
-          });
-          showToast(`Fingerprint not found. Checked ${checkedCount}, skipped ${skippedCount}.`, "info");
+          showToast("Fingerprint not found in system.", "info");
         }
       }
     } catch (error) {

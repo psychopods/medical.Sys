@@ -513,6 +513,10 @@ namespace SfeWindowsProxy
                 {
                     jsonResponse = HandleVerifyRequest(request);
                 }
+                else if (path == "/identify")
+                {
+                    jsonResponse = HandleIdentifyRequest(request);
+                }
                 else
                 {
                     response.StatusCode = (int)HttpStatusCode.NotFound;
@@ -652,15 +656,180 @@ namespace SfeWindowsProxy
             }
         }
 
-        private static string ExtractJsonValue(string json, string key)
+        private struct Candidate
         {
-            string pattern = "\"" + key + "\"[\\s]*:[\\s]*\"([^\"]+)\"";
-            Match match = Regex.Match(json, pattern);
-            if (match.Success)
+            public string Id;
+            public byte[] TemplateBytes;
+        }
+
+        private static string ExtractCandidatesJson(string json, out string templateBase64, out System.Collections.Generic.List<Candidate> candidates)
+        {
+            templateBase64 = ExtractJsonValue(json, "template");
+            candidates = new System.Collections.Generic.List<Candidate>();
+
+            int candidatesIndex = json.IndexOf("\"candidates\"");
+            if (candidatesIndex == -1) return "Missing 'candidates' parameter";
+
+            int arrayStart = json.IndexOf("[", candidatesIndex);
+            if (arrayStart == -1) return "Invalid candidates array format";
+
+            int arrayEnd = json.LastIndexOf("]");
+            if (arrayEnd == -1 || arrayEnd < arrayStart) return "Invalid candidates array format";
+
+            string arrayContent = json.Substring(arrayStart + 1, arrayEnd - arrayStart - 1);
+
+            string pattern = @"\{[^{}]*\}";
+            MatchCollection matches = Regex.Matches(arrayContent, pattern);
+            foreach (Match match in matches)
             {
-                return match.Groups[1].Value;
+                string objText = match.Value;
+                string id = ExtractJsonValue(objText, "id");
+                string template = ExtractJsonValue(objText, "template");
+
+                if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(template))
+                {
+                    try
+                    {
+                        byte[] bytes = Convert.FromBase64String(template);
+                        candidates.Add(new Candidate { Id = id, TemplateBytes = bytes });
+                    }
+                    catch
+                    {
+                        // Ignore invalid base64
+                    }
+                }
             }
+
             return null;
         }
+
+        private static string HandleIdentifyRequest(HttpListenerRequest request)
+        {
+            string bodyText = "";
+            using (var reader = new StreamReader(request.InputStream, request.ContentEncoding))
+            {
+                bodyText = reader.ReadToEnd();
+            }
+
+            string templateBase64;
+            System.Collections.Generic.List<Candidate> candidates;
+            string parseError = ExtractCandidatesJson(bodyText, out templateBase64, out candidates);
+
+            if (parseError != null)
+            {
+                return "{\"success\":false,\"error\":\"" + parseError + "\"}";
+            }
+
+            if (string.IsNullOrEmpty(templateBase64))
+            {
+                return "{\"success\":false,\"error\":\"Missing 'template' parameter\"}";
+            }
+
+            if (candidates.Count == 0)
+            {
+                return "{\"success\":true,\"matched\":false,\"error\":\"No candidates to match against\"}";
+            }
+
+            try
+            {
+                byte[] tempA = Convert.FromBase64String(templateBase64);
+                if (tempA.Length < FEATURE_SIZE)
+                {
+                    return "{\"success\":false,\"error\":\"Invalid template size. Must decode to " + FEATURE_SIZE + " bytes.\"}";
+                }
+
+                Console.WriteLine("[Identify] Starting identification against " + candidates.Count + " candidates...");
+
+                string verifyDb = "verify_temp.db";
+                try
+                {
+                    if (File.Exists(verifyDb))
+                    {
+                        File.Delete(verifyDb);
+                      }
+                  }
+                  catch
+                  {
+                      verifyDb = "";
+                  }
+
+                  int openRet = -100;
+                  int openedSensor = -1;
+                  for (int i = 0; i < SENSOR_PROBE_ORDER.Length; i++)
+                  {
+                      openRet = SfemOpen(verifyDb, SENSOR_PROBE_ORDER[i], 0);
+                      if (openRet == 0)
+                      {
+                          openedSensor = SENSOR_PROBE_ORDER[i];
+                          break;
+                      }
+                      SfemClose();
+                  }
+
+                  if (openRet != 0)
+                  {
+                      return "{\"success\":false,\"error\":\"Failed to open engine for template verification (code: " + openRet + ")\",\"diagnostics\":\"open=" + openRet + "\"}";
+                  }
+
+                  string matchedId = null;
+                  int matchedRet = -1;
+                  int enrollRet = -1;
+                  int clearRet = -1;
+
+                  try
+                  {
+                      clearRet = SfemDeleteAll();
+                      enrollRet = SfemTemplateEnroll(1, 1, 0, tempA);
+                      if (enrollRet < 0)
+                      {
+                          SfemClose();
+                          return "{\"success\":false,\"error\":\"Failed to enroll source template (code: " + enrollRet + ")\",\"diagnostics\":\"sensor=" + openedSensor + ",open=" + openRet + ",clear=" + clearRet + ",enroll=" + enrollRet + "\"}";
+                      }
+
+                      foreach (var candidate in candidates)
+                      {
+                          if (candidate.TemplateBytes.Length < FEATURE_SIZE) continue;
+
+                          int verifyRet = SfemTemplateVerify(1, 1, candidate.TemplateBytes);
+                          if (verifyRet == 0)
+                          {
+                              matchedId = candidate.Id;
+                              matchedRet = verifyRet;
+                              break;
+                          }
+                      }
+                  }
+                  finally
+                  {
+                      SfemClose();
+                  }
+
+                  if (matchedId != null)
+                  {
+                      Console.WriteLine("[Identify] Match found: " + matchedId + " (code: " + matchedRet + ")");
+                      return "{\"success\":true,\"matched\":true,\"matchedId\":\"" + matchedId + "\",\"code\":" + matchedRet + "}";
+                  }
+                  else
+                  {
+                      Console.WriteLine("[Identify] Finished. No match found.");
+                      return "{\"success\":true,\"matched\":false}";
+                  }
+              }
+              catch (Exception ex)
+              {
+                  return "{\"success\":false,\"error\":\"Identification failed: " + EscapeJson(ex.Message) + "\"}";
+              }
+          }
+
+          private static string ExtractJsonValue(string json, string key)
+          {
+              string pattern = "\"" + key + "\"[\\s]*:[\\s]*\"([^\"]+)\"";
+              Match match = Regex.Match(json, pattern);
+              if (match.Success)
+              {
+                  return match.Groups[1].Value;
+              }
+              return null;
+          }
     }
 }

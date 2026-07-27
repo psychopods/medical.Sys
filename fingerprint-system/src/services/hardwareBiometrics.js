@@ -98,3 +98,33 @@ export async function verifyWithHardware(templateA, templateB) {
     throw new Error("Failed to communicate with local biometric engine.");
   }
 }
+
+/**
+ * Identify a fingerprint template against an array of candidate templates on the local hardware engine
+ * @param {string} template Base64 string
+ * @param {Array<{id: string, template: string}>} candidates List of candidates
+ * @returns {Promise<{success: boolean, matched: boolean, matchedId?: string, code?: number}>}
+ */
+export async function identifyWithHardware(template, candidates) {
+  try {
+    const response = await fetch(`${LOCAL_PROXY_URL}/identify`, {
+      method: 'POST',
+      mode: 'cors',
+      credentials: 'omit',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ template, candidates })
+    });
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || "Failed to identify fingerprint.");
+    }
+    return result;
+  } catch (error) {
+    if (error.message && !error.message.includes('Failed to communicate')) {
+      throw error;
+    }
+    throw new Error("Failed to communicate with local biometric engine.");
+  }
+}
