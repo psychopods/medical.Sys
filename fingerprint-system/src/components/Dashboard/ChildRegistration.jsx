@@ -1131,6 +1131,37 @@ const ChildRegistration = () => {
     setSelectedFinger(fingerIndex);
   };
 
+  const checkDuplicateFingerprint = async (scannedTemplate, currentChildId = null) => {
+    if (!Array.isArray(fingerprintData) || fingerprintData.length === 0) {
+      return null;
+    }
+
+    for (const fp of fingerprintData) {
+      const dbChildId = fp.childId || fp.child_id;
+      // Skip if it belongs to the child we are currently enrolling
+      if (currentChildId && dbChildId === currentChildId) {
+        continue;
+      }
+
+      const candidateTemplate = fp.templateBase64 || fp.template_data || fp.templateData;
+      if (candidateTemplate) {
+        try {
+          const check = await verifyWithHardware(scannedTemplate, candidateTemplate);
+          if (check && check.matched) {
+            const matchedChild = childrenData.find(c => c.id === dbChildId);
+            return {
+              child: matchedChild,
+              fingerName: fp.fingerName || `Finger ${fp.fingerIndex}`
+            };
+          }
+        } catch (e) {
+          console.warn("Failed to compare for duplicate check:", e);
+        }
+      }
+    }
+    return null;
+  };
+
   const handleCaptureFingerprint = async () => {
     if (!selectedFinger) {
       showToast("Please select a finger first", "error");
@@ -1141,6 +1172,30 @@ const ChildRegistration = () => {
       showToast(`Place finger ${fingerNames[selectedFinger].name} on scanner...`, "info");
       const result = await captureFromHardware(4);
       if (result.success && result.templateBase64) {
+        // Check session duplicate
+        for (const [fIndex, template] of Object.entries(fingerTemplates)) {
+          if (Number(fIndex) === selectedFinger) continue;
+          try {
+            const check = await verifyWithHardware(result.templateBase64, template);
+            if (check && check.matched) {
+              showToast(`You have already captured this fingerprint for ${fingerNames[fIndex].name} in this session!`, "error");
+              return;
+            }
+          } catch (e) {
+            console.warn("Failed session fingerprint verify:", e);
+          }
+        }
+
+        // Check system duplicate
+        showToast("Checking fingerprint uniqueness...", "info");
+        const duplicate = await checkDuplicateFingerprint(result.templateBase64, enrollingChild?.id);
+        if (duplicate) {
+          const childName = duplicate.child?.fullName || "Another patient";
+          const serialId = duplicate.child?.customSerialId ? ` (ID: ${duplicate.child.customSerialId})` : "";
+          showToast(`This fingerprint is already registered to ${childName}${serialId} (${duplicate.fingerName})!`, "error");
+          return;
+        }
+
         setFingerQuality((prev) => ({ ...prev, [selectedFinger]: result.qualityScore }));
         setFingerCaptures((prev) => ({ ...prev, [selectedFinger]: true }));
         setFingerTemplates((prev) => ({ ...prev, [selectedFinger]: result.templateBase64 }));
@@ -1270,6 +1325,30 @@ const ChildRegistration = () => {
       showToast(`Place finger ${fingerNames[regSelectedFinger].name} on scanner...`, "info");
       const result = await captureFromHardware(4);
       if (result.success && result.templateBase64) {
+        // Check session duplicate
+        for (const [fIndex, template] of Object.entries(regFingerTemplates)) {
+          if (Number(fIndex) === regSelectedFinger) continue;
+          try {
+            const check = await verifyWithHardware(result.templateBase64, template);
+            if (check && check.matched) {
+              showToast(`You have already captured this fingerprint for ${fingerNames[fIndex].name} in this session!`, "error");
+              return;
+            }
+          } catch (e) {
+            console.warn("Failed session fingerprint verify:", e);
+          }
+        }
+
+        // Check system duplicate
+        showToast("Checking fingerprint uniqueness...", "info");
+        const duplicate = await checkDuplicateFingerprint(result.templateBase64, null);
+        if (duplicate) {
+          const childName = duplicate.child?.fullName || "Another patient";
+          const serialId = duplicate.child?.customSerialId ? ` (ID: ${duplicate.child.customSerialId})` : "";
+          showToast(`This fingerprint is already registered to ${childName}${serialId} (${duplicate.fingerName})!`, "error");
+          return;
+        }
+
         setRegFingerQuality((prev) => ({ ...prev, [regSelectedFinger]: result.qualityScore }));
         setRegFingerCaptures((prev) => ({ ...prev, [regSelectedFinger]: true }));
         setRegFingerTemplates((prev) => ({ ...prev, [regSelectedFinger]: result.templateBase64 }));

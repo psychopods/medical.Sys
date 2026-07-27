@@ -542,6 +542,31 @@ const NurseDashboard = ({ user, onLogout }) => {
     try {
       const captured = await captureFromHardware(4);
       if (captured.success && captured.templateBase64) {
+        // Query stored biometrics to check for duplicate
+        const biometricsList = await executeQuery('SELECT * FROM biometric_fingerprints');
+        if (Array.isArray(biometricsList)) {
+          for (const bio of biometricsList) {
+            // Skip checking against same child (if they are re-enrolling)
+            if (bio.child_id === childId) continue;
+            
+            if (bio.template_data) {
+              try {
+                const check = await verifyWithHardware(captured.templateBase64, bio.template_data);
+                if (check && check.matched) {
+                  // Find the matched child name
+                  const matchedChild = childrenData.find(c => c.id === bio.child_id);
+                  const matchedName = matchedChild ? matchedChild.fullName : "another patient";
+                  const matchedSerial = matchedChild?.customSerialId ? ` (ID: ${matchedChild.customSerialId})` : "";
+                  alert(`Biometric Enrollment Failed: This fingerprint is already registered to ${matchedName}${matchedSerial}! The child was registered without biometrics.`);
+                  return null;
+                }
+              } catch (e) {
+                console.warn("Failed session fingerprint verify:", e);
+              }
+            }
+          }
+        }
+
         const res = await enrollBiometric({
           childId: childId,
           fingerIndex: 1,
