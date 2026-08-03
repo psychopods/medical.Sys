@@ -370,6 +370,29 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     try {
       const children = await getChildren();
       
+      // Fetch fingerprint data for all children
+      let fingerprintData = [];
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/biometrics`, {
+          headers: getAuthHeaders()
+        });
+        if (response.ok) {
+          const data = await response.json();
+          fingerprintData = data.fingerprints || data.data || [];
+        }
+      } catch (fpError) {
+        console.error('Error fetching fingerprint data:', fpError);
+      }
+      
+      // Create a map of childId -> fingerprint count
+      const fingerprintCountMap = {};
+      fingerprintData.forEach(fp => {
+        const childId = fp.childId || fp.child_id;
+        if (childId) {
+          fingerprintCountMap[childId] = (fingerprintCountMap[childId] || 0) + 1;
+        }
+      });
+      
       // Get today's date for filtering
       const today = new Date().toISOString().split('T')[0];
       
@@ -390,8 +413,18 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         child.createdAt && child.createdAt.split('T')[0] === today
       );
       
-      const captured = children.filter(child => child.fingerprintCaptured).length;
-      const pending = children.length - captured;
+      // Calculate fingerprint statistics
+      let capturedCount = 0;
+      let pendingCount = 0;
+      
+      children.forEach(child => {
+        const fingerCount = fingerprintCountMap[child.id] || 0;
+        if (fingerCount > 0) {
+          capturedCount++;
+        } else {
+          pendingCount++;
+        }
+      });
       
       let youngCount = 0;
       let olderCount = 0;
@@ -436,10 +469,22 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         count
       })).sort((a, b) => a.hour - b.hour);
       
+      // Add fingerprint status to each child for recent list
+      const childrenWithFingerprintStatus = children.map(child => ({
+        ...child,
+        fingerprintCaptured: (fingerprintCountMap[child.id] || 0) > 0
+      }));
+      
+      // Update recent children with fingerprint status
+      const updatedRecentChildren = sortedRecentChildren.map(child => ({
+        ...child,
+        fingerprintCaptured: (fingerprintCountMap[child.id] || 0) > 0
+      }));
+      
       setChartData(prev => ({
         ...prev,
         registrationsByMonth: chartDataMonths,
-        fingerprintStatus: { captured, pending },
+        fingerprintStatus: { captured: capturedCount, pending: pendingCount },
         weeklyRegistrations: weeklyData,
         activityByHour: hourlyData,
         ageDistribution: { young: youngCount, older: olderCount }
@@ -448,8 +493,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
       return {
         totalChildren: children.length,
         registeredToday: todayRegistrations.length,
-        fingerprintsCaptured: captured,
-        recentChildren: sortedRecentChildren.slice(0, 10), // Show up to 10 most recent
+        fingerprintsCaptured: capturedCount,
+        recentChildren: updatedRecentChildren.slice(0, 10), // Show up to 10 most recent
         youngPatients: youngCount,
         olderPatients: olderCount
       };

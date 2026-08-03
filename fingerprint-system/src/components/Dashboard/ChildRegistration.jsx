@@ -277,17 +277,58 @@ const ChildRegistration = () => {
     return staffId;
   };
 
-  // ===== TOAST FUNCTION =====
+  // ===== TOAST FUNCTION - UPDATED TO 20 SECONDS =====
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
-    setTimeout(() => {
+    // Clear any existing timeout
+    if (window.toastTimeout) {
+      clearTimeout(window.toastTimeout);
+    }
+    // Set new timeout for 20 seconds (20000ms)
+    window.toastTimeout = setTimeout(() => {
       setToast({ show: false, message: "", type: "" });
-    }, 3000);
+    }, 20000);
   };
 
-  // ===== TOAST COMPONENT =====
+  // ===== TOAST COMPONENT WITH PROGRESS BAR =====
   const ToastNotification = () => {
+    const [progress, setProgress] = useState(100);
+    const animationRef = useRef(null);
+    const startTimeRef = useRef(null);
+    const duration = 20000; // 20 seconds
+
+    useEffect(() => {
+      if (!toast.show) {
+        setProgress(100);
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+        return;
+      }
+
+      startTimeRef.current = Date.now();
+
+      const updateProgress = () => {
+        const elapsed = Date.now() - startTimeRef.current;
+        const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
+        setProgress(remaining);
+
+        if (remaining > 0) {
+          animationRef.current = requestAnimationFrame(updateProgress);
+        }
+      };
+
+      animationRef.current = requestAnimationFrame(updateProgress);
+
+      return () => {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+      };
+    }, [toast.show]);
+
     if (!toast.show) return null;
+
     return (
       <div className={`child-reg-toast-notification ${toast.type}`}>
         <div className="child-reg-toast-content">
@@ -331,9 +372,21 @@ const ChildRegistration = () => {
           )}
           <span>{toast.message}</span>
         </div>
+        <div className="child-reg-toast-progress-bar">
+          <div 
+            className="child-reg-toast-progress-fill" 
+            style={{ width: `${progress}%` }}
+          />
+        </div>
         <button
           className="child-reg-toast-close"
-          onClick={() => setToast({ show: false, message: "", type: "" })}
+          onClick={() => {
+            if (window.toastTimeout) {
+              clearTimeout(window.toastTimeout);
+            }
+            setToast({ show: false, message: "", type: "" });
+            setProgress(100);
+          }}
         >
           <svg
             width="14"
