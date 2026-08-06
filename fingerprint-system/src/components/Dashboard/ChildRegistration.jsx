@@ -1111,18 +1111,28 @@ const ChildRegistration = () => {
   const handleEditChild = (child) => {
     setEditingChild(child);
     setChildFormData({
-      fullName: child.fullName,
-      estimatedBirthYear: child.estimatedBirthYear,
-      gender: child.gender,
-      primaryLocationId: child.primaryLocationId,
-      customSerialId: child.customSerialId,
-      image1: child.image1 || "",
-      image2: child.image2 || "",
-      image3: child.image3 || "",
+      fullName: child.fullName || "",
+      estimatedBirthYear: child.estimatedBirthYear || "",
+      gender: child.gender || "",
+      primaryLocationId: child.primaryLocationId || "",
+      customSerialId: child.customSerialId || "",
     });
+    
+    // IMPORTANT: Set previews for existing images
+    setPreview1(child.image1 || null);
+    setPreview2(child.image2 || null);
+    setPreview3(child.image3 || null);
+    
+    // Reset camera states
+    setShowCamera1(false);
+    setShowCamera2(false);
+    setShowCamera3(false);
+    setCameraError(null);
+    
     navigateToPage("edit_child");
   };
 
+  // FIXED: handleSaveChild with proper image saving
   const handleSaveChild = async () => {
     if (!validateChildEditForm()) {
       showToast("Please fill in all required fields", "error");
@@ -1131,11 +1141,47 @@ const ChildRegistration = () => {
 
     setIsSavingChild(true);
     try {
-      const result = await updateChild(editingChild.id, childFormData);
+      // Get the images from preview states
+      const image1 = preview1 || null;
+      const image2 = preview2 || null;
+      const image3 = preview3 || null;
+      
+      const updateData = {
+        fullName: childFormData.fullName,
+        estimatedBirthYear: parseInt(childFormData.estimatedBirthYear),
+        gender: childFormData.gender,
+        primaryLocationId: childFormData.primaryLocationId,
+        customSerialId: childFormData.customSerialId || editingChild.customSerialId,
+        image1: image1,
+        image2: image2,
+        image3: image3,
+        createdByStaffId: editingChild.createdByStaffId || user?.id || user?.user_id,
+        createdAt: editingChild.createdAt || new Date().toISOString(),
+        version: (editingChild.version || 1) + 1
+      };
+
+      console.log('Saving child with images:', {
+        image1: image1 ? (typeof image1 === 'string' ? image1.substring(0, 50) + '...' : 'present') : null,
+        image2: image2 ? (typeof image2 === 'string' ? image2.substring(0, 50) + '...' : 'present') : null,
+        image3: image3 ? (typeof image3 === 'string' ? image3.substring(0, 50) + '...' : 'present') : null
+      });
+
+      const result = await updateChild(editingChild.id, updateData);
+      
       if (result) {
         showToast('Child updated successfully!', 'success');
+        
+        // Update the viewingChild with new data
+        const updatedChild = {
+          ...editingChild,
+          ...updateData,
+          image1: image1,
+          image2: image2,
+          image3: image3,
+        };
+        setViewingChild(updatedChild);
+        
         setEditingChild(null);
-        setViewingChild(null);
         await fetchChildren();
         await fetchTodayRegistrations();
         generateRegistrationId();
@@ -1143,6 +1189,9 @@ const ChildRegistration = () => {
       } else {
         showToast('Failed to update child', 'error');
       }
+    } catch (error) {
+      console.error('Error saving child:', error);
+      showToast('An error occurred while saving: ' + error.message, 'error');
     } finally {
       setIsSavingChild(false);
     }
@@ -2647,6 +2696,32 @@ const ChildRegistration = () => {
             handleSaveChild={handleSaveChild}
             goBack={goBack}
             isSavingChild={isSavingChild}
+            preview1={preview1}
+            preview2={preview2}
+            preview3={preview3}
+            showCamera1={showCamera1}
+            showCamera2={showCamera2}
+            showCamera3={showCamera3}
+            videoRef1={videoRef1}
+            videoRef2={videoRef2}
+            videoRef3={videoRef3}
+            canvasRef1={canvasRef1}
+            canvasRef2={canvasRef2}
+            canvasRef3={canvasRef3}
+            fileInputRef1={fileInputRef1}
+            fileInputRef2={fileInputRef2}
+            fileInputRef3={fileInputRef3}
+            handleFileUpload={handleFileUpload}
+            handleRemovePhoto={handleRemovePhoto}
+            startCamera={startCamera}
+            capturePhoto={capturePhoto}
+            stopCamera={stopCamera}
+            switchCamera={switchCamera}
+            cameraError={cameraError}
+            isCameraStarting={isCameraStarting}
+            cameraFacingMode1={cameraFacingMode1}
+            cameraFacingMode2={cameraFacingMode2}
+            cameraFacingMode3={cameraFacingMode3}
           />
         )}
         {!showPrintPage && activePage === "youngPatients" && (

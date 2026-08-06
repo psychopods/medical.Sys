@@ -37,8 +37,16 @@ function isInlineImageData(value) {
 }
 
 function cacheSafeImageValue(value) {
-  const normalized = normalizeImageUrl(value);
-  return normalized && !isInlineImageData(normalized) ? normalized : null;
+  if (!value) return null;
+  
+  // If it's already a URL (not a data URI), normalize it
+  if (!isInlineImageData(value)) {
+    return normalizeImageUrl(value);
+  }
+  
+  // For data URIs (base64), store them directly
+  // SQLite can handle large TEXT fields
+  return value;
 }
 
 function stripInlineImages(record) {
@@ -474,6 +482,7 @@ export async function registerChild(childData) {
   }
 }
 
+// FIXED: updateChild with proper image handling
 export async function updateChild(id, childData) {
   const isOnline = navigator.onLine;
   const customSerialId = childData.customSerialId;
@@ -481,9 +490,11 @@ export async function updateChild(id, childData) {
   const gender = childData.gender;
   const estimatedBirthYear = parseInt(childData.estimatedBirthYear);
   const primaryLocationId = childData.primaryLocationId;
-  const image1 = childData.image1 || null;
-  const image2 = childData.image2 || null;
-  const image3 = childData.image3 || null;
+  
+  // Use cacheSafeImageValue to handle image data properly
+  const image1 = cacheSafeImageValue(childData.image1 || null);
+  const image2 = cacheSafeImageValue(childData.image2 || null);
+  const image3 = cacheSafeImageValue(childData.image3 || null);
 
   if (isOnline) {
     try {
@@ -503,18 +514,31 @@ export async function updateChild(id, childData) {
       });
       if (response.ok) {
         const result = await response.json();
-        // Update local SQLite as synced
+        // Update local SQLite as synced with proper image handling
         await executeRun(
           `INSERT OR REPLACE INTO children_profiles 
           (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced', ?)`,
-          [id, customSerialId, fullName, gender, estimatedBirthYear, primaryLocationId, childData.createdByStaffId || '', image1, image2, image3, childData.version || 1, childData.createdAt || new Date().toISOString()]
+          [
+            id, 
+            customSerialId, 
+            fullName, 
+            gender, 
+            estimatedBirthYear, 
+            primaryLocationId, 
+            childData.createdByStaffId || '', 
+            image1, 
+            image2, 
+            image3, 
+            childData.version || 1, 
+            childData.createdAt || new Date().toISOString()
+          ]
         );
         await saveDB();
         return result;
       }
     } catch (error) {
-      // Silent fail - fallback to offline
+      console.warn('API: Failed to update child online, caching locally...', error);
     }
   }
 
@@ -524,9 +548,24 @@ export async function updateChild(id, childData) {
       `INSERT OR REPLACE INTO children_profiles 
       (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_updated', ?)`,
-      [id, customSerialId, fullName, gender, estimatedBirthYear, primaryLocationId, childData.createdByStaffId || '', image1, image2, image3, (childData.version || 1) + 1, childData.createdAt || new Date().toISOString()]
+      [
+        id, 
+        customSerialId, 
+        fullName, 
+        gender, 
+        estimatedBirthYear, 
+        primaryLocationId, 
+        childData.createdByStaffId || '', 
+        image1, 
+        image2, 
+        image3, 
+        (childData.version || 1) + 1, 
+        childData.createdAt || new Date().toISOString()
+      ]
     );
     await saveDB();
+    
+    // Return the updated child data with normalized images
     return {
       success: true,
       message: "Patient updated offline.",
@@ -537,14 +576,16 @@ export async function updateChild(id, childData) {
         gender,
         estimatedBirthYear,
         primaryLocationId,
-        image1,
-        image2,
-        image3,
+        image1: normalizeImageUrl(image1),
+        image2: normalizeImageUrl(image2),
+        image3: normalizeImageUrl(image3),
         createdByStaffId: childData.createdByStaffId,
-        createdAt: childData.createdAt
+        createdAt: childData.createdAt,
+        syncStatus: 'local_updated'
       }
     };
   } catch (err) {
+    console.error('API: Error updating child offline:', err);
     throw err;
   }
 }
@@ -1888,112 +1929,112 @@ export async function triggerSync() {
     }
 
     // 2.6 Sync dirty notifications and read receipts
+    try {
+      const dirtyNotifications = await executeQuery(
+        `SELECT * FROM notifications WHERE sync_status IN ('local_created', 'local_updated') OR is_dirty = 1`
+      );
+      for (const row of dirtyNotifications) {
         try {
-          const dirtyNotifications = await executeQuery(
-            `SELECT * FROM notifications WHERE sync_status IN ('local_created', 'local_updated') OR is_dirty = 1`
-          );
-          for (const row of dirtyNotifications) {
-            try {
-              const method = row.sync_status === 'local_updated' ? 'PUT' : 'POST';
-              const url = method === 'PUT' ? `${API_ENDPOINTS.notifications}/${row.id}` : API_ENDPOINTS.notifications;
-              const response = await fetch(url, {
-                method,
-                headers: getAuthHeaders(),
-                body: JSON.stringify({
-                  id: row.id,
-                  type: row.type,
-                  title: row.title,
-                  message: row.message,
-                  targetType: row.target_type,
-                  targetRoleId: row.target_role_id,
-                  targetUserId: row.target_user_id,
-                  expiresAt: row.expires_at
-                })
-              });
-              if (response.ok) {
-                await executeRun(
-                  `UPDATE notifications SET sync_status = 'synced', is_dirty = 0 WHERE id = ?`,
-                  [row.id]
-                );
-              }
-            } catch (error) {
-              console.error('Error syncing notification from SQLite:', error);
-            }
+          const method = row.sync_status === 'local_updated' ? 'PUT' : 'POST';
+          const url = method === 'PUT' ? `${API_ENDPOINTS.notifications}/${row.id}` : API_ENDPOINTS.notifications;
+          const response = await fetch(url, {
+            method,
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              id: row.id,
+              type: row.type,
+              title: row.title,
+              message: row.message,
+              targetType: row.target_type,
+              targetRoleId: row.target_role_id,
+              targetUserId: row.target_user_id,
+              expiresAt: row.expires_at
+            })
+          });
+          if (response.ok) {
+            await executeRun(
+              `UPDATE notifications SET sync_status = 'synced', is_dirty = 0 WHERE id = ?`,
+              [row.id]
+            );
           }
-        } catch (err) {
-          console.error('Failed to query dirty notifications:', err);
+        } catch (error) {
+          console.error('Error syncing notification from SQLite:', error);
         }
+      }
+    } catch (err) {
+      console.error('Failed to query dirty notifications:', err);
+    }
 
+    try {
+      const dirtyReads = await executeQuery(
+        `SELECT * FROM notification_reads WHERE sync_status = 'local_created' OR is_dirty = 1`
+      );
+      for (const row of dirtyReads) {
         try {
-          const dirtyReads = await executeQuery(
-            `SELECT * FROM notification_reads WHERE sync_status = 'local_created' OR is_dirty = 1`
-          );
-          for (const row of dirtyReads) {
-            try {
-              const response = await fetch(API_ENDPOINTS.notificationRead(row.notification_id), {
-                method: 'PUT',
-                headers: getAuthHeaders()
-              });
-              if (response.ok) {
-                await executeRun(
-                  `UPDATE notification_reads SET sync_status = 'synced', is_dirty = 0 WHERE notification_id = ? AND staff_user_id = ?`,
-                  [row.notification_id, row.staff_user_id]
-                );
-              }
-            } catch (error) {
-              console.error('Error syncing notification read from SQLite:', error);
-            }
+          const response = await fetch(API_ENDPOINTS.notificationRead(row.notification_id), {
+            method: 'PUT',
+            headers: getAuthHeaders()
+          });
+          if (response.ok) {
+            await executeRun(
+              `UPDATE notification_reads SET sync_status = 'synced', is_dirty = 0 WHERE notification_id = ? AND staff_user_id = ?`,
+              [row.notification_id, row.staff_user_id]
+            );
           }
-        } catch (err) {
-          console.error('Failed to query dirty notification reads:', err);
+        } catch (error) {
+          console.error('Error syncing notification read from SQLite:', error);
         }
+      }
+    } catch (err) {
+      console.error('Failed to query dirty notification reads:', err);
+    }
 
-        // 3. Fallback: Sync any leftover items in localStorage offline_registrations
-        const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
-        const unsyncedOffline = [];
+    // 3. Fallback: Sync any leftover items in localStorage offline_registrations
+    const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
+    const unsyncedOffline = [];
 
-        for (const record of offlineData) {
-          try {
-            const response = await fetch(API_ENDPOINTS.children, {
-              method: 'POST',
-              headers: getAuthHeaders(),
-              body: JSON.stringify({
-                id: record.id || crypto.randomUUID(),
-                customSerialId: record.customSerialId,
-                fullName: record.fullName,
-                gender: record.gender,
-                estimatedBirthYear: parseInt(record.estimatedBirthYear),
-                primaryLocationId: record.primaryLocationId,
-                image1: record.image1 || null,
-                image2: record.image2 || null,
-                image3: record.image3 || null,
-                createdByStaffId: record.createdByStaffId
-              })
-            });
+    for (const record of offlineData) {
+      try {
+        const response = await fetch(API_ENDPOINTS.children, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            id: record.id || crypto.randomUUID(),
+            customSerialId: record.customSerialId,
+            fullName: record.fullName,
+            gender: record.gender,
+            estimatedBirthYear: parseInt(record.estimatedBirthYear),
+            primaryLocationId: record.primaryLocationId,
+            image1: record.image1 || null,
+            image2: record.image2 || null,
+            image3: record.image3 || null,
+            createdByStaffId: record.createdByStaffId
+          })
+        });
 
-            if (!response.ok) {
-              unsyncedOffline.push(record);
-            }
-          } catch (error) {
-            console.error('Error syncing record from localStorage:', error);
-            unsyncedOffline.push(record);
-          }
+        if (!response.ok) {
+          unsyncedOffline.push(record);
         }
-
-        if (unsyncedOffline.length > 0) {
-          localStorage.setItem('offline_registrations', JSON.stringify(unsyncedOffline));
-          updateSyncStatus('idle', `Sync completed with some failures`);
-        } else {
-          localStorage.removeItem('offline_registrations');
-          updateSyncStatus('idle', 'Sync completed successfully');
-        }
-
-        await saveDB();
       } catch (error) {
-        console.error('Sync error:', error);
-        updateSyncStatus('idle', 'Sync error occurred');
+        console.error('Error syncing record from localStorage:', error);
+        unsyncedOffline.push(record);
       }
     }
+
+    if (unsyncedOffline.length > 0) {
+      localStorage.setItem('offline_registrations', JSON.stringify(unsyncedOffline));
+      updateSyncStatus('idle', `Sync completed with some failures`);
+    } else {
+      localStorage.removeItem('offline_registrations');
+      updateSyncStatus('idle', 'Sync completed successfully');
+    }
+
+    await saveDB();
+  } catch (error) {
+    console.error('Sync error:', error);
+    updateSyncStatus('idle', 'Sync error occurred');
+  }
+}
 
 /* ==========================================
    7. PUBLIC FORMS API
@@ -2021,1114 +2062,1114 @@ export async function submitContactForm(form) {
   }
 }
 
-    export async function submitVolunteerApplication(form) {
-      try {
-        const response = await fetch(API_ENDPOINTS.volunteerSubmit, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            full_name: form.full_name,
-            email_address: form.email_address,
-            phone_number: form.phone_number,
-            volunteer_type: form.volunteer_type,
-            message: form.message
-          })
-        });
+export async function submitVolunteerApplication(form) {
+  try {
+    const response = await fetch(API_ENDPOINTS.volunteerSubmit, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name: form.full_name,
+        email_address: form.email_address,
+        phone_number: form.phone_number,
+        volunteer_type: form.volunteer_type,
+        message: form.message
+      })
+    });
 
-        if (response.ok) {
-          return { success: true };
-        }
-        return { success: false };
-      } catch (error) {
-        console.error('API: Error submitting volunteer application:', error);
-        return { success: false, error: error.message };
-      }
+    if (response.ok) {
+      return { success: true };
     }
+    return { success: false };
+  } catch (error) {
+    console.error('API: Error submitting volunteer application:', error);
+    return { success: false, error: error.message };
+  }
+}
 
-    /* ==========================================
-       8. CLINICAL RECORDS & VITALS CACHED API
-       ========================================== */
+/* ==========================================
+   8. CLINICAL RECORDS & VITALS CACHED API
+   ========================================== */
 
-    export async function apiFetchMedicalRecords(childId) {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.medicalRecords(childId), {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const records = Array.isArray(data) ? data : (data.records || [data]);
-            for (const record of records) {
-              if (record && record.id) {
-                await executeRun(
-                  `INSERT OR REPLACE INTO medical_baselines 
-              (id, child_id, visit_date, first_visit, recorded_by, recorded_by_name, version, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, 'synced')`,
-                  [record.id, childId, record.visitDate || record.visit_date || '', record.firstVisit ? 1 : 0, record.recordedBy || record.recorded_by || null, record.recordedByName || record.recorded_by_name || null, record.version || 1]
-                );
-              }
-            }
-            await saveDB();
-            return records;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch medical records online, using SQLite.', error);
-        }
-      }
-
-      // SQLite Fallback
-      try {
-        const rows = await executeQuery('SELECT * FROM medical_baselines WHERE child_id = ? ORDER BY visit_date DESC', [childId]);
-        return rows.map(row => ({
-          id: row.id,
-          childId: row.child_id,
-          visitDate: row.visit_date,
-          firstVisit: row.first_visit === 1,
-          recordedBy: row.recorded_by,
-          recordedByName: row.recorded_by_name,
-          createdAt: row.created_at
-        }));
-      } catch (err) {
-        console.error('API: Error fetching medical baselines from SQLite:', err);
-        return [];
-      }
-    }
-
-    export async function apiSaveBaselineInfo(baselineData) {
-      const isOnline = navigator.onLine;
-      const id = baselineData.id || crypto.randomUUID();
-      const childId = baselineData.childId;
-      const visitDate = baselineData.visitDate;
-      const firstVisit = baselineData.firstVisit === true || baselineData.firstVisit === 1;
-      const recordedBy = baselineData.recordedBy || null;
-      const recordedByName = baselineData.recordedByName || null;
-
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.baseline(childId), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id, childId, visitDate, firstVisit, recordedBy, recordedByName })
-          });
-          if (response.ok) {
+export async function apiFetchMedicalRecords(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.medicalRecords(childId), {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.records || [data]);
+        for (const record of records) {
+          if (record && record.id) {
             await executeRun(
               `INSERT OR REPLACE INTO medical_baselines 
           (id, child_id, visit_date, first_visit, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, 1, 'synced')`,
-              [id, childId, visitDate, firstVisit ? 1 : 0, recordedBy, recordedByName]
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              [record.id, childId, record.visitDate || record.visit_date || '', record.firstVisit ? 1 : 0, record.recordedBy || record.recorded_by || null, record.recordedByName || record.recorded_by_name || null, record.version || 1]
             );
-            await saveDB();
-            return await response.json();
           }
-        } catch (error) {
-          console.warn('API: Failed to save baseline online, caching locally...', error);
         }
+        await saveDB();
+        return records;
       }
+    } catch (error) {
+      console.warn('API: Failed to fetch medical records online, using SQLite.', error);
+    }
+  }
 
-      // Caching offline
-      try {
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery('SELECT * FROM medical_baselines WHERE child_id = ? ORDER BY visit_date DESC', [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      visitDate: row.visit_date,
+      firstVisit: row.first_visit === 1,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching medical baselines from SQLite:', err);
+    return [];
+  }
+}
+
+export async function apiSaveBaselineInfo(baselineData) {
+  const isOnline = navigator.onLine;
+  const id = baselineData.id || crypto.randomUUID();
+  const childId = baselineData.childId;
+  const visitDate = baselineData.visitDate;
+  const firstVisit = baselineData.firstVisit === true || baselineData.firstVisit === 1;
+  const recordedBy = baselineData.recordedBy || null;
+  const recordedByName = baselineData.recordedByName || null;
+
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.baseline(childId), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, childId, visitDate, firstVisit, recordedBy, recordedByName })
+      });
+      if (response.ok) {
         await executeRun(
           `INSERT OR REPLACE INTO medical_baselines 
       (id, child_id, visit_date, first_visit, recorded_by, recorded_by_name, version, sync_status) 
-      VALUES (?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      VALUES (?, ?, ?, ?, ?, ?, 1, 'synced')`,
           [id, childId, visitDate, firstVisit ? 1 : 0, recordedBy, recordedByName]
         );
         await saveDB();
-        return { success: true, message: 'Baseline saved offline.' };
-      } catch (err) {
-        console.error('API: Error caching baseline offline:', err);
-        throw err;
+        return await response.json();
       }
+    } catch (error) {
+      console.warn('API: Failed to save baseline online, caching locally...', error);
     }
+  }
 
-    export async function apiFetchVitalsRecords(childId) {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.vitals(childId), {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const records = Array.isArray(data) ? data : (data.vitals || []);
-            for (const record of records) {
-              if (record && record.id) {
-                await executeRun(
-                  `INSERT OR REPLACE INTO child_vitals 
-              (id, child_id, weight, height, bmi, bmi_status, recorded_by, recorded_by_name, date, version, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-                  [
-                    record.id,
-                    childId,
-                    record.weight !== null ? Number(record.weight) : null,
-                    record.height !== null ? Number(record.height) : null,
-                    record.bmi !== null ? Number(record.bmi) : null,
-                    record.bmiStatus || record.bmi_status || null,
-                    record.recordedBy || record.recorded_by || null,
-                    record.recordedByName || record.recorded_by_name || null,
-                    record.date || '',
-                    record.version || 1
-                  ]
-                );
-              }
-            }
-            await saveDB();
-            return records;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch vitals online, using SQLite.', error);
-        }
-      }
+  // Caching offline
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO medical_baselines 
+  (id, child_id, visit_date, first_visit, recorded_by, recorded_by_name, version, sync_status) 
+  VALUES (?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      [id, childId, visitDate, firstVisit ? 1 : 0, recordedBy, recordedByName]
+    );
+    await saveDB();
+    return { success: true, message: 'Baseline saved offline.' };
+  } catch (err) {
+    console.error('API: Error caching baseline offline:', err);
+    throw err;
+  }
+}
 
-      // SQLite Fallback
-      try {
-        const rows = await executeQuery('SELECT * FROM child_vitals WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
-        return rows.map(row => ({
-          id: row.id,
-          childId: row.child_id,
-          weight: row.weight,
-          height: row.height,
-          bmi: row.bmi,
-          bmiStatus: row.bmi_status,
-          recordedBy: row.recorded_by,
-          recordedByName: row.recorded_by_name,
-          date: row.date,
-          createdAt: row.created_at
-        }));
-      } catch (err) {
-        console.error('API: Error fetching vitals from SQLite:', err);
-        return [];
-      }
-    }
-
-    export async function apiSaveVitals(vitalsData) {
-      const isOnline = navigator.onLine;
-      const id = vitalsData.id || crypto.randomUUID();
-      const childId = vitalsData.childId;
-      const weight = vitalsData.weight !== undefined && vitalsData.weight !== '' ? Number(vitalsData.weight) : null;
-      const height = vitalsData.height !== undefined && vitalsData.height !== '' ? Number(vitalsData.height) : null;
-      const bmi = vitalsData.bmi !== undefined && vitalsData.bmi !== '' ? Number(vitalsData.bmi) : null;
-      const bmiStatus = vitalsData.bmiStatus || null;
-      const recordedBy = vitalsData.recordedBy || null;
-      const recordedByName = vitalsData.recordedByName || null;
-      const date = vitalsData.date;
-
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.vitals(childId), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id, childId, weight, height, bmi, bmiStatus, recordedBy, recordedByName, date })
-          });
-          if (response.ok) {
+export async function apiFetchVitalsRecords(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.vitals(childId), {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.vitals || []);
+        for (const record of records) {
+          if (record && record.id) {
             await executeRun(
               `INSERT OR REPLACE INTO child_vitals 
           (id, child_id, weight, height, bmi, bmi_status, recorded_by, recorded_by_name, date, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
-              [id, childId, weight, height, bmi, bmiStatus, recordedBy, recordedByName, date]
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              [
+                record.id,
+                childId,
+                record.weight !== null ? Number(record.weight) : null,
+                record.height !== null ? Number(record.height) : null,
+                record.bmi !== null ? Number(record.bmi) : null,
+                record.bmiStatus || record.bmi_status || null,
+                record.recordedBy || record.recorded_by || null,
+                record.recordedByName || record.recorded_by_name || null,
+                record.date || '',
+                record.version || 1
+              ]
             );
-            await saveDB();
-            return await response.json();
           }
-        } catch (error) {
-          console.warn('API: Failed to save vitals online, caching locally...', error);
         }
+        await saveDB();
+        return records;
       }
+    } catch (error) {
+      console.warn('API: Failed to fetch vitals online, using SQLite.', error);
+    }
+  }
 
-      // Caching offline
-      try {
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery('SELECT * FROM child_vitals WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      weight: row.weight,
+      height: row.height,
+      bmi: row.bmi,
+      bmiStatus: row.bmi_status,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      date: row.date,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching vitals from SQLite:', err);
+    return [];
+  }
+}
+
+export async function apiSaveVitals(vitalsData) {
+  const isOnline = navigator.onLine;
+  const id = vitalsData.id || crypto.randomUUID();
+  const childId = vitalsData.childId;
+  const weight = vitalsData.weight !== undefined && vitalsData.weight !== '' ? Number(vitalsData.weight) : null;
+  const height = vitalsData.height !== undefined && vitalsData.height !== '' ? Number(vitalsData.height) : null;
+  const bmi = vitalsData.bmi !== undefined && vitalsData.bmi !== '' ? Number(vitalsData.bmi) : null;
+  const bmiStatus = vitalsData.bmiStatus || null;
+  const recordedBy = vitalsData.recordedBy || null;
+  const recordedByName = vitalsData.recordedByName || null;
+  const date = vitalsData.date;
+
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.vitals(childId), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, childId, weight, height, bmi, bmiStatus, recordedBy, recordedByName, date })
+      });
+      if (response.ok) {
         await executeRun(
           `INSERT OR REPLACE INTO child_vitals 
       (id, child_id, weight, height, bmi, bmi_status, recorded_by, recorded_by_name, date, version, sync_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
           [id, childId, weight, height, bmi, bmiStatus, recordedBy, recordedByName, date]
         );
         await saveDB();
-        return { success: true, message: 'Vitals saved offline.' };
-      } catch (err) {
-        console.error('API: Error caching vitals offline:', err);
-        throw err;
+        return await response.json();
       }
+    } catch (error) {
+      console.warn('API: Failed to save vitals online, caching locally...', error);
     }
+  }
 
-    export async function apiFetchNutritionalHistory(childId) {
-      return apiFetchVitalsRecords(childId);
-    }
+  // Caching offline
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO child_vitals 
+  (id, child_id, weight, height, bmi, bmi_status, recorded_by, recorded_by_name, date, version, sync_status) 
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      [id, childId, weight, height, bmi, bmiStatus, recordedBy, recordedByName, date]
+    );
+    await saveDB();
+    return { success: true, message: 'Vitals saved offline.' };
+  } catch (err) {
+    console.error('API: Error caching vitals offline:', err);
+    throw err;
+  }
+}
 
-    export async function apiFetchMedicationRecords(childId) {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.medications(childId), {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const records = Array.isArray(data) ? data : (data.medications || []);
-            for (const record of records) {
-              if (record && record.id) {
-                await executeRun(
-                  `INSERT OR REPLACE INTO medications_given 
-              (id, child_id, ntds_meds, antibiotics, other_meds, date_given, recorded_by, recorded_by_name, version, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-                  [
-                    record.id,
-                    childId,
-                    record.ntdsMeds || record.ntds_meds || null,
-                    record.antibiotics || null,
-                    record.otherMeds || record.other_meds || null,
-                    record.dateGiven || record.date_given || '',
-                    record.recordedBy || record.recorded_by || null,
-                    record.recordedByName || record.recorded_by_name || null,
-                    record.version || 1
-                  ]
-                );
-              }
-            }
-            await saveDB();
-            return records;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch medications online, using SQLite.', error);
-        }
-      }
+export async function apiFetchNutritionalHistory(childId) {
+  return apiFetchVitalsRecords(childId);
+}
 
-      // SQLite Fallback
-      try {
-        const rows = await executeQuery('SELECT * FROM medications_given WHERE child_id = ? ORDER BY date_given DESC, created_at DESC', [childId]);
-        return rows.map(row => ({
-          id: row.id,
-          childId: row.child_id,
-          ntdsMeds: row.ntds_meds,
-          antibiotics: row.antibiotics,
-          otherMeds: row.other_meds,
-          dateGiven: row.date_given,
-          recordedBy: row.recorded_by,
-          recordedByName: row.recorded_by_name,
-          createdAt: row.created_at
-        }));
-      } catch (err) {
-        console.error('API: Error fetching medications from SQLite:', err);
-        return [];
-      }
-    }
-
-    export async function apiSaveMedication(medicationData) {
-      const isOnline = navigator.onLine;
-      const id = medicationData.id || crypto.randomUUID();
-      const childId = medicationData.childId;
-      const ntdsMeds = medicationData.ntdsMeds || null;
-      const antibiotics = medicationData.antibiotics || null;
-      const otherMeds = medicationData.otherMeds || null;
-      const dateGiven = medicationData.dateGiven;
-      const recordedBy = medicationData.recordedBy || null;
-      const recordedByName = medicationData.recordedByName || null;
-
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.medications(childId), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id, childId, ntdsMeds, antibiotics, otherMeds, dateGiven, recordedBy, recordedByName })
-          });
-          if (response.ok) {
+export async function apiFetchMedicationRecords(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.medications(childId), {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.medications || []);
+        for (const record of records) {
+          if (record && record.id) {
             await executeRun(
               `INSERT OR REPLACE INTO medications_given 
           (id, child_id, ntds_meds, antibiotics, other_meds, date_given, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
-              [id, childId, ntdsMeds, antibiotics, otherMeds, dateGiven, recordedBy, recordedByName]
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              [
+                record.id,
+                childId,
+                record.ntdsMeds || record.ntds_meds || null,
+                record.antibiotics || null,
+                record.otherMeds || record.other_meds || null,
+                record.dateGiven || record.date_given || '',
+                record.recordedBy || record.recorded_by || null,
+                record.recordedByName || record.recorded_by_name || null,
+                record.version || 1
+              ]
             );
-            await saveDB();
-            return await response.json();
           }
-        } catch (error) {
-          console.warn('API: Failed to save medication online, caching locally...', error);
         }
+        await saveDB();
+        return records;
       }
+    } catch (error) {
+      console.warn('API: Failed to fetch medications online, using SQLite.', error);
+    }
+  }
 
-      // Caching offline
-      try {
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery('SELECT * FROM medications_given WHERE child_id = ? ORDER BY date_given DESC, created_at DESC', [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      ntdsMeds: row.ntds_meds,
+      antibiotics: row.antibiotics,
+      otherMeds: row.other_meds,
+      dateGiven: row.date_given,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching medications from SQLite:', err);
+    return [];
+  }
+}
+
+export async function apiSaveMedication(medicationData) {
+  const isOnline = navigator.onLine;
+  const id = medicationData.id || crypto.randomUUID();
+  const childId = medicationData.childId;
+  const ntdsMeds = medicationData.ntdsMeds || null;
+  const antibiotics = medicationData.antibiotics || null;
+  const otherMeds = medicationData.otherMeds || null;
+  const dateGiven = medicationData.dateGiven;
+  const recordedBy = medicationData.recordedBy || null;
+  const recordedByName = medicationData.recordedByName || null;
+
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.medications(childId), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, childId, ntdsMeds, antibiotics, otherMeds, dateGiven, recordedBy, recordedByName })
+      });
+      if (response.ok) {
         await executeRun(
           `INSERT OR REPLACE INTO medications_given 
       (id, child_id, ntds_meds, antibiotics, other_meds, date_given, recorded_by, recorded_by_name, version, sync_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
           [id, childId, ntdsMeds, antibiotics, otherMeds, dateGiven, recordedBy, recordedByName]
         );
         await saveDB();
-        return { success: true, message: 'Medication saved offline.' };
-      } catch (err) {
-        console.error('API: Error caching medication offline:', err);
-        throw err;
+        return await response.json();
       }
+    } catch (error) {
+      console.warn('API: Failed to save medication online, caching locally...', error);
     }
+  }
 
-    export async function apiFetchTestsRecords(childId) {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.tests(childId), {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const records = Array.isArray(data) ? data : (data.tests || []);
-            for (const record of records) {
-              if (record && record.id) {
-                await executeRun(
-                  `INSERT OR REPLACE INTO laboratory_tests 
-              (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-                  [
-                    record.id,
-                    childId,
-                    record.testType || record.test_type || '',
-                    record.result || '',
-                    record.date || '',
-                    record.recordedBy || record.recorded_by || null,
-                    record.recordedByName || record.recorded_by_name || null,
-                    record.version || 1
-                  ]
-                );
-              }
-            }
-            await saveDB();
-            return records;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch tests online, using SQLite.', error);
-        }
-      }
+  // Caching offline
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO medications_given 
+  (id, child_id, ntds_meds, antibiotics, other_meds, date_given, recorded_by, recorded_by_name, version, sync_status) 
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      [id, childId, ntdsMeds, antibiotics, otherMeds, dateGiven, recordedBy, recordedByName]
+    );
+    await saveDB();
+    return { success: true, message: 'Medication saved offline.' };
+  } catch (err) {
+    console.error('API: Error caching medication offline:', err);
+    throw err;
+  }
+}
 
-      // SQLite Fallback
-      try {
-        const rows = await executeQuery('SELECT * FROM laboratory_tests WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
-        return rows.map(row => ({
-          id: row.id,
-          childId: row.child_id,
-          testType: row.test_type,
-          result: row.result,
-          date: row.date,
-          recordedBy: row.recorded_by,
-          recordedByName: row.recorded_by_name,
-          createdAt: row.created_at
-        }));
-      } catch (err) {
-        console.error('API: Error fetching laboratory tests from SQLite:', err);
-        return [];
-      }
-    }
-
-    export async function apiFetchTestsHistory(childId) {
-      return apiFetchTestsRecords(childId);
-    }
-
-    export async function apiSaveTestResult(testsData) {
-      const isOnline = navigator.onLine;
-      const id = testsData.id || crypto.randomUUID();
-      const childId = testsData.childId;
-      const testType = testsData.testType;
-      const result = testsData.result;
-      const date = testsData.date;
-      const recordedBy = testsData.recordedBy || null;
-      const recordedByName = testsData.recordedByName || null;
-
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.tests(childId), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id, childId, testType, result, date, recordedBy, recordedByName })
-          });
-          if (response.ok) {
+export async function apiFetchTestsRecords(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.tests(childId), {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.tests || []);
+        for (const record of records) {
+          if (record && record.id) {
             await executeRun(
               `INSERT OR REPLACE INTO laboratory_tests 
           (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
-              [id, childId, testType, result, date, recordedBy, recordedByName]
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              [
+                record.id,
+                childId,
+                record.testType || record.test_type || '',
+                record.result || '',
+                record.date || '',
+                record.recordedBy || record.recorded_by || null,
+                record.recordedByName || record.recorded_by_name || null,
+                record.version || 1
+              ]
             );
-            await saveDB();
-            return await response.json();
           }
-        } catch (error) {
-          console.warn('API: Failed to save test result online, caching locally...', error);
         }
+        await saveDB();
+        return records;
       }
+    } catch (error) {
+      console.warn('API: Failed to fetch tests online, using SQLite.', error);
+    }
+  }
 
-      // Caching offline
-      try {
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery('SELECT * FROM laboratory_tests WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      testType: row.test_type,
+      result: row.result,
+      date: row.date,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching laboratory tests from SQLite:', err);
+    return [];
+  }
+}
+
+export async function apiFetchTestsHistory(childId) {
+  return apiFetchTestsRecords(childId);
+}
+
+export async function apiSaveTestResult(testsData) {
+  const isOnline = navigator.onLine;
+  const id = testsData.id || crypto.randomUUID();
+  const childId = testsData.childId;
+  const testType = testsData.testType;
+  const result = testsData.result;
+  const date = testsData.date;
+  const recordedBy = testsData.recordedBy || null;
+  const recordedByName = testsData.recordedByName || null;
+
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.tests(childId), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, childId, testType, result, date, recordedBy, recordedByName })
+      });
+      if (response.ok) {
         await executeRun(
           `INSERT OR REPLACE INTO laboratory_tests 
       (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, sync_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
           [id, childId, testType, result, date, recordedBy, recordedByName]
         );
         await saveDB();
-        return { success: true, message: 'Test saved offline.' };
-      } catch (err) {
-        console.error('API: Error caching test offline:', err);
-        throw err;
+        return await response.json();
       }
+    } catch (error) {
+      console.warn('API: Failed to save test result online, caching locally...', error);
     }
+  }
 
-    export async function apiSaveMedicalServices(servicesData) {
-      const isOnline = navigator.onLine;
-      const id = servicesData.id || crypto.randomUUID();
-      const childId = servicesData.childId;
-      const servicesList = Array.isArray(servicesData.services) ? servicesData.services.join(', ') : servicesData.services;
-      const date = servicesData.date;
-      const recordedBy = servicesData.recordedBy || null;
-      const recordedByName = servicesData.recordedByName || null;
+  // Caching offline
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO laboratory_tests 
+  (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, sync_status) 
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      [id, childId, testType, result, date, recordedBy, recordedByName]
+    );
+    await saveDB();
+    return { success: true, message: 'Test saved offline.' };
+  } catch (err) {
+    console.error('API: Error caching test offline:', err);
+    throw err;
+  }
+}
 
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.medicalServices(childId), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id, childId, services: servicesData.services, date, recordedBy, recordedByName })
-          });
-          if (response.ok) {
-            await executeRun(
-              `INSERT OR REPLACE INTO services_rendered 
-          (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 'synced')`,
-              [id, childId, servicesList, date, recordedBy, recordedByName]
-            );
-            await saveDB();
-            return await response.json();
-          }
-        } catch (error) {
-          console.warn('API: Failed to save medical services online, caching locally...', error);
-        }
-      }
+export async function apiSaveMedicalServices(servicesData) {
+  const isOnline = navigator.onLine;
+  const id = servicesData.id || crypto.randomUUID();
+  const childId = servicesData.childId;
+  const servicesList = Array.isArray(servicesData.services) ? servicesData.services.join(', ') : servicesData.services;
+  const date = servicesData.date;
+  const recordedBy = servicesData.recordedBy || null;
+  const recordedByName = servicesData.recordedByName || null;
 
-      // Caching offline
-      try {
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.medicalServices(childId), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, childId, services: servicesData.services, date, recordedBy, recordedByName })
+      });
+      if (response.ok) {
         await executeRun(
           `INSERT OR REPLACE INTO services_rendered 
       (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
-      VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 'local_created')`,
+      VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 'synced')`,
           [id, childId, servicesList, date, recordedBy, recordedByName]
         );
         await saveDB();
-        return { success: true, message: 'Medical services saved offline.' };
-      } catch (err) {
-        console.error('API: Error caching medical services offline:', err);
-        throw err;
+        return await response.json();
       }
+    } catch (error) {
+      console.warn('API: Failed to save medical services online, caching locally...', error);
     }
+  }
 
-    export async function apiSaveSocialServices(servicesData) {
-      const isOnline = navigator.onLine;
-      const id = servicesData.id || crypto.randomUUID();
-      const childId = servicesData.childId;
-      const servicesList = Array.isArray(servicesData.services) ? servicesData.services.join(', ') : servicesData.services;
-      const date = servicesData.date;
-      const recordedBy = servicesData.recordedBy || null;
-      const recordedByName = servicesData.recordedByName || null;
+  // Caching offline
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO services_rendered 
+  (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
+  VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 'local_created')`,
+      [id, childId, servicesList, date, recordedBy, recordedByName]
+    );
+    await saveDB();
+    return { success: true, message: 'Medical services saved offline.' };
+  } catch (err) {
+    console.error('API: Error caching medical services offline:', err);
+    throw err;
+  }
+}
 
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.socialServices(childId), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id, childId, services: servicesData.services, date, recordedBy, recordedByName })
-          });
-          if (response.ok) {
-            await executeRun(
-              `INSERT OR REPLACE INTO services_rendered 
-          (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, 'social', ?, ?, ?, ?, 1, 'synced')`,
-              [id, childId, servicesList, date, recordedBy, recordedByName]
-            );
-            await saveDB();
-            return await response.json();
-          }
-        } catch (error) {
-          console.warn('API: Failed to save social services online, caching locally...', error);
-        }
-      }
+export async function apiSaveSocialServices(servicesData) {
+  const isOnline = navigator.onLine;
+  const id = servicesData.id || crypto.randomUUID();
+  const childId = servicesData.childId;
+  const servicesList = Array.isArray(servicesData.services) ? servicesData.services.join(', ') : servicesData.services;
+  const date = servicesData.date;
+  const recordedBy = servicesData.recordedBy || null;
+  const recordedByName = servicesData.recordedByName || null;
 
-      // Caching offline
-      try {
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.socialServices(childId), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, childId, services: servicesData.services, date, recordedBy, recordedByName })
+      });
+      if (response.ok) {
         await executeRun(
           `INSERT OR REPLACE INTO services_rendered 
       (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
-      VALUES (?, ?, 'social', ?, ?, ?, ?, 1, 'local_created')`,
+      VALUES (?, ?, 'social', ?, ?, ?, ?, 1, 'synced')`,
           [id, childId, servicesList, date, recordedBy, recordedByName]
         );
         await saveDB();
-        return { success: true, message: 'Social services saved offline.' };
-      } catch (err) {
-        console.error('API: Error caching social services offline:', err);
-        throw err;
+        return await response.json();
       }
+    } catch (error) {
+      console.warn('API: Failed to save social services online, caching locally...', error);
     }
+  }
 
-    export async function apiSaveEducation(educationData) {
-      const isOnline = navigator.onLine;
-      const id = educationData.id || crypto.randomUUID();
-      const childId = educationData.childId;
-      const servicesList = Array.isArray(educationData.education) ? educationData.education.join(', ') : educationData.education;
-      const date = educationData.date;
-      const recordedBy = educationData.recordedBy || null;
-      const recordedByName = educationData.recordedByName || null;
+  // Caching offline
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO services_rendered 
+  (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
+  VALUES (?, ?, 'social', ?, ?, ?, ?, 1, 'local_created')`,
+      [id, childId, servicesList, date, recordedBy, recordedByName]
+    );
+    await saveDB();
+    return { success: true, message: 'Social services saved offline.' };
+  } catch (err) {
+    console.error('API: Error caching social services offline:', err);
+    throw err;
+  }
+}
 
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.education(childId), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id, childId, education: educationData.education, date, recordedBy, recordedByName })
-          });
-          if (response.ok) {
-            await executeRun(
-              `INSERT OR REPLACE INTO services_rendered 
-          (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, 'education', ?, ?, ?, ?, 1, 'synced')`,
-              [id, childId, servicesList, date, recordedBy, recordedByName]
-            );
-            await saveDB();
-            return await response.json();
-          }
-        } catch (error) {
-          console.warn('API: Failed to save education online, caching locally...', error);
-        }
-      }
+export async function apiSaveEducation(educationData) {
+  const isOnline = navigator.onLine;
+  const id = educationData.id || crypto.randomUUID();
+  const childId = educationData.childId;
+  const servicesList = Array.isArray(educationData.education) ? educationData.education.join(', ') : educationData.education;
+  const date = educationData.date;
+  const recordedBy = educationData.recordedBy || null;
+  const recordedByName = educationData.recordedByName || null;
 
-      // Caching offline
-      try {
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.education(childId), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, childId, education: educationData.education, date, recordedBy, recordedByName })
+      });
+      if (response.ok) {
         await executeRun(
           `INSERT OR REPLACE INTO services_rendered 
       (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
-      VALUES (?, ?, 'education', ?, ?, ?, ?, 1, 'local_created')`,
+      VALUES (?, ?, 'education', ?, ?, ?, ?, 1, 'synced')`,
           [id, childId, servicesList, date, recordedBy, recordedByName]
         );
         await saveDB();
-        return { success: true, message: 'Education saved offline.' };
-      } catch (err) {
-        console.error('API: Error caching education offline:', err);
-        throw err;
+        return await response.json();
       }
+    } catch (error) {
+      console.warn('API: Failed to save education online, caching locally...', error);
     }
+  }
 
-    export async function apiFetchServicesRecords(childId) {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.services(childId), {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const records = Array.isArray(data) ? data : (data.services || []);
-            for (const record of records) {
-              if (record && record.id) {
-                await executeRun(
-                  `INSERT OR REPLACE INTO services_rendered 
-              (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-                  [
-                    record.id,
-                    childId,
-                    record.serviceType || record.service_type || 'medical',
-                    record.servicesList || record.services_list || '',
-                    record.date || '',
-                    record.recordedBy || record.recorded_by || null,
-                    record.recordedByName || record.recorded_by_name || null,
-                    record.version || 1
-                  ]
-                );
-              }
-            }
-            await saveDB();
-            return records;
+  // Caching offline
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO services_rendered 
+  (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
+  VALUES (?, ?, 'education', ?, ?, ?, ?, 1, 'local_created')`,
+      [id, childId, servicesList, date, recordedBy, recordedByName]
+    );
+    await saveDB();
+    return { success: true, message: 'Education saved offline.' };
+  } catch (err) {
+    console.error('API: Error caching education offline:', err);
+    throw err;
+  }
+}
+
+export async function apiFetchServicesRecords(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.services(childId), {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.services || []);
+        for (const record of records) {
+          if (record && record.id) {
+            await executeRun(
+              `INSERT OR REPLACE INTO services_rendered 
+          (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              [
+                record.id,
+                childId,
+                record.serviceType || record.service_type || 'medical',
+                record.servicesList || record.services_list || '',
+                record.date || '',
+                record.recordedBy || record.recorded_by || null,
+                record.recordedByName || record.recorded_by_name || null,
+                record.version || 1
+              ]
+            );
           }
-        } catch (error) {
-          console.warn('API: Failed to fetch services online, using SQLite.', error);
         }
+        await saveDB();
+        return records;
       }
-
-      // SQLite Fallback
-      try {
-        const rows = await executeQuery('SELECT * FROM services_rendered WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
-        return rows.map(row => ({
-          id: row.id,
-          childId: row.child_id,
-          serviceType: row.service_type,
-          servicesList: row.services_list,
-          servicesProvided: row.services_list ? row.services_list.split(',').map(s => s.trim()) : [],
-          date: row.date,
-          recordedBy: row.recorded_by,
-          recordedByName: row.recorded_by_name,
-          createdAt: row.created_at
-        }));
-      } catch (err) {
-        console.error('API: Error fetching services from SQLite:', err);
-        return [];
-      }
+    } catch (error) {
+      console.warn('API: Failed to fetch services online, using SQLite.', error);
     }
+  }
 
-    export async function apiFetchEducationHistory(childId) {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.educationHistory(childId), {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const records = Array.isArray(data) ? data : (data.educationHistory || []);
-            for (const record of records) {
-              if (record && record.id) {
-                await executeRun(
-                  `INSERT OR REPLACE INTO services_rendered 
-              (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
-              VALUES (?, ?, 'education', ?, ?, ?, ?, ?, 'synced')`,
-                  [
-                    record.id,
-                    childId,
-                    record.servicesList || record.services_list || record.educationList || '',
-                    record.date || '',
-                    record.recordedBy || record.recorded_by || null,
-                    record.recordedByName || record.recorded_by_name || null,
-                    record.version || 1
-                  ]
-                );
-              }
-            }
-            await saveDB();
-            return records;
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery('SELECT * FROM services_rendered WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      serviceType: row.service_type,
+      servicesList: row.services_list,
+      servicesProvided: row.services_list ? row.services_list.split(',').map(s => s.trim()) : [],
+      date: row.date,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching services from SQLite:', err);
+    return [];
+  }
+}
+
+export async function apiFetchEducationHistory(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.educationHistory(childId), {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.educationHistory || []);
+        for (const record of records) {
+          if (record && record.id) {
+            await executeRun(
+              `INSERT OR REPLACE INTO services_rendered 
+          (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
+          VALUES (?, ?, 'education', ?, ?, ?, ?, ?, 'synced')`,
+              [
+                record.id,
+                childId,
+                record.servicesList || record.services_list || record.educationList || '',
+                record.date || '',
+                record.recordedBy || record.recorded_by || null,
+                record.recordedByName || record.recorded_by_name || null,
+                record.version || 1
+              ]
+            );
           }
-        } catch (error) {
-          console.warn('API: Failed to fetch education history online, using SQLite.', error);
         }
+        await saveDB();
+        return records;
       }
-
-      // SQLite Fallback
-      try {
-        const rows = await executeQuery("SELECT * FROM services_rendered WHERE child_id = ? AND service_type = 'education' ORDER BY date DESC, created_at DESC", [childId]);
-        return rows.map(row => ({
-          id: row.id,
-          childId: row.child_id,
-          serviceType: row.service_type,
-          servicesList: row.services_list,
-          educationProvided: row.services_list ? row.services_list.split(',').map(s => s.trim()) : [],
-          date: row.date,
-          recordedBy: row.recorded_by,
-          recordedByName: row.recorded_by_name,
-          createdAt: row.created_at
-        }));
-      } catch (err) {
-        console.error('API: Error fetching education history from SQLite:', err);
-        return [];
-      }
+    } catch (error) {
+      console.warn('API: Failed to fetch education history online, using SQLite.', error);
     }
+  }
 
-    export async function apiFetchSymptomsRecords(childId) {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.symptoms(childId), {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const records = Array.isArray(data) ? data : (data.symptoms || []);
-            for (const record of records) {
-              if (record && record.id) {
-                await executeRun(
-                  `INSERT OR REPLACE INTO symptoms_recorded 
-              (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-                  [
-                    record.id,
-                    childId,
-                    record.symptoms || '',
-                    record.visitNotes || record.visit_notes || '',
-                    record.date || '',
-                    record.recordedBy || record.recorded_by || null,
-                    record.recordedByName || record.recorded_by_name || null,
-                    record.version || 1
-                  ]
-                );
-              }
-            }
-            await saveDB();
-            return records;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch symptoms online, using SQLite.', error);
-        }
-      }
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery("SELECT * FROM services_rendered WHERE child_id = ? AND service_type = 'education' ORDER BY date DESC, created_at DESC", [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      serviceType: row.service_type,
+      servicesList: row.services_list,
+      educationProvided: row.services_list ? row.services_list.split(',').map(s => s.trim()) : [],
+      date: row.date,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching education history from SQLite:', err);
+    return [];
+  }
+}
 
-      // SQLite Fallback
-      try {
-        const rows = await executeQuery('SELECT * FROM symptoms_recorded WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
-        return rows.map(row => ({
-          id: row.id,
-          childId: row.child_id,
-          symptoms: row.symptoms,
-          visitNotes: row.visit_notes,
-          date: row.date,
-          recordedBy: row.recorded_by,
-          recordedByName: row.recorded_by_name,
-          createdAt: row.created_at
-        }));
-      } catch (err) {
-        console.error('API: Error fetching symptoms from SQLite:', err);
-        return [];
-      }
-    }
-
-    export async function apiSaveSymptoms(symptomsData) {
-      const isOnline = navigator.onLine;
-      const id = symptomsData.id || crypto.randomUUID();
-      const childId = symptomsData.childId;
-      const symptoms = symptomsData.symptoms || null;
-      const visitNotes = symptomsData.visitNotes || null;
-      const date = symptomsData.date;
-      const recordedBy = symptomsData.recordedBy || null;
-      const recordedByName = symptomsData.recordedByName || null;
-
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.symptoms(childId), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id, childId, symptoms, visitNotes, date, recordedBy, recordedByName })
-          });
-          if (response.ok) {
+export async function apiFetchSymptomsRecords(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.symptoms(childId), {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.symptoms || []);
+        for (const record of records) {
+          if (record && record.id) {
             await executeRun(
               `INSERT OR REPLACE INTO symptoms_recorded 
           (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
-              [id, childId, symptoms, visitNotes, date, recordedBy, recordedByName]
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              [
+                record.id,
+                childId,
+                record.symptoms || '',
+                record.visitNotes || record.visit_notes || '',
+                record.date || '',
+                record.recordedBy || record.recorded_by || null,
+                record.recordedByName || record.recorded_by_name || null,
+                record.version || 1
+              ]
             );
-            await saveDB();
-            return await response.json();
           }
-        } catch (error) {
-          console.warn('API: Failed to save symptoms online, caching locally...', error);
         }
+        await saveDB();
+        return records;
       }
+    } catch (error) {
+      console.warn('API: Failed to fetch symptoms online, using SQLite.', error);
+    }
+  }
 
-      // Caching offline
-      try {
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery('SELECT * FROM symptoms_recorded WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      symptoms: row.symptoms,
+      visitNotes: row.visit_notes,
+      date: row.date,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching symptoms from SQLite:', err);
+    return [];
+  }
+}
+
+export async function apiSaveSymptoms(symptomsData) {
+  const isOnline = navigator.onLine;
+  const id = symptomsData.id || crypto.randomUUID();
+  const childId = symptomsData.childId;
+  const symptoms = symptomsData.symptoms || null;
+  const visitNotes = symptomsData.visitNotes || null;
+  const date = symptomsData.date;
+  const recordedBy = symptomsData.recordedBy || null;
+  const recordedByName = symptomsData.recordedByName || null;
+
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.symptoms(childId), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, childId, symptoms, visitNotes, date, recordedBy, recordedByName })
+      });
+      if (response.ok) {
         await executeRun(
           `INSERT OR REPLACE INTO symptoms_recorded 
       (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, sync_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
           [id, childId, symptoms, visitNotes, date, recordedBy, recordedByName]
         );
         await saveDB();
-        return { success: true, message: 'Symptoms saved offline.' };
-      } catch (err) {
-        console.error('API: Error caching symptoms offline:', err);
-        throw err;
+        return await response.json();
       }
+    } catch (error) {
+      console.warn('API: Failed to save symptoms online, caching locally...', error);
     }
+  }
 
-    export async function apiFetchClothingRecords(childId) {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.clothing(childId), {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const records = Array.isArray(data) ? data : (data.clothing || []);
-            for (const record of records) {
-              if (record && record.id) {
-                await executeRun(
-                  `INSERT OR REPLACE INTO clothing_provisions 
-              (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-                  [
-                    record.id,
-                    childId,
-                    record.shoes || '',
-                    record.clothes || '',
-                    record.date || '',
-                    record.recordedBy || record.recorded_by || null,
-                    record.recordedByName || record.recorded_by_name || null,
-                    record.version || 1
-                  ]
-                );
-              }
-            }
-            await saveDB();
-            return records;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch clothing online, using SQLite.', error);
-        }
-      }
+  // Caching offline
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO symptoms_recorded 
+  (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, sync_status) 
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      [id, childId, symptoms, visitNotes, date, recordedBy, recordedByName]
+    );
+    await saveDB();
+    return { success: true, message: 'Symptoms saved offline.' };
+  } catch (err) {
+    console.error('API: Error caching symptoms offline:', err);
+    throw err;
+  }
+}
 
-      // SQLite Fallback
-      try {
-        const rows = await executeQuery('SELECT * FROM clothing_provisions WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
-        return rows.map(row => ({
-          id: row.id,
-          childId: row.child_id,
-          shoes: row.shoes,
-          clothes: row.clothes,
-          date: row.date,
-          recordedBy: row.recorded_by,
-          recordedByName: row.recorded_by_name,
-          createdAt: row.created_at
-        }));
-      } catch (err) {
-        console.error('API: Error fetching clothing from SQLite:', err);
-        return [];
-      }
-    }
-
-    export async function apiSaveClothing(clothingData) {
-      const isOnline = navigator.onLine;
-      const id = clothingData.id || crypto.randomUUID();
-      const childId = clothingData.childId;
-      const shoes = clothingData.shoes || null;
-      const clothes = clothingData.clothes || null;
-      const date = clothingData.date;
-      const recordedBy = clothingData.recordedBy || null;
-      const recordedByName = clothingData.recordedByName || null;
-
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.clothing(childId), {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ id, childId, shoes, clothes, date, recordedBy, recordedByName })
-          });
-          if (response.ok) {
+export async function apiFetchClothingRecords(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.clothing(childId), {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.clothing || []);
+        for (const record of records) {
+          if (record && record.id) {
             await executeRun(
               `INSERT OR REPLACE INTO clothing_provisions 
           (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
-              [id, childId, shoes, clothes, date, recordedBy, recordedByName]
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              [
+                record.id,
+                childId,
+                record.shoes || '',
+                record.clothes || '',
+                record.date || '',
+                record.recordedBy || record.recorded_by || null,
+                record.recordedByName || record.recorded_by_name || null,
+                record.version || 1
+              ]
             );
-            await saveDB();
-            return await response.json();
           }
-        } catch (error) {
-          console.warn('API: Failed to save clothing online, caching locally...', error);
         }
+        await saveDB();
+        return records;
       }
+    } catch (error) {
+      console.warn('API: Failed to fetch clothing online, using SQLite.', error);
+    }
+  }
 
-      // Caching offline
-      try {
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery('SELECT * FROM clothing_provisions WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      shoes: row.shoes,
+      clothes: row.clothes,
+      date: row.date,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching clothing from SQLite:', err);
+    return [];
+  }
+}
+
+export async function apiSaveClothing(clothingData) {
+  const isOnline = navigator.onLine;
+  const id = clothingData.id || crypto.randomUUID();
+  const childId = clothingData.childId;
+  const shoes = clothingData.shoes || null;
+  const clothes = clothingData.clothes || null;
+  const date = clothingData.date;
+  const recordedBy = clothingData.recordedBy || null;
+  const recordedByName = clothingData.recordedByName || null;
+
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.clothing(childId), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id, childId, shoes, clothes, date, recordedBy, recordedByName })
+      });
+      if (response.ok) {
         await executeRun(
           `INSERT OR REPLACE INTO clothing_provisions 
       (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, sync_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
           [id, childId, shoes, clothes, date, recordedBy, recordedByName]
         );
         await saveDB();
-        return { success: true, message: 'Clothing saved offline.' };
-      } catch (err) {
-        console.error('API: Error caching clothing offline:', err);
-        throw err;
+        return await response.json();
       }
+    } catch (error) {
+      console.warn('API: Failed to save clothing online, caching locally...', error);
     }
+  }
 
-    /* ==========================================
-       5. USERS, ROLES, PERMISSIONS API (REST + Cache)
-       ========================================== */
+  // Caching offline
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO clothing_provisions 
+  (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, sync_status) 
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      [id, childId, shoes, clothes, date, recordedBy, recordedByName]
+    );
+    await saveDB();
+    return { success: true, message: 'Clothing saved offline.' };
+  } catch (err) {
+    console.error('API: Error caching clothing offline:', err);
+    throw err;
+  }
+}
 
-    export async function getUsers() {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.users, {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const users = await response.json();
-            for (const u of users) {
-              const existing = await executeQuery('SELECT password_hash FROM staff_users WHERE id = ?', [u.id]);
-              const pwdHash = existing.length > 0 ? existing[0].password_hash : '';
-              
-              await executeRun(
-                `INSERT OR REPLACE INTO staff_users 
-                (id, username, email, password_hash, role_id, first_name, last_name, phone_number, version, is_dirty, sync_status) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
-                [
-                  u.id,
-                  u.username,
-                  u.email,
-                  pwdHash,
-                  u.roleId || u.role_id || '',
-                  u.firstName || u.first_name || '',
-                  u.lastName || u.last_name || '',
-                  u.phoneNumber || u.phone_number || '',
-                  u.version || 1
-                ]
-              );
-            }
-            await saveDB();
-            return users;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch users online, trying SQLite cache fallback...', error);
+/* ==========================================
+   5. USERS, ROLES, PERMISSIONS API (REST + Cache)
+   ========================================== */
+
+export async function getUsers() {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.users, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const users = await response.json();
+        for (const u of users) {
+          const existing = await executeQuery('SELECT password_hash FROM staff_users WHERE id = ?', [u.id]);
+          const pwdHash = existing.length > 0 ? existing[0].password_hash : '';
+          
+          await executeRun(
+            `INSERT OR REPLACE INTO staff_users 
+            (id, username, email, password_hash, role_id, first_name, last_name, phone_number, version, is_dirty, sync_status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
+            [
+              u.id,
+              u.username,
+              u.email,
+              pwdHash,
+              u.roleId || u.role_id || '',
+              u.firstName || u.first_name || '',
+              u.lastName || u.last_name || '',
+              u.phoneNumber || u.phone_number || '',
+              u.version || 1
+            ]
+          );
         }
+        await saveDB();
+        return users;
       }
-
-      try {
-        const localUsers = await executeQuery("SELECT * FROM staff_users");
-        const localRoles = await executeQuery("SELECT * FROM roles");
-        const roleMap = {};
-        localRoles.forEach(r => {
-          roleMap[r.id] = r.name;
-        });
-
-        return localUsers.map(u => ({
-          id: u.id,
-          username: u.username,
-          email: u.email,
-          roleId: u.role_id,
-          role_id: u.role_id,
-          roleName: roleMap[u.role_id] || 'Unknown',
-          firstName: u.first_name,
-          first_name: u.first_name,
-          lastName: u.last_name,
-          last_name: u.last_name,
-          phoneNumber: u.phone_number,
-          phone_number: u.phone_number,
-          version: u.version
-        }));
-      } catch (err) {
-        console.error('API: Error fetching users from SQLite:', err);
-        return [];
-      }
+    } catch (error) {
+      console.warn('API: Failed to fetch users online, trying SQLite cache fallback...', error);
     }
+  }
 
-    export async function getRoles() {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.roles, {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const roles = await response.json();
-            for (const role of roles) {
-              await executeRun(
-                "INSERT OR REPLACE INTO roles (id, name, description, version, is_dirty, sync_status) VALUES (?, ?, ?, ?, 0, 'synced')",
-                [role.id, role.name, role.description || '', role.version || 1]
-              );
-            }
-            await saveDB();
-            return roles;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch roles online, trying SQLite cache fallback...', error);
+  try {
+    const localUsers = await executeQuery("SELECT * FROM staff_users");
+    const localRoles = await executeQuery("SELECT * FROM roles");
+    const roleMap = {};
+    localRoles.forEach(r => {
+      roleMap[r.id] = r.name;
+    });
+
+    return localUsers.map(u => ({
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      roleId: u.role_id,
+      role_id: u.role_id,
+      roleName: roleMap[u.role_id] || 'Unknown',
+      firstName: u.first_name,
+      first_name: u.first_name,
+      lastName: u.last_name,
+      last_name: u.last_name,
+      phoneNumber: u.phone_number,
+      phone_number: u.phone_number,
+      version: u.version
+    }));
+  } catch (err) {
+    console.error('API: Error fetching users from SQLite:', err);
+    return [];
+  }
+}
+
+export async function getRoles() {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.roles, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const roles = await response.json();
+        for (const role of roles) {
+          await executeRun(
+            "INSERT OR REPLACE INTO roles (id, name, description, version, is_dirty, sync_status) VALUES (?, ?, ?, ?, 0, 'synced')",
+            [role.id, role.name, role.description || '', role.version || 1]
+          );
         }
+        await saveDB();
+        return roles;
       }
-
-      try {
-        const localRoles = await executeQuery("SELECT * FROM roles");
-        return localRoles.map(r => ({
-          id: r.id,
-          name: r.name,
-          description: r.description,
-          version: r.version
-        }));
-      } catch (err) {
-        console.error('API: Error fetching roles from SQLite:', err);
-        return [];
-      }
+    } catch (error) {
+      console.warn('API: Failed to fetch roles online, trying SQLite cache fallback...', error);
     }
+  }
 
-    export async function getPermissions() {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.permissions, {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const permissions = await response.json();
-            for (const perm of permissions) {
-              await executeRun(
-                "INSERT OR REPLACE INTO permissions (id, slug, description, category_id) VALUES (?, ?, ?, ?)",
-                [perm.id, perm.slug, perm.description || '', perm.categoryId || perm.category_id || null]
-              );
-            }
-            await saveDB();
-            return permissions;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch permissions online, trying SQLite cache fallback...', error);
+  try {
+    const localRoles = await executeQuery("SELECT * FROM roles");
+    return localRoles.map(r => ({
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      version: r.version
+    }));
+  } catch (err) {
+    console.error('API: Error fetching roles from SQLite:', err);
+    return [];
+  }
+}
+
+export async function getPermissions() {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.permissions, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const permissions = await response.json();
+        for (const perm of permissions) {
+          await executeRun(
+            "INSERT OR REPLACE INTO permissions (id, slug, description, category_id) VALUES (?, ?, ?, ?)",
+            [perm.id, perm.slug, perm.description || '', perm.categoryId || perm.category_id || null]
+          );
         }
+        await saveDB();
+        return permissions;
       }
-
-      try {
-        const localPerms = await executeQuery("SELECT * FROM permissions");
-        return localPerms.map(p => ({
-          id: p.id,
-          slug: p.slug,
-          description: p.description,
-          categoryId: p.category_id,
-          category_id: p.category_id
-        }));
-      } catch (err) {
-        console.error('API: Error fetching permissions from SQLite:', err);
-        return [];
-      }
+    } catch (error) {
+      console.warn('API: Failed to fetch permissions online, trying SQLite cache fallback...', error);
     }
+  }
 
-    export async function getPermissionCategories() {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.permissionCategories, {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const categories = await response.json();
-            for (const cat of categories) {
-              await executeRun(
-                "INSERT OR REPLACE INTO permission_categories (id, name, description) VALUES (?, ?, ?)",
-                [cat.id, cat.name, cat.description || '']
-              );
-            }
-            await saveDB();
-            return categories;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch permission categories online, trying SQLite cache fallback...', error);
+  try {
+    const localPerms = await executeQuery("SELECT * FROM permissions");
+    return localPerms.map(p => ({
+      id: p.id,
+      slug: p.slug,
+      description: p.description,
+      categoryId: p.category_id,
+      category_id: p.category_id
+    }));
+  } catch (err) {
+    console.error('API: Error fetching permissions from SQLite:', err);
+    return [];
+  }
+}
+
+export async function getPermissionCategories() {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.permissionCategories, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const categories = await response.json();
+        for (const cat of categories) {
+          await executeRun(
+            "INSERT OR REPLACE INTO permission_categories (id, name, description) VALUES (?, ?, ?)",
+            [cat.id, cat.name, cat.description || '']
+          );
         }
+        await saveDB();
+        return categories;
       }
-
-      try {
-        const localCats = await executeQuery("SELECT * FROM permission_categories");
-        return localCats.map(c => ({
-          id: c.id,
-          name: c.name,
-          description: c.description
-        }));
-      } catch (err) {
-        console.error('API: Error fetching permission categories from SQLite:', err);
-        return [];
-      }
+    } catch (error) {
+      console.warn('API: Failed to fetch permission categories online, trying SQLite cache fallback...', error);
     }
+  }
 
-    export async function getOnlineUsersCount() {
-      const isOnline = navigator.onLine;
-      if (isOnline) {
-        try {
-          const response = await fetch(API_ENDPOINTS.onlineUsers, {
-            headers: getAuthHeaders()
-          });
-          if (response.ok) {
-            const data = await response.json();
-            return data.count || data.length || 0;
-          }
-        } catch (error) {
-          console.warn('API: Failed to fetch online users count online, defaulting to 1...', error);
-        }
+  try {
+    const localCats = await executeQuery("SELECT * FROM permission_categories");
+    return localCats.map(c => ({
+      id: c.id,
+      name: c.name,
+      description: c.description
+    }));
+  } catch (err) {
+    console.error('API: Error fetching permission categories from SQLite:', err);
+    return [];
+  }
+}
+
+export async function getOnlineUsersCount() {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.onlineUsers, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data.count || data.length || 0;
       }
-      return 1; // Default to 1 logged in user when offline
+    } catch (error) {
+      console.warn('API: Failed to fetch online users count online, defaulting to 1...', error);
     }
+  }
+  return 1; // Default to 1 logged in user when offline
+}
