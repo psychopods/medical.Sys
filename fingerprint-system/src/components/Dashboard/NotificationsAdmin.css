@@ -781,7 +781,7 @@ textarea:disabled {
   transform: none !important;
 }
 
-/* ===== HOVER EFFECTS FOR ACTION BUTTONS ===== */
+/* ===== HOVER EFFECTS FOR ACTION BUTTONSs ===== */
 .na-action-buttons {
   display: flex;
   gap: 6px;
