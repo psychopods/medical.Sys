@@ -1,0 +1,92 @@
+/* Baseline Info Tab Styles */
+.mr-baseline-form {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.mr-baseline-form h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mr-baseline-form .mr-form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.mr-baseline-form .mr-form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.mr-baseline-form .mr-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #1a1a2e;
+}
+
+.mr-baseline-form .mr-form-group input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.mr-baseline-form .mr-form-group input:focus {
+  outline: none;
+  border-color: #0066cc;
+}
+
+.mr-baseline-form .mr-form-group input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.mr-baseline-form .mr-checkbox-label-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.mr-baseline-form .mr-checkbox-label-inline input {
+  width: auto;
+  margin: 0;
+}
+
+.mr-baseline-form .mr-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+@media (max-width: 768px) {
+  .mr-baseline-form .mr-form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .mr-baseline-form .mr-form-actions {
+    flex-direction: column;
+  }
+  
+  .mr-baseline-form .mr-btn {
+    width: 100%;
+    text-align: center;
+  }
+}

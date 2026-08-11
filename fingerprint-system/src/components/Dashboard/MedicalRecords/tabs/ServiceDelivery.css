@@ -1,0 +1,290 @@
+/* ================================
+   SERVICE DELIVERY TAB STYLES
+   Clean Design - No Cards, No Shadows
+   ================================ */
+
+.mr-service-delivery {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 4px;
+}
+
+/* ================================
+   SECTION BLOCKS
+   ================================ */
+
+.mr-service-delivery .mr-section-block {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem 1.75rem;
+}
+
+.mr-service-delivery .mr-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.mr-service-delivery .mr-section-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.mr-service-delivery .mr-section-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.mr-service-delivery .mr-badge-material {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.mr-service-delivery .mr-badge-medication {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* ================================
+   METRIC GRID
+   ================================ */
+
+.mr-service-delivery .mr-metric-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.mr-service-delivery .mr-metric-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+}
+
+.mr-service-delivery .mr-metric-label {
+  width: 180px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.mr-service-delivery .mr-metric-bar-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.mr-service-delivery .mr-metric-bar {
+  height: 26px;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+  display: flex;
+  align-items: center;
+  min-width: 30px;
+  padding: 0 12px;
+}
+
+.mr-service-delivery .mr-metric-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+/* Metric Bar Colors */
+.mr-service-delivery .mr-metric-bar-blue {
+  background-color: #3b82f6;
+}
+
+.mr-service-delivery .mr-metric-bar-green {
+  background-color: #10b981;
+}
+
+.mr-service-delivery .mr-metric-bar-purple {
+  background-color: #8b5cf6;
+}
+
+.mr-service-delivery .mr-metric-bar-orange {
+  background-color: #f59e0b;
+}
+
+.mr-service-delivery .mr-metric-bar-teal {
+  background-color: #14b8a6;
+}
+
+.mr-service-delivery .mr-metric-bar-yellow {
+  background-color: #eab308;
+}
+
+.mr-service-delivery .mr-metric-bar-pink {
+  background-color: #ec4899;
+}
+
+.mr-service-delivery .mr-metric-bar-indigo {
+  background-color: #6366f1;
+}
+
+/* ================================
+   MEDICATION LIST
+   ================================ */
+
+.mr-service-delivery .mr-medication-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 4px 0;
+}
+
+.mr-service-delivery .mr-med-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mr-service-delivery .mr-med-name {
+  width: 150px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.mr-service-delivery .mr-med-bar-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mr-service-delivery .mr-med-bar {
+  height: 26px;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 4px;
+  transition: width 0.8s ease;
+  display: flex;
+  align-items: center;
+  min-width: 20px;
+  padding: 0 10px;
+}
+
+.mr-service-delivery .mr-med-count-inner {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+.mr-service-delivery .mr-med-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+   ================================ */
+
+@media (max-width: 768px) {
+  .mr-service-delivery {
+    gap: 1.5rem;
+  }
+
+  .mr-service-delivery .mr-section-block {
+    padding: 1rem 1.25rem;
+  }
+
+  .mr-service-delivery .mr-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .mr-service-delivery .mr-metric-label {
+    width: 130px;
+    font-size: 0.75rem;
+  }
+
+  .mr-service-delivery .mr-metric-bar {
+    height: 22px;
+    padding: 0 8px;
+  }
+
+  .mr-service-delivery .mr-metric-value {
+    font-size: 0.7rem;
+  }
+
+  .mr-service-delivery .mr-med-name {
+    width: 110px;
+    font-size: 0.75rem;
+  }
+
+  .mr-service-delivery .mr-med-bar {
+    height: 22px;
+  }
+
+  .mr-service-delivery .mr-med-count-inner {
+    font-size: 0.65rem;
+  }
+
+  .mr-service-delivery .mr-med-count {
+    font-size: 0.7rem;
+    min-width: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mr-service-delivery .mr-section-block {
+    padding: 0.75rem 1rem;
+  }
+
+  .mr-service-delivery .mr-metric-label {
+    width: 100px;
+    font-size: 0.7rem;
+  }
+
+  .mr-service-delivery .mr-metric-bar {
+    height: 20px;
+    padding: 0 6px;
+  }
+
+  .mr-service-delivery .mr-metric-value {
+    font-size: 0.65rem;
+  }
+
+  .mr-service-delivery .mr-med-name {
+    width: 90px;
+    font-size: 0.7rem;
+  }
+
+  .mr-service-delivery .mr-med-bar {
+    height: 20px;
+    padding: 0 6px;
+  }
+
+  .mr-service-delivery .mr-med-count-inner {
+    font-size: 0.6rem;
+  }
+
+  .mr-service-delivery .mr-med-count {
+    font-size: 0.65rem;
+    min-width: 24px;
+  }
+}

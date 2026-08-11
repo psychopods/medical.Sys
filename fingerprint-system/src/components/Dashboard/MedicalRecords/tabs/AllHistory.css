@@ -1,0 +1,223 @@
+/* All History Tab Styles */
+.mr-all-history {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.mr-all-history .mr-history-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mr-all-history .mr-history-header-section h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.mr-all-history .mr-history-count {
+  font-size: 13px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.mr-all-history .mr-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mr-all-history .mr-history-item {
+  padding: 16px 18px;
+  background: #fafbfc;
+  border-radius: 6px;
+  border-left: 3px solid #0066cc;
+  transition: background-color 0.2s;
+}
+
+.mr-all-history .mr-history-item:hover {
+  background: #f1f5f9;
+}
+
+.mr-all-history .mr-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mr-all-history .mr-history-date {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.mr-all-history .mr-history-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Badge Colors */
+.mr-all-history .mr-badge-baseline {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.mr-all-history .mr-badge-vitals {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.mr-all-history .mr-badge-medication {
+  background: #f3e8ff;
+  color: #6b21a5;
+}
+
+.mr-all-history .mr-badge-test {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.mr-all-history .mr-badge-service {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.mr-all-history .mr-badge-symptom {
+  background: #fce4ec;
+  color: #9a3412;
+}
+
+.mr-all-history .mr-badge-diagnosis {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.mr-all-history .mr-history-diagnosis,
+.mr-all-history .mr-history-treatment,
+.mr-all-history .mr-history-notes {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.mr-all-history .mr-history-diagnosis:last-child,
+.mr-all-history .mr-history-treatment:last-child,
+.mr-all-history .mr-history-notes:last-child {
+  margin-bottom: 0;
+}
+
+.mr-all-history .mr-history-diagnosis strong,
+.mr-all-history .mr-history-treatment strong,
+.mr-all-history .mr-history-notes strong {
+  color: #1a1a2e;
+  font-weight: 600;
+}
+
+.mr-all-history .mr-history-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+/* Empty State */
+.mr-all-history .mr-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.mr-all-history .mr-empty-state .mr-empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.mr-all-history .mr-empty-state p {
+  font-size: 16px;
+  margin: 0 0 4px 0;
+  color: #1a1a2e;
+}
+
+.mr-all-history .mr-empty-state .mr-empty-subtext {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .mr-all-history {
+    padding: 16px;
+  }
+  
+  .mr-all-history .mr-history-header-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .mr-all-history .mr-history-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  
+  .mr-all-history .mr-history-item {
+    padding: 14px 16px;
+  }
+  
+  .mr-all-history .mr-history-diagnosis,
+  .mr-all-history .mr-history-treatment,
+  .mr-all-history .mr-history-notes {
+    font-size: 13px;
+  }
+  
+  .mr-all-history .mr-empty-state {
+    padding: 40px 16px;
+  }
+  
+  .mr-all-history .mr-empty-state .mr-empty-icon {
+    font-size: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mr-all-history {
+    padding: 12px;
+  }
+  
+  .mr-all-history .mr-history-item {
+    padding: 12px 14px;
+  }
+  
+  .mr-all-history .mr-history-diagnosis,
+  .mr-all-history .mr-history-treatment,
+  .mr-all-history .mr-history-notes {
+    font-size: 12px;
+  }
+  
+  .mr-all-history .mr-history-badge {
+    font-size: 10px;
+    padding: 2px 10px;
+  }
+}

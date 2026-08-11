@@ -1,3 +1,7 @@
+/* ================================
+   MAIN MEDICAL RECORDS STYLES
+   ================================ */
+
 .medical-records-page {
   padding: 24px;
   background: #ffffff;
@@ -33,97 +37,73 @@
   color: #0066cc;
 }
 
-/* Child Card */
-.mr-child-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 20px;
-  margin-bottom: 24px;
-}
+/* ================================
+   TABS NAVIGATION
+   ================================ */
 
-.mr-child-header {
+.mr-tabs-nav {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
 }
 
-.mr-child-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a2e;
-}
-
-.mr-child-id {
-  font-family: monospace;
-  background: #e2e8f0;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-}
-
-.mr-child-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-}
-
-.mr-child-detail {
-  display: flex;
-  gap: 8px;
-}
-
-.mr-child-detail label {
-  font-weight: 600;
-  color: #1a1a2e;
-  min-width: 80px;
-}
-
-.mr-child-detail span {
-  color: #475569;
-}
-
-/* Tabs */
-.mr-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.mr-tab-btn {
+.mr-tab-nav-btn {
+  padding: 10px 20px;
   background: none;
   border: none;
-  padding: 10px 20px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
   color: #64748b;
-  border-bottom: 2px solid transparent;
   transition: all 0.2s;
 }
 
-.mr-tab-btn.active {
-  color: #0066cc;
-  border-bottom-color: #0066cc;
+.mr-tab-nav-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
 }
 
-.mr-tab-btn:hover {
-  color: #0066cc;
+.mr-tab-nav-btn.active {
+  background: #0066cc;
+  color: white;
 }
 
-/* Form Container */
-.mr-form-container {
-  max-width: 800px;
+/* ================================
+   TAB CONTENT
+   ================================ */
+
+.mr-tab-content {
+  animation: fadeIn 0.3s ease;
 }
 
-.mr-form {
-  background: #ffffff;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================================
+   FORM CARD
+   ================================ */
+
+.mr-form-card {
+  background: white;
   border: 1px solid #e2e8f0;
+  border-radius: 12px;
   padding: 24px;
+  margin-bottom: 20px;
+}
+
+.mr-form-card h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .mr-form-row {
@@ -163,7 +143,25 @@
   border-color: #0066cc;
 }
 
-/* Form Actions */
+.mr-form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.mr-form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ================================
+   FORM ACTIONS
+   ================================ */
+
 .mr-form-actions {
   display: flex;
   justify-content: flex-end;
@@ -172,6 +170,10 @@
   padding-top: 20px;
   border-top: 1px solid #e2e8f0;
 }
+
+/* ================================
+   BUTTONS
+   ================================ */
 
 .mr-btn {
   padding: 8px 20px;
@@ -201,299 +203,10 @@
   background: #e2e8f0;
 }
 
-/* Records List */
-.mr-records-container {
-  margin-top: 20px;
-}
+/* ================================
+   HISTORY CARD
+   ================================ */
 
-.mr-records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.mr-record-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  padding: 16px;
-}
-
-.mr-record-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.mr-record-type {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.mr-record-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.mr-badge-checkup { background: #dbeafe; color: #1e40af; }
-.mr-badge-illness { background: #fee2e2; color: #991b1b; }
-.mr-badge-injury { background: #ffedd5; color: #9a3412; }
-.mr-badge-vaccination { background: #dcfce7; color: #166534; }
-.mr-badge-medication { background: #f3e8ff; color: #6b21a5; }
-.mr-badge-followup { background: #e0e7ff; color: #3730a3; }
-.mr-badge-emergency { background: #fecaca; color: #b91c1c; }
-
-.mr-record-date {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.mr-delete-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #dc2626;
-  padding: 4px;
-  border-radius: 4px;
-}
-
-.mr-delete-btn:hover {
-  background: #fee2e2;
-}
-
-.mr-record-diagnosis,
-.mr-record-treatment,
-.mr-record-notes,
-.mr-record-followup {
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #475569;
-}
-
-.mr-record-footer {
-  margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.mr-record-by {
-  font-size: 11px;
-  color: #94a3b8;
-}
-
-/* Empty State */
-.mr-empty-state {
-  text-align: center;
-  padding: 60px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-}
-
-.mr-empty-state h3 {
-  margin: 16px 0 8px 0;
-  color: #1a1a2e;
-}
-
-.mr-empty-state p {
-  color: #64748b;
-}
-
-/* Loading */
-.mr-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-}
-
-.mr-spinner {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #0066cc;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Toast */
-.mr-toast {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  padding: 12px 20px;
-  background: white;
-  border-radius: 4px;
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-left: 3px solid;
-}
-
-.mr-toast.success {
-  border-left-color: #10b981;
-}
-
-.mr-toast.error {
-  border-left-color: #ef4444;
-}
-
-.mr-toast button {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: #94a3b8;
-}
-
-@media (max-width: 768px) {
-  .medical-records-page {
-    padding: 16px;
-  }
-  
-  .mr-form-row {
-    flex-direction: column;
-    gap: 16px;
-  }
-  
-  .mr-child-details {
-    grid-template-columns: 1fr;
-  }
-  
-  .mr-tabs {
-    flex-direction: column;
-    border-bottom: none;
-  }
-  
-  .mr-tab-btn {
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
-  }
-  
-  .mr-tab-btn.active {
-    background: #0066cc;
-    color: white;
-    border-color: #0066cc;
-  }
-  
-  .mr-form-actions {
-    flex-direction: column;
-  }
-  
-  .mr-btn {
-    width: 100%;
-    text-align: center;
-  }
-  
-  .mr-record-header {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .mr-record-type {
-    flex-wrap: wrap;
-  }
-}
-
-/* Add these new styles to existing MedicalRecords.css */
-
-/* Tabs Navigation */
-.mr-tabs-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 24px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.mr-tab-nav-btn {
-  padding: 10px 20px;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  color: #64748b;
-  transition: all 0.2s;
-}
-
-.mr-tab-nav-btn:hover {
-  background: #f1f5f9;
-  color: #1e293b;
-}
-
-.mr-tab-nav-btn.active {
-  background: #0066cc;
-  color: white;
-}
-
-/* Tab Content */
-.mr-tab-content {
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Form Card */
-.mr-form-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 20px;
-}
-
-.mr-form-card h3 {
-  margin: 0 0 20px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a2e;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-/* Checkbox Grid */
-.mr-checkbox-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.mr-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #334155;
-}
-
-.mr-checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #0066cc;
-}
-
-/* History Card */
 .mr-history-card {
   background: white;
   border: 1px solid #e2e8f0;
@@ -563,42 +276,49 @@
   color: #94a3b8;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .mr-tabs-nav {
-    flex-direction: column;
-    gap: 4px;
-  }
-  
-  .mr-tab-nav-btn {
-    width: 100%;
-    text-align: center;
-  }
-  
-  .mr-checkbox-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .mr-form-card,
-  .mr-history-card {
-    padding: 16px;
-  }
-  
-  .mr-history-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+/* ================================
+   CHECKBOX GRID
+   ================================ */
+
+.mr-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-.mr-empty-state {
-  text-align: center;
-  padding: 40px;
-  color: #64748b;
+.mr-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #334155;
 }
 
-/* Add to MedicalRecords.css */
+.mr-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #0066cc;
+}
 
-/* Nutritional Status Table */
+.mr-checkbox-label-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.mr-checkbox-label-inline input {
+  width: auto;
+  margin: 0;
+}
+
+/* ================================
+   TABLE STYLES
+   ================================ */
+
 .mr-table-responsive {
   overflow-x: auto;
 }
@@ -626,7 +346,17 @@
   background-color: #f1f5f9;
 }
 
-/* Status Badges */
+.mr-truncate-cell {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ================================
+   STATUS BADGES
+   ================================ */
+
 .mr-status-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
@@ -684,7 +414,39 @@
   color: white;
 }
 
-/* Service List in History */
+/* Record Badges */
+.mr-record-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mr-badge-checkup { background: #dbeafe; color: #1e40af; }
+.mr-badge-illness { background: #fee2e2; color: #991b1b; }
+.mr-badge-injury { background: #ffedd5; color: #9a3412; }
+.mr-badge-vaccination { background: #dcfce7; color: #166534; }
+.mr-badge-medication { background: #f3e8ff; color: #6b21a5; }
+.mr-badge-followup { background: #e0e7ff; color: #3730a3; }
+.mr-badge-emergency { background: #fecaca; color: #b91c1c; }
+
+/* ================================
+   SECTION SUBTITLE
+   ================================ */
+
+.mr-section-subtitle {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* ================================
+   SERVICE LIST
+   ================================ */
+
 .mr-service-list {
   margin: 0.5rem 0 0 1.5rem;
   padding: 0;
@@ -695,76 +457,16 @@
   color: #475569;
 }
 
-/* Inline Checkbox for Baseline */
-.mr-checkbox-label-inline {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-}
+/* ================================
+   DASHBOARD GRID
+   ================================ */
 
-.mr-checkbox-label-inline input {
-  width: auto;
-  margin: 0;
-}
-
-/* Tabs Navigation - Responsive */
-@media (max-width: 768px) {
-  .mr-tabs-nav {
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  .mr-tab-nav-btn {
-    display: inline-block;
-    flex: none;
-  }
-}
-
-/* Form Group for better spacing */
-.mr-form-group textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
-  font-family: inherit;
-  resize: vertical;
-}
-
-.mr-form-group textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* New styles for Visit History, Program Summary, and Service Delivery tabs */
-
-/* Section Subtitle */
-.mr-section-subtitle {
-  color: #64748b;
-  font-size: 0.875rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-/* Truncate cell for long text */
-.mr-truncate-cell {
-  max-width: 200px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Dashboard Grid Layout */
 .mr-dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 1.5rem;
 }
 
-/* Dashboard Card */
 .mr-dashboard-card {
   background: white;
   border-radius: 0.75rem;
@@ -790,7 +492,10 @@
   margin: 0 0 0.5rem 0;
 }
 
-/* Metric List */
+/* ================================
+   METRIC LIST
+   ================================ */
+
 .mr-metric-list {
   display: flex;
   flex-direction: column;
@@ -816,7 +521,10 @@
   color: #1e293b;
 }
 
-/* BMI Distribution Bars */
+/* ================================
+   BMI DISTRIBUTION
+   ================================ */
+
 .mr-bmi-distribution {
   display: flex;
   flex-direction: column;
@@ -876,14 +584,16 @@
   min-width: 30px;
 }
 
-/* Two Column Layout */
+/* ================================
+   TWO COLUMN LAYOUT
+   ================================ */
+
 .mr-two-columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
-/* Bullet List */
 .mr-bullet-list {
   margin: 0;
   padding-left: 1.25rem;
@@ -895,7 +605,10 @@
   font-size: 0.875rem;
 }
 
-/* Medication List with Bars */
+/* ================================
+   MEDICATION LIST
+   ================================ */
+
 .mr-medication-list {
   display: flex;
   flex-direction: column;
@@ -937,8 +650,135 @@
   min-width: 40px;
 }
 
-/* Responsive adjustments */
+/* ================================
+   EMPTY STATE
+   ================================ */
+
+.mr-empty-state {
+  text-align: center;
+  padding: 60px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.mr-empty-state h3 {
+  margin: 16px 0 8px 0;
+  color: #1a1a2e;
+}
+
+.mr-empty-state p {
+  color: #64748b;
+}
+
+/* ================================
+   LOADING
+   ================================ */
+
+.mr-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.mr-spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #0066cc;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ================================
+   TOAST
+   ================================ */
+
+.mr-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  background: white;
+  border-radius: 4px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-left: 3px solid;
+}
+
+.mr-toast.success {
+  border-left-color: #10b981;
+}
+
+.mr-toast.error {
+  border-left-color: #ef4444;
+}
+
+.mr-toast button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #94a3b8;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+   ================================ */
+
 @media (max-width: 768px) {
+  .medical-records-page {
+    padding: 16px;
+  }
+  
+  .mr-form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .mr-tabs-nav {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .mr-tab-nav-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .mr-checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .mr-form-card,
+  .mr-history-card {
+    padding: 16px;
+  }
+  
+  .mr-history-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .mr-form-actions {
+    flex-direction: column;
+  }
+  
+  .mr-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
   .mr-dashboard-grid {
     grid-template-columns: 1fr;
   }
@@ -959,5 +799,11 @@
   
   .mr-table-responsive {
     overflow-x: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .mr-empty-state {
+    padding: 40px;
   }
 }

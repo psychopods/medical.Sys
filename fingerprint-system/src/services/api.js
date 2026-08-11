@@ -3156,6 +3156,269 @@ export async function getPermissionCategories() {
   }
 }
 
+/* ==========================================
+   MEDICAL SERVICES API (NEW - FETCH ONLY)
+   ========================================== */
+
+export async function apiFetchMedicalServicesRecords(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/medical-services/${childId}`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.records || []);
+        // Cache to SQLite
+        for (const record of records) {
+          if (record && record.id) {
+            await executeRun(
+              `INSERT OR REPLACE INTO medical_services 
+              (id, child_id, medications, tests, procedures, date, recorded_by, recorded_by_name, version, sync_status) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              [
+                record.id,
+                childId,
+                JSON.stringify(record.medications || {}),
+                JSON.stringify(record.tests || {}),
+                JSON.stringify(record.procedures || []),
+                record.date || '',
+                record.recordedBy || record.recorded_by || null,
+                record.recordedByName || record.recorded_by_name || null,
+                record.version || 1
+              ]
+            );
+          }
+        }
+        await saveDB();
+        return records;
+      }
+    } catch (error) {
+      console.warn('API: Failed to fetch medical services online, using SQLite.', error);
+    }
+  }
+
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery('SELECT * FROM medical_services WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      medications: JSON.parse(row.medications || '{}'),
+      tests: JSON.parse(row.tests || '{}'),
+      procedures: JSON.parse(row.procedures || '[]'),
+      date: row.date,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching medical services from SQLite:', err);
+    return [];
+  }
+}
+
+/* ==========================================
+   SOCIAL SERVICES API (NEW - FETCH ONLY)
+   ========================================== */
+
+export async function apiFetchSocialServicesRecords(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/social-services/${childId}`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.records || []);
+        // Cache to SQLite
+        for (const record of records) {
+          if (record && record.id) {
+            await executeRun(
+              `INSERT OR REPLACE INTO social_services 
+              (id, child_id, clothing, education, food_refreshment, food_details, other_services, date, recorded_by, recorded_by_name, version, sync_status) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              [
+                record.id,
+                childId,
+                JSON.stringify(record.clothing || {}),
+                JSON.stringify(record.education || []),
+                record.foodRefreshment || record.food_refreshment || '',
+                record.foodDetails || record.food_details || '',
+                record.otherServices || record.other_services || '',
+                record.date || '',
+                record.recordedBy || record.recorded_by || null,
+                record.recordedByName || record.recorded_by_name || null,
+                record.version || 1
+              ]
+            );
+          }
+        }
+        await saveDB();
+        return records;
+      }
+    } catch (error) {
+      console.warn('API: Failed to fetch social services online, using SQLite.', error);
+    }
+  }
+
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery('SELECT * FROM social_services WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      clothing: JSON.parse(row.clothing || '{}'),
+      education: JSON.parse(row.education || '[]'),
+      foodRefreshment: row.food_refreshment,
+      foodDetails: row.food_details,
+      otherServices: row.other_services,
+      date: row.date,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching social services from SQLite:', err);
+    return [];
+  }
+}
+
+/* ==========================================
+   OTHERS / ASSESSMENT API (NEW - FETCH & SAVE)
+   ========================================== */
+
+export async function apiFetchOthersRecords(childId) {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/others/${childId}`, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : (data.records || []);
+        // Cache to SQLite
+        for (const record of records) {
+          if (record && record.id) {
+            await executeRun(
+              `INSERT OR REPLACE INTO others_records 
+              (id, child_id, symptoms, visit_notes, diagnosis, diagnosis_notes, hospitalized, time_hospitalized, date, recorded_by, recorded_by_name, version, sync_status) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              [
+                record.id,
+                childId,
+                record.symptoms || '',
+                record.visitNotes || record.visit_notes || '',
+                record.diagnosis || '',
+                record.diagnosisNotes || record.diagnosis_notes || '',
+                record.hospitalized ? 1 : 0,
+                record.timeHospitalized || record.time_hospitalized || '',
+                record.date || '',
+                record.recordedBy || record.recorded_by || null,
+                record.recordedByName || record.recorded_by_name || null,
+                record.version || 1
+              ]
+            );
+          }
+        }
+        await saveDB();
+        return records;
+      }
+    } catch (error) {
+      console.warn('API: Failed to fetch others records online, using SQLite.', error);
+    }
+  }
+
+  // SQLite Fallback
+  try {
+    const rows = await executeQuery('SELECT * FROM others_records WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    return rows.map(row => ({
+      id: row.id,
+      childId: row.child_id,
+      symptoms: row.symptoms,
+      visitNotes: row.visit_notes,
+      diagnosis: row.diagnosis,
+      diagnosisNotes: row.diagnosis_notes,
+      hospitalized: row.hospitalized === 1,
+      timeHospitalized: row.time_hospitalized,
+      date: row.date,
+      recordedBy: row.recorded_by,
+      recordedByName: row.recorded_by_name,
+      createdAt: row.created_at
+    }));
+  } catch (err) {
+    console.error('API: Error fetching others records from SQLite:', err);
+    return [];
+  }
+}
+
+export async function saveOthers(childId, othersData) {
+  const id = othersData.id || crypto.randomUUID();
+  const isOnline = navigator.onLine;
+  const symptoms = othersData.symptoms || '';
+  const visitNotes = othersData.visitNotes || '';
+  const diagnosis = othersData.diagnosis || '';
+  const diagnosisNotes = othersData.diagnosisNotes || '';
+  const hospitalized = othersData.hospitalized ? 1 : 0;
+  const timeHospitalized = othersData.timeHospitalized || '';
+  const date = othersData.date || new Date().toISOString().split('T')[0];
+  const recordedBy = othersData.recordedBy || null;
+  const recordedByName = othersData.recordedByName || null;
+
+  if (isOnline) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/others/${childId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          id,
+          childId,
+          symptoms,
+          visitNotes,
+          diagnosis,
+          diagnosisNotes,
+          hospitalized,
+          timeHospitalized,
+          date,
+          recordedBy,
+          recordedByName
+        })
+      });
+      if (response.ok) {
+        const result = await response.json();
+        await executeRun(
+          `INSERT OR REPLACE INTO others_records 
+          (id, child_id, symptoms, visit_notes, diagnosis, diagnosis_notes, hospitalized, time_hospitalized, date, recorded_by, recorded_by_name, version, sync_status) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
+          [id, childId, symptoms, visitNotes, diagnosis, diagnosisNotes, hospitalized, timeHospitalized, date, recordedBy, recordedByName]
+        );
+        await saveDB();
+        return result;
+      }
+    } catch (error) {
+      console.warn('API: Failed to save others record online, caching locally...', error);
+    }
+  }
+
+  // Offline: cache locally
+  try {
+    await executeRun(
+      `INSERT OR REPLACE INTO others_records 
+      (id, child_id, symptoms, visit_notes, diagnosis, diagnosis_notes, hospitalized, time_hospitalized, date, recorded_by, recorded_by_name, version, sync_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+      [id, childId, symptoms, visitNotes, diagnosis, diagnosisNotes, hospitalized, timeHospitalized, date, recordedBy, recordedByName]
+    );
+    await saveDB();
+    return { success: true, message: 'Assessment saved offline', data: { id, childId, ...othersData } };
+  } catch (err) {
+    console.error('API: Error saving others record offline:', err);
+    throw err;
+  }
+}
+
 export async function getOnlineUsersCount() {
   const isOnline = navigator.onLine;
   if (isOnline) {

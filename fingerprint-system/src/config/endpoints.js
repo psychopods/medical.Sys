@@ -48,6 +48,11 @@ export const API_ENDPOINTS = {
   socialServices: (childId) => `${buildUrl('VITE_API_PATH_CHILDREN', '/api/children')}/${childId}/social-services`,
   education: (childId) => `${buildUrl('VITE_API_PATH_CHILDREN', '/api/children')}/${childId}/education`,
 
+  // NEW: Medical Services, Social Services, Others/Assessment
+  medicalServicesRecords: (childId) => `${buildUrl('VITE_API_PATH_CHILDREN', '/api/children')}/${childId}/medical-services-records`,
+  socialServicesRecords: (childId) => `${buildUrl('VITE_API_PATH_CHILDREN', '/api/children')}/${childId}/social-services-records`,
+  othersRecords: (childId) => `${buildUrl('VITE_API_PATH_CHILDREN', '/api/children')}/${childId}/others-records`,
+
   // Biometrics
   biometricsEnroll: buildUrl('VITE_API_PATH_BIOMETRICS_ENROLL', '/api/biometrics/enroll'),
   biometricsChild: (childId) => `${buildUrl('VITE_API_PATH_BIOMETRICS_CHILD', '/api/biometrics/child')}/${childId}`,

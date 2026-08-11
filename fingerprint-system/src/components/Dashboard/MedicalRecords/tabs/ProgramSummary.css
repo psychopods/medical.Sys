@@ -1,0 +1,390 @@
+/* ================================
+   PROGRAM SUMMARY TAB STYLES
+   Clean Design - No Cards, No Shadows
+   ================================ */
+
+.mr-program-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 4px;
+}
+
+/* ================================
+   SECTION BLOCKS
+   ================================ */
+
+.mr-program-summary .mr-section-block {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem 1.75rem;
+}
+
+.mr-program-summary .mr-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.mr-program-summary .mr-section-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.mr-program-summary .mr-section-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.mr-program-summary .mr-badge-bmi {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.mr-program-summary .mr-badge-health {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+/* ================================
+   PROGRAM OVERVIEW - BAR STYLES
+   ================================ */
+
+.mr-program-summary .mr-overview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mr-program-summary .mr-overview-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mr-program-summary .mr-overview-label {
+  width: 180px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.mr-program-summary .mr-overview-bar-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mr-program-summary .mr-overview-bar {
+  height: 26px;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+  display: flex;
+  align-items: center;
+  min-width: 30px;
+  padding: 0 12px;
+}
+
+.mr-program-summary .mr-overview-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Overview Bar Colors */
+.mr-program-summary .mr-overview-bar-blue {
+  background-color: #3b82f6;
+}
+
+.mr-program-summary .mr-overview-bar-green {
+  background-color: #10b981;
+}
+
+.mr-program-summary .mr-overview-bar-purple {
+  background-color: #8b5cf6;
+}
+
+.mr-program-summary .mr-overview-bar-orange {
+  background-color: #f59e0b;
+}
+
+.mr-program-summary .mr-overview-bar-red {
+  background-color: #ef4444;
+}
+
+/* ================================
+   BMI DISTRIBUTION
+   ================================ */
+
+.mr-program-summary .mr-bmi-distribution {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 4px 0;
+}
+
+.mr-program-summary .mr-bmi-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mr-program-summary .mr-bmi-bar-label {
+  width: 150px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.mr-program-summary .mr-bmi-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* BMI Status Dot Colors */
+.mr-program-summary .mr-bmi-bar-item:has(.mr-bmi-bar-severely-underweight) .mr-bmi-status-dot {
+  background-color: #dc2626;
+}
+
+.mr-program-summary .mr-bmi-bar-item:has(.mr-bmi-bar-underweight) .mr-bmi-status-dot {
+  background-color: #f59e0b;
+}
+
+.mr-program-summary .mr-bmi-bar-item:has(.mr-bmi-bar-normal) .mr-bmi-status-dot {
+  background-color: #10b981;
+}
+
+.mr-program-summary .mr-bmi-bar-item:has(.mr-bmi-bar-overweight) .mr-bmi-status-dot {
+  background-color: #3b82f6;
+}
+
+.mr-program-summary .mr-bmi-bar-item:has(.mr-bmi-bar-obese) .mr-bmi-status-dot {
+  background-color: #8b5cf6;
+}
+
+.mr-program-summary .mr-bmi-bar-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mr-program-summary .mr-bmi-bar {
+  height: 26px;
+  border-radius: 4px;
+  transition: width 0.8s ease;
+  display: flex;
+  align-items: center;
+  min-width: 20px;
+}
+
+.mr-program-summary .mr-bmi-bar-percentage {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+/* BMI Bar Colors */
+.mr-program-summary .mr-bmi-bar-severely-underweight {
+  background-color: #dc2626;
+}
+
+.mr-program-summary .mr-bmi-bar-underweight {
+  background-color: #f59e0b;
+}
+
+.mr-program-summary .mr-bmi-bar-normal {
+  background-color: #10b981;
+}
+
+.mr-program-summary .mr-bmi-bar-overweight {
+  background-color: #3b82f6;
+}
+
+.mr-program-summary .mr-bmi-bar-obese {
+  background-color: #8b5cf6;
+}
+
+.mr-program-summary .mr-bmi-bar-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ================================
+   TWO COLUMN LAYOUT
+   ================================ */
+
+.mr-program-summary .mr-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.mr-program-summary .mr-health-column h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* ================================
+   BULLET LIST
+   ================================ */
+
+.mr-program-summary .mr-bullet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mr-program-summary .mr-bullet-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.4rem 0.5rem;
+  color: #334155;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #fafafa;
+}
+
+.mr-program-summary .mr-bullet-list li:last-child {
+  border-bottom: none;
+}
+
+.mr-program-summary .mr-bullet-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #94a3b8;
+  flex-shrink: 0;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+   ================================ */
+
+@media (max-width: 768px) {
+  .mr-program-summary {
+    gap: 1.5rem;
+  }
+
+  .mr-program-summary .mr-section-block {
+    padding: 1rem 1.25rem;
+  }
+
+  .mr-program-summary .mr-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .mr-program-summary .mr-overview-label {
+    width: 130px;
+    font-size: 0.75rem;
+  }
+
+  .mr-program-summary .mr-overview-bar {
+    height: 22px;
+    padding: 0 8px;
+  }
+
+  .mr-program-summary .mr-overview-value {
+    font-size: 0.7rem;
+  }
+
+  .mr-program-summary .mr-two-columns {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .mr-program-summary .mr-bmi-bar-label {
+    width: 110px;
+    font-size: 0.75rem;
+  }
+
+  .mr-program-summary .mr-bmi-bar {
+    height: 22px;
+  }
+
+  .mr-program-summary .mr-bmi-bar-percentage {
+    font-size: 0.65rem;
+    padding: 0 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mr-program-summary .mr-section-block {
+    padding: 0.75rem 1rem;
+  }
+
+  .mr-program-summary .mr-overview-label {
+    width: 100px;
+    font-size: 0.7rem;
+  }
+
+  .mr-program-summary .mr-overview-bar {
+    height: 20px;
+    padding: 0 6px;
+  }
+
+  .mr-program-summary .mr-overview-value {
+    font-size: 0.65rem;
+  }
+
+  .mr-program-summary .mr-bmi-bar-label {
+    width: 85px;
+    font-size: 0.7rem;
+  }
+
+  .mr-program-summary .mr-bmi-bar {
+    height: 20px;
+  }
+
+  .mr-program-summary .mr-bmi-bar-count {
+    font-size: 0.7rem;
+    min-width: 24px;
+  }
+
+  .mr-program-summary .mr-bmi-bar-percentage {
+    font-size: 0.6rem;
+    padding: 0 4px;
+  }
+
+  .mr-program-summary .mr-bullet-list li {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.4rem;
+  }
+}

@@ -1,0 +1,187 @@
+/* Others Tab Styles - Symptoms, Visit Notes, Diagnosis, Hospitalization */
+.mr-others-form {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.mr-others-form h3 {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mr-others-form .mr-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.mr-others-form .mr-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mr-others-form .mr-form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.mr-others-form .mr-form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.mr-others-form .mr-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #1a1a2e;
+}
+
+.mr-others-form .mr-form-group input,
+.mr-others-form .mr-form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #ffffff;
+  transition: border-color 0.2s;
+}
+
+.mr-others-form .mr-form-group input:focus,
+.mr-others-form .mr-form-group textarea:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.mr-others-form .mr-form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.mr-others-form .mr-form-group textarea.mr-textarea {
+  min-height: 80px;
+}
+
+.mr-others-form .mr-checkbox-label-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #1a1a2e;
+}
+
+.mr-others-form .mr-checkbox-label-inline input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #0066cc;
+  margin: 0;
+}
+
+.mr-others-form .mr-checkbox-label-inline span {
+  font-weight: 500;
+}
+
+/* Hospitalized Section Styling - White Background */
+.mr-others-form .mr-section:last-of-type {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+.mr-others-form .mr-section:last-of-type .mr-section-title {
+  color: #1a1a2e;
+  border-bottom-color: #e2e8f0;
+}
+
+.mr-others-form .mr-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Hospitalized Checkbox Animation */
+.mr-others-form .mr-checkbox-label-inline input[type="checkbox"] {
+  transition: all 0.2s ease;
+}
+
+.mr-others-form .mr-checkbox-label-inline input[type="checkbox"]:checked {
+  transform: scale(1.1);
+}
+
+/* Hospitalized Section Transition */
+.mr-others-form .mr-section:last-of-type .mr-form-row:last-child {
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .mr-others-form {
+    padding: 16px;
+  }
+  
+  .mr-others-form .mr-form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .mr-others-form .mr-form-actions {
+    flex-direction: column;
+  }
+  
+  .mr-others-form .mr-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .mr-others-form .mr-section {
+    padding: 12px;
+  }
+  
+  .mr-others-form .mr-section:last-of-type {
+    background: #ffffff;
+  }
+}
+
+@media (max-width: 480px) {
+  .mr-others-form .mr-form-group {
+    min-width: 100%;
+  }
+  
+  .mr-others-form .mr-checkbox-label-inline {
+    font-size: 13px;
+  }
+}
