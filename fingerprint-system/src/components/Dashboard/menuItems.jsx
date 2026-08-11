@@ -81,7 +81,7 @@ export const menuItems = [
       </svg>
     ), 
     label: 'Medical Records', 
-    roles: ['superuser', 'admin', 'doctor', 'nurse'] 
+    roles: ['superuser', 'admin', 'doctor', 'nurse', 'lab_technician', 'pharmacist'] 
   },
   { 
     path: '/gallery-admin', 

@@ -207,13 +207,13 @@ const MedicalRecords = () => {
   // Combined Medical Services Data (Medications + Tests + Procedures)
   const [medicalServicesData, setMedicalServicesData] = useState({
     medications: {
-      ntdsMeds: "",
-      antibiotics: "",
-      otherMeds: "",
+      ntdsMeds: [],
+      antibiotics: [],
+      otherMeds: [],
     },
     tests: {
-      testType: "",
-      result: "",
+      testTypes: [],
+      results: [],
       notes: "",
     },
     procedures: [],
@@ -276,30 +276,30 @@ const MedicalRecords = () => {
   const medicationOptions = {
     ntdsMeds: ["Albendazole", "Mebendazole", "Praziquantel", "Ivermectin", "Levamisole"],
     antibiotics: ["Amoxicillin", "Ampiclox", "Ciprofloxacillin", "Co-trimoxazole tab", "Erythromycin", "Doxycycline"],
-     otherMeds: [
-    "Paracetamol",
-    "Cetirizine",
-    "Dicflofenac gel",
-    "Artemether",
-    "Diclofenac tab",
-    "Clotrimazole cream",
-    "Griseofulvin tab",
-    "Ibuprofen tab",
-    "ALU tabs",
-    "Vitamin B complex",
-    "Skyderm cream",
-    "Ferrous",
-    "Piriton",
-    "Omeprazole",
-    "Salbutamol",
-    "Praziquantel",
-    "Salimia liniment",
-    "Cough mixture",
-    "Prednisolone",
-    "Dexan",
-    "Dexaneomycin eye & ear drop",
-    "Gentamycin eye & ear drop"
-  ],
+    otherMeds: [
+      "Paracetamol",
+      "Cetirizine",
+      "Dicflofenac gel",
+      "Artemether",
+      "Diclofenac tab",
+      "Clotrimazole cream",
+      "Griseofulvin tab",
+      "Ibuprofen tab",
+      "ALU tabs",
+      "Vitamin B complex",
+      "Skyderm cream",
+      "Ferrous",
+      "Piriton",
+      "Omeprazole",
+      "Salbutamol",
+      "Praziquantel",
+      "Salimia liniment",
+      "Cough mixture",
+      "Prednisolone",
+      "Dexan",
+      "Dexaneomycin eye & ear drop",
+      "Gentamycin eye & ear drop"
+    ],
   };
 
   // Test Types Options
@@ -307,7 +307,7 @@ const MedicalRecords = () => {
     "H. Pylori (-)",
     "H. Pylori (+)",
     "Malaria (-)",
-    "Malara (+)",
+    "Malaria (+)",
     "HIV (-)",
     "HIV (+)",
     "Urinalysis (normal)",
@@ -316,18 +316,18 @@ const MedicalRecords = () => {
     "Hb (abnormal)",
     "VDRL (-)",
     "VDRL (+)",
-    "Stool( normal)",
-    "Stool ( helminthes)",
-    "Stool(amoebiasis)",
-    "Widal test( normal)",
-    "Widal test (Abnormal)",
+    "Stool (normal)",
+    "Stool (helminthes)",
+    "Stool (amoebiasis)",
+    "Widal test (normal)",
+    "Widal test (abnormal)",
   ];
 
   const testResultOptions = [
     "H. Pylori (-)",
     "H. Pylori (+)",
     "Malaria (-)",
-    "Malara (+)",
+    "Malaria (+)",
     "HIV (-)",
     "HIV (+)",
     "Urinalysis (normal)",
@@ -336,11 +336,11 @@ const MedicalRecords = () => {
     "Hb (abnormal)",
     "VDRL (-)",
     "VDRL (+)",
-    "Stool( normal)",
-    "Stool ( helminthes)",
-    "Stool(amoebiasis)",
-    "Widal test( normal)",
-    "Widal test (Abnormal)",
+    "Stool (normal)",
+    "Stool (helminthes)",
+    "Stool (amoebiasis)",
+    "Widal test (normal)",
+    "Widal test (abnormal)",
   ];
 
   // Procedures Options
@@ -399,13 +399,36 @@ const MedicalRecords = () => {
     setIsSyncing(false);
   };
 
+  // Fetch all patients for selection - FIXED to include fingerprint status
   const fetchAllPatients = async () => {
     try {
       const data = await api.getChildren();
       const patients = Array.isArray(data) ? data : [];
-      setAllPatients(patients);
-      setFilteredPatients(patients);
-      return patients;
+      
+      // Fetch fingerprints for all patients to check if they have fingerprints
+      const patientsWithFingerprints = await Promise.all(
+        patients.map(async (patient) => {
+          try {
+            // Fetch fingerprints for this patient
+            const fingerprints = await api.getBiometricsForChild(patient.id);
+            const hasFingerprints = fingerprints && fingerprints.length > 0;
+            return {
+              ...patient,
+              hasFingerprints: hasFingerprints
+            };
+          } catch (error) {
+            console.error(`Error fetching fingerprints for patient ${patient.id}:`, error);
+            return {
+              ...patient,
+              hasFingerprints: false
+            };
+          }
+        })
+      );
+      
+      setAllPatients(patientsWithFingerprints);
+      setFilteredPatients(patientsWithFingerprints);
+      return patientsWithFingerprints;
     } catch (error) {
       console.error("Error fetching patients:", error);
       setAllPatients([]);
@@ -448,6 +471,7 @@ const MedicalRecords = () => {
       image2: selectedPatient.image2,
       image3: selectedPatient.image3,
       createdAt: selectedPatient.createdAt,
+      hasFingerprints: selectedPatient.hasFingerprints || false,
     };
 
     setChild(patientData);
@@ -723,13 +747,13 @@ const MedicalRecords = () => {
       showToast("Medical services saved successfully!", "success");
       setMedicalServicesData({
         medications: {
-          ntdsMeds: "",
-          antibiotics: "",
-          otherMeds: "",
+          ntdsMeds: [],
+          antibiotics: [],
+          otherMeds: [],
         },
         tests: {
-          testType: "",
-          result: "",
+          testTypes: [],
+          results: [],
           notes: "",
         },
         procedures: [],
