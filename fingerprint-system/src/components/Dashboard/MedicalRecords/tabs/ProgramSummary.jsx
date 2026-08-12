@@ -144,11 +144,11 @@ const ProgramSummary = ({
   // Calculate BMI distribution for this child using ALL vitals history
   const getBMIDistribution = () => {
     const distribution = {
-      "Severely Underweight": 0,
-      "Underweight": 0,
-      "Normal": 0,
-      "Overweight": 0,
-      "Obese": 0,
+      "Severely Underweight": "",
+      "Underweight": "",
+      "Normal": "",
+      "Overweight": "",
+      "Obese": "",
     };
 
     // Use vitalsHistory if available, otherwise use vitalsData
