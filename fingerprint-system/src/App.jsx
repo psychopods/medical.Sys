@@ -247,7 +247,7 @@ function App() {
             </RoleBasedRoute>
           } />
           
-          {/* Notifications Admin Route */}
+          {/* Notifications Admin Routes */}
           <Route path="/notifications-admin" element={
             <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
               <ProtectedLayout>
