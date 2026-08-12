@@ -406,3 +406,107 @@
     padding: 0.3rem 0.4rem;
   }
 }
+
+/* Add to ProgramSummary.css */
+
+.mr-latest-bmi-info {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.mr-latest-bmi-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mr-latest-bmi-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.mr-latest-bmi-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.mr-latest-bmi-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mr-latest-bmi-status {
+  display: inline-block;
+  padding: 2px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.mr-bmi-status-severely-underweight {
+  background: #dc2626;
+  color: white;
+}
+
+.mr-bmi-status-underweight {
+  background: #f59e0b;
+  color: white;
+}
+
+.mr-bmi-status-normal {
+  background: #10b981;
+  color: white;
+}
+
+.mr-bmi-status-overweight {
+  background: #3b82f6;
+  color: white;
+}
+
+.mr-bmi-status-obese {
+  background: #8b5cf6;
+  color: white;
+}
+
+.mr-bmi-status-unknown {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.mr-latest-bmi-date {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .mr-latest-bmi-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  
+  .mr-latest-bmi-value {
+    flex-direction: row;
+    gap: 12px;
+    align-items: baseline;
+  }
+  
+  .mr-latest-bmi-number {
+    font-size: 24px;
+  }
+}

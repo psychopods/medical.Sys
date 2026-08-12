@@ -353,3 +353,74 @@
     font-size: 0.75rem;
   }
 }
+
+/* Add to ServiceDelivery.css */
+
+.mr-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+}
+
+.mr-spinner-small {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #0066cc;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.mr-latest-bmi-mini {
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mr-latest-bmi-mini-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.mr-latest-bmi-mini-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mr-latest-bmi-mini-status {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mr-latest-bmi-mini-date {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .mr-latest-bmi-mini {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}

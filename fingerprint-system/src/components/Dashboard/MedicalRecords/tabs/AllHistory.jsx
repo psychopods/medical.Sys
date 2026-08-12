@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import "./AllHistory.css";
+import * as api from "../../../../services/api.js";
 
 const AllHistory = ({ 
   child, 
@@ -12,6 +13,23 @@ const AllHistory = ({
 }) => {
   // State for combined child history records
   const [displayRecords, setDisplayRecords] = useState([]);
+  const [vitalsHistory, setVitalsHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch vitals history for the child
+  const fetchVitalsHistory = async (childId) => {
+    if (!childId) return;
+    try {
+      setLoading(true);
+      const records = await api.apiFetchVitalsRecords(childId);
+      setVitalsHistory(records || []);
+    } catch (error) {
+      console.error('Error fetching vitals history:', error);
+      setVitalsHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Combine all records from different sources
   const combineChildRecords = () => {
@@ -32,16 +50,18 @@ const AllHistory = ({
       });
     }
 
-    // 2. Add vitals records
-    if (vitalsData && vitalsData.weight && vitalsData.height) {
-      combined.push({
-        id: `vitals-${Date.now()}-${Math.random()}`,
-        visitDate: vitalsData.date || new Date().toISOString().split('T')[0],
-        recordType: 'vitals',
-        diagnosis: `BMI: ${vitalsData.bmi || 'N/A'} - ${vitalsData.bmiStatus || 'Unknown'}`,
-        treatment: 'Monitoring recommended',
-        notes: `Weight: ${vitalsData.weight}kg, Height: ${vitalsData.height}cm, BMI: ${vitalsData.bmi || 'N/A'}`,
-        createdByName: vitalsData.recordedByName || 'Staff'
+    // 2. Add ALL vitals records from history
+    if (vitalsHistory && vitalsHistory.length > 0) {
+      vitalsHistory.forEach(record => {
+        combined.push({
+          id: record.id || `vitals-${Date.now()}-${Math.random()}`,
+          visitDate: record.date || new Date().toISOString().split('T')[0],
+          recordType: 'vitals',
+          diagnosis: `BMI: ${record.bmi || 'N/A'} - ${record.bmiStatus || 'Unknown'}`,
+          treatment: `Weight: ${record.weight}kg, Height: ${record.height}cm`,
+          notes: `Weight: ${record.weight}kg, Height: ${record.height}cm, BMI: ${record.bmi || 'N/A'}`,
+          createdByName: record.recordedByName || 'Staff'
+        });
       });
     }
 
@@ -105,6 +125,9 @@ const AllHistory = ({
         if (clothes > 0 || shoes > 0) {
           services.push(`Clothes: ${clothes}, Shoes: ${shoes}`);
         }
+        if (socialServicesData.clothing.notes) {
+          services.push(`Notes: ${socialServicesData.clothing.notes}`);
+        }
       }
       
       if (socialServicesData.education && socialServicesData.education.length > 0) {
@@ -113,6 +136,9 @@ const AllHistory = ({
       
       if (socialServicesData.foodRefreshment) {
         services.push(`Food: ${socialServicesData.foodRefreshment}`);
+        if (socialServicesData.foodDetails) {
+          services.push(`Details: ${socialServicesData.foodDetails}`);
+        }
       }
       
       if (socialServicesData.otherServices) {
@@ -140,8 +166,16 @@ const AllHistory = ({
         assessments.push(`Symptoms: ${othersData.symptoms}`);
       }
       
+      if (othersData.visitNotes) {
+        assessments.push(`Visit Notes: ${othersData.visitNotes}`);
+      }
+      
       if (othersData.diagnosis) {
         assessments.push(`Diagnosis: ${othersData.diagnosis}`);
+      }
+      
+      if (othersData.diagnosisNotes) {
+        assessments.push(`Diagnosis Notes: ${othersData.diagnosisNotes}`);
       }
       
       if (othersData.hospitalized) {
@@ -167,6 +201,16 @@ const AllHistory = ({
     return combined;
   };
 
+  // Fetch vitals history when child changes
+  useEffect(() => {
+    if (child && child.id) {
+      fetchVitalsHistory(child.id);
+    } else {
+      setVitalsHistory([]);
+    }
+  }, [child]);
+
+  // Combine records when data changes
   useEffect(() => {
     if (child && child.id) {
       const records = combineChildRecords();
@@ -174,7 +218,19 @@ const AllHistory = ({
     } else {
       setDisplayRecords([]);
     }
-  }, [child, medicalRecords, vitalsData, medicalServicesData, socialServicesData, othersData]);
+  }, [child, medicalRecords, vitalsHistory, medicalServicesData, socialServicesData, othersData]);
+
+  // Get the count of records by type
+  const getRecordTypeCounts = () => {
+    const counts = {};
+    displayRecords.forEach(record => {
+      const type = record.recordType || 'unknown';
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    return counts;
+  };
+
+  const recordCounts = getRecordTypeCounts();
 
   // If no child selected or no records, show empty state
   if (!child || !child.id) {
@@ -193,14 +249,43 @@ const AllHistory = ({
     );
   }
 
+  if (loading) {
+    return (
+      <div className="mr-all-history">
+        <div className="mr-history-header-section">
+          <h3>Medical History - {child.fullName || 'Patient'}</h3>
+          <span className="mr-history-count">Loading...</span>
+        </div>
+        <div className="mr-loading-state">
+          <div className="mr-spinner-small"></div>
+          <p>Loading medical records...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mr-all-history">
       <div className="mr-history-header-section">
-        <h3>Medical History - {child.fullName || 'Patient'}</h3>
+        <div className="mr-history-title-wrapper">
+          <h3>Medical History - {child.fullName || 'Patient'}</h3>
+          <span className="mr-history-id">ID: {child.customSerialId || 'N/A'}</span>
+        </div>
         <span className="mr-history-count">
           {displayRecords.length} records
         </span>
       </div>
+      
+      {/* Record Type Summary */}
+      {displayRecords.length > 0 && (
+        <div className="mr-history-summary">
+          {Object.entries(recordCounts).map(([type, count]) => (
+            <span key={type} className={`mr-summary-badge mr-summary-${type}`}>
+              {getRecordTypeLabel ? getRecordTypeLabel(type) : type}: {count}
+            </span>
+          ))}
+        </div>
+      )}
       
       {displayRecords.length === 0 ? (
         <div className="mr-empty-state">

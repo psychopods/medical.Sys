@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./ProgramSummary.css";
+import * as api from "../../../../services/api.js";
 
 const ProgramSummary = ({ 
   child, 
@@ -22,11 +23,39 @@ const ProgramSummary = ({
     lastVisit: null,
   });
 
+  // State for all vitals history
+  const [vitalsHistory, setVitalsHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch all vitals history for the child
+  const fetchVitalsHistory = async (childId) => {
+    if (!childId) return;
+    try {
+      setLoading(true);
+      const records = await api.apiFetchVitalsRecords(childId);
+      setVitalsHistory(records || []);
+    } catch (error) {
+      console.error('Error fetching vitals history:', error);
+      setVitalsHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch vitals history when child changes
+  useEffect(() => {
+    if (child && child.id) {
+      fetchVitalsHistory(child.id);
+    } else {
+      setVitalsHistory([]);
+    }
+  }, [child]);
+
   useEffect(() => {
     if (child && child.id) {
       calculateChildSummary();
     }
-  }, [child, medicalRecords, vitalsData, medicalServicesData, socialServicesData, othersData]);
+  }, [child, medicalRecords, vitalsData, medicalServicesData, socialServicesData, othersData, vitalsHistory]);
 
   const calculateChildSummary = () => {
     // Collect all records
@@ -68,12 +97,28 @@ const ProgramSummary = ({
       symptoms = othersData.symptoms.split(',').map(s => s.trim());
     }
 
-    // Collect BMI history from vitals
+    // Collect BMI history from ALL vitals records
     let bmiHistory = [];
-    if (vitalsData && vitalsData.bmi) {
+    if (vitalsHistory && vitalsHistory.length > 0) {
+      vitalsHistory.forEach(record => {
+        if (record.bmi) {
+          bmiHistory.push({
+            date: record.date || new Date().toISOString().split('T')[0],
+            bmi: record.bmi,
+            bmiStatus: record.bmiStatus || '',
+            weight: record.weight,
+            height: record.height
+          });
+        }
+      });
+    } else if (vitalsData && vitalsData.bmi) {
+      // Fallback to single vitals data if history is empty
       bmiHistory.push({
         date: vitalsData.date || new Date().toISOString().split('T')[0],
-        bmi: vitalsData.bmi
+        bmi: vitalsData.bmi,
+        bmiStatus: vitalsData.bmiStatus || '',
+        weight: vitalsData.weight,
+        height: vitalsData.height
       });
     }
 
@@ -96,11 +141,8 @@ const ProgramSummary = ({
     });
   };
 
-  // Calculate BMI distribution for this child
+  // Calculate BMI distribution for this child using ALL vitals history
   const getBMIDistribution = () => {
-    const bmiValue = vitalsData && vitalsData.bmi ? parseFloat(vitalsData.bmi) : null;
-    if (!bmiValue) return {};
-
     const distribution = {
       "Severely Underweight": 0,
       "Underweight": 0,
@@ -109,17 +151,56 @@ const ProgramSummary = ({
       "Obese": 0,
     };
 
-    if (bmiValue < 16) distribution["Severely Underweight"] = 1;
-    else if (bmiValue >= 16 && bmiValue < 18.5) distribution["Underweight"] = 1;
-    else if (bmiValue >= 18.5 && bmiValue < 25) distribution["Normal"] = 1;
-    else if (bmiValue >= 25 && bmiValue < 30) distribution["Overweight"] = 1;
-    else if (bmiValue >= 30) distribution["Obese"] = 1;
+    // Use vitalsHistory if available, otherwise use vitalsData
+    const recordsToUse = vitalsHistory && vitalsHistory.length > 0 ? vitalsHistory : (vitalsData && vitalsData.bmi ? [vitalsData] : []);
+
+    if (!recordsToUse || recordsToUse.length === 0) {
+      return distribution;
+    }
+
+    recordsToUse.forEach(record => {
+      const bmiValue = record.bmi ? parseFloat(record.bmi) : null;
+      if (bmiValue === null || isNaN(bmiValue)) return;
+
+      if (bmiValue < 16) distribution["Severely Underweight"]++;
+      else if (bmiValue >= 16 && bmiValue < 18.5) distribution["Underweight"]++;
+      else if (bmiValue >= 18.5 && bmiValue < 25) distribution["Normal"]++;
+      else if (bmiValue >= 25 && bmiValue < 30) distribution["Overweight"]++;
+      else if (bmiValue >= 30) distribution["Obese"]++;
+    });
 
     return distribution;
   };
 
   const bmiDistribution = getBMIDistribution();
   const totalBMI = Object.values(bmiDistribution).reduce((a, b) => a + b, 0);
+
+  // Get latest BMI info
+  const getLatestBMI = () => {
+    const recordsToUse = vitalsHistory && vitalsHistory.length > 0 ? vitalsHistory : (vitalsData && vitalsData.bmi ? [vitalsData] : []);
+    if (!recordsToUse || recordsToUse.length === 0) return null;
+    
+    // Sort by date (newest first)
+    const sorted = [...recordsToUse].sort((a, b) => {
+      const dateA = new Date(a.date || a.createdAt || 0);
+      const dateB = new Date(b.date || b.createdAt || 0);
+      return dateB - dateA;
+    });
+    
+    const latest = sorted[0];
+    if (latest && latest.bmi) {
+      return {
+        bmi: parseFloat(latest.bmi),
+        bmiStatus: latest.bmiStatus || '',
+        date: latest.date || new Date().toISOString().split('T')[0],
+        weight: latest.weight,
+        height: latest.height
+      };
+    }
+    return null;
+  };
+
+  const latestBMI = getLatestBMI();
 
   return (
     <div className="mr-program-summary">
@@ -204,8 +285,25 @@ const ProgramSummary = ({
           <h3>BMI Status</h3>
           <span className="mr-section-badge mr-badge-bmi">Health Status</span>
         </div>
+        
+        {/* Latest BMI Info */}
+        {latestBMI && (
+          <div className="mr-latest-bmi-info">
+            <div className="mr-latest-bmi-value">
+              <span className="mr-latest-bmi-number">{latestBMI.bmi.toFixed(1)}</span>
+              <span className="mr-latest-bmi-label">Latest BMI</span>
+            </div>
+            <div className="mr-latest-bmi-details">
+              <span className={`mr-latest-bmi-status mr-bmi-status-${latestBMI.bmiStatus?.toLowerCase().replace(/\s/g, "-") || 'unknown'}`}>
+                {latestBMI.bmiStatus || 'Unknown'}
+              </span>
+              <span className="mr-latest-bmi-date">Recorded: {formatDate(latestBMI.date)}</span>
+            </div>
+          </div>
+        )}
+
         <div className="mr-bmi-distribution">
-          {Object.entries(bmiDistribution).length > 0 && totalBMI > 0 ? (
+          {totalBMI > 0 ? (
             Object.entries(bmiDistribution).map(([status, count]) => {
               const percentage = totalBMI > 0 ? (count / totalBMI) * 100 : 0;
               const barClass = `mr-bmi-bar mr-bmi-bar-${status.toLowerCase().replace(/\s/g, "-")}`;
@@ -279,6 +377,16 @@ const ProgramSummary = ({
       </div>
     </div>
   );
+};
+
+// Helper function to format date
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 };
 
 export default ProgramSummary;

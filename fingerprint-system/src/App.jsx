@@ -32,6 +32,7 @@ import MedicalRecords from './components/Dashboard/MedicalRecords';
 import UserProfile from './components/Dashboard/UserProfile';
 import NotificationsAdmin from './components/Dashboard/NotificationsAdmin';
 import { ProtectedRoute, RoleBasedRoute } from './components/ProtectedRoute';
+import PatientsHistory from './components/Dashboard/PatientsHistory';
 import './App.css';
 
 // Layout for public pages (with headers and footer)
@@ -56,16 +57,13 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   const handleLoadingComplete = () => {
-    // Hide loading screen and show the app
     setIsLoading(false);
   };
 
-  // Show loading screen while isLoading is true
   if (isLoading) {
     return <AppInitializer onLoadingComplete={handleLoadingComplete} />;
   }
 
-  // Show the actual app after loading is complete
   return (
     <Router>
       <div className="App">
@@ -253,6 +251,13 @@ function App() {
               <ProtectedLayout>
                 <NotificationsAdmin />
               </ProtectedLayout>
+            </RoleBasedRoute>
+          } />
+
+          {/* Patients History Route - REMOVED ProtectedLayout wrapper */}
+          <Route path="/patients-history" element={
+            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'pharmacist', 'staff', 'lab_technician']}>
+              <PatientsHistory />
             </RoleBasedRoute>
           } />
           

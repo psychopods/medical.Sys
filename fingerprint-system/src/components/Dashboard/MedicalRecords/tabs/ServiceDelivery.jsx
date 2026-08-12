@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./ServiceDelivery.css";
+import * as api from "../../../../services/api.js";
 
 const ServiceDelivery = ({ 
   child, 
@@ -22,11 +23,39 @@ const ServiceDelivery = ({
     procedures: [],
   });
 
+  // State for vitals history
+  const [vitalsHistory, setVitalsHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch vitals history for the child
+  const fetchVitalsHistory = async (childId) => {
+    if (!childId) return;
+    try {
+      setLoading(true);
+      const records = await api.apiFetchVitalsRecords(childId);
+      setVitalsHistory(records || []);
+    } catch (error) {
+      console.error('Error fetching vitals history:', error);
+      setVitalsHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch vitals history when child changes
+  useEffect(() => {
+    if (child && child.id) {
+      fetchVitalsHistory(child.id);
+    } else {
+      setVitalsHistory([]);
+    }
+  }, [child]);
+
   useEffect(() => {
     if (child && child.id) {
       calculateChildServiceData();
     }
-  }, [child, medicalServicesData, socialServicesData, vitalsData, medicalRecords]);
+  }, [child, medicalServicesData, socialServicesData, vitalsData, medicalRecords, vitalsHistory]);
 
   const calculateChildServiceData = () => {
     // Count total visits (medical records)
@@ -103,10 +132,26 @@ const ServiceDelivery = ({
       }
     }
 
-    // Get BMI from vitals
+    // Get average BMI from ALL vitals history
     let averageBMI = 0;
-    if (vitalsData && vitalsData.bmi) {
-      averageBMI = parseFloat(vitalsData.bmi);
+    let bmiCount = 0;
+    
+    // Use vitalsHistory if available
+    const recordsToUse = vitalsHistory && vitalsHistory.length > 0 ? vitalsHistory : (vitalsData && vitalsData.bmi ? [vitalsData] : []);
+    
+    if (recordsToUse && recordsToUse.length > 0) {
+      recordsToUse.forEach(record => {
+        if (record.bmi) {
+          const bmiVal = parseFloat(record.bmi);
+          if (!isNaN(bmiVal)) {
+            averageBMI += bmiVal;
+            bmiCount++;
+          }
+        }
+      });
+      if (bmiCount > 0) {
+        averageBMI = averageBMI / bmiCount;
+      }
     }
 
     // Count total tests from medical services
@@ -131,6 +176,51 @@ const ServiceDelivery = ({
 
   // Find max value for medication bars
   const maxMedCount = Math.max(...Object.values(childServiceData.medications), 0);
+
+  // Get latest BMI for display
+  const getLatestBMI = () => {
+    const recordsToUse = vitalsHistory && vitalsHistory.length > 0 ? vitalsHistory : (vitalsData && vitalsData.bmi ? [vitalsData] : []);
+    if (!recordsToUse || recordsToUse.length === 0) return null;
+    
+    const sorted = [...recordsToUse].sort((a, b) => {
+      const dateA = new Date(a.date || a.createdAt || 0);
+      const dateB = new Date(b.date || b.createdAt || 0);
+      return dateB - dateA;
+    });
+    
+    const latest = sorted[0];
+    if (latest && latest.bmi) {
+      return {
+        bmi: parseFloat(latest.bmi),
+        bmiStatus: latest.bmiStatus || '',
+        date: latest.date || new Date().toISOString().split('T')[0]
+      };
+    }
+    return null;
+  };
+
+  const latestBMI = getLatestBMI();
+
+  // Format date helper
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="mr-service-delivery">
+        <div className="mr-loading-state">
+          <div className="mr-spinner-small"></div>
+          <p>Loading service data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mr-service-delivery">
@@ -168,7 +258,7 @@ const ServiceDelivery = ({
             </div>
           </div>
           <div className="mr-metric-item">
-            <span className="mr-metric-label">Current BMI</span>
+            <span className="mr-metric-label">Average BMI</span>
             <div className="mr-metric-bar-container">
               <div 
                 className="mr-metric-bar mr-metric-bar-purple"
@@ -181,6 +271,16 @@ const ServiceDelivery = ({
             </div>
           </div>
         </div>
+        {latestBMI && (
+          <div className="mr-latest-bmi-mini">
+            <span className="mr-latest-bmi-mini-label">Latest BMI: </span>
+            <span className="mr-latest-bmi-mini-value">{latestBMI.bmi.toFixed(1)}</span>
+            <span className={`mr-latest-bmi-mini-status mr-bmi-status-${latestBMI.bmiStatus?.toLowerCase().replace(/\s/g, "-") || 'unknown'}`}>
+              {latestBMI.bmiStatus || 'Unknown'}
+            </span>
+            <span className="mr-latest-bmi-mini-date">({formatDate(latestBMI.date)})</span>
+          </div>
+        )}
       </div>
 
       {/* Material Support Provided Section */}
