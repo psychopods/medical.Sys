@@ -29,6 +29,7 @@ import {
   updateChild as apiUpdateChild,
   deleteChild as apiDeleteChild,
   getChildById as apiGetChildById,
+  getAllFingerprints,
 } from "../../services/api.js";
 import {
   captureFromHardware,
@@ -499,68 +500,29 @@ const ChildRegistration = () => {
       const isOnline = navigator.onLine;
       const knownChildren = Array.isArray(childrenOverride) ? childrenOverride : [];
 
-      if (!isOnline) {
-        try {
-          const { executeQuery } = await import("../../services/db.js");
-          const rows = await executeQuery(
-            "SELECT * FROM biometric_fingerprints",
-          );
-          rows.forEach((fp) => {
-            const child = knownChildren.find((c) => c.id === fp.child_id);
-            allFingerprints.push({
-              id: fp.id,
-              childId: fp.child_id,
-              childName: child ? child.fullName : "Unknown",
-              customSerialId: child ? child.customSerialId : "",
-              fingerIndex: fp.finger_index,
-              templateBase64: fp.template_data,
-              templateData: fp.template_data,
-              qualityScore: fp.quality_score,
-              status: fp.status,
-              version: fp.version,
-              syncStatus: fp.sync_status,
-              capturedAt: fp.created_at,
-              fingerName:
-                fingerNames[fp.finger_index]?.name ||
-                `Finger ${fp.finger_index}`,
-            });
+      const fingerprints = await getAllFingerprints();
+      fingerprints.forEach((fp) => {
+        if (fp && Object.keys(fp).length > 0) {
+          const childId = fp.childId || fp.child_id;
+          const child = knownChildren.find((c) => c.id === childId);
+          allFingerprints.push({
+            ...fp,
+            childName: child ? child.fullName : "Unknown",
+            childId: childId,
+            customSerialId: child ? child.customSerialId : "",
+            fingerIndex: Number(fp.fingerIndex ?? fp.finger_index),
+            templateBase64: fp.templateBase64 || fp.templateData || fp.template_data || "",
+            templateData: fp.templateData || fp.templateBase64 || fp.template_data || "",
+            capturedAt: fp.capturedAt || fp.captured_at || fp.createdAt || fp.created_at,
+            qualityScore: fp.qualityScore || fp.quality || fp.quality_score,
+            capturedByName:
+              fp.capturedByName || getStaffNameById(fp.capturedBy),
+            fingerName:
+              fingerNames[fp.fingerIndex ?? fp.finger_index]?.name ||
+              `Finger ${fp.fingerIndex ?? fp.finger_index}`,
           });
-          setFingerprintData(allFingerprints);
-          return;
-        } catch (dbError) {
-          console.error("Error fetching fingerprints from SQLite:", dbError);
         }
-      }
-
-      for (const child of knownChildren) {
-        if (child.id) {
-          try {
-            const fingerprints = await getBiometricsForChild(child.id);
-            fingerprints.forEach((fp) => {
-              if (fp && Object.keys(fp).length > 0) {
-                allFingerprints.push({
-                  ...fp,
-                  childName: child.fullName,
-                  childId: child.id,
-                  customSerialId: child.customSerialId,
-                  fingerIndex: Number(fp.fingerIndex ?? fp.finger_index),
-                  templateBase64: fp.templateBase64 || fp.templateData || fp.template_data,
-                  templateData: fp.templateData || fp.templateBase64 || fp.template_data,
-                  capturedAt: fp.capturedAt || fp.captured_at || fp.createdAt,
-                  qualityScore: fp.qualityScore || fp.quality,
-                  capturedByName:
-                    fp.capturedByName || getStaffNameById(fp.capturedBy),
-                  fingerName:
-                    fingerNames[fp.fingerIndex]?.name ||
-                    `Finger ${fp.fingerIndex}`,
-                });
-              }
-            });
-          } catch (e) {
-            console.error("Error fetching fingerprints for child:", e);
-          }
-        }
-      }
+      });
       setFingerprintData(allFingerprints);
     } catch (error) {
       console.error("Error fetching fingerprints:", error);

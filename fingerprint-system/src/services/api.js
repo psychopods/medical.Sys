@@ -1342,6 +1342,68 @@ export async function getBiometricsForChild(childId) {
   }
 }
 
+export async function getAllFingerprints() {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.biometricsList, {
+        headers: getAuthHeaders()
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const fingerprints = data.fingerprints || (Array.isArray(data) ? data : []);
+
+        // Cache in SQLite
+        for (const fp of fingerprints) {
+          if (fp && fp.id) {
+            await executeRun(
+              `INSERT OR REPLACE INTO biometric_fingerprints 
+              (id, child_id, finger_index, template_data, quality_score, status, version, is_dirty, sync_status, created_at, image_data) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'synced', ?, ?)`,
+              [
+                fp.id,
+                fp.childId || fp.child_id,
+                fp.fingerIndex || fp.finger_index || 1,
+                fp.templateBase64 || fp.templateData || fp.template_data || '',
+                fp.qualityScore || fp.quality_score || 80,
+                fp.status || 'PENDING',
+                fp.version || 1,
+                fp.createdAt || fp.created_at || new Date().toISOString(),
+                fp.imageDataUrl || fp.image_data || null
+              ]
+            );
+          }
+        }
+        await saveDB();
+        return fingerprints;
+      }
+    } catch (error) {
+      console.warn("API: Failed to fetch all fingerprints online, falling back to cache...", error);
+    }
+  }
+
+  // Fallback to SQLite cache
+  try {
+    const rows = await executeQuery('SELECT * FROM biometric_fingerprints');
+    return rows.map(fp => ({
+      id: fp.id,
+      childId: fp.child_id,
+      fingerIndex: fp.finger_index,
+      templateBase64: fp.template_data || fp.templateBase64 || fp.templateData,
+      templateData: fp.template_data || fp.templateBase64 || fp.templateData,
+      qualityScore: fp.quality_score,
+      status: fp.status,
+      version: fp.version,
+      syncStatus: fp.sync_status,
+      createdAt: fp.created_at,
+      imageDataUrl: normalizeImageUrl(fp.image_data)
+    }));
+  } catch (err) {
+    return [];
+  }
+}
+
 export async function enrollBiometric(bioData) {
   const isOnline = navigator.onLine;
   const bioId = bioData.id || crypto.randomUUID();

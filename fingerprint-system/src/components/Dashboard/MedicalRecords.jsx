@@ -176,6 +176,7 @@ const MedicalRecords = () => {
   const [allPatients, setAllPatients] = useState([]);
   const [filteredPatients, setFilteredPatients] = useState([]);
   const [isLoadingPatients, setIsLoadingPatients] = useState(false);
+  const toastTimeoutRef = useRef(null);
 
   // Offline and Sync States
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
@@ -378,6 +379,14 @@ const MedicalRecords = () => {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const handleOnline = () => {
       setOfflineMode(false);
       api.triggerSync();
@@ -405,26 +414,18 @@ const MedicalRecords = () => {
       const data = await api.getChildren();
       const patients = Array.isArray(data) ? data : [];
       
-      // Fetch fingerprints for all patients to check if they have fingerprints
-      const patientsWithFingerprints = await Promise.all(
-        patients.map(async (patient) => {
-          try {
-            // Fetch fingerprints for this patient
-            const fingerprints = await api.getBiometricsForChild(patient.id);
-            const hasFingerprints = fingerprints && fingerprints.length > 0;
-            return {
-              ...patient,
-              hasFingerprints: hasFingerprints
-            };
-          } catch (error) {
-            console.error(`Error fetching fingerprints for patient ${patient.id}:`, error);
-            return {
-              ...patient,
-              hasFingerprints: false
-            };
-          }
-        })
+      // Fetch all fingerprints in a single optimized bulk query
+      const allFingerprints = await api.getAllFingerprints();
+      const childIdsWithFingerprints = new Set(
+        allFingerprints
+          .filter(fp => fp && (fp.childId || fp.child_id))
+          .map(fp => fp.childId || fp.child_id)
       );
+
+      const patientsWithFingerprints = patients.map((patient) => ({
+        ...patient,
+        hasFingerprints: childIdsWithFingerprints.has(patient.id)
+      }));
       
       setAllPatients(patientsWithFingerprints);
       setFilteredPatients(patientsWithFingerprints);
@@ -616,10 +617,10 @@ const MedicalRecords = () => {
 
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
-    if (window.toastTimeout) {
-      clearTimeout(window.toastTimeout);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
     }
-    window.toastTimeout = setTimeout(() => {
+    toastTimeoutRef.current = setTimeout(() => {
       setToast({ show: false, message: "", type: "" });
     }, 20000);
   };
