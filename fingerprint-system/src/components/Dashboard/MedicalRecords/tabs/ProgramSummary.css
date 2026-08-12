@@ -293,6 +293,24 @@
 }
 
 /* ================================
+   NO DATA STATE
+   ================================ */
+
+.mr-program-summary .mr-no-data {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+  font-style: italic;
+}
+
+.mr-program-summary .mr-empty-state {
+  text-align: center;
+  padding: 20px;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+/* ================================
    RESPONSIVE DESIGN
    ================================ */
 

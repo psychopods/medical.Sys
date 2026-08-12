@@ -10,7 +10,7 @@ export const menuItems = [
       </svg>
     ), 
     label: 'Dashboard', 
-    roles: ['superuser', 'nurse', 'doctor', 'lab_technician', 'pharmacist', 'staff'] 
+    roles: ['superuser', 'nurse', 'doctor', 'lab_technician', 'pharmacist', 'admin', 'staff'] 
   },
   { 
     path: '/user-management', 
@@ -34,7 +34,7 @@ export const menuItems = [
       </svg>
     ), 
     label: 'Patient Registration', 
-    roles: ['superuser', 'nurse', 'staff'] 
+    roles: ['superuser', 'nurse', 'staff', 'admin'] 
   },
   // { 
   //   path: '/medical-examination', 

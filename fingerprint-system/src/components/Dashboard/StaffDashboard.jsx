@@ -1,8 +1,8 @@
-import React from 'react';
-import './Dashboard.css';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import './StaffDashboard.css';
 
 const StaffDashboard = ({ user, onLogout }) => {
-  const stats = [
+  const [stats, setStats] = useState([
     { 
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -10,8 +10,11 @@ const StaffDashboard = ({ user, onLogout }) => {
           <path d="M5.5 20V19C5.5 16.8 7.3 15 9.5 15H14.5C16.7 15 18.5 16.8 18.5 19V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '0', 
-      label: 'Children Supported' 
+      value: '32', 
+      label: 'Children Supported',
+      trend: '+15%',
+      trendUp: true,
+      color: 'blue'
     },
     { 
       icon: (
@@ -20,8 +23,11 @@ const StaffDashboard = ({ user, onLogout }) => {
           <path d="M12 8V12L14 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '0', 
-      label: 'Food Supports' 
+      value: '48', 
+      label: 'Food Supports',
+      trend: '+8%',
+      trendUp: true,
+      color: 'green'
     },
     { 
       icon: (
@@ -31,8 +37,11 @@ const StaffDashboard = ({ user, onLogout }) => {
           <path d="M12 8V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '0', 
-      label: 'Clothes Provided' 
+      value: '56', 
+      label: 'Clothes Provided',
+      trend: '+12%',
+      trendUp: true,
+      color: 'purple'
     },
     { 
       icon: (
@@ -41,11 +50,59 @@ const StaffDashboard = ({ user, onLogout }) => {
           <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       ), 
-      value: '0', 
-      label: 'Education Supports' 
+      value: '24', 
+      label: 'Education Supports',
+      trend: '+5%',
+      trendUp: true,
+      color: 'orange'
     },
-  ];
+  ]);
 
+  const [recentSupports, setRecentSupports] = useState([
+    { id: 1, child: 'James Mwangi', type: 'Food Support', date: '2026-08-10', status: 'completed' },
+    { id: 2, child: 'Sarah Akinyi', type: 'Clothing', date: '2026-08-09', status: 'completed' },
+    { id: 3, child: 'David Ochieng', type: 'Education Support', date: '2026-08-08', status: 'pending' },
+    { id: 4, child: 'Mary Atieno', type: 'Counselling', date: '2026-08-07', status: 'completed' },
+    { id: 5, child: 'Joseph Odhiambo', type: 'Food Support', date: '2026-08-06', status: 'pending' },
+  ]);
+
+  const [lastRefreshed, setLastRefreshed] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshIntervalRef = useRef(null);
+  const isRefreshingRef = useRef(false);
+
+  // Helper function to get user's display name
+  const getUserDisplayName = () => {
+    if (!user) return 'User';
+    
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user.firstName) {
+      return user.firstName;
+    }
+    if (user.lastName) {
+      return user.lastName;
+    }
+    if (user.first_name && user.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    }
+    if (user.first_name) {
+      return user.first_name;
+    }
+    if (user.last_name) {
+      return user.last_name;
+    }
+    if (user.username) {
+      return user.username;
+    }
+    if (user.email) {
+      return user.email.split('@')[0];
+    }
+    return 'User';
+  };
+
+  // Quick Actions
   const quickActions = [
     { 
       icon: (
@@ -56,7 +113,8 @@ const StaffDashboard = ({ user, onLogout }) => {
       ), 
       title: 'Provide Food Support', 
       desc: 'Record food assistance', 
-      action: () => alert('Food Support Form') 
+      action: () => alert('Food Support Form'),
+      color: 'green'
     },
     { 
       icon: (
@@ -68,7 +126,8 @@ const StaffDashboard = ({ user, onLogout }) => {
       ), 
       title: 'Provide Clothes', 
       desc: 'Record clothing assistance', 
-      action: () => alert('Clothes Form') 
+      action: () => alert('Clothes Form'),
+      color: 'blue'
     },
     { 
       icon: (
@@ -79,7 +138,8 @@ const StaffDashboard = ({ user, onLogout }) => {
       ), 
       title: 'Education Support', 
       desc: 'Record educational aid', 
-      action: () => alert('Education Form') 
+      action: () => alert('Education Form'),
+      color: 'purple'
     },
     { 
       icon: (
@@ -89,41 +149,147 @@ const StaffDashboard = ({ user, onLogout }) => {
       ), 
       title: 'Counselling', 
       desc: 'Record social support', 
-      action: () => alert('Counselling Form') 
+      action: () => alert('Counselling Form'),
+      color: 'orange'
     },
   ];
 
-  const recentSupports = [];
+  const getStatusClass = (status) => {
+    const classes = {
+      'completed': 'sd-status-completed',
+      'pending': 'sd-status-pending',
+      'in-progress': 'sd-status-progress'
+    };
+    return classes[status] || 'sd-status-default';
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      'completed': 'Completed',
+      'pending': 'Pending',
+      'in-progress': 'In Progress'
+    };
+    return labels[status] || status;
+  };
+
+  // Silent refresh function
+  const refreshData = useCallback(async (showSpinner = false) => {
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+    
+    if (showSpinner) {
+      setIsRefreshing(true);
+    }
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setLastRefreshed(new Date());
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
+      isRefreshingRef.current = false;
+      if (showSpinner) {
+        setIsRefreshing(false);
+      }
+    }
+  }, []);
+
+  const startBackgroundRefresh = useCallback(() => {
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+    }
+    refreshIntervalRef.current = setInterval(() => {
+      refreshData(false);
+    }, 30000);
+  }, [refreshData]);
+
+  const stopBackgroundRefresh = useCallback(() => {
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshData(true);
+    startBackgroundRefresh();
+    return () => {
+      stopBackgroundRefresh();
+    };
+  }, [startBackgroundRefresh, stopBackgroundRefresh]);
+
+  const displayName = getUserDisplayName();
 
   return (
-    <div className="dashboard-content-wrapper">
-      <div className="stats-grid">
+    <div className="sd-dashboard">
+      {/* Silent Refresh Indicator */}
+      <div className="sd-refresh-indicator">
+        {isRefreshing && (
+          <span className="sd-refresh-spinner"></span>
+        )}
+        {lastRefreshed && (
+          <span className="sd-refresh-time">
+            Last updated: {lastRefreshed.toLocaleTimeString()}
+          </span>
+        )}
+      </div>
+
+      {/* Welcome Section */}
+      <div className="sd-welcome-section">
+        <div className="sd-welcome-text">
+          <h1>Welcome back, {displayName}!</h1>
+          <p>Here's an overview of your social support activities</p>
+        </div>
+        <div className="sd-welcome-date">
+          <span>{new Date().toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}</span>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="sd-stats-grid">
         {stats.map((stat, index) => (
-          <div className="stat-card" key={index}>
-            <div className="stat-icon">{stat.icon}</div>
-            <div className="stat-info">
+          <div className={`sd-stat-card sd-stat-${stat.color}`} key={index}>
+            <div className="sd-stat-icon">{stat.icon}</div>
+            <div className="sd-stat-info">
               <h3>{stat.value}</h3>
               <p>{stat.label}</p>
+              <span className={`sd-stat-trend ${stat.trendUp ? 'sd-trend-up' : 'sd-trend-down'}`}>
+                {stat.trend}
+              </span>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="section-title">Quick Actions</div>
-      <div className="actions-grid">
+      {/* Quick Actions */}
+      <div className="sd-section-header">
+        <h2>Quick Actions</h2>
+        <span className="sd-section-badge">4 actions</span>
+      </div>
+      <div className="sd-actions-grid">
         {quickActions.map((action, index) => (
-          <div className="action-card" key={index} onClick={action.action}>
-            <div className="action-icon">{action.icon}</div>
-            <div className="action-info">
+          <div className={`sd-action-card sd-action-${action.color}`} key={index} onClick={action.action}>
+            <div className="sd-action-icon">{action.icon}</div>
+            <div className="sd-action-info">
               <h4>{action.title}</h4>
               <p>{action.desc}</p>
             </div>
+            <span className="sd-action-arrow">→</span>
           </div>
         ))}
       </div>
 
-      <div className="section-title">Recent Social Supports</div>
-      <div className="recent-table">
+      {/* Recent Social Supports */}
+      <div className="sd-section-header">
+        <h2>Recent Social Supports</h2>
+        <span className="sd-section-badge sd-support-count">{recentSupports.length} records</span>
+      </div>
+      <div className="sd-supports-table">
         <table>
           <thead>
             <tr>
@@ -131,21 +297,40 @@ const StaffDashboard = ({ user, onLogout }) => {
               <th>Support Type</th>
               <th>Date</th>
               <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {recentSupports.length > 0 ? (
-              recentSupports.map((support, index) => (
-                <tr key={index}>
-                  <td>{support.child}</td>
-                  <td>{support.type}</td>
-                  <td>{support.date}</td>
-                  <td><span className={`status-badge status-${support.status}`}>{support.status}</span></td>
+              recentSupports.map((support) => (
+                <tr key={support.id}>
+                  <td>
+                    <div className="sd-child-name">
+                      <span className="sd-child-avatar">{support.child.charAt(0)}</span>
+                      {support.child}
+                    </div>
+                  </td>
+                  <td>
+                    <span className="sd-support-type">{support.type}</span>
+                  </td>
+                  <td>{new Date(support.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}</td>
+                  <td>
+                    <span className={`sd-status-badge ${getStatusClass(support.status)}`}>
+                      {getStatusLabel(support.status)}
+                    </span>
+                  </td>
+                  <td>
+                    <button className="sd-view-btn">View</button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                <td colSpan="5" className="sd-no-data">
                   No social supports recorded yet
                 </td>
               </tr>

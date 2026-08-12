@@ -1,98 +1,202 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import "./AllHistory.css";
 
-const AllHistory = ({ medicalRecords = [], getRecordTypeLabel }) => {
-  // Mock data for demonstration
-  const mockRecords = [
-    {
-      id: "1",
-      visitDate: "2026-08-10",
-      recordType: "baseline",
-      diagnosis: "Initial assessment - Patient in good health",
-      treatment: "Health education provided",
-      notes: "Patient presented with no acute complaints. Vital signs normal.",
-      createdByName: "Dr. Sarah Johnson"
-    },
-    {
-      id: "2",
-      visitDate: "2026-08-05",
-      recordType: "vitals",
-      diagnosis: "Routine checkup",
-      treatment: "Monitoring recommended",
-      notes: "Weight: 45kg, Height: 152cm, BMI: 19.5 - Normal range",
-      createdByName: "Nurse Mary Atim"
-    },
-    {
-      id: "3",
-      visitDate: "2026-07-28",
-      recordType: "medication",
-      diagnosis: "Malaria",
-      treatment: "Artemether-Lumefantrine (ALU) tabs prescribed",
-      notes: "Patient presented with fever and headache. Completed 3-day course.",
-      createdByName: "Dr. James Okello"
-    },
-    {
-      id: "4",
-      visitDate: "2026-07-20",
-      recordType: "test",
-      diagnosis: "Urinary Tract Infection",
-      treatment: "Ciprofloxacin 500mg twice daily for 5 days",
-      notes: "Urinalysis showed presence of bacteria. Patient advised to drink plenty of water.",
-      createdByName: "Dr. Sarah Johnson"
-    },
-    {
-      id: "5",
-      visitDate: "2026-07-15",
-      recordType: "service",
-      diagnosis: "Nutritional assessment",
-      treatment: "Nutritional counseling and supplements",
-      notes: "Patient identified as underweight. Provided nutritional education and Vitamin B complex supplements.",
-      createdByName: "Nurse Mary Atim"
-    },
-    {
-      id: "6",
-      visitDate: "2026-07-10",
-      recordType: "symptom",
-      diagnosis: "Respiratory infection",
-      treatment: "Amoxicillin 500mg three times daily for 7 days",
-      notes: "Patient presented with cough, fever, and chest congestion. Advised rest and fluids.",
-      createdByName: "Dr. James Okello"
-    },
-    {
-      id: "7",
-      visitDate: "2026-07-05",
-      recordType: "medication",
-      diagnosis: "Intestinal worms",
-      treatment: "Albendazole 400mg single dose",
-      notes: "Patient complained of abdominal pain. Stool test confirmed helminth infection.",
-      createdByName: "Dr. Sarah Johnson"
-    },
-    {
-      id: "8",
-      visitDate: "2026-06-28",
-      recordType: "service",
-      diagnosis: "Wound care",
-      treatment: "Wound dressing and antibiotics",
-      notes: "Patient presented with minor wound on left arm. Wound cleaned and dressed. Tetanus vaccine administered.",
-      createdByName: "Nurse Mary Atim"
-    }
-  ];
-
+const AllHistory = ({ 
+  child, 
+  medicalRecords = [], 
+  vitalsData, 
+  medicalServicesData, 
+  socialServicesData, 
+  othersData,
+  getRecordTypeLabel 
+}) => {
+  // State for combined child history records
   const [displayRecords, setDisplayRecords] = useState([]);
 
-  useEffect(() => {
-    // Use provided records if available, otherwise use mock data
+  // Combine all records from different sources
+  const combineChildRecords = () => {
+    const combined = [];
+
+    // 1. Add medical records (baseline, checkups, etc.)
     if (medicalRecords && medicalRecords.length > 0) {
-      setDisplayRecords(medicalRecords);
-    } else {
-      setDisplayRecords(mockRecords);
+      medicalRecords.forEach(record => {
+        combined.push({
+          id: record.id || `mr-${Date.now()}-${Math.random()}`,
+          visitDate: record.visitDate || record.createdAt || new Date().toISOString().split('T')[0],
+          recordType: record.recordType || 'baseline',
+          diagnosis: record.diagnosis || 'Routine checkup',
+          treatment: record.treatment || '',
+          notes: record.notes || '',
+          createdByName: record.createdByName || record.recordedByName || 'Staff'
+        });
+      });
     }
-  }, [medicalRecords]);
+
+    // 2. Add vitals records
+    if (vitalsData && vitalsData.weight && vitalsData.height) {
+      combined.push({
+        id: `vitals-${Date.now()}-${Math.random()}`,
+        visitDate: vitalsData.date || new Date().toISOString().split('T')[0],
+        recordType: 'vitals',
+        diagnosis: `BMI: ${vitalsData.bmi || 'N/A'} - ${vitalsData.bmiStatus || 'Unknown'}`,
+        treatment: 'Monitoring recommended',
+        notes: `Weight: ${vitalsData.weight}kg, Height: ${vitalsData.height}cm, BMI: ${vitalsData.bmi || 'N/A'}`,
+        createdByName: vitalsData.recordedByName || 'Staff'
+      });
+    }
+
+    // 3. Add medical services (medications, tests, procedures)
+    if (medicalServicesData) {
+      // Medications
+      const medications = [
+        ...(medicalServicesData.medications?.ntdsMeds || []),
+        ...(medicalServicesData.medications?.antibiotics || []),
+        ...(medicalServicesData.medications?.otherMeds || [])
+      ];
+      
+      if (medications.length > 0) {
+        combined.push({
+          id: `med-${Date.now()}-${Math.random()}`,
+          visitDate: medicalServicesData.date || new Date().toISOString().split('T')[0],
+          recordType: 'medication',
+          diagnosis: 'Medication administered',
+          treatment: medications.join(', '),
+          notes: `Medications: ${medications.join(', ')}`,
+          createdByName: medicalServicesData.recordedByName || 'Staff'
+        });
+      }
+
+      // Tests
+      const tests = medicalServicesData.tests?.testTypes || [];
+      const results = medicalServicesData.tests?.results || [];
+      if (tests.length > 0) {
+        combined.push({
+          id: `test-${Date.now()}-${Math.random()}`,
+          visitDate: medicalServicesData.date || new Date().toISOString().split('T')[0],
+          recordType: 'test',
+          diagnosis: `Tests: ${tests.join(', ')}`,
+          treatment: `Results: ${results.join(', ')}`,
+          notes: medicalServicesData.tests?.notes || '',
+          createdByName: medicalServicesData.recordedByName || 'Staff'
+        });
+      }
+
+      // Procedures
+      if (medicalServicesData.procedures && medicalServicesData.procedures.length > 0) {
+        combined.push({
+          id: `proc-${Date.now()}-${Math.random()}`,
+          visitDate: medicalServicesData.date || new Date().toISOString().split('T')[0],
+          recordType: 'service',
+          diagnosis: 'Procedures performed',
+          treatment: medicalServicesData.procedures.join(', '),
+          notes: `Procedures: ${medicalServicesData.procedures.join(', ')}`,
+          createdByName: medicalServicesData.recordedByName || 'Staff'
+        });
+      }
+    }
+
+    // 4. Add social services
+    if (socialServicesData) {
+      const services = [];
+      
+      if (socialServicesData.clothing) {
+        const clothes = socialServicesData.clothing.clothes || 0;
+        const shoes = socialServicesData.clothing.shoes || 0;
+        if (clothes > 0 || shoes > 0) {
+          services.push(`Clothes: ${clothes}, Shoes: ${shoes}`);
+        }
+      }
+      
+      if (socialServicesData.education && socialServicesData.education.length > 0) {
+        services.push(`Education: ${socialServicesData.education.join(', ')}`);
+      }
+      
+      if (socialServicesData.foodRefreshment) {
+        services.push(`Food: ${socialServicesData.foodRefreshment}`);
+      }
+      
+      if (socialServicesData.otherServices) {
+        services.push(`Other: ${socialServicesData.otherServices}`);
+      }
+
+      if (services.length > 0) {
+        combined.push({
+          id: `social-${Date.now()}-${Math.random()}`,
+          visitDate: socialServicesData.date || new Date().toISOString().split('T')[0],
+          recordType: 'service',
+          diagnosis: 'Social services provided',
+          treatment: services.join(' | '),
+          notes: socialServicesData.clothing?.notes || '',
+          createdByName: socialServicesData.recordedByName || 'Staff'
+        });
+      }
+    }
+
+    // 5. Add others/assessment data
+    if (othersData) {
+      const assessments = [];
+      
+      if (othersData.symptoms) {
+        assessments.push(`Symptoms: ${othersData.symptoms}`);
+      }
+      
+      if (othersData.diagnosis) {
+        assessments.push(`Diagnosis: ${othersData.diagnosis}`);
+      }
+      
+      if (othersData.hospitalized) {
+        assessments.push(`Hospitalized: ${othersData.timeHospitalized || 'Yes'}`);
+      }
+
+      if (assessments.length > 0) {
+        combined.push({
+          id: `assess-${Date.now()}-${Math.random()}`,
+          visitDate: othersData.date || new Date().toISOString().split('T')[0],
+          recordType: 'diagnosis',
+          diagnosis: othersData.diagnosis || 'Assessment performed',
+          treatment: assessments.join(' | '),
+          notes: othersData.visitNotes || othersData.diagnosisNotes || '',
+          createdByName: othersData.recordedByName || 'Staff'
+        });
+      }
+    }
+
+    // Sort by date (newest first)
+    combined.sort((a, b) => new Date(b.visitDate) - new Date(a.visitDate));
+    
+    return combined;
+  };
+
+  useEffect(() => {
+    if (child && child.id) {
+      const records = combineChildRecords();
+      setDisplayRecords(records);
+    } else {
+      setDisplayRecords([]);
+    }
+  }, [child, medicalRecords, vitalsData, medicalServicesData, socialServicesData, othersData]);
+
+  // If no child selected or no records, show empty state
+  if (!child || !child.id) {
+    return (
+      <div className="mr-all-history">
+        <div className="mr-history-header-section">
+          <h3>Complete Medical History</h3>
+          <span className="mr-history-count">0 records</span>
+        </div>
+        <div className="mr-empty-state">
+          <span className="mr-empty-icon">📋</span>
+          <p>No patient selected</p>
+          <span className="mr-empty-subtext">Please select a patient to view their medical history.</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mr-all-history">
       <div className="mr-history-header-section">
-        <h3>Complete Medical History</h3>
+        <h3>Medical History - {child.fullName || 'Patient'}</h3>
         <span className="mr-history-count">
           {displayRecords.length} records
         </span>
@@ -101,8 +205,8 @@ const AllHistory = ({ medicalRecords = [], getRecordTypeLabel }) => {
       {displayRecords.length === 0 ? (
         <div className="mr-empty-state">
           <span className="mr-empty-icon">📋</span>
-          <p>No medical history records found.</p>
-          <span className="mr-empty-subtext">Records will appear here once they are added.</span>
+          <p>No medical history records found</p>
+          <span className="mr-empty-subtext">Records will appear here once they are added for this patient.</span>
         </div>
       ) : (
         <div className="mr-history-list">

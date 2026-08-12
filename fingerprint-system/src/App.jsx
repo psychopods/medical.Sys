@@ -171,7 +171,7 @@ function App() {
           } />
           
           <Route path="/child-registration" element={
-            <RoleBasedRoute allowedRoles={['superuser', 'nurse', 'staff']}>
+            <RoleBasedRoute allowedRoles={['superuser', 'nurse', 'staff', 'admin']}>
               <ProtectedLayout>
                 <ChildRegistration />
               </ProtectedLayout>
@@ -240,7 +240,7 @@ function App() {
           
           {/* Medical Records Route */}
           <Route path="/medical-records" element={
-            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse']}>
+            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'pharmacist', 'staff', 'lab_technician']}>
               <ProtectedLayout>
                 <MedicalRecords />
               </ProtectedLayout>

@@ -1,67 +1,183 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "./ProgramSummary.css";
 
-const ProgramSummary = ({ programSummary }) => {
-  // Calculate total for BMI distribution
-  const totalBMI = Object.values(programSummary.bmiDistribution).reduce((a, b) => a + b, 0);
+const ProgramSummary = ({ 
+  child, 
+  medicalRecords, 
+  vitalsData, 
+  medicalServicesData, 
+  socialServicesData, 
+  othersData 
+}) => {
+  // State for calculated child-specific data
+  const [childSummary, setChildSummary] = useState({
+    totalVisits: 0,
+    averageVisits: 0,
+    medications: [],
+    services: [],
+    diagnoses: [],
+    symptoms: [],
+    bmiHistory: [],
+    hospitalizations: 0,
+    lastVisit: null,
+  });
+
+  useEffect(() => {
+    if (child && child.id) {
+      calculateChildSummary();
+    }
+  }, [child, medicalRecords, vitalsData, medicalServicesData, socialServicesData, othersData]);
+
+  const calculateChildSummary = () => {
+    // Collect all records
+    const allRecords = [...medicalRecords];
+    
+    // Count total visits
+    const totalVisits = allRecords.length;
+    
+    // Collect medications from medical services
+    let medications = [];
+    if (medicalServicesData && medicalServicesData.medications) {
+      const meds = [
+        ...(medicalServicesData.medications.ntdsMeds || []),
+        ...(medicalServicesData.medications.antibiotics || []),
+        ...(medicalServicesData.medications.otherMeds || [])
+      ];
+      medications = [...new Set(meds)]; // Remove duplicates
+    }
+
+    // Collect services
+    let services = [];
+    if (medicalServicesData && medicalServicesData.procedures) {
+      services = [...services, ...medicalServicesData.procedures];
+    }
+    if (socialServicesData && socialServicesData.education) {
+      services = [...services, ...socialServicesData.education];
+    }
+    services = [...new Set(services)];
+
+    // Collect diagnoses from others data
+    let diagnoses = [];
+    if (othersData && othersData.diagnosis) {
+      diagnoses = othersData.diagnosis.split(',').map(d => d.trim());
+    }
+
+    // Collect symptoms
+    let symptoms = [];
+    if (othersData && othersData.symptoms) {
+      symptoms = othersData.symptoms.split(',').map(s => s.trim());
+    }
+
+    // Collect BMI history from vitals
+    let bmiHistory = [];
+    if (vitalsData && vitalsData.bmi) {
+      bmiHistory.push({
+        date: vitalsData.date || new Date().toISOString().split('T')[0],
+        bmi: vitalsData.bmi
+      });
+    }
+
+    // Check if hospitalized
+    const hospitalizations = othersData && othersData.hospitalized ? 1 : 0;
+
+    // Get last visit date
+    const lastVisit = child.createdAt || null;
+
+    setChildSummary({
+      totalVisits,
+      averageVisits: totalVisits > 0 ? (totalVisits / 1).toFixed(1) : 0,
+      medications,
+      services,
+      diagnoses,
+      symptoms,
+      bmiHistory,
+      hospitalizations,
+      lastVisit,
+    });
+  };
+
+  // Calculate BMI distribution for this child
+  const getBMIDistribution = () => {
+    const bmiValue = vitalsData && vitalsData.bmi ? parseFloat(vitalsData.bmi) : null;
+    if (!bmiValue) return {};
+
+    const distribution = {
+      "Severely Underweight": 0,
+      "Underweight": 0,
+      "Normal": 0,
+      "Overweight": 0,
+      "Obese": 0,
+    };
+
+    if (bmiValue < 16) distribution["Severely Underweight"] = 1;
+    else if (bmiValue >= 16 && bmiValue < 18.5) distribution["Underweight"] = 1;
+    else if (bmiValue >= 18.5 && bmiValue < 25) distribution["Normal"] = 1;
+    else if (bmiValue >= 25 && bmiValue < 30) distribution["Overweight"] = 1;
+    else if (bmiValue >= 30) distribution["Obese"] = 1;
+
+    return distribution;
+  };
+
+  const bmiDistribution = getBMIDistribution();
+  const totalBMI = Object.values(bmiDistribution).reduce((a, b) => a + b, 0);
 
   return (
     <div className="mr-program-summary">
-      {/* Program Overview Section */}
+      {/* Patient Overview Section */}
       <div className="mr-section-block">
         <div className="mr-section-header">
-          <h3>Program Overview</h3>
-          <span className="mr-section-badge">Summary</span>
+          <h3>Patient Overview</h3>
+          <span className="mr-section-badge">{child?.fullName || 'Patient'}</span>
         </div>
         <div className="mr-overview-list">
           <div className="mr-overview-item">
-            <span className="mr-overview-label">Total Visits Recorded</span>
+            <span className="mr-overview-label">Total Visits</span>
             <div className="mr-overview-bar-container">
               <div 
                 className="mr-overview-bar mr-overview-bar-blue"
-                style={{ width: `${Math.min((programSummary.totalVisitsRecorded / 2000) * 100, 100)}%` }}
+                style={{ width: `${Math.min((childSummary.totalVisits / 10) * 100, 100)}%` }}
               >
                 <span className="mr-overview-value">
-                  {programSummary.totalVisitsRecorded.toLocaleString()}
+                  {childSummary.totalVisits}
                 </span>
               </div>
             </div>
           </div>
           <div className="mr-overview-item">
-            <span className="mr-overview-label">Average Visits per Child</span>
+            <span className="mr-overview-label">Last Visit</span>
             <div className="mr-overview-bar-container">
               <div 
                 className="mr-overview-bar mr-overview-bar-green"
-                style={{ width: `${Math.min((programSummary.averageVisitsPerChild / 5) * 100, 100)}%` }}
+                style={{ width: `${childSummary.lastVisit ? 100 : 10}%` }}
               >
                 <span className="mr-overview-value">
-                  {programSummary.averageVisitsPerChild}
+                  {childSummary.lastVisit ? new Date(childSummary.lastVisit).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
             </div>
           </div>
           <div className="mr-overview-item">
-            <span className="mr-overview-label">Most Common Services</span>
+            <span className="mr-overview-label">Medications</span>
             <div className="mr-overview-bar-container">
               <div 
                 className="mr-overview-bar mr-overview-bar-purple"
-                style={{ width: `${Math.min((programSummary.mostCommonServices.length / 50) * 100, 100)}%` }}
+                style={{ width: `${Math.min((childSummary.medications.length / 10) * 100, 100)}%` }}
               >
                 <span className="mr-overview-value">
-                  {programSummary.mostCommonServices}
+                  {childSummary.medications.length}
                 </span>
               </div>
             </div>
           </div>
           <div className="mr-overview-item">
-            <span className="mr-overview-label">Top Medications Given</span>
+            <span className="mr-overview-label">Services Received</span>
             <div className="mr-overview-bar-container">
               <div 
                 className="mr-overview-bar mr-overview-bar-orange"
-                style={{ width: `${Math.min((programSummary.topMedications.length / 50) * 100, 100)}%` }}
+                style={{ width: `${Math.min((childSummary.services.length / 10) * 100, 100)}%` }}
               >
                 <span className="mr-overview-value">
-                  {programSummary.topMedications}
+                  {childSummary.services.length}
                 </span>
               </div>
             </div>
@@ -71,10 +187,10 @@ const ProgramSummary = ({ programSummary }) => {
             <div className="mr-overview-bar-container">
               <div 
                 className="mr-overview-bar mr-overview-bar-red"
-                style={{ width: `${Math.min((programSummary.hospitalizations / 10) * 100, 100)}%` }}
+                style={{ width: `${Math.min((childSummary.hospitalizations / 5) * 100, 100)}%` }}
               >
                 <span className="mr-overview-value">
-                  {programSummary.hospitalizations}
+                  {childSummary.hospitalizations}
                 </span>
               </div>
             </div>
@@ -85,12 +201,12 @@ const ProgramSummary = ({ programSummary }) => {
       {/* BMI Distribution Section */}
       <div className="mr-section-block">
         <div className="mr-section-header">
-          <h3>BMI Distribution</h3>
+          <h3>BMI Status</h3>
           <span className="mr-section-badge mr-badge-bmi">Health Status</span>
         </div>
         <div className="mr-bmi-distribution">
-          {Object.entries(programSummary.bmiDistribution).map(
-            ([status, count]) => {
+          {Object.entries(bmiDistribution).length > 0 && totalBMI > 0 ? (
+            Object.entries(bmiDistribution).map(([status, count]) => {
               const percentage = totalBMI > 0 ? (count / totalBMI) * 100 : 0;
               const barClass = `mr-bmi-bar mr-bmi-bar-${status.toLowerCase().replace(/\s/g, "-")}`;
               
@@ -113,39 +229,51 @@ const ProgramSummary = ({ programSummary }) => {
                   </div>
                 </div>
               );
-            }
+            })
+          ) : (
+            <div className="mr-empty-state">
+              <p>No BMI data recorded for this patient</p>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Common Health Issues Section */}
+      {/* Health Issues Section */}
       <div className="mr-section-block">
         <div className="mr-section-header">
-          <h3>Common Health Issues</h3>
-          <span className="mr-section-badge mr-badge-health">Top Issues</span>
+          <h3>Patient Health Issues</h3>
+          <span className="mr-section-badge mr-badge-health">Recorded</span>
         </div>
         <div className="mr-two-columns">
           <div className="mr-health-column">
-            <h4>Common Symptoms</h4>
-            <ul className="mr-bullet-list">
-              {programSummary.commonSymptoms.map((symptom, i) => (
-                <li key={i}>
-                  <span className="mr-bullet-dot"></span>
-                  {symptom}
-                </li>
-              ))}
-            </ul>
+            <h4>Symptoms</h4>
+            {childSummary.symptoms.length > 0 ? (
+              <ul className="mr-bullet-list">
+                {childSummary.symptoms.map((symptom, i) => (
+                  <li key={i}>
+                    <span className="mr-bullet-dot"></span>
+                    {symptom}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mr-no-data">No symptoms recorded</p>
+            )}
           </div>
           <div className="mr-health-column">
-            <h4>Common Diagnoses</h4>
-            <ul className="mr-bullet-list">
-              {programSummary.commonDiagnoses.map((diagnosis, i) => (
-                <li key={i}>
-                  <span className="mr-bullet-dot"></span>
-                  {diagnosis}
-                </li>
-              ))}
-            </ul>
+            <h4>Diagnoses</h4>
+            {childSummary.diagnoses.length > 0 ? (
+              <ul className="mr-bullet-list">
+                {childSummary.diagnoses.map((diagnosis, i) => (
+                  <li key={i}>
+                    <span className="mr-bullet-dot"></span>
+                    {diagnosis}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mr-no-data">No diagnoses recorded</p>
+            )}
           </div>
         </div>
       </div>
