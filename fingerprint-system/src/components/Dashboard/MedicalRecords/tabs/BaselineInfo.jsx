@@ -71,7 +71,7 @@ const BaselineInfo = ({
           className="mr-btn mr-btn-primary"
           onClick={saveBaselineInfo}
         >
-          Save Baseline Info
+          Next
         </button>
       </div>
     </div>

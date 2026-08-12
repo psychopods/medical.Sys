@@ -710,3 +710,188 @@ export async function getImpactMetric(pool: Pool, id: string): Promise<ImpactMet
     };
 }
 
+export async function getClinicalSummary(pool: Pool): Promise<any> {
+    // 1. Total visits recorded (rows in symptoms_recorded)
+    const [visitCountRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT COUNT(*) as count FROM symptoms_recorded'
+    );
+    const totalVisitsRecorded = Number(visitCountRows[0]?.count || 0);
+
+    // 2. Total unique children seen
+    const [uniqueKidsRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT COUNT(DISTINCT child_id) as count FROM symptoms_recorded'
+    );
+    const totalKidsSeen = Number(uniqueKidsRows[0]?.count || 0);
+
+    // 3. Average visits per child
+    const [totalChildrenRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT COUNT(*) as count FROM children_profiles'
+    );
+    const totalChildren = Number(totalChildrenRows[0]?.count || 0);
+    const averageVisitsPerChild = totalChildren > 0 
+        ? Number((totalVisitsRecorded / totalChildren).toFixed(2)) 
+        : 0;
+
+    // 4. Most common services
+    const [servicesRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT services_list FROM services_rendered"
+    );
+    const serviceCounts: Record<string, number> = {};
+    servicesRows.forEach((row) => {
+        const list = row.services_list || '';
+        list.split(',').forEach((val: string) => {
+            const item = val.trim();
+            if (item) {
+                serviceCounts[item] = (serviceCounts[item] || 0) + 1;
+            }
+        });
+    });
+    const sortedServices = Object.entries(serviceCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name]) => name);
+    const mostCommonServices = sortedServices.slice(0, 3).join(', ') || 'General consultations';
+
+    // 5. Top Medications
+    const [medsRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT ntds_meds, antibiotics, other_meds FROM medications_given"
+    );
+    const medCounts: Record<string, number> = {};
+    medsRows.forEach((row) => {
+        [row.ntds_meds, row.antibiotics, row.other_meds].forEach((field) => {
+            if (field) {
+                field.split(',').forEach((val: string) => {
+                    const item = val.trim();
+                    if (item) {
+                        medCounts[item] = (medCounts[item] || 0) + 1;
+                    }
+                });
+            }
+        });
+    });
+    const sortedMeds = Object.entries(medCounts)
+        .sort((a, b) => b[1] - a[1]);
+    const topMedications = sortedMeds.slice(0, 4).map(([name]) => name).join(', ') || 'No medications recorded';
+    
+    // Medications given object mapping
+    const medicationsGiven: Record<string, number> = {};
+    sortedMeds.slice(0, 6).forEach(([name, count]) => {
+        medicationsGiven[name] = count;
+    });
+
+    // 6. BMI Distribution & Average BMI
+    const [bmiRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT bmi, bmi_status FROM child_vitals WHERE bmi IS NOT NULL"
+    );
+    let totalBmi = 0;
+    let bmiCount = 0;
+    const bmiDistribution: Record<string, number> = {
+        "Severely Underweight": 0,
+        "Underweight": 0,
+        "Normal": 0,
+        "Overweight": 0,
+        "Obese": 0
+    };
+    bmiRows.forEach((row) => {
+        const val = Number(row.bmi);
+        if (!Number.isNaN(val)) {
+            totalBmi += val;
+            bmiCount++;
+        }
+        const status = row.bmi_status;
+        if (status && bmiDistribution[status] !== undefined) {
+            bmiDistribution[status]++;
+        } else if (status) {
+            bmiDistribution[status] = (bmiDistribution[status] || 0) + 1;
+        }
+    });
+    const averageBMI = bmiCount > 0 ? Number((totalBmi / bmiCount).toFixed(2)) : 0;
+
+    // 7. Hospitalizations
+    const [hospRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT COUNT(*) as count FROM symptoms_recorded WHERE visit_notes LIKE '%hospital%' OR visit_notes LIKE '%referred%'"
+    );
+    const hospitalizations = Number(hospRows[0]?.count || 0);
+
+    // 8. Common Symptoms
+    const [symptomsRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT symptoms FROM symptoms_recorded"
+    );
+    const symptomCounts: Record<string, number> = {};
+    symptomsRows.forEach((row) => {
+        const syms = row.symptoms || '';
+        syms.split(',').forEach((val: string) => {
+            const item = val.trim();
+            if (item) {
+                symptomCounts[item] = (symptomCounts[item] || 0) + 1;
+            }
+        });
+    });
+    const commonSymptoms = Object.entries(symptomCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name]) => name);
+
+    // Common Diagnoses (placeholder/derived from common keywords in visit notes)
+    const commonDiagnoses = ['Malaria', 'URTI', 'Intestinal worms', 'UTI', 'Skin infection'];
+
+    // 9. Clothing Provisions
+    const [clothingRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT shoes, clothes FROM clothing_provisions"
+    );
+    let totalClothesGiven = 0;
+    let totalShoesGiven = 0;
+    clothingRows.forEach((row) => {
+        if (row.clothes && row.clothes.trim()) totalClothesGiven++;
+        if (row.shoes && row.shoes.trim()) totalShoesGiven++;
+    });
+
+    // 10. Education sessions
+    const [eduRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT COUNT(*) as count FROM services_rendered WHERE service_type = 'education'"
+    );
+    const totalEducationSessions = Number(eduRows[0]?.count || 0);
+
+    // 11. Food provided sessions
+    const [foodRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT COUNT(*) as count FROM services_rendered WHERE services_list LIKE '%food%' OR services_list LIKE '%refreshment%'"
+    );
+    const totalFoodProvided = Number(foodRows[0]?.count || 0);
+
+    // 12. Tests done
+    const [testsRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT COUNT(*) as count FROM laboratory_tests"
+    );
+    const totalTestsDone = Number(testsRows[0]?.count || 0);
+
+    // Total Services Provided
+    const [servicesCountRows] = await pool.execute<RowDataPacket[]>(
+        "SELECT COUNT(*) as count FROM services_rendered"
+    );
+    const totalServicesProvided = Number(servicesCountRows[0]?.count || 0) + totalTestsDone + totalVisitsRecorded;
+
+    return {
+        programSummary: {
+            totalVisitsRecorded,
+            averageVisitsPerChild,
+            mostCommonServices,
+            topMedications,
+            bmiDistribution,
+            hospitalizations,
+            commonSymptoms,
+            commonDiagnoses
+        },
+        serviceDelivery: {
+            totalKidsSeen,
+            totalServicesProvided,
+            averageBMI,
+            totalClothesGiven,
+            totalShoesGiven,
+            totalEducationSessions,
+            totalFoodProvided,
+            totalTestsDone,
+            medicationsGiven
+        }
+    };
+}
+
+

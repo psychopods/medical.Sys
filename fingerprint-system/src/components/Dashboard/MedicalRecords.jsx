@@ -247,8 +247,8 @@ const MedicalRecords = () => {
   });
 
   const [programSummary, setProgramSummary] = useState({
-    totalVisitsRecorded: 1501,
-    averageVisitsPerChild: 3.02,
+    totalVisitsRecorded: 0,
+    averageVisitsPerChild: 0,
     mostCommonServices: "",
     topMedications: "",
     bmiDistribution: {},
@@ -273,103 +273,16 @@ const MedicalRecords = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Medical Services Options (Medications)
-  const medicationOptions = {
-    ntdsMeds: ["Albendazole", "Mebendazole", "Praziquantel", "Ivermectin", "Levamisole"],
-    antibiotics: ["Amoxicillin", "Ampiclox", "Ciprofloxacillin", "Co-trimoxazole tab", "Erythromycin", "Doxycycline"],
-    otherMeds: [
-      "Paracetamol",
-      "Cetirizine",
-      "Dicflofenac gel",
-      "Artemether",
-      "Diclofenac tab",
-      "Clotrimazole cream",
-      "Griseofulvin tab",
-      "Ibuprofen tab",
-      "ALU tabs",
-      "Vitamin B complex",
-      "Skyderm cream",
-      "Ferrous",
-      "Piriton",
-      "Omeprazole",
-      "Salbutamol",
-      "Praziquantel",
-      "Salimia liniment",
-      "Cough mixture",
-      "Prednisolone",
-      "Dexan",
-      "Dexaneomycin eye & ear drop",
-      "Gentamycin eye & ear drop"
-    ],
-  };
-
-  // Test Types Options
-  const testTypesOptions = [
-    "H. Pylori (-)",
-    "H. Pylori (+)",
-    "Malaria (-)",
-    "Malaria (+)",
-    "HIV (-)",
-    "HIV (+)",
-    "Urinalysis (normal)",
-    "Urinalysis (abnormal)",
-    "Hb (normal)",
-    "Hb (abnormal)",
-    "VDRL (-)",
-    "VDRL (+)",
-    "Stool (normal)",
-    "Stool (helminthes)",
-    "Stool (amoebiasis)",
-    "Widal test (normal)",
-    "Widal test (abnormal)",
-  ];
-
-  const testResultOptions = [
-    "H. Pylori (-)",
-    "H. Pylori (+)",
-    "Malaria (-)",
-    "Malaria (+)",
-    "HIV (-)",
-    "HIV (+)",
-    "Urinalysis (normal)",
-    "Urinalysis (abnormal)",
-    "Hb (normal)",
-    "Hb (abnormal)",
-    "VDRL (-)",
-    "VDRL (+)",
-    "Stool (normal)",
-    "Stool (helminthes)",
-    "Stool (amoebiasis)",
-    "Widal test (normal)",
-    "Widal test (abnormal)",
-  ];
-
-  // Procedures Options
-  const procedureOptions = [
-    "Wound Dressing",
-    "Suturing",
-    "Incision and Drainage",
-    "Minor Surgery",
-    "Casting",
-    "Splinting",
-    "Catheterization",
-    "IV Cannulation",
-    "Blood Draw",
-    "Immunization",
-    "First Aid",
-  ];
-
-  // Social Services Options
-  const educationOptions = [
-    "Health Education",
-    "Hygiene Education",
-    "Nutrition Education",
-    "STI/HIV Awareness",
-    "Drug Abuse Prevention",
-    "Life Skills",
-    "Water Safety",
-    "Sanitation Education",
-  ];
+  // Medical Services & Social Options (Fetched dynamically)
+  const [medicationOptions, setMedicationOptions] = useState({
+    ntdsMeds: [],
+    antibiotics: [],
+    otherMeds: [],
+  });
+  const [testTypesOptions, setTestTypesOptions] = useState([]);
+  const [testResultOptions, setTestResultOptions] = useState([]);
+  const [procedureOptions, setProcedureOptions] = useState([]);
+  const [educationOptions, setEducationOptions] = useState([]);
 
   useEffect(() => {
     const unsubscribeSync = api.registerSyncListener(setSyncState);
@@ -458,6 +371,12 @@ const MedicalRecords = () => {
     setFilteredPatients(filtered);
   }, [allPatients]);
 
+  const getLocationName = useCallback((locationId) => {
+    const locations = JSON.parse(localStorage.getItem("locations") || "[]");
+    const location = locations.find((loc) => loc.id === locationId);
+    return location ? location.name : locationId || "";
+  }, []);
+
   const handleSelectPatient = useCallback((selectedPatient) => {
     const patientData = {
       id: selectedPatient.id,
@@ -482,7 +401,7 @@ const MedicalRecords = () => {
       fullName: selectedPatient.fullName || "",
       gender: selectedPatient.gender || "",
       age: calculateAge(selectedPatient.estimatedBirthYear),
-      location: selectedPatient.locationName || selectedPatient.primaryLocationId || "",
+      location: selectedPatient.locationName || getLocationName(selectedPatient.primaryLocationId) || "",
     });
     
     setShowPatientSelector(false);
@@ -493,7 +412,7 @@ const MedicalRecords = () => {
     }
     
     showToast(`Selected patient: ${selectedPatient.fullName}`, "success");
-  }, [baselineData]);
+  }, [baselineData, getLocationName]);
 
   useEffect(() => {
     const storedUser =
@@ -513,7 +432,7 @@ const MedicalRecords = () => {
         fullName: childData.fullName || "",
         gender: childData.gender || "",
         age: calculateAge(childData.estimatedBirthYear),
-        location: childData.locationName || childData.primaryLocationId || "",
+        location: childData.locationName || getLocationName(childData.primaryLocationId) || "",
       });
       fetchAllRecords(childData.id);
       setLoading(false);
@@ -529,7 +448,7 @@ const MedicalRecords = () => {
           gender: parsedChild.gender || "",
           age: calculateAge(parsedChild.estimatedBirthYear),
           location:
-            parsedChild.locationName || parsedChild.primaryLocationId || "",
+            parsedChild.locationName || getLocationName(parsedChild.primaryLocationId) || "",
         });
         fetchAllRecords(parsedChild.id);
         setLoading(false);
@@ -543,61 +462,35 @@ const MedicalRecords = () => {
       }
     }
 
-    loadProgramSummary();
-    loadServiceDelivery();
+    loadClinicalAnalytics();
+    loadClinicalOptions();
   }, [navigate, location]);
 
-  const loadProgramSummary = () => {
-    setProgramSummary({
-      totalVisitsRecorded: 1501,
-      averageVisitsPerChild: 3.02,
-      mostCommonServices:
-        "Malaria testing, STI education, Counseling on drug abuse",
-      topMedications: "Albendazole, Mebendazole, Metronidazole, Praziquantel",
-      bmiDistribution: {
-        "Severely Underweight": 3,
-        Underweight: 8,
-        Normal: 12,
-        Overweight: 2,
-        Obese: 1,
-      },
-      hospitalizations: 0,
-      commonSymptoms: [
-        "Fever",
-        "Cough",
-        "Abdominal pain",
-        "Headache",
-        "Diarrhea",
-      ],
-      commonDiagnoses: [
-        "Malaria",
-        "URTI",
-        "Intestinal worms",
-        "UTI",
-        "Skin infection",
-      ],
-    });
+  const loadClinicalAnalytics = async () => {
+    try {
+      const summaryData = await api.getClinicalSummary();
+      if (summaryData && summaryData.programSummary && summaryData.serviceDelivery) {
+        setProgramSummary(summaryData.programSummary);
+        setServiceDelivery(summaryData.serviceDelivery);
+      }
+    } catch (err) {
+      console.warn("Failed to load clinical analytics from API:", err);
+    }
   };
 
-  const loadServiceDelivery = () => {
-    setServiceDelivery({
-      totalKidsSeen: 623,
-      totalServicesProvided: 1432,
-      averageBMI: 18.45,
-      totalClothesGiven: 42,
-      totalShoesGiven: 315,
-      totalEducationSessions: 28,
-      totalFoodProvided: 187,
-      totalTestsDone: 342,
-      medicationsGiven: {
-        Albendazole: 127,
-        Mebendazole: 89,
-        Metronidazole: 45,
-        Praziquantel: 23,
-        Amoxicillin: 156,
-        Ciprofloxacin: 67,
-      },
-    });
+  const loadClinicalOptions = async () => {
+    try {
+      const options = await api.getClinicalOptions();
+      if (options) {
+        if (options.medicationOptions) setMedicationOptions(options.medicationOptions);
+        if (options.testTypesOptions) setTestTypesOptions(options.testTypesOptions);
+        if (options.testResultOptions) setTestResultOptions(options.testResultOptions);
+        if (options.procedureOptions) setProcedureOptions(options.procedureOptions);
+        if (options.educationOptions) setEducationOptions(options.educationOptions);
+      }
+    } catch (err) {
+      console.warn("Failed to load clinical options:", err);
+    }
   };
 
   const getAuthHeaders = () => {
@@ -609,11 +502,7 @@ const MedicalRecords = () => {
     };
   };
 
-  const getLocationName = (locationId) => {
-    const locations = JSON.parse(localStorage.getItem("locations") || "[]");
-    const location = locations.find((loc) => loc.id === locationId);
-    return location ? location.name : locationId || "";
-  };
+
 
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -680,7 +569,14 @@ const MedicalRecords = () => {
     }
   };
 
-  // Save functions
+  // Save functions & Tab transitions
+  const navigateToNextTab = (currentTabId) => {
+    const currentIndex = tabs.findIndex(tab => tab.id === currentTabId);
+    if (currentIndex !== -1 && currentIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentIndex + 1].id);
+    }
+  };
+
   const saveBaselineInfo = async () => {
     if (!child) {
       showToast("Please select a patient first", "error");
@@ -694,6 +590,7 @@ const MedicalRecords = () => {
         recordedByName: getUserDisplayName(),
       });
       showToast("Baseline information saved successfully!", "success");
+      navigateToNextTab("baseline");
     } catch (error) {
       console.error("Error saving baseline:", error);
       showToast("Failed to save baseline information", "error");
@@ -709,7 +606,7 @@ const MedicalRecords = () => {
     const bmiStatus = getBMIStatus(bmi);
 
     try {
-      const result = await api.saveVitals(child.id, {
+      await api.saveVitals(child.id, {
         ...vitalsData,
         bmi,
         bmiStatus,
@@ -725,6 +622,7 @@ const MedicalRecords = () => {
         bmiStatus: "",
         date: new Date().toISOString().split("T")[0],
       });
+      navigateToNextTab("vitals");
     } catch (error) {
       console.error("Error saving vitals:", error);
       showToast("Failed to save vitals", "error");
@@ -737,6 +635,7 @@ const MedicalRecords = () => {
       return;
     }
     try {
+      // 1. Save services_rendered record
       await api.saveMedicalServices(child.id, {
         medications: medicalServicesData.medications,
         tests: medicalServicesData.tests,
@@ -745,6 +644,41 @@ const MedicalRecords = () => {
         recordedBy: user?.id,
         recordedByName: getUserDisplayName(),
       });
+
+      // 2. Save medications_given record if medication was selected
+      const ntds = medicalServicesData.medications?.ntdsMeds || [];
+      const antib = medicalServicesData.medications?.antibiotics || [];
+      const other = medicalServicesData.medications?.otherMeds || [];
+      if (ntds.length > 0 || antib.length > 0 || other.length > 0) {
+        await api.saveMedication(child.id, {
+          ntdsMeds: ntds.join(', '),
+          antibiotics: antib.join(', '),
+          otherMeds: other.join(', '),
+          dateGiven: medicalServicesData.date,
+          recordedBy: user?.id,
+          recordedByName: getUserDisplayName(),
+          version: 1
+        });
+      }
+
+      // 3. Save laboratory_tests record if test type was selected
+      const testTypes = medicalServicesData.tests?.testTypes || [];
+      const testResults = medicalServicesData.tests?.results || [];
+      const testNotes = medicalServicesData.tests?.notes || '';
+      if (testTypes.length > 0) {
+        for (const testType of testTypes) {
+          await api.saveTest(child.id, {
+            testType,
+            result: testResults.join(', ') || 'Pending',
+            notes: testNotes,
+            date: medicalServicesData.date,
+            recordedBy: user?.id,
+            recordedByName: getUserDisplayName(),
+            version: 1
+          });
+        }
+      }
+
       showToast("Medical services saved successfully!", "success");
       setMedicalServicesData({
         medications: {
@@ -760,6 +694,7 @@ const MedicalRecords = () => {
         procedures: [],
         date: new Date().toISOString().split("T")[0],
       });
+      navigateToNextTab("medical-services");
     } catch (error) {
       console.error("Error saving medical services:", error);
       showToast("Failed to save medical services", "error");
@@ -772,6 +707,7 @@ const MedicalRecords = () => {
       return;
     }
     try {
+      // 1. Save services_rendered record
       await api.saveSocialServices(child.id, {
         clothing: socialServicesData.clothing,
         education: socialServicesData.education,
@@ -782,6 +718,21 @@ const MedicalRecords = () => {
         recordedBy: user?.id,
         recordedByName: getUserDisplayName(),
       });
+
+      // 2. Save clothing_provisions record if clothes/shoes details exist
+      const clothesSize = socialServicesData.clothing?.clothes || '';
+      const shoesSize = socialServicesData.clothing?.shoes || '';
+      if (clothesSize || shoesSize) {
+        await api.saveClothing(child.id, {
+          clothes: clothesSize,
+          shoes: shoesSize,
+          date: socialServicesData.date,
+          recordedBy: user?.id,
+          recordedByName: getUserDisplayName(),
+          version: 1
+        });
+      }
+
       showToast("Social services saved successfully!", "success");
       setSocialServicesData({
         clothing: {
@@ -795,6 +746,7 @@ const MedicalRecords = () => {
         otherServices: "",
         date: new Date().toISOString().split("T")[0],
       });
+      navigateToNextTab("social-services");
     } catch (error) {
       console.error("Error saving social services:", error);
       showToast("Failed to save social services", "error");
@@ -828,6 +780,7 @@ const MedicalRecords = () => {
         timeHospitalized: "",
         date: new Date().toISOString().split("T")[0],
       });
+      navigateToNextTab("others");
     } catch (error) {
       console.error("Error saving assessment:", error);
       showToast("Failed to save assessment", "error");

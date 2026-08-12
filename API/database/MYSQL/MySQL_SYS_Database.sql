@@ -396,4 +396,113 @@ CREATE TABLE `clothing_provisions` (
     CONSTRAINT `fk_clothing_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `lookup_medications` (
+    `id` CHAR(36) NOT NULL,
+    `name` VARCHAR(100) NOT NULL UNIQUE,
+    `category` VARCHAR(50) NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `lookup_tests` (
+    `id` CHAR(36) NOT NULL,
+    `name` VARCHAR(100) NOT NULL UNIQUE,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `lookup_procedures` (
+    `id` CHAR(36) NOT NULL,
+    `name` VARCHAR(100) NOT NULL UNIQUE,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `lookup_education` (
+    `id` CHAR(36) NOT NULL,
+    `name` VARCHAR(100) NOT NULL UNIQUE,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seeds for Medications
+INSERT INTO `lookup_medications` (`id`, `name`, `category`) VALUES
+('e001878b-3e5f-11ed-b878-0242ac120002', 'Albendazole', 'ntdsMeds'),
+('e00189d9-3e5f-11ed-b878-0242ac120002', 'Mebendazole', 'ntdsMeds'),
+('e0018afc-3e5f-11ed-b878-0242ac120002', 'Praziquantel', 'ntdsMeds'),
+('e0018bf0-3e5f-11ed-b878-0242ac120002', 'Ivermectin', 'ntdsMeds'),
+('e0018cd6-3e5f-11ed-b878-0242ac120002', 'Levamisole', 'ntdsMeds'),
+('e0018d9e-3e5f-11ed-b878-0242ac120002', 'Amoxicillin', 'antibiotics'),
+('e0018e66-3e5f-11ed-b878-0242ac120002', 'Ampiclox', 'antibiotics'),
+('e0018f2e-3e5f-11ed-b878-0242ac120002', 'Ciprofloxacillin', 'antibiotics'),
+('e00190fa-3e5f-11ed-b878-0242ac120002', 'Co-trimoxazole tab', 'antibiotics'),
+('e00191c2-3e5f-11ed-b878-0242ac120002', 'Erythromycin', 'antibiotics'),
+('e001928a-3e5f-11ed-b878-0242ac120002', 'Doxycycline', 'antibiotics'),
+('e0019352-3e5f-11ed-b878-0242ac120002', 'Paracetamol', 'otherMeds'),
+('e001941a-3e5f-11ed-b878-0242ac120002', 'Cetirizine', 'otherMeds'),
+('e00194e2-3e5f-11ed-b878-0242ac120002', 'Dicflofenac gel', 'otherMeds'),
+('e00195aa-3e5f-11ed-b878-0242ac120002', 'Artemether', 'otherMeds'),
+('e0019672-3e5f-11ed-b878-0242ac120002', 'Diclofenac tab', 'otherMeds'),
+('e001973a-3e5f-11ed-b878-0242ac120002', 'Clotrimazole cream', 'otherMeds'),
+('e0019802-3e5f-11ed-b878-0242ac120002', 'Griseofulvin tab', 'otherMeds'),
+('e00198ca-3e5f-11ed-b878-0242ac120002', 'Ibuprofen tab', 'otherMeds'),
+('e00199ba-3e5f-11ed-b878-0242ac120002', 'ALU tabs', 'otherMeds'),
+('e0019a78-3e5f-11ed-b878-0242ac120002', 'Vitamin B complex', 'otherMeds'),
+('e0019b36-3e5f-11ed-b878-0242ac120002', 'Skyderm cream', 'otherMeds'),
+('e0019bfe-3e5f-11ed-b878-0242ac120002', 'Ferrous', 'otherMeds'),
+('e0019cc6-3e5f-11ed-b878-0242ac120002', 'Piriton', 'otherMeds'),
+('e0019d8e-3e5f-11ed-b878-0242ac120002', 'Omeprazole', 'otherMeds'),
+('e0019e56-3e5f-11ed-b878-0242ac120002', 'Salbutamol', 'otherMeds'),
+('e0019f1e-3e5f-11ed-b878-0242ac120002', 'Salimia liniment', 'otherMeds'),
+('e0019fe6-3e5f-11ed-b878-0242ac120002', 'Cough mixture', 'otherMeds'),
+('e001a0ae-3e5f-11ed-b878-0242ac120002', 'Prednisolone', 'otherMeds'),
+('e001a180-3e5f-11ed-b878-0242ac120002', 'Dexan', 'otherMeds'),
+('e001a248-3e5f-11ed-b878-0242ac120002', 'Dexaneomycin eye & ear drop', 'otherMeds'),
+('e001a310-3e5f-11ed-b878-0242ac120002', 'Gentamycin eye & ear drop', 'otherMeds')
+ON DUPLICATE KEY UPDATE category=VALUES(category);
+
+-- Seeds for Tests
+INSERT INTO `lookup_tests` (`id`, `name`) VALUES
+('e001a3d8-3e5f-11ed-b878-0242ac120002', 'H. Pylori (-)'),
+('e001a4a0-3e5f-11ed-b878-0242ac120002', 'H. Pylori (+)'),
+('e001a568-3e5f-11ed-b878-0242ac120002', 'Malaria (-)'),
+('e001a630-3e5f-11ed-b878-0242ac120002', 'Malaria (+)'),
+('e001a6f8-3e5f-11ed-b878-0242ac120002', 'HIV (-)'),
+('e001a7c0-3e5f-11ed-b878-0242ac120002', 'HIV (+)'),
+('e001a888-3e5f-11ed-b878-0242ac120002', 'Urinalysis (normal)'),
+('e001a95a-3e5f-11ed-b878-0242ac120002', 'Urinalysis (abnormal)'),
+('e001aa22-3e5f-11ed-b878-0242ac120002', 'Hb (normal)'),
+('e001aaea-3e5f-11ed-b878-0242ac120002', 'Hb (abnormal)'),
+('e001abb2-3e5f-11ed-b878-0242ac120002', 'VDRL (-)'),
+('e001ac7a-3e5f-11ed-b878-0242ac120002', 'VDRL (+)'),
+('e001ad42-3e5f-11ed-b878-0242ac120002', 'Stool (normal)'),
+('e001ae0a-3e5f-11ed-b878-0242ac120002', 'Stool (helminthes)'),
+('e001aed2-3e5f-11ed-b878-0242ac120002', 'Stool (amoebiasis)'),
+('e001af9a-3e5f-11ed-b878-0242ac120002', 'Widal test (normal)'),
+('e001b06c-3e5f-11ed-b878-0242ac120002', 'Widal test (abnormal)')
+ON DUPLICATE KEY UPDATE name=VALUES(name);
+
+-- Seeds for Procedures
+INSERT INTO `lookup_procedures` (`id`, `name`) VALUES
+('e001b134-3e5f-11ed-b878-0242ac120002', 'Wound Dressing'),
+('e001b1fc-3e5f-11ed-b878-0242ac120002', 'Suturing'),
+('e001b2c4-3e5f-11ed-b878-0242ac120002', 'Incision and Drainage'),
+('e001b38c-3e5f-11ed-b878-0242ac120002', 'Minor Surgery'),
+('e001b45e-3e5f-11ed-b878-0242ac120002', 'Casting'),
+('e001b526-3e5f-11ed-b878-0242ac120002', 'Splinting'),
+('e001b5ee-3e5f-11ed-b878-0242ac120002', 'Catheterization'),
+('e001b6b6-3e5f-11ed-b878-0242ac120002', 'IV Cannulation'),
+('e001b77e-3e5f-11ed-b878-0242ac120002', 'Blood Draw'),
+('e001b846-3e5f-11ed-b878-0242ac120002', 'Immunization'),
+('e001b918-3e5f-11ed-b878-0242ac120002', 'First Aid')
+ON DUPLICATE KEY UPDATE name=VALUES(name);
+
+-- Seeds for Education
+INSERT INTO `lookup_education` (`id`, `name`) VALUES
+('e001b9e0-3e5f-11ed-b878-0242ac120002', 'Health Education'),
+('e001baa8-3e5f-11ed-b878-0242ac120002', 'Hygiene Education'),
+('e001bb7a-3e5f-11ed-b878-0242ac120002', 'Nutrition Education'),
+('e001bc4c-3e5f-11ed-b878-0242ac120002', 'STI/HIV Awareness'),
+('e001bd14-3e5f-11ed-b878-0242ac120002', 'Drug Abuse Prevention'),
+('e001bddc-3e5f-11ed-b878-0242ac120002', 'Life Skills'),
+('e001beae-3e5f-11ed-b878-0242ac120002', 'Water Safety'),
+('e001bf76-3e5f-11ed-b878-0242ac120002', 'Sanitation Education')
+ON DUPLICATE KEY UPDATE name=VALUES(name);
+
 

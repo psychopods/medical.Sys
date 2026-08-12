@@ -359,3 +359,24 @@ CREATE TABLE IF NOT EXISTS clothing_provisions (
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS lookup_medications (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    category TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS lookup_tests (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS lookup_procedures (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS lookup_education (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE
+);

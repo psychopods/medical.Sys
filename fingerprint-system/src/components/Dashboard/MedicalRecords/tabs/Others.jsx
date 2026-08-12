@@ -166,7 +166,7 @@ const Others = ({
           className="mr-btn mr-btn-primary"
           onClick={saveOthers}
         >
-          Save Assessment
+          Next
         </button>
       </div>
     </div>

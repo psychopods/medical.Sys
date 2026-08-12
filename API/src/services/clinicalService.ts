@@ -322,3 +322,41 @@ export async function getClothingHistory(pool: Pool, childId: string): Promise<a
         createdAt: row.created_at
     }));
 }
+
+export async function getClinicalOptions(pool: Pool): Promise<any> {
+    const [medsRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT id, name, category FROM lookup_medications ORDER BY name ASC'
+    );
+    const [testsRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT id, name FROM lookup_tests ORDER BY name ASC'
+    );
+    const [proceduresRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT id, name FROM lookup_procedures ORDER BY name ASC'
+    );
+    const [educationRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT id, name FROM lookup_education ORDER BY name ASC'
+    );
+
+    const medicationOptions: Record<string, string[]> = {
+        ntdsMeds: [],
+        antibiotics: [],
+        otherMeds: []
+    };
+
+    medsRows.forEach((row) => {
+        const cat = row.category;
+        if (medicationOptions[cat] !== undefined) {
+            medicationOptions[cat].push(row.name);
+        } else {
+            medicationOptions[cat] = [row.name];
+        }
+    });
+
+    return {
+        medicationOptions,
+        testTypesOptions: testsRows.map(row => row.name),
+        testResultOptions: testsRows.map(row => row.name),
+        procedureOptions: proceduresRows.map(row => row.name),
+        educationOptions: educationRows.map(row => row.name)
+    };
+}

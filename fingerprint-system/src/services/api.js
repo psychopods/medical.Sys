@@ -1118,7 +1118,15 @@ export async function getClothingHistory(childId) {
 // SERVICES
 export async function saveMedicalServices(childId, servicesData) {
   const id = servicesData.id || crypto.randomUUID();
-  const servicesList = Array.isArray(servicesData.services) ? servicesData.services.join(', ') : servicesData.services;
+  const meds = [
+    ...(servicesData.medications?.ntdsMeds || []),
+    ...(servicesData.medications?.antibiotics || []),
+    ...(servicesData.medications?.otherMeds || [])
+  ];
+  const tests = servicesData.tests?.testTypes || [];
+  const procedures = servicesData.procedures || [];
+  const allServices = [...meds, ...tests, ...procedures];
+  const servicesList = servicesData.services || (allServices.length > 0 ? allServices.join(', ') : 'Medical checkup');
   const isOnline = navigator.onLine;
 
   if (isOnline) {
@@ -1126,7 +1134,7 @@ export async function saveMedicalServices(childId, servicesData) {
       const response = await fetch(API_ENDPOINTS.medicalServices(childId), {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ id, services: servicesData.services, ...servicesData })
+        body: JSON.stringify({ id, services: servicesList, ...servicesData })
       });
       if (response.ok) {
         const result = await response.json();
@@ -1159,7 +1167,16 @@ export async function saveMedicalServices(childId, servicesData) {
 
 export async function saveSocialServices(childId, servicesData) {
   const id = servicesData.id || crypto.randomUUID();
-  const servicesList = Array.isArray(servicesData.services) ? servicesData.services.join(', ') : servicesData.services;
+  const socialItems = [];
+  if (servicesData.clothing?.clothes) socialItems.push(`Clothes size: ${servicesData.clothing.clothes}`);
+  if (servicesData.clothing?.shoes) socialItems.push(`Shoes size: ${servicesData.clothing.shoes}`);
+  if (servicesData.education && servicesData.education.length > 0) {
+    socialItems.push(`Education: ${servicesData.education.join(', ')}`);
+  }
+  if (servicesData.foodRefreshment) socialItems.push(`Food/Refreshment: ${servicesData.foodRefreshment}`);
+  if (servicesData.otherServices) socialItems.push(`Other: ${servicesData.otherServices}`);
+
+  const servicesList = servicesData.services || (socialItems.length > 0 ? socialItems.join(', ') : 'Social assistance');
   const isOnline = navigator.onLine;
 
   if (isOnline) {
@@ -1167,7 +1184,7 @@ export async function saveSocialServices(childId, servicesData) {
       const response = await fetch(API_ENDPOINTS.socialServices(childId), {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ id, services: servicesData.services, ...servicesData })
+        body: JSON.stringify({ id, services: servicesList, ...servicesData })
       });
       if (response.ok) {
         const result = await response.json();
@@ -3226,25 +3243,24 @@ export async function apiFetchMedicalServicesRecords(childId) {
   const isOnline = navigator.onLine;
   if (isOnline) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/medical-services/${childId}`, {
+      const response = await fetch(API_ENDPOINTS.services(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
         const data = await response.json();
         const records = Array.isArray(data) ? data : (data.records || []);
-        // Cache to SQLite
+        // Cache to SQLite services_rendered table
         for (const record of records) {
           if (record && record.id) {
             await executeRun(
-              `INSERT OR REPLACE INTO medical_services 
-              (id, child_id, medications, tests, procedures, date, recorded_by, recorded_by_name, version, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              `INSERT OR REPLACE INTO services_rendered 
+              (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
               [
                 record.id,
                 childId,
-                JSON.stringify(record.medications || {}),
-                JSON.stringify(record.tests || {}),
-                JSON.stringify(record.procedures || []),
+                record.serviceType || record.service_type || 'medical',
+                record.servicesList || record.services_list || '',
                 record.date || '',
                 record.recordedBy || record.recorded_by || null,
                 record.recordedByName || record.recorded_by_name || null,
@@ -3254,7 +3270,7 @@ export async function apiFetchMedicalServicesRecords(childId) {
           }
         }
         await saveDB();
-        return records;
+        return records.filter(r => (r.serviceType || r.service_type) === 'medical');
       }
     } catch (error) {
       console.warn('API: Failed to fetch medical services online, using SQLite.', error);
@@ -3263,13 +3279,12 @@ export async function apiFetchMedicalServicesRecords(childId) {
 
   // SQLite Fallback
   try {
-    const rows = await executeQuery('SELECT * FROM medical_services WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    const rows = await executeQuery("SELECT * FROM services_rendered WHERE child_id = ? AND service_type = 'medical' ORDER BY date DESC, created_at DESC", [childId]);
     return rows.map(row => ({
       id: row.id,
       childId: row.child_id,
-      medications: JSON.parse(row.medications || '{}'),
-      tests: JSON.parse(row.tests || '{}'),
-      procedures: JSON.parse(row.procedures || '[]'),
+      serviceType: row.service_type,
+      servicesList: row.services_list,
       date: row.date,
       recordedBy: row.recorded_by,
       recordedByName: row.recorded_by_name,
@@ -3289,27 +3304,24 @@ export async function apiFetchSocialServicesRecords(childId) {
   const isOnline = navigator.onLine;
   if (isOnline) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/social-services/${childId}`, {
+      const response = await fetch(API_ENDPOINTS.services(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
         const data = await response.json();
         const records = Array.isArray(data) ? data : (data.records || []);
-        // Cache to SQLite
+        // Cache to SQLite services_rendered table
         for (const record of records) {
           if (record && record.id) {
             await executeRun(
-              `INSERT OR REPLACE INTO social_services 
-              (id, child_id, clothing, education, food_refreshment, food_details, other_services, date, recorded_by, recorded_by_name, version, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              `INSERT OR REPLACE INTO services_rendered 
+              (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
               [
                 record.id,
                 childId,
-                JSON.stringify(record.clothing || {}),
-                JSON.stringify(record.education || []),
-                record.foodRefreshment || record.food_refreshment || '',
-                record.foodDetails || record.food_details || '',
-                record.otherServices || record.other_services || '',
+                record.serviceType || record.service_type || 'social',
+                record.servicesList || record.services_list || '',
                 record.date || '',
                 record.recordedBy || record.recorded_by || null,
                 record.recordedByName || record.recorded_by_name || null,
@@ -3319,7 +3331,7 @@ export async function apiFetchSocialServicesRecords(childId) {
           }
         }
         await saveDB();
-        return records;
+        return records.filter(r => (r.serviceType || r.service_type) === 'social');
       }
     } catch (error) {
       console.warn('API: Failed to fetch social services online, using SQLite.', error);
@@ -3328,15 +3340,12 @@ export async function apiFetchSocialServicesRecords(childId) {
 
   // SQLite Fallback
   try {
-    const rows = await executeQuery('SELECT * FROM social_services WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    const rows = await executeQuery("SELECT * FROM services_rendered WHERE child_id = ? AND service_type = 'social' ORDER BY date DESC, created_at DESC", [childId]);
     return rows.map(row => ({
       id: row.id,
       childId: row.child_id,
-      clothing: JSON.parse(row.clothing || '{}'),
-      education: JSON.parse(row.education || '[]'),
-      foodRefreshment: row.food_refreshment,
-      foodDetails: row.food_details,
-      otherServices: row.other_services,
+      serviceType: row.service_type,
+      servicesList: row.services_list,
       date: row.date,
       recordedBy: row.recorded_by,
       recordedByName: row.recorded_by_name,
@@ -3356,28 +3365,24 @@ export async function apiFetchOthersRecords(childId) {
   const isOnline = navigator.onLine;
   if (isOnline) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/others/${childId}`, {
+      const response = await fetch(API_ENDPOINTS.symptoms(childId), {
         headers: getAuthHeaders()
       });
       if (response.ok) {
         const data = await response.json();
         const records = Array.isArray(data) ? data : (data.records || []);
-        // Cache to SQLite
+        // Cache to SQLite symptoms_recorded table
         for (const record of records) {
           if (record && record.id) {
             await executeRun(
-              `INSERT OR REPLACE INTO others_records 
-              (id, child_id, symptoms, visit_notes, diagnosis, diagnosis_notes, hospitalized, time_hospitalized, date, recorded_by, recorded_by_name, version, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+              `INSERT OR REPLACE INTO symptoms_recorded 
+              (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
               [
                 record.id,
                 childId,
                 record.symptoms || '',
                 record.visitNotes || record.visit_notes || '',
-                record.diagnosis || '',
-                record.diagnosisNotes || record.diagnosis_notes || '',
-                record.hospitalized ? 1 : 0,
-                record.timeHospitalized || record.time_hospitalized || '',
                 record.date || '',
                 record.recordedBy || record.recorded_by || null,
                 record.recordedByName || record.recorded_by_name || null,
@@ -3396,16 +3401,12 @@ export async function apiFetchOthersRecords(childId) {
 
   // SQLite Fallback
   try {
-    const rows = await executeQuery('SELECT * FROM others_records WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    const rows = await executeQuery('SELECT * FROM symptoms_recorded WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
     return rows.map(row => ({
       id: row.id,
       childId: row.child_id,
       symptoms: row.symptoms,
       visitNotes: row.visit_notes,
-      diagnosis: row.diagnosis,
-      diagnosisNotes: row.diagnosis_notes,
-      hospitalized: row.hospitalized === 1,
-      timeHospitalized: row.time_hospitalized,
       date: row.date,
       recordedBy: row.recorded_by,
       recordedByName: row.recorded_by_name,
@@ -3422,17 +3423,13 @@ export async function saveOthers(childId, othersData) {
   const isOnline = navigator.onLine;
   const symptoms = othersData.symptoms || '';
   const visitNotes = othersData.visitNotes || '';
-  const diagnosis = othersData.diagnosis || '';
-  const diagnosisNotes = othersData.diagnosisNotes || '';
-  const hospitalized = othersData.hospitalized ? 1 : 0;
-  const timeHospitalized = othersData.timeHospitalized || '';
   const date = othersData.date || new Date().toISOString().split('T')[0];
   const recordedBy = othersData.recordedBy || null;
   const recordedByName = othersData.recordedByName || null;
 
   if (isOnline) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/others/${childId}`, {
+      const response = await fetch(API_ENDPOINTS.symptoms(childId), {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -3440,10 +3437,6 @@ export async function saveOthers(childId, othersData) {
           childId,
           symptoms,
           visitNotes,
-          diagnosis,
-          diagnosisNotes,
-          hospitalized,
-          timeHospitalized,
           date,
           recordedBy,
           recordedByName
@@ -3452,10 +3445,10 @@ export async function saveOthers(childId, othersData) {
       if (response.ok) {
         const result = await response.json();
         await executeRun(
-          `INSERT OR REPLACE INTO others_records 
-          (id, child_id, symptoms, visit_notes, diagnosis, diagnosis_notes, hospitalized, time_hospitalized, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
-          [id, childId, symptoms, visitNotes, diagnosis, diagnosisNotes, hospitalized, timeHospitalized, date, recordedBy, recordedByName]
+          `INSERT OR REPLACE INTO symptoms_recorded 
+          (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 'synced')`,
+          [id, childId, symptoms, visitNotes, date, recordedBy, recordedByName]
         );
         await saveDB();
         return result;
@@ -3468,10 +3461,10 @@ export async function saveOthers(childId, othersData) {
   // Offline: cache locally
   try {
     await executeRun(
-      `INSERT OR REPLACE INTO others_records 
-      (id, child_id, symptoms, visit_notes, diagnosis, diagnosis_notes, hospitalized, time_hospitalized, date, recorded_by, recorded_by_name, version, sync_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
-      [id, childId, symptoms, visitNotes, diagnosis, diagnosisNotes, hospitalized, timeHospitalized, date, recordedBy, recordedByName]
+      `INSERT OR REPLACE INTO symptoms_recorded 
+      (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'local_created')`,
+      [id, childId, symptoms, visitNotes, date, recordedBy, recordedByName]
     );
     await saveDB();
     return { success: true, message: 'Assessment saved offline', data: { id, childId, ...othersData } };
@@ -3498,4 +3491,82 @@ export async function getOnlineUsersCount() {
     }
   }
   return 1; // Default to 1 logged in user when offline
+}
+
+export async function getClinicalSummary() {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.clinicalSummary, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.warn("API: Failed to fetch clinical summary report from server...", error);
+    }
+  }
+  return null;
+}
+
+export async function getClinicalOptions() {
+  const isOnline = navigator.onLine;
+  if (isOnline) {
+    try {
+      const response = await fetch(API_ENDPOINTS.clinicalOptions, {
+        headers: getAuthHeaders()
+      });
+      if (response.ok) {
+        const options = await response.json();
+        
+        // Cache to SQLite tables
+        // 1. Medications
+        if (options.medicationOptions) {
+          const medCategories = ['ntdsMeds', 'antibiotics', 'otherMeds'];
+          for (const cat of medCategories) {
+            const list = options.medicationOptions[cat] || [];
+            for (const name of list) {
+              await executeRun(
+                "INSERT OR REPLACE INTO lookup_medications (id, name, category) VALUES (?, ?, ?)",
+                [crypto.randomUUID(), name, cat]
+              );
+            }
+          }
+        }
+        // 2. Tests
+        if (options.testTypesOptions) {
+          for (const name of options.testTypesOptions) {
+            await executeRun(
+              "INSERT OR REPLACE INTO lookup_tests (id, name) VALUES (?, ?)",
+              [crypto.randomUUID(), name]
+            );
+          }
+        }
+        // 3. Procedures
+        if (options.procedureOptions) {
+          for (const name of options.procedureOptions) {
+            await executeRun(
+              "INSERT OR REPLACE INTO lookup_procedures (id, name) VALUES (?, ?)",
+              [crypto.randomUUID(), name]
+            );
+          }
+        }
+        // 4. Education
+        if (options.educationOptions) {
+          for (const name of options.educationOptions) {
+            await executeRun(
+              "INSERT OR REPLACE INTO lookup_education (id, name) VALUES (?, ?)",
+              [crypto.randomUUID(), name]
+            );
+          }
+        }
+        
+        await saveDB();
+        return options;
+      }
+    } catch (error) {
+      console.warn("API: Failed to fetch clinical options online, trying cache...", error);
+    }
+  }
 }

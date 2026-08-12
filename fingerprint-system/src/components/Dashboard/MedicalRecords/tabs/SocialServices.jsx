@@ -265,7 +265,7 @@ const SocialServices = ({
           className="mr-btn mr-btn-primary"
           onClick={saveSocialServices}
         >
-          Save Social Services
+          Next
         </button>
       </div>
     </div>

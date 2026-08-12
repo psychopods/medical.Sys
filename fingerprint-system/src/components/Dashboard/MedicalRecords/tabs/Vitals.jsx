@@ -72,7 +72,7 @@ const Vitals = ({
       </div>
       <div className="mr-form-actions">
         <button className="mr-btn mr-btn-primary" onClick={saveVitals}>
-          Save Vitals
+          Next
         </button>
       </div>
     </div>

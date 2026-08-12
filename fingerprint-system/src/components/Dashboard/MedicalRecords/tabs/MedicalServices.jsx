@@ -478,7 +478,7 @@ const MedicalServices = ({
           className="mr-btn mr-btn-primary"
           onClick={saveMedicalServices}
         >
-          Save Medical Services
+          Next
         </button>
       </div>
     </div>

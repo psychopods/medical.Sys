@@ -435,5 +435,18 @@ export function createReportsRouter(pool: Pool): Router {
         }
     );
 
+    router.get(
+        '/clinical-summary',
+        requirePermission(pool, 'children:read'),
+        async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const summary = await reportsService.getClinicalSummary(pool);
+                response.status(200).json(summary);
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
     return router;
 }

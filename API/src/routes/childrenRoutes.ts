@@ -565,5 +565,18 @@ export function createChildrenRouter(pool: Pool): Router {
         }
     );
 
+    router.get(
+        '/clinical/options',
+        requirePermission(pool, 'children:read'),
+        async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const options = await clinicalService.getClinicalOptions(pool);
+                response.status(200).json(options);
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
     return router;
 }
