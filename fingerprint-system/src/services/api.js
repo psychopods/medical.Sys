@@ -3426,7 +3426,8 @@ export async function getOnlineUsersCount() {
       const response = await fetch(API_ENDPOINTS.onlineUsers, {
         headers: getAuthHeaders()
       });
-      if (response.ok) {
+      const contentType = response.headers.get("content-type");
+      if (response.ok && contentType && contentType.includes("application/json")) {
         const data = await response.json();
         return data.count || data.length || 0;
       }

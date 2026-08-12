@@ -303,7 +303,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
       const endTime = performance.now();
       const responseTime = Math.round(endTime - startTime);
       
-      if (response.ok) {
+      const contentType = response.headers.get("content-type");
+      if (response.ok && contentType && contentType.includes("application/json")) {
         const data = await response.json();
         setHealthStatus({
           status: data.status === 'ok' ? 'healthy' : 'degraded',
@@ -316,7 +317,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
           status: 'unhealthy',
           lastChecked: new Date().toISOString(),
           responseTime: responseTime,
-          error: `HTTP ${response.status}`
+          error: `HTTP ${response.status}${!response.ok ? '' : ': Invalid response format'}`
         });
       }
     } catch (error) {
@@ -564,7 +565,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         headers: getAuthHeaders()
       });
       
-      if (sessionsResponse.ok) {
+      const contentType = sessionsResponse.headers.get("content-type");
+      if (sessionsResponse.ok && contentType && contentType.includes("application/json")) {
         const sessionsData = await sessionsResponse.json();
         const sessions = sessionsData.sessions || sessionsData.data || [];
         const validSessions = cleanSessions(sessions);
@@ -619,7 +621,8 @@ const SuperUserDashboard = ({ user, onLogout }) => {
       let onlineUsers = [];
       let userSessions = {};
       
-      if (sessionsResponse.ok) {
+      const contentType = sessionsResponse.headers.get("content-type");
+      if (sessionsResponse.ok && contentType && contentType.includes("application/json")) {
         const sessionsData = await sessionsResponse.json();
         const sessions = sessionsData.sessions || sessionsData.data || [];
         const validSessions = cleanSessions(sessions);
