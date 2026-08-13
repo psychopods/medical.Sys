@@ -23,31 +23,48 @@ const ServiceDelivery = ({
     procedures: [],
   });
 
-  // State for vitals history
+  // State for clinical history logs from database
   const [vitalsHistory, setVitalsHistory] = useState([]);
+  const [medicationsHistory, setMedicationsHistory] = useState([]);
+  const [testsHistory, setTestsHistory] = useState([]);
+  const [servicesHistory, setServicesHistory] = useState([]);
+  const [clothingHistory, setClothingHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch vitals history for the child
-  const fetchVitalsHistory = async (childId) => {
+  // Fetch full clinical history for the child from database
+  const fetchFullHistory = async (childId) => {
     if (!childId) return;
     try {
       setLoading(true);
-      const records = await api.apiFetchVitalsRecords(childId);
-      setVitalsHistory(records || []);
+      const [vitals, meds, tests, srvs, clothing] = await Promise.all([
+        api.apiFetchVitalsRecords(childId),
+        api.apiFetchMedicationRecords(childId),
+        api.apiFetchTestsRecords(childId),
+        api.apiFetchServicesRecords(childId),
+        api.apiFetchClothingRecords(childId)
+      ]);
+      setVitalsHistory(vitals || []);
+      setMedicationsHistory(meds || []);
+      setTestsHistory(tests || []);
+      setServicesHistory(srvs || []);
+      setClothingHistory(clothing || []);
     } catch (error) {
-      console.error('Error fetching vitals history:', error);
-      setVitalsHistory([]);
+      console.error('Error fetching full history:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch vitals history when child changes
+  // Fetch history when child changes
   useEffect(() => {
     if (child && child.id) {
-      fetchVitalsHistory(child.id);
+      fetchFullHistory(child.id);
     } else {
       setVitalsHistory([]);
+      setMedicationsHistory([]);
+      setTestsHistory([]);
+      setServicesHistory([]);
+      setClothingHistory([]);
     }
   }, [child]);
 
@@ -55,89 +72,100 @@ const ServiceDelivery = ({
     if (child && child.id) {
       calculateChildServiceData();
     }
-  }, [child, medicalServicesData, socialServicesData, vitalsData, medicalRecords, vitalsHistory]);
+  }, [child, medicalRecords, vitalsHistory, medicationsHistory, testsHistory, servicesHistory, clothingHistory]);
 
   const calculateChildServiceData = () => {
     // Count total visits (medical records)
     const totalVisits = medicalRecords ? medicalRecords.length : 0;
 
-    // Count total services from medical services
     let totalServices = 0;
     let medications = {};
     let procedures = [];
 
-    // Process medical services
-    if (medicalServicesData) {
-      // Count medications
-      if (medicalServicesData.medications) {
-        const meds = [
-          ...(medicalServicesData.medications.ntdsMeds || []),
-          ...(medicalServicesData.medications.antibiotics || []),
-          ...(medicalServicesData.medications.otherMeds || [])
-        ];
+    // 1. Process medication history
+    if (medicationsHistory && medicationsHistory.length > 0) {
+      medicationsHistory.forEach(record => {
+        const meds = [];
+        if (record.ntdsMeds || record.ntds_meds) {
+          (record.ntdsMeds || record.ntds_meds).split(',').forEach(m => meds.push(m.trim()));
+        }
+        if (record.antibiotics) {
+          record.antibiotics.split(',').forEach(m => meds.push(m.trim()));
+        }
+        if (record.otherMeds || record.other_meds) {
+          (record.otherMeds || record.other_meds).split(',').forEach(m => meds.push(m.trim()));
+        }
         meds.forEach(med => {
           if (med) {
             medications[med] = (medications[med] || 0) + 1;
             totalServices++;
           }
         });
-      }
-
-      // Count tests
-      if (medicalServicesData.tests) {
-        const testTypes = medicalServicesData.tests.testTypes || [];
-        testTypes.forEach(test => {
-          if (test) {
-            totalServices++;
-          }
-        });
-        
-        // Count test results
-        const results = medicalServicesData.tests.results || [];
-        results.forEach(result => {
-          if (result) {
-            totalServices++;
-          }
-        });
-      }
-
-      // Count procedures
-      if (medicalServicesData.procedures) {
-        procedures = [...medicalServicesData.procedures];
-        totalServices += medicalServicesData.procedures.length;
-      }
+      });
     }
 
-    // Process social services
-    let totalClothes = 0;
-    let totalShoes = 0;
+    // 2. Process laboratory tests history
+    let totalTests = 0;
+    if (testsHistory && testsHistory.length > 0) {
+      totalTests = testsHistory.length;
+      totalServices += totalTests;
+    }
+
+    // 3. Process services rendered history (procedures, education, food refreshment)
     let totalEducation = 0;
     let totalFood = 0;
+    if (servicesHistory && servicesHistory.length > 0) {
+      servicesHistory.forEach(record => {
+        const type = record.serviceType || record.service_type || '';
+        const list = record.servicesList || record.services_list || '';
+        
+        if (type === 'education') {
+          totalEducation++;
+          totalServices++;
+        } else if (type === 'social') {
+          if (list.includes('Food/Refreshment')) {
+            totalFood++;
+            totalServices++;
+          }
+        } else if (type === 'medical') {
+          if (list.includes('Procedures:')) {
+            const procPart = list.split('Procedures:')[1];
+            if (procPart) {
+              procPart.split(',').forEach(p => {
+                const proc = p.trim();
+                if (proc) {
+                  procedures.push(proc);
+                  totalServices++;
+                }
+              });
+            }
+          }
+        }
+      });
+    }
+    procedures = [...new Set(procedures)];
 
-    if (socialServicesData) {
-      // Clothing
-      if (socialServicesData.clothing) {
-        totalClothes = parseInt(socialServicesData.clothing.clothes) || 0;
-        totalShoes = parseInt(socialServicesData.clothing.shoes) || 0;
-      }
-
-      // Education
-      if (socialServicesData.education) {
-        totalEducation = socialServicesData.education.length;
-      }
-
-      // Food
-      if (socialServicesData.foodRefreshment) {
-        totalFood = 1; // Count as 1 if provided
-      }
+    // 4. Process clothing provisions history
+    let totalClothes = 0;
+    let totalShoes = 0;
+    if (clothingHistory && clothingHistory.length > 0) {
+      clothingHistory.forEach(record => {
+        if (record.clothes) {
+          totalClothes += parseInt(record.clothes) || 1; // Fallback to 1 if size is a string size like "M"
+        }
+        if (record.shoes) {
+          totalShoes += parseInt(record.shoes) || 1; // Fallback to 1 if size is a string size like "35"
+        }
+        totalServices++;
+      });
     }
 
     // Get average BMI from ALL vitals history
     let averageBMI = 0;
     let bmiCount = 0;
     
-    // Use vitalsHistory if available
-    const recordsToUse = vitalsHistory && vitalsHistory.length > 0 ? vitalsHistory : (vitalsData && vitalsData.bmi ? [vitalsData] : []);
+    // Use vitalsHistory
+    const recordsToUse = vitalsHistory || [];
     
     if (recordsToUse && recordsToUse.length > 0) {
       recordsToUse.forEach(record => {
@@ -154,11 +182,6 @@ const ServiceDelivery = ({
       }
     }
 
-    // Count total tests from medical services
-    let totalTests = 0;
-    if (medicalServicesData && medicalServicesData.tests) {
-      totalTests = (medicalServicesData.tests.testTypes || []).length;
-    }
 
     setChildServiceData({
       totalVisits,

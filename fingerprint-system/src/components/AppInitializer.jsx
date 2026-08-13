@@ -66,7 +66,7 @@ const AppInitializer = ({ onLoadingComplete }) => {
           <div className="init-logo-animation">
             <img 
               src="/trhm.jpg" 
-              alt="TRHM - Street Medicine System" 
+              alt="Street Medicine System" 
               className="init-logo-image"
             />
           </div>

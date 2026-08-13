@@ -460,11 +460,32 @@ const NurseDashboard = ({ user, onLogout }) => {
     }
   };
 
+  const getLocationInitials = (locationId) => {
+    if (!locationId || !locations || locations.length === 0) return "LOC";
+    const locObj = locations.find((l) => l.id === locationId);
+    if (!locObj || !locObj.name) return "LOC";
+    const cleanName = locObj.name.replace(/[^a-zA-Z]/g, "").toUpperCase();
+    return cleanName.substring(0, 3).padEnd(3, "X");
+  };
+
   // Generate registration ID
-  const generateRegistrationId = async () => {
-    const currentYear = new Date().getFullYear();
-    const nextNumber = (childrenData.length + 1).toString().padStart(4, "0");
-    setGeneratedId(`KID-${currentYear}-${nextNumber}`);
+  const generateRegistrationId = async (locationId = formData.primaryLocationId) => {
+    try {
+      const locInitials = getLocationInitials(locationId);
+      const currentYear = new Date().getFullYear();
+      const yy = currentYear.toString().slice(-2);
+      
+      const childrenArray = await getChildren();
+      const count = childrenArray ? childrenArray.length : 0;
+      const seqNumber = (count + 1).toString().padStart(5, "0");
+      
+      setGeneratedId(`ST-${yy}-${locInitials}-${seqNumber}-TRHM`);
+    } catch (error) {
+      console.error("Error generating registration ID in NurseDashboard:", error);
+      const currentYear = new Date().getFullYear();
+      const yy = currentYear.toString().slice(-2);
+      setGeneratedId(`ST-${yy}-LOC-00001-TRHM`);
+    }
   };
 
   // Validate form
@@ -515,6 +536,9 @@ const NurseDashboard = ({ user, onLogout }) => {
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    if (name === "primaryLocationId") {
+      generateRegistrationId(value);
+    }
     if (formErrors[name]) {
       setFormErrors({ ...formErrors, [name]: "" });
     }

@@ -166,8 +166,8 @@ const BottomHeader = () => {
               />
             </div>
             <div className="bb-logo-text">
-              <span className="bb-logo-title">TRHM</span>
-              <span className="bb-logo-subtitle">Tanzania Rural Health Movement</span>
+              <span className="bb-logo-title">Street Medicine</span>
+              <span className="bb-logo-subtitle">Street Medicine Project</span>
             </div>
           </div>
           

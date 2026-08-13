@@ -182,7 +182,7 @@ const Layout = ({ children, user, onLogout }) => {
                 }}
               />
             </div>
-            {(!isMobile || (isMobile && isMobileSidebarOpen)) && <span className="logo-text">TRHM System</span>}
+            {(!isMobile || (isMobile && isMobileSidebarOpen)) && <span className="logo-text">Street Medicine</span>}
           </div>
           <button className="toggle-btn" onClick={toggleSidebar}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

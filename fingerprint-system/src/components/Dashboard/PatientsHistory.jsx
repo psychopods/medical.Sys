@@ -1,6 +1,6 @@
 // /src/components/Dashboard/PatientsHistory.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Layout from './Layout';
 import './PatientsHistory.css';
 import * as api from '../../services/api.js';
@@ -78,6 +78,7 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
   const [hasError, setHasError] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const refreshIntervalRef = useRef(null);
   const isRefreshingRef = useRef(false);
 
@@ -198,6 +199,174 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
     return currentYear - birthYear;
   };
 
+  // Parse structured visitNotes
+  const parseVisitNotes = (record) => {
+    let parsedNotes = { visitNotes: record.visitNotes || record.visit_notes || '', diagnosis: '', diagnosisNotes: '', hospitalized: false, timeHospitalized: '' };
+    try {
+      const rawNotes = record.visitNotes || record.visit_notes || '';
+      if (rawNotes.trim().startsWith('{') && rawNotes.trim().endsWith('}')) {
+        const parsed = JSON.parse(rawNotes);
+        if (parsed && typeof parsed === 'object') {
+          parsedNotes = {
+            visitNotes: parsed.visitNotes || '',
+            diagnosis: parsed.diagnosis || '',
+            diagnosisNotes: parsed.diagnosisNotes || '',
+            hospitalized: parsed.hospitalized || false,
+            timeHospitalized: parsed.timeHospitalized || ''
+          };
+        }
+      }
+    } catch (e) {
+      // fallback
+    }
+    return parsedNotes;
+  };
+
+  // Get unified chronological timeline records sorted newest-first by date
+  const getTimelineRecords = () => {
+    const combined = [];
+
+    // 1. Baselines
+    if (patientFullData.medicalRecords) {
+      patientFullData.medicalRecords.forEach(record => {
+        combined.push({
+          id: record.id || `mr-${Date.now()}-${Math.random()}`,
+          date: record.visitDate || record.createdAt || '',
+          type: 'baseline',
+          badgeClass: 'ph-badge-baseline',
+          badgeText: 'Baseline',
+          title: record.diagnosis || 'Routine checkup',
+          details: record.treatment || '',
+          notes: record.notes || '',
+          recordedBy: record.createdByName || record.recordedByName || 'Staff'
+        });
+      });
+    }
+
+    // 2. Vitals
+    if (patientFullData.vitals) {
+      patientFullData.vitals.forEach(record => {
+        combined.push({
+          id: record.id || `vitals-${Date.now()}-${Math.random()}`,
+          date: record.date || record.createdAt || '',
+          type: 'vitals',
+          badgeClass: 'ph-badge-vitals',
+          badgeText: 'Vitals',
+          title: `Weight: ${record.weight} kg | Height: ${record.height} cm`,
+          details: `BMI: ${record.bmi || 'N/A'} - ${record.bmiStatus || 'Unknown'}`,
+          notes: '',
+          recordedBy: record.recordedByName || 'Staff'
+        });
+      });
+    }
+
+    // 3. Medications
+    if (patientFullData.medications) {
+      patientFullData.medications.forEach(record => {
+        const meds = [];
+        if (record.ntdsMeds || record.ntds_meds) meds.push(`NTDs: ${record.ntdsMeds || record.ntds_meds}`);
+        if (record.antibiotics) meds.push(`Antibiotics: ${record.antibiotics}`);
+        if (record.otherMeds || record.other_meds) meds.push(`Other: ${record.otherMeds || record.other_meds}`);
+        if (meds.length > 0) {
+          combined.push({
+            id: record.id || `med-${Date.now()}-${Math.random()}`,
+            date: record.dateGiven || record.date_given || record.createdAt || '',
+            type: 'medication',
+            badgeClass: 'ph-badge-medication',
+            badgeText: 'Medication',
+            title: 'Medications Administered',
+            details: meds.join(' | '),
+            notes: '',
+            recordedBy: record.recordedByName || 'Staff'
+          });
+        }
+      });
+    }
+
+    // 4. Tests
+    if (patientFullData.tests) {
+      patientFullData.tests.forEach(record => {
+        combined.push({
+          id: record.id || `test-${Date.now()}-${Math.random()}`,
+          date: record.date || record.createdAt || '',
+          type: 'test',
+          badgeClass: 'ph-badge-test',
+          badgeText: 'Test',
+          title: `Test Type: ${record.testType || record.test_type || ''}`,
+          details: `Result: ${record.result || ''}`,
+          notes: '',
+          recordedBy: record.recordedByName || 'Staff'
+        });
+      });
+    }
+
+    // 5. Symptoms & Notes
+    if (patientFullData.symptoms) {
+      patientFullData.symptoms.forEach(record => {
+        const parsed = parseVisitNotes(record);
+        const parts = [];
+        if (record.symptoms) parts.push(`Symptoms: ${record.symptoms}`);
+        if (parsed.visitNotes) parts.push(`Notes: ${parsed.visitNotes}`);
+        if (parsed.diagnosisNotes) parts.push(`Diag Notes: ${parsed.diagnosisNotes}`);
+        
+        combined.push({
+          id: record.id || `symptom-${Date.now()}-${Math.random()}`,
+          date: record.date || record.createdAt || '',
+          type: 'symptom',
+          badgeClass: 'ph-badge-symptom',
+          badgeText: 'Symptom',
+          title: parsed.diagnosis || 'Assessment details',
+          details: parts.join(' | '),
+          notes: parsed.hospitalized ? `Hospitalized: ${parsed.timeHospitalized || 'Yes'}` : '',
+          recordedBy: record.recordedByName || 'Staff'
+        });
+      });
+    }
+
+    // 6. Clothing provisions
+    if (patientFullData.clothing) {
+      patientFullData.clothing.forEach(record => {
+        combined.push({
+          id: record.id || `clothing-${Date.now()}-${Math.random()}`,
+          date: record.date || record.createdAt || '',
+          type: 'clothing',
+          badgeClass: 'ph-badge-service',
+          badgeText: 'Clothing',
+          title: 'Clothing provisions',
+          details: `Shoes: ${record.shoes || 0} pairs | Clothes: ${record.clothes || 0} items`,
+          notes: '',
+          recordedBy: record.recordedByName || 'Staff'
+        });
+      });
+    }
+
+    // 7. Education history
+    if (patientFullData.education) {
+      patientFullData.education.forEach(record => {
+        combined.push({
+          id: record.id || `education-${Date.now()}-${Math.random()}`,
+          date: record.date || record.createdAt || '',
+          type: 'education',
+          badgeClass: 'ph-badge-service',
+          badgeText: 'Education',
+          title: 'Education session',
+          details: `Topics: ${Array.isArray(record.education) ? record.education.join(', ') : record.education || 'N/A'}`,
+          notes: '',
+          recordedBy: record.recordedByName || 'Staff'
+        });
+      });
+    }
+
+    // Sort by date (newest first)
+    combined.sort((a, b) => {
+      const dateA = new Date(a.date || 0);
+      const dateB = new Date(b.date || 0);
+      return dateB - dateA;
+    });
+
+    return combined;
+  };
+
   // Get location name
   const getLocationName = (locationId) => {
     const location = locations.find(loc => loc.id === locationId);
@@ -284,9 +453,56 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await fetchLocations();
-      await fetchPatients();
+      const locs = await fetchLocations();
+      const pts = await fetchPatients();
       setLoading(false);
+      
+      // Auto-select patient from router state if present
+      if (location.state && location.state.child) {
+        const passedChild = location.state.child;
+        const list = pts || [];
+        const found = list.find(p => p.id === passedChild.id) || passedChild;
+        
+        // Setup locationName on found object
+        if (locs && locs.length > 0 && found.primaryLocationId) {
+          const loc = locs.find(l => l.id === found.primaryLocationId);
+          if (loc) found.locationName = loc.name;
+        }
+        
+        setSelectedPatient(found);
+        setViewingRecords(true);
+        setShowPatientDetails(true);
+        setLoadingRecords(true);
+        
+        // Fetch historical records from database tables
+        try {
+          const [vitalsRecords, medicationsRecords, testsRecords, medicalServicesRecords, socialServicesRecords, clothingRecords, educationRecords] = await Promise.all([
+            api.apiFetchVitalsRecords(found.id).catch(() => []),
+            api.apiFetchMedicationRecords(found.id).catch(() => []),
+            api.apiFetchTestsRecords(found.id).catch(() => []),
+            api.apiFetchServicesRecords(found.id).then(r => (r || []).filter(item => item.serviceType === 'medical' || item.service_type === 'medical')).catch(() => []),
+            api.apiFetchServicesRecords(found.id).then(r => (r || []).filter(item => item.serviceType === 'social' || item.service_type === 'social')).catch(() => []),
+            api.apiFetchClothingRecords(found.id).catch(() => []),
+            api.apiFetchEducationHistory(found.id).catch(() => [])
+          ]);
+          setPatientFullData({
+            medicalRecords: [],
+            vitals: vitalsRecords || [],
+            medicalServices: medicalServicesRecords || [],
+            socialServices: socialServicesRecords || [],
+            others: [],
+            medications: medicationsRecords || [],
+            tests: testsRecords || [],
+            symptoms: [],
+            clothing: clothingRecords || [],
+            education: educationRecords || [],
+          });
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setLoadingRecords(false);
+        }
+      }
     };
     init();
 
@@ -493,237 +709,87 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
               </div>
             ) : patientFullData ? (
               <div className="ph-records-list-full">
-                {/* Medical Records */}
-                {patientFullData.medicalRecords && patientFullData.medicalRecords.length > 0 && (
-                  <div className="ph-record-section">
-                    <h4 className="ph-record-section-title">Medical Records</h4>
-                    {patientFullData.medicalRecords.map((record, index) => (
-                      <div key={record.id || index} className="ph-record-item-full">
-                        <div className="ph-record-header-full">
-                          <span className="ph-record-date-full">{formatDate(record.visitDate)}</span>
-                          <span className="ph-record-badge-full ph-badge-baseline">Baseline</span>
-                        </div>
-                        <div className="ph-record-diagnosis-full">
-                          <strong>Diagnosis:</strong> {record.diagnosis || 'N/A'}
-                        </div>
-                        {record.treatment && (
-                          <div className="ph-record-treatment-full">
-                            <strong>Treatment:</strong> {record.treatment}
-                          </div>
-                        )}
-                        {record.notes && (
-                          <div className="ph-record-notes-full">
-                            <strong>Notes:</strong> {record.notes}
-                          </div>
-                        )}
-                        <div className="ph-record-footer-full">
-                          <span>Recorded by: {record.createdByName || record.recordedByName || 'Staff'}</span>
-                        </div>
+              <div className="ph-records-list-full">
+                {(() => {
+                  const timeline = getTimelineRecords();
+                  if (timeline.length === 0) {
+                    return (
+                      <div className="ph-no-records-full">
+                        <span className="ph-no-records-icon"><NoRecordsIcon /></span>
+                        <p>No medical records found for this patient.</p>
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Vitals */}
-                {patientFullData.vitals && patientFullData.vitals.length > 0 && (
-                  <div className="ph-record-section">
-                    <h4 className="ph-record-section-title">Vitals</h4>
-                    {patientFullData.vitals.map((record, index) => (
-                      <div key={record.id || index} className="ph-record-item-full">
-                        <div className="ph-record-header-full">
-                          <span className="ph-record-date-full">{formatDate(record.date)}</span>
-                          <span className="ph-record-badge-full ph-badge-vitals">Vitals</span>
-                        </div>
-                        <div className="ph-record-diagnosis-full">
-                          <strong>Weight:</strong> {record.weight} kg | <strong>Height:</strong> {record.height} cm
-                        </div>
-                        <div className="ph-record-treatment-full">
-                          <strong>BMI:</strong> {record.bmi} - {record.bmiStatus || 'N/A'}
-                        </div>
-                        <div className="ph-record-footer-full">
-                          <span>Recorded by: {record.recordedByName || 'Staff'}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Medications */}
-                {patientFullData.medications && patientFullData.medications.length > 0 && (
-                  <div className="ph-record-section">
-                    <h4 className="ph-record-section-title">Medications</h4>
-                    {patientFullData.medications.map((record, index) => (
-                      <div key={record.id || index} className="ph-record-item-full">
-                        <div className="ph-record-header-full">
-                          <span className="ph-record-date-full">{formatDate(record.dateGiven)}</span>
-                          <span className="ph-record-badge-full ph-badge-medication">Medication</span>
-                        </div>
-                        {record.ntdsMeds && (
+                    );
+                  }
+                  return (
+                    <div className="ph-timeline-container">
+                      {timeline.map((record, index) => (
+                        <div key={record.id || index} className="ph-record-item-full">
+                          <div className="ph-record-header-full">
+                            <span className="ph-record-date-full">
+                              {new Date(record.date).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </span>
+                            <span className={`ph-record-badge-full ${record.badgeClass}`}>
+                              {record.badgeText}
+                            </span>
+                          </div>
+                          
                           <div className="ph-record-diagnosis-full">
-                            <strong>NTDs Meds:</strong> {record.ntdsMeds}
+                            <strong>
+                              {record.type === 'vitals' 
+                                ? 'Measurements' 
+                                : record.type === 'medication' 
+                                  ? 'Action' 
+                                  : record.type === 'test' 
+                                    ? 'Test' 
+                                    : record.type === 'clothing' 
+                                      ? 'Items' 
+                                      : record.type === 'education' 
+                                        ? 'Topic' 
+                                        : 'Diagnosis'}
+                              :
+                            </strong>{' '}
+                            {record.title}
                           </div>
-                        )}
-                        {record.antibiotics && (
-                          <div className="ph-record-treatment-full">
-                            <strong>Antibiotics:</strong> {record.antibiotics}
+                          
+                          {record.details && (
+                            <div className="ph-record-treatment-full">
+                              <strong>
+                                {record.type === 'vitals' 
+                                  ? 'BMI Status' 
+                                  : record.type === 'medication' 
+                                    ? 'Details' 
+                                    : record.type === 'test' 
+                                      ? 'Result' 
+                                      : record.type === 'clothing' 
+                                        ? 'Quantities' 
+                                        : record.type === 'education' 
+                                          ? 'Sessions' 
+                                          : 'Treatment'}
+                                :
+                              </strong>{' '}
+                              {record.details}
+                            </div>
+                          )}
+                          
+                          {record.notes && (
+                            <div className="ph-record-notes-full">
+                              <strong>Notes:</strong> {record.notes}
+                            </div>
+                          )}
+                          
+                          <div className="ph-record-footer-full">
+                            <span>Recorded by: {record.recordedBy || 'Staff'}</span>
                           </div>
-                        )}
-                        {record.otherMeds && (
-                          <div className="ph-record-notes-full">
-                            <strong>Other Meds:</strong> {record.otherMeds}
-                          </div>
-                        )}
-                        <div className="ph-record-footer-full">
-                          <span>Recorded by: {record.recordedByName || 'Staff'}</span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Tests */}
-                {patientFullData.tests && patientFullData.tests.length > 0 && (
-                  <div className="ph-record-section">
-                    <h4 className="ph-record-section-title">Tests</h4>
-                    {patientFullData.tests.map((record, index) => (
-                      <div key={record.id || index} className="ph-record-item-full">
-                        <div className="ph-record-header-full">
-                          <span className="ph-record-date-full">{formatDate(record.date)}</span>
-                          <span className="ph-record-badge-full ph-badge-test">Test</span>
-                        </div>
-                        <div className="ph-record-diagnosis-full">
-                          <strong>Test Type:</strong> {record.testType}
-                        </div>
-                        <div className="ph-record-treatment-full">
-                          <strong>Result:</strong> {record.result}
-                        </div>
-                        <div className="ph-record-footer-full">
-                          <span>Recorded by: {record.recordedByName || 'Staff'}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Symptoms */}
-                {patientFullData.symptoms && patientFullData.symptoms.length > 0 && (
-                  <div className="ph-record-section">
-                    <h4 className="ph-record-section-title">Symptoms & Notes</h4>
-                    {patientFullData.symptoms.map((record, index) => (
-                      <div key={record.id || index} className="ph-record-item-full">
-                        <div className="ph-record-header-full">
-                          <span className="ph-record-date-full">{formatDate(record.date)}</span>
-                          <span className="ph-record-badge-full ph-badge-symptom">Symptom</span>
-                        </div>
-                        <div className="ph-record-diagnosis-full">
-                          <strong>Symptoms:</strong> {record.symptoms}
-                        </div>
-                        {record.visitNotes && (
-                          <div className="ph-record-notes-full">
-                            <strong>Visit Notes:</strong> {record.visitNotes}
-                          </div>
-                        )}
-                        <div className="ph-record-footer-full">
-                          <span>Recorded by: {record.recordedByName || 'Staff'}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Clothing */}
-                {patientFullData.clothing && patientFullData.clothing.length > 0 && (
-                  <div className="ph-record-section">
-                    <h4 className="ph-record-section-title">Clothing Provisions</h4>
-                    {patientFullData.clothing.map((record, index) => (
-                      <div key={record.id || index} className="ph-record-item-full">
-                        <div className="ph-record-header-full">
-                          <span className="ph-record-date-full">{formatDate(record.date)}</span>
-                          <span className="ph-record-badge-full ph-badge-service">Clothing</span>
-                        </div>
-                        <div className="ph-record-diagnosis-full">
-                          <strong>Shoes:</strong> {record.shoes} pairs | <strong>Clothes:</strong> {record.clothes} items
-                        </div>
-                        <div className="ph-record-footer-full">
-                          <span>Recorded by: {record.recordedByName || 'Staff'}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Education */}
-                {patientFullData.education && patientFullData.education.length > 0 && (
-                  <div className="ph-record-section">
-                    <h4 className="ph-record-section-title">Education History</h4>
-                    {patientFullData.education.map((record, index) => (
-                      <div key={record.id || index} className="ph-record-item-full">
-                        <div className="ph-record-header-full">
-                          <span className="ph-record-date-full">{formatDate(record.date)}</span>
-                          <span className="ph-record-badge-full ph-badge-service">Education</span>
-                        </div>
-                        <div className="ph-record-diagnosis-full">
-                          <strong>Topics:</strong> {record.education ? record.education.join(', ') : 'N/A'}
-                        </div>
-                        <div className="ph-record-footer-full">
-                          <span>Recorded by: {record.recordedByName || 'Staff'}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Others/Assessment */}
-                {patientFullData.others && patientFullData.others.length > 0 && (
-                  <div className="ph-record-section">
-                    <h4 className="ph-record-section-title">Assessments</h4>
-                    {patientFullData.others.map((record, index) => (
-                      <div key={record.id || index} className="ph-record-item-full">
-                        <div className="ph-record-header-full">
-                          <span className="ph-record-date-full">{formatDate(record.date)}</span>
-                          <span className="ph-record-badge-full ph-badge-diagnosis">Assessment</span>
-                        </div>
-                        {record.diagnosis && (
-                          <div className="ph-record-diagnosis-full">
-                            <strong>Diagnosis:</strong> {record.diagnosis}
-                          </div>
-                        )}
-                        {record.symptoms && (
-                          <div className="ph-record-treatment-full">
-                            <strong>Symptoms:</strong> {record.symptoms}
-                          </div>
-                        )}
-                        {record.visitNotes && (
-                          <div className="ph-record-notes-full">
-                            <strong>Visit Notes:</strong> {record.visitNotes}
-                          </div>
-                        )}
-                        {record.hospitalized && (
-                          <div className="ph-record-notes-full">
-                            <strong>Hospitalized:</strong> {record.timeHospitalized || 'Yes'}
-                          </div>
-                        )}
-                        <div className="ph-record-footer-full">
-                          <span>Recorded by: {record.recordedByName || 'Staff'}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {!patientFullData.medicalRecords?.length && 
-                 !patientFullData.vitals?.length && 
-                 !patientFullData.medications?.length && 
-                 !patientFullData.tests?.length && 
-                 !patientFullData.symptoms?.length && 
-                 !patientFullData.clothing?.length && 
-                 !patientFullData.education?.length && 
-                 !patientFullData.others?.length && (
-                  <div className="ph-no-records-full">
-                    <span className="ph-no-records-icon"><NoRecordsIcon /></span>
-                    <p>No medical records found for this patient.</p>
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
               </div>
             ) : (
               <div className="ph-no-records-full">

@@ -578,30 +578,16 @@ const ChildRegistration = () => {
       const yy = currentYear.toString().slice(-2);
       
       const childrenArray = await getChildren();
-      const existingIds = new Set(
-        (childrenArray || []).map((c) => (c.customSerialId || c.custom_serial_id || "").toUpperCase())
-      );
+      const count = childrenArray ? childrenArray.length : 0;
+      const seqNumber = (count + 1).toString().padStart(5, "0");
       
-      let uniqueId = "";
-      let attempts = 0;
-      const maxAttempts = 20;
-      
-      do {
-        const randomDigits = generateRandomDigits(6);
-        const suffix = generateRandomSuffix();
-        uniqueId = `KD-${yy}-${locInitials}-${randomDigits}-${suffix}`;
-        attempts++;
-      } while (existingIds.has(uniqueId.toUpperCase()) && attempts < maxAttempts);
-      
+      const uniqueId = `ST-${yy}-${locInitials}-${seqNumber}-TRHM`;
       setGeneratedId(uniqueId);
     } catch (error) {
       console.error("Error generating registration ID:", error);
       const currentYear = new Date().getFullYear();
       const yy = currentYear.toString().slice(-2);
-      const locInitials = getLocationInitials(locationId);
-      const randomDigits = generateRandomDigits(6);
-      const suffix = generateRandomSuffix();
-      setGeneratedId(`KD-${yy}-${locInitials}-${randomDigits}-${suffix}`);
+      setGeneratedId(`ST-${yy}-LOC-00001-TRHM`);
     }
   };
 
@@ -1851,6 +1837,18 @@ const ChildRegistration = () => {
     }
   };
 
+  const handleViewExistingHistory = () => {
+    if (existingChild && existingChild.fullName) {
+      sessionStorage.setItem("selectedChild", JSON.stringify(existingChild));
+      navigate("/patients-history", { state: { child: existingChild } });
+      setFingerprintExists(null);
+      setExistingChild(null);
+      setExistingChildImages(null);
+    } else {
+      showToast("No record selected", "error");
+    }
+  };
+
   // ===== OTHER HANDLERS =====
   const handleAddRegistrationClick = () => {
     setRegistrationStep(1);
@@ -2528,6 +2526,8 @@ const ChildRegistration = () => {
             isVerifying={isVerifying}
             handleVerifyFingerprintScan={handleVerifyFingerprintScan}
             handleLoadExistingRecord={handleLoadExistingRecord}
+            handleEditChild={handleEditChild}
+            handleViewExistingHistory={handleViewExistingHistory}
             goBack={goBack}
             navigateToPage={navigateToPage}
             getLocationName={getLocationName}

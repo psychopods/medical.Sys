@@ -324,7 +324,7 @@ const ForgotPassword = () => {
       <div className="forgot-password-hero">
         <div className="forgot-password-hero-content">
           <h1>Reset Password</h1>
-          <p>Secure account recovery for TRHM System</p>
+          <p>Secure account recovery for Street Medicine System</p>
         </div>
       </div>
 
@@ -366,7 +366,7 @@ const ForgotPassword = () => {
                     e.target.style.display = 'none';
                   }}
                 />
-                <h2>TRHM System</h2>
+                <h2>Street Medicine System</h2>
               </Link>
               <p>Secure Authentication</p>
             </div>

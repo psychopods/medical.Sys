@@ -14,24 +14,40 @@ const AllHistory = ({
   // State for combined child history records
   const [displayRecords, setDisplayRecords] = useState([]);
   const [vitalsHistory, setVitalsHistory] = useState([]);
+  const [medicationsHistory, setMedicationsHistory] = useState([]);
+  const [testsHistory, setTestsHistory] = useState([]);
+  const [servicesHistory, setServicesHistory] = useState([]);
+  const [symptomsHistory, setSymptomsHistory] = useState([]);
+  const [clothingHistory, setClothingHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch vitals history for the child
-  const fetchVitalsHistory = async (childId) => {
+  // Fetch full clinical history for the child from database
+  const fetchFullHistory = async (childId) => {
     if (!childId) return;
     try {
       setLoading(true);
-      const records = await api.apiFetchVitalsRecords(childId);
-      setVitalsHistory(records || []);
+      const [vitals, meds, tests, srvs, symptoms, clothing] = await Promise.all([
+        api.apiFetchVitalsRecords(childId),
+        api.apiFetchMedicationRecords(childId),
+        api.apiFetchTestsRecords(childId),
+        api.apiFetchServicesRecords(childId),
+        api.apiFetchSymptomsRecords(childId),
+        api.apiFetchClothingRecords(childId)
+      ]);
+      setVitalsHistory(vitals || []);
+      setMedicationsHistory(meds || []);
+      setTestsHistory(tests || []);
+      setServicesHistory(srvs || []);
+      setSymptomsHistory(symptoms || []);
+      setClothingHistory(clothing || []);
     } catch (error) {
-      console.error('Error fetching vitals history:', error);
-      setVitalsHistory([]);
+      console.error('Error fetching full history:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Combine all records from different sources
+  // Combine all records from different database sources
   const combineChildRecords = () => {
     const combined = [];
 
@@ -41,7 +57,7 @@ const AllHistory = ({
         combined.push({
           id: record.id || `mr-${Date.now()}-${Math.random()}`,
           visitDate: record.visitDate || record.createdAt || new Date().toISOString().split('T')[0],
-          recordType: record.recordType || 'baseline',
+          recordType: 'baseline',
           diagnosis: record.diagnosis || 'Routine checkup',
           treatment: record.treatment || '',
           notes: record.notes || '',
@@ -65,134 +81,117 @@ const AllHistory = ({
       });
     }
 
-    // 3. Add medical services (medications, tests, procedures)
-    if (medicalServicesData) {
-      // Medications
-      const medications = [
-        ...(medicalServicesData.medications?.ntdsMeds || []),
-        ...(medicalServicesData.medications?.antibiotics || []),
-        ...(medicalServicesData.medications?.otherMeds || [])
-      ];
-      
-      if (medications.length > 0) {
-        combined.push({
-          id: `med-${Date.now()}-${Math.random()}`,
-          visitDate: medicalServicesData.date || new Date().toISOString().split('T')[0],
-          recordType: 'medication',
-          diagnosis: 'Medication administered',
-          treatment: medications.join(', '),
-          notes: `Medications: ${medications.join(', ')}`,
-          createdByName: medicalServicesData.recordedByName || 'Staff'
-        });
-      }
+    // 3. Add medications history
+    if (medicationsHistory && medicationsHistory.length > 0) {
+      medicationsHistory.forEach(record => {
+        const meds = [];
+        if (record.ntdsMeds || record.ntds_meds) meds.push(record.ntdsMeds || record.ntds_meds);
+        if (record.antibiotics) meds.push(record.antibiotics);
+        if (record.otherMeds || record.other_meds) meds.push(record.otherMeds || record.other_meds);
+        
+        if (meds.length > 0) {
+          combined.push({
+            id: record.id || `med-${Date.now()}-${Math.random()}`,
+            visitDate: record.dateGiven || record.date_given || record.createdAt || new Date().toISOString().split('T')[0],
+            recordType: 'medication',
+            diagnosis: 'Medication administered',
+            treatment: meds.join(', '),
+            notes: '',
+            createdByName: record.recordedByName || record.recorded_by_name || 'Staff'
+          });
+        }
+      });
+    }
 
-      // Tests
-      const tests = medicalServicesData.tests?.testTypes || [];
-      const results = medicalServicesData.tests?.results || [];
-      if (tests.length > 0) {
+    // 4. Add laboratory tests history
+    if (testsHistory && testsHistory.length > 0) {
+      testsHistory.forEach(record => {
         combined.push({
-          id: `test-${Date.now()}-${Math.random()}`,
-          visitDate: medicalServicesData.date || new Date().toISOString().split('T')[0],
+          id: record.id || `test-${Date.now()}-${Math.random()}`,
+          visitDate: record.date || record.createdAt || new Date().toISOString().split('T')[0],
           recordType: 'test',
-          diagnosis: `Tests: ${tests.join(', ')}`,
-          treatment: `Results: ${results.join(', ')}`,
-          notes: medicalServicesData.tests?.notes || '',
-          createdByName: medicalServicesData.recordedByName || 'Staff'
+          diagnosis: `Test: ${record.testType || record.test_type || ''}`,
+          treatment: `Result: ${record.result || ''}`,
+          notes: record.notes || '',
+          createdByName: record.recordedByName || record.recorded_by_name || 'Staff'
         });
-      }
-
-      // Procedures
-      if (medicalServicesData.procedures && medicalServicesData.procedures.length > 0) {
-        combined.push({
-          id: `proc-${Date.now()}-${Math.random()}`,
-          visitDate: medicalServicesData.date || new Date().toISOString().split('T')[0],
-          recordType: 'service',
-          diagnosis: 'Procedures performed',
-          treatment: medicalServicesData.procedures.join(', '),
-          notes: `Procedures: ${medicalServicesData.procedures.join(', ')}`,
-          createdByName: medicalServicesData.recordedByName || 'Staff'
-        });
-      }
+      });
     }
 
-    // 4. Add social services
-    if (socialServicesData) {
-      const services = [];
-      
-      if (socialServicesData.clothing) {
-        const clothes = socialServicesData.clothing.clothes || 0;
-        const shoes = socialServicesData.clothing.shoes || 0;
-        if (clothes > 0 || shoes > 0) {
-          services.push(`Clothes: ${clothes}, Shoes: ${shoes}`);
-        }
-        if (socialServicesData.clothing.notes) {
-          services.push(`Notes: ${socialServicesData.clothing.notes}`);
-        }
-      }
-      
-      if (socialServicesData.education && socialServicesData.education.length > 0) {
-        services.push(`Education: ${socialServicesData.education.join(', ')}`);
-      }
-      
-      if (socialServicesData.foodRefreshment) {
-        services.push(`Food: ${socialServicesData.foodRefreshment}`);
-        if (socialServicesData.foodDetails) {
-          services.push(`Details: ${socialServicesData.foodDetails}`);
-        }
-      }
-      
-      if (socialServicesData.otherServices) {
-        services.push(`Other: ${socialServicesData.otherServices}`);
-      }
-
-      if (services.length > 0) {
+    // 5. Add services history (generic services_rendered)
+    if (servicesHistory && servicesHistory.length > 0) {
+      servicesHistory.forEach(record => {
+        const type = record.serviceType || record.service_type || 'service';
+        const list = record.servicesList || record.services_list || '';
         combined.push({
-          id: `social-${Date.now()}-${Math.random()}`,
-          visitDate: socialServicesData.date || new Date().toISOString().split('T')[0],
-          recordType: 'service',
-          diagnosis: 'Social services provided',
-          treatment: services.join(' | '),
-          notes: socialServicesData.clothing?.notes || '',
-          createdByName: socialServicesData.recordedByName || 'Staff'
+          id: record.id || `srv-${Date.now()}-${Math.random()}`,
+          visitDate: record.date || record.createdAt || new Date().toISOString().split('T')[0],
+          recordType: type === 'education' ? 'education' : 'service',
+          diagnosis: `${type.charAt(0).toUpperCase() + type.slice(1)} services provided`,
+          treatment: list,
+          notes: '',
+          createdByName: record.recordedByName || record.recorded_by_name || 'Staff'
         });
-      }
+      });
     }
 
-    // 5. Add others/assessment data
-    if (othersData) {
-      const assessments = [];
-      
-      if (othersData.symptoms) {
-        assessments.push(`Symptoms: ${othersData.symptoms}`);
-      }
-      
-      if (othersData.visitNotes) {
-        assessments.push(`Visit Notes: ${othersData.visitNotes}`);
-      }
-      
-      if (othersData.diagnosis) {
-        assessments.push(`Diagnosis: ${othersData.diagnosis}`);
-      }
-      
-      if (othersData.diagnosisNotes) {
-        assessments.push(`Diagnosis Notes: ${othersData.diagnosisNotes}`);
-      }
-      
-      if (othersData.hospitalized) {
-        assessments.push(`Hospitalized: ${othersData.timeHospitalized || 'Yes'}`);
-      }
-
-      if (assessments.length > 0) {
+    // 6. Add clothing provisions history
+    if (clothingHistory && clothingHistory.length > 0) {
+      clothingHistory.forEach(record => {
+        const details = [];
+        if (record.clothes) details.push(`Clothes size: ${record.clothes}`);
+        if (record.shoes) details.push(`Shoes size: ${record.shoes}`);
+        
         combined.push({
-          id: `assess-${Date.now()}-${Math.random()}`,
-          visitDate: othersData.date || new Date().toISOString().split('T')[0],
+          id: record.id || `cloth-${Date.now()}-${Math.random()}`,
+          visitDate: record.date || record.createdAt || new Date().toISOString().split('T')[0],
+          recordType: 'service',
+          diagnosis: 'Clothing provisions',
+          treatment: details.join(', '),
+          notes: '',
+          createdByName: record.recordedByName || record.recorded_by_name || 'Staff'
+        });
+      });
+    }
+
+    // 7. Add symptoms/assessment history
+    if (symptomsHistory && symptomsHistory.length > 0) {
+      symptomsHistory.forEach(record => {
+        let parsedNotes = { visitNotes: record.visitNotes || record.visit_notes || '', diagnosis: '', diagnosisNotes: '', hospitalized: false, timeHospitalized: '' };
+        try {
+          const rawNotes = record.visitNotes || record.visit_notes || '';
+          if (rawNotes.trim().startsWith('{') && rawNotes.trim().endsWith('}')) {
+            const parsed = JSON.parse(rawNotes);
+            if (parsed && typeof parsed === 'object') {
+              parsedNotes = {
+                visitNotes: parsed.visitNotes || '',
+                diagnosis: parsed.diagnosis || '',
+                diagnosisNotes: parsed.diagnosisNotes || '',
+                hospitalized: parsed.hospitalized || false,
+                timeHospitalized: parsed.timeHospitalized || ''
+              };
+            }
+          }
+        } catch (e) {
+          // fallback
+        }
+
+        const assessments = [];
+        if (record.symptoms) assessments.push(`Symptoms: ${record.symptoms}`);
+        if (parsedNotes.visitNotes) assessments.push(`Notes: ${parsedNotes.visitNotes}`);
+        if (parsedNotes.diagnosisNotes) assessments.push(`Diag Notes: ${parsedNotes.diagnosisNotes}`);
+        if (parsedNotes.hospitalized) assessments.push(`Hospitalized: ${parsedNotes.timeHospitalized || 'Yes'}`);
+        
+        combined.push({
+          id: record.id || `assess-${Date.now()}-${Math.random()}`,
+          visitDate: record.date || record.createdAt || new Date().toISOString().split('T')[0],
           recordType: 'diagnosis',
-          diagnosis: othersData.diagnosis || 'Assessment performed',
+          diagnosis: parsedNotes.diagnosis || record.diagnosis || 'Assessment performed',
           treatment: assessments.join(' | '),
-          notes: othersData.visitNotes || othersData.diagnosisNotes || '',
-          createdByName: othersData.recordedByName || 'Staff'
+          notes: parsedNotes.visitNotes || parsedNotes.diagnosisNotes || '',
+          createdByName: record.recordedByName || record.recorded_by_name || 'Staff'
         });
-      }
+      });
     }
 
     // Sort by date (newest first)
@@ -201,12 +200,17 @@ const AllHistory = ({
     return combined;
   };
 
-  // Fetch vitals history when child changes
+  // Fetch full clinical history when child changes
   useEffect(() => {
     if (child && child.id) {
-      fetchVitalsHistory(child.id);
+      fetchFullHistory(child.id);
     } else {
       setVitalsHistory([]);
+      setMedicationsHistory([]);
+      setTestsHistory([]);
+      setServicesHistory([]);
+      setSymptomsHistory([]);
+      setClothingHistory([]);
     }
   }, [child]);
 
@@ -218,7 +222,7 @@ const AllHistory = ({
     } else {
       setDisplayRecords([]);
     }
-  }, [child, medicalRecords, vitalsHistory, medicalServicesData, socialServicesData, othersData]);
+  }, [child, medicalRecords, vitalsHistory, medicationsHistory, testsHistory, servicesHistory, symptomsHistory, clothingHistory]);
 
   // Get the count of records by type
   const getRecordTypeCounts = () => {

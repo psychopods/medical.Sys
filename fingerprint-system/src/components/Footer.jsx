@@ -30,9 +30,9 @@ const Footer = () => {
                   e.target.style.display = 'none';
                 }}
               />
-              TRHM
+              Street Medicine
             </h3>
-            <p>Tanzania Rural Health Movement is dedicated to improving access to healthcare and social support services among vulnerable and underserved populations across Tanzania.</p>
+            <p>The Street Medicine Project is dedicated to delivering healthcare, social support, and essential rehabilitation services directly to vulnerable children living on the streets.</p>
             <div className="footer-social">
               <a href="https://www.facebook.com/tanzaniaruralhealth" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
                 <svg className="social-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -129,7 +129,7 @@ const Footer = () => {
         </div>
         
         <div className="footer-bottom">
-          <p>&copy; 2025 Tanzania Rural Health Movement (TRHM). All rights reserved.</p>
+          <p>&copy; 2026 Street Medicine Project (TRHM). All rights reserved.</p>
           <div className="footer-links">
             <a href="#">Privacy Policy</a>
             <a href="#">Terms of Service</a>

@@ -23,31 +23,52 @@ const ProgramSummary = ({
     lastVisit: null,
   });
 
-  // State for all vitals history
+  // State for clinical history logs from database
   const [vitalsHistory, setVitalsHistory] = useState([]);
+  const [medicationsHistory, setMedicationsHistory] = useState([]);
+  const [testsHistory, setTestsHistory] = useState([]);
+  const [servicesHistory, setServicesHistory] = useState([]);
+  const [symptomsHistory, setSymptomsHistory] = useState([]);
+  const [clothingHistory, setClothingHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch all vitals history for the child
-  const fetchVitalsHistory = async (childId) => {
+  // Fetch full clinical history for the child from database
+  const fetchFullHistory = async (childId) => {
     if (!childId) return;
     try {
       setLoading(true);
-      const records = await api.apiFetchVitalsRecords(childId);
-      setVitalsHistory(records || []);
+      const [vitals, meds, tests, srvs, symptoms, clothing] = await Promise.all([
+        api.apiFetchVitalsRecords(childId),
+        api.apiFetchMedicationRecords(childId),
+        api.apiFetchTestsRecords(childId),
+        api.apiFetchServicesRecords(childId),
+        api.apiFetchSymptomsRecords(childId),
+        api.apiFetchClothingRecords(childId)
+      ]);
+      setVitalsHistory(vitals || []);
+      setMedicationsHistory(meds || []);
+      setTestsHistory(tests || []);
+      setServicesHistory(srvs || []);
+      setSymptomsHistory(symptoms || []);
+      setClothingHistory(clothing || []);
     } catch (error) {
-      console.error('Error fetching vitals history:', error);
-      setVitalsHistory([]);
+      console.error('Error fetching full history:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch vitals history when child changes
+  // Fetch history when child changes
   useEffect(() => {
     if (child && child.id) {
-      fetchVitalsHistory(child.id);
+      fetchFullHistory(child.id);
     } else {
       setVitalsHistory([]);
+      setMedicationsHistory([]);
+      setTestsHistory([]);
+      setServicesHistory([]);
+      setSymptomsHistory([]);
+      setClothingHistory([]);
     }
   }, [child]);
 
@@ -55,46 +76,95 @@ const ProgramSummary = ({
     if (child && child.id) {
       calculateChildSummary();
     }
-  }, [child, medicalRecords, vitalsData, medicalServicesData, socialServicesData, othersData, vitalsHistory]);
+  }, [child, medicalRecords, vitalsHistory, medicationsHistory, testsHistory, servicesHistory, symptomsHistory, clothingHistory]);
 
   const calculateChildSummary = () => {
-    // Collect all records
+    // Collect all baseline/visit records
     const allRecords = [...medicalRecords];
     
     // Count total visits
     const totalVisits = allRecords.length;
     
-    // Collect medications from medical services
+    // Collect medications from historical records
     let medications = [];
-    if (medicalServicesData && medicalServicesData.medications) {
-      const meds = [
-        ...(medicalServicesData.medications.ntdsMeds || []),
-        ...(medicalServicesData.medications.antibiotics || []),
-        ...(medicalServicesData.medications.otherMeds || [])
-      ];
-      medications = [...new Set(meds)]; // Remove duplicates
+    if (medicationsHistory && medicationsHistory.length > 0) {
+      const meds = [];
+      medicationsHistory.forEach(record => {
+        if (record.ntdsMeds || record.ntds_meds) {
+          (record.ntdsMeds || record.ntds_meds).split(',').forEach(m => meds.push(m.trim()));
+        }
+        if (record.antibiotics) {
+          record.antibiotics.split(',').forEach(m => meds.push(m.trim()));
+        }
+        if (record.otherMeds || record.other_meds) {
+          (record.otherMeds || record.other_meds).split(',').forEach(m => meds.push(m.trim()));
+        }
+      });
+      medications = [...new Set(meds.filter(Boolean))];
     }
 
-    // Collect services
+    // Collect services from history
     let services = [];
-    if (medicalServicesData && medicalServicesData.procedures) {
-      services = [...services, ...medicalServicesData.procedures];
+    if (servicesHistory && servicesHistory.length > 0) {
+      const srvs = [];
+      servicesHistory.forEach(record => {
+        if (record.servicesList || record.services_list) {
+          (record.servicesList || record.services_list).split(',').forEach(s => srvs.push(s.trim()));
+        }
+      });
+      services = [...new Set(srvs.filter(Boolean))];
     }
-    if (socialServicesData && socialServicesData.education) {
-      services = [...services, ...socialServicesData.education];
-    }
-    services = [...new Set(services)];
 
-    // Collect diagnoses from others data
+    // Collect diagnoses from assessment history
     let diagnoses = [];
-    if (othersData && othersData.diagnosis) {
-      diagnoses = othersData.diagnosis.split(',').map(d => d.trim());
+    let hospitalizations = 0;
+    if (symptomsHistory && symptomsHistory.length > 0) {
+      const diags = [];
+      symptomsHistory.forEach(record => {
+        let parsedNotes = { visitNotes: record.visitNotes || record.visit_notes || '', diagnosis: '', diagnosisNotes: '', hospitalized: false, timeHospitalized: '' };
+        try {
+          const rawNotes = record.visitNotes || record.visit_notes || '';
+          if (rawNotes.trim().startsWith('{') && rawNotes.trim().endsWith('}')) {
+            const parsed = JSON.parse(rawNotes);
+            if (parsed && typeof parsed === 'object') {
+              parsedNotes = {
+                visitNotes: parsed.visitNotes || '',
+                diagnosis: parsed.diagnosis || '',
+                diagnosisNotes: parsed.diagnosisNotes || '',
+                hospitalized: parsed.hospitalized || false,
+                timeHospitalized: parsed.timeHospitalized || ''
+              };
+            }
+          }
+        } catch (e) {
+          // fallback
+        }
+
+        if (parsedNotes.diagnosis) {
+          parsedNotes.diagnosis.split(',').forEach(d => diags.push(d.trim()));
+        } else if (record.diagnosis) {
+          record.diagnosis.split(',').forEach(d => diags.push(d.trim()));
+        }
+
+        if (parsedNotes.hospitalized) {
+          hospitalizations++;
+        } else if (record.hospitalized || record.hospitalized === 'true' || record.hospitalized === 1) {
+          hospitalizations++;
+        }
+      });
+      diagnoses = [...new Set(diags.filter(Boolean))];
     }
 
-    // Collect symptoms
+    // Collect symptoms from assessment history
     let symptoms = [];
-    if (othersData && othersData.symptoms) {
-      symptoms = othersData.symptoms.split(',').map(s => s.trim());
+    if (symptomsHistory && symptomsHistory.length > 0) {
+      const symps = [];
+      symptomsHistory.forEach(record => {
+        if (record.symptoms) {
+          record.symptoms.split(',').forEach(s => symps.push(s.trim()));
+        }
+      });
+      symptoms = [...new Set(symps.filter(Boolean))];
     }
 
     // Collect BMI history from ALL vitals records
@@ -111,19 +181,7 @@ const ProgramSummary = ({
           });
         }
       });
-    } else if (vitalsData && vitalsData.bmi) {
-      // Fallback to single vitals data if history is empty
-      bmiHistory.push({
-        date: vitalsData.date || new Date().toISOString().split('T')[0],
-        bmi: vitalsData.bmi,
-        bmiStatus: vitalsData.bmiStatus || '',
-        weight: vitalsData.weight,
-        height: vitalsData.height
-      });
     }
-
-    // Check if hospitalized
-    const hospitalizations = othersData && othersData.hospitalized ? 1 : 0;
 
     // Get last visit date
     const lastVisit = child.createdAt || null;

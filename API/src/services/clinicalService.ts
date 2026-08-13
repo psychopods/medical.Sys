@@ -352,10 +352,40 @@ export async function getClinicalOptions(pool: Pool): Promise<any> {
         }
     });
 
+    const testTypes = [
+        "Haemoglobin test (Hb)",
+        "Erythrocyte sedimentation rate (ESR)",
+        "Blood glucose",
+        "Uric acid test",
+        "H. Pylori test",
+        "Malaria test",
+        "HIV test",
+        "Urinalysis",
+        "VDRL test",
+        "Stool test",
+        "Widal test"
+    ];
+
+    const testResults = [
+        "Negative (-)",
+        "Positive (+)",
+        "Leukocyte +",
+        "Leukocyte ++",
+        "Leukocyte +++",
+        "Glucose +",
+        "Glucose ++",
+        "Glucose +++",
+        "Schistosoma ova seen",
+        "High",
+        "Low",
+        "Normal",
+        "Abnormal"
+    ];
+
     return {
         medicationOptions,
-        testTypesOptions: testsRows.map(row => row.name),
-        testResultOptions: testsRows.map(row => row.name),
+        testTypesOptions: testTypes,
+        testResultOptions: testResults,
         procedureOptions: proceduresRows.map(row => row.name),
         educationOptions: educationRows.map(row => row.name)
     };

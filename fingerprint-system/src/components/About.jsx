@@ -34,8 +34,8 @@ const About = () => {
       {/* Hero Section */}
       <div className="about-hero">
         <div className="about-hero-content">
-          <h1>About TRHM</h1>
-          <p>Tanzania Rural Health Movement - Healthcare for All</p>
+          <h1>About Street Medicine</h1>
+          <p>Street Medicine Outreach Project - Healthcare directly to vulnerable children</p>
         </div>
       </div>
 
@@ -45,10 +45,10 @@ const About = () => {
           <h2 className="section-title">Who We Are</h2>
           <div className="about-content">
             <p className="about-text">
-              Tanzania Rural Health Movement (TRHM) is a community-centered organization dedicated to improving access to healthcare and social support services among vulnerable and underserved populations across Tanzania. The organization works to bridge healthcare gaps through innovative outreach programs, community partnerships, health education, and digital health solutions.
+              The Street Medicine Project is a specialized, community-centered medical outreach initiative organized under the Tanzania Rural Health Movement (TRHM). The project is dedicated to improving access to healthcare, clinical diagnostics, social support, and rehabilitation services specifically for vulnerable children living on the streets of Tanzania.
             </p>
             <p className="about-text">
-              TRHM believes that every individual deserves access to compassionate, equitable, and quality healthcare services regardless of their social or economic condition.
+              We believe that every child deserves access to compassionate, equitable, and quality medical attention directly in the community environments where they live, restoring their health and dignity.
             </p>
           </div>
         </div>

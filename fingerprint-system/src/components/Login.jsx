@@ -136,7 +136,7 @@ const Login = () => {
       <div className="login-hero">
         <div className="login-hero-content">
           <h1>Welcome Back</h1>
-          <p>Secure access to TRHM System</p>
+          <p>Secure access to Street Medicine System</p>
         </div>
       </div>
 
@@ -183,7 +183,7 @@ const Login = () => {
                 e.target.style.display = 'none';
               }}
             />
-            <h2>TRHM System</h2>
+            <h2>Street Medicine System</h2>
             <p>Secure Authentication</p>
           </div>
           <div className="login-features">

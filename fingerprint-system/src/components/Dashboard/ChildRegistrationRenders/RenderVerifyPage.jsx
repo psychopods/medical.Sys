@@ -7,6 +7,8 @@ const RenderVerifyPage = ({
   isVerifying,
   handleVerifyFingerprintScan,
   handleLoadExistingRecord,
+  handleEditChild,
+  handleViewExistingHistory,
   goBack,
   navigateToPage,
   getLocationName,
@@ -42,36 +44,107 @@ const RenderVerifyPage = ({
       {fingerprintExists === true && existingChild && existingChild.fullName && (
         <div className="child-reg-verification-result">
           <div className="child-reg-success-message">
-            <h3>✓ Fingerprint Found!</h3>
-            <p>Patient already registered in the system.</p>
-            <div className="child-reg-child-details-card">
-              <div className="child-reg-child-header"><h4>{existingChild.fullName}</h4><span className="child-reg-child-id">ID: {existingChild.customSerialId}</span></div>
-              <div className="child-reg-verify-images">
-                <h5>Patient Photos</h5>
-                {(existingChildImages?.image1 || existingChildImages?.image2 || existingChildImages?.image3) ? (
-                  <div className="child-reg-verify-images-grid">
-                    {existingChildImages.image1 && <div className="child-reg-verify-image"><img src={existingChildImages.image1} alt="Child photo 1" /></div>}
-                    {existingChildImages.image2 && <div className="child-reg-verify-image"><img src={existingChildImages.image2} alt="Child photo 2" /></div>}
-                    {existingChildImages.image3 && <div className="child-reg-verify-image"><img src={existingChildImages.image3} alt="Child photo 3" /></div>}
-                  </div>
-                ) : (<div className="child-reg-no-images-message"><p>No photos available for this patient</p></div>)}
-              </div>
-              <div className="child-reg-info-grid">
-                <div className="child-reg-info-item"><label>Full Name:</label><span>{existingChild.fullName}</span></div>
-                <div className="child-reg-info-item"><label>Estimated Birth Year:</label><span>{existingChild.estimatedBirthYear}</span></div>
-                <div className="child-reg-info-item"><label>Age:</label><span>{existingChild.age}</span></div>
-                <div className="child-reg-info-item"><label>Gender:</label><span>{existingChild.gender}</span></div>
-                <div className="child-reg-info-item"><label>Location:</label><span>{existingChild.locationName}</span></div>
-                <div className="child-reg-info-item"><label>Registration Date:</label><span>{existingChild.createdAt ? existingChild.createdAt.split('T')[0] : 'N/A'}</span></div>
-                <div className="child-reg-info-item"><label>Last Visit:</label><span>{existingChild.lastVisit}</span></div>
-                <div className="child-reg-info-item"><label>Medical History:</label><span>{existingChild.medicalHistory || 'None'}</span></div>
-                <div className="child-reg-info-item"><label>Registered By:</label><span>{existingChild.registeredBy || 'N/A'}</span></div>
-              </div>
-              <div className="child-reg-fingerprint-status"><span className="child-reg-status-badge child-reg-status-pending">Pending</span></div>
+            <div className="child-reg-profile-banner">
+              <div className="child-reg-verified-badge">✓ Fingerprint Verified & Active</div>
+              <h3>Street Medicine Outreach Patient Profile</h3>
             </div>
-            <div className="child-reg-form-actions">
-              <button className="child-reg-btn-primary" onClick={handleLoadExistingRecord}>Add Records</button>
-              <button className="child-reg-btn-secondary" onClick={() => { setFingerprintExists(null); setExistingChild(null); setExistingChildImages(null); goBack(); }}>Close</button>
+            
+            <div className="child-reg-child-details-card">
+              <div className="child-reg-child-header">
+                <h4>{existingChild.fullName}</h4>
+                <span className="child-reg-child-id">Reg No: {existingChild.customSerialId}</span>
+              </div>
+              
+              <div className="child-reg-verify-images">
+                <h5>Patient Photographs</h5>
+                {(existingChildImages?.image1 || existingChildImages?.image2 || existingChildImages?.image3 || existingChild.image1) ? (
+                  <div className="child-reg-verify-images-grid">
+                    {(existingChildImages?.image1 || existingChild.image1) && (
+                      <div className="child-reg-verify-image">
+                        <img src={existingChildImages?.image1 || existingChild.image1} alt="Patient photo 1" />
+                      </div>
+                    )}
+                    {(existingChildImages?.image2 || existingChild.image2) && (
+                      <div className="child-reg-verify-image">
+                        <img src={existingChildImages?.image2 || existingChild.image2} alt="Patient photo 2" />
+                      </div>
+                    )}
+                    {(existingChildImages?.image3 || existingChild.image3) && (
+                      <div className="child-reg-verify-image">
+                        <img src={existingChildImages?.image3 || existingChild.image3} alt="Patient photo 3" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="child-reg-no-images-message">
+                    <p className="warning-text">⚠️ No photos uploaded for this patient.</p>
+                    <p className="subtext">Authorized users can add photos by clicking "Upload/Change Photo" below.</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="child-reg-info-grid">
+                <div className="child-reg-info-item">
+                  <label>Registration Number:</label>
+                  <span>{existingChild.customSerialId}</span>
+                </div>
+                <div className="child-reg-info-item">
+                  <label>Child's Name:</label>
+                  <span>{existingChild.fullName}</span>
+                </div>
+                <div className="child-reg-info-item">
+                  <label>Age / Estimated Birth Year:</label>
+                  <span>
+                    {existingChild.age ? `${existingChild.age} years` : `${new Date().getFullYear() - (parseInt(existingChild.estimatedBirthYear) || new Date().getFullYear())} years`}{' '}
+                    ({existingChild.estimatedBirthYear || 'N/A'})
+                  </span>
+                </div>
+                <div className="child-reg-info-item">
+                  <label>Gender:</label>
+                  <span>{existingChild.gender}</span>
+                </div>
+                <div className="child-reg-info-item">
+                  <label>Current Location:</label>
+                  <span>{existingChild.locationName || 'N/A'}</span>
+                </div>
+                <div className="child-reg-info-item">
+                  <label>Registration Date:</label>
+                  <span>
+                    {existingChild.createdAt 
+                      ? new Date(existingChild.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) 
+                      : 'N/A'}
+                  </span>
+                </div>
+                <div className="child-reg-info-item">
+                  <label>Project Program:</label>
+                  <span className="project-highlight-text">Street Medicine Project</span>
+                </div>
+                <div className="child-reg-info-item">
+                  <label>Biometrics Match Status:</label>
+                  <span className="match-status-badge">Biometric Template Matched</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="child-reg-form-actions child-reg-profile-actions">
+              <button className="child-reg-btn-primary" onClick={handleLoadExistingRecord}>
+                Add Medical Records
+              </button>
+              <button className="child-reg-btn-secondary" onClick={() => handleEditChild(existingChild)}>
+                Edit Profile
+              </button>
+              <button className="child-reg-btn-secondary" onClick={() => handleEditChild(existingChild)}>
+                Upload/Change Photo
+              </button>
+              <button className="child-reg-btn-secondary" onClick={handleViewExistingHistory}>
+                View History
+              </button>
+              <button 
+                className="child-reg-btn-secondary close-btn" 
+                onClick={() => { setFingerprintExists(null); setExistingChild(null); setExistingChildImages(null); goBack(); }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
@@ -79,11 +152,23 @@ const RenderVerifyPage = ({
 
       {fingerprintExists === false && (
         <div className="child-reg-verification-result">
-          <div className="child-reg-info-message">
-            <h3>ℹ Fingerprint Not Found</h3>
-            <p>This fingerprint does not match any existing record.</p>
-            <p>Would you like to register this child as a new patient?</p>
+          <div className="child-reg-info-message child-reg-mismatch-card">
+            <span className="mismatch-icon">⚠️</span>
+            <h3>Fingerprint Match Not Found</h3>
+            <p className="mismatch-bold">This fingerprint does not match any registered patients in the database.</p>
+            
+            <div className="mismatch-guidance">
+              <h4>Suggested Next Steps:</h4>
+              <ul>
+                <li>Ensure the patient's finger is clean and dry.</li>
+                <li>Verify the finger is correctly aligned flat on the scanner lens.</li>
+                <li>Clean the scanner lens with a dry cloth and try matching again.</li>
+                <li>If the child is visiting the outreach clinic for the first time, click <strong>Register New Patient</strong> to create a new profile.</li>
+              </ul>
+            </div>
+            
             <div className="child-reg-form-actions">
+              <button className="child-reg-btn-primary" onClick={handleVerifyFingerprintScan}>Try Scanning Again</button>
               <button className="child-reg-btn-primary" onClick={() => { setFingerprintExists(null); navigateToPage('register'); }}>Register New Patient</button>
               <button className="child-reg-btn-secondary" onClick={() => { setFingerprintExists(null); goBack(); }}>Cancel</button>
             </div>

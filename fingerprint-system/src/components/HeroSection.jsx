@@ -80,7 +80,7 @@ const HeroSection = () => {
       <div className="hero-container">
         <div className={`hero-content ${isVisible ? 'fade-in' : ''}`}>
           <h1 className="hero-title">
-            Tanzania Rural Health Movement <span className="highlight">(TRHM)</span>
+            Street Medicine Outreach Project <span className="highlight">(TRHM)</span>
           </h1>
           <p className="hero-subtitle">
             Delivering healthcare and support directly to vulnerable children living on the streets.

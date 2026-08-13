@@ -2497,8 +2497,8 @@ export async function apiFetchTestsRecords(childId) {
           if (record && record.id) {
             await executeRun(
               `INSERT OR REPLACE INTO laboratory_tests 
-          (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
               [
                 record.id,
                 childId,
@@ -2859,8 +2859,8 @@ export async function apiFetchSymptomsRecords(childId) {
           if (record && record.id) {
             await executeRun(
               `INSERT OR REPLACE INTO symptoms_recorded 
-          (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
               [
                 record.id,
                 childId,
@@ -2963,8 +2963,8 @@ export async function apiFetchClothingRecords(childId) {
           if (record && record.id) {
             await executeRun(
               `INSERT OR REPLACE INTO clothing_provisions 
-          (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
+          (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
               [
                 record.id,
                 childId,
@@ -3025,8 +3025,8 @@ export async function apiSaveClothing(clothingData) {
       if (response.ok) {
         await executeRun(
           `INSERT OR REPLACE INTO clothing_provisions 
-      (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, sync_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')`,
+      (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 'synced')`,
           [id, childId, shoes, clothes, date, recordedBy, recordedByName]
         );
         await saveDB();
@@ -3041,8 +3041,8 @@ export async function apiSaveClothing(clothingData) {
   try {
     await executeRun(
       `INSERT OR REPLACE INTO clothing_provisions 
-  (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, sync_status) 
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_created')`,
+  (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+  VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'local_created')`,
       [id, childId, shoes, clothes, date, recordedBy, recordedByName]
     );
     await saveDB();
@@ -3422,10 +3422,18 @@ export async function saveOthers(childId, othersData) {
   const id = othersData.id || crypto.randomUUID();
   const isOnline = navigator.onLine;
   const symptoms = othersData.symptoms || '';
-  const visitNotes = othersData.visitNotes || '';
   const date = othersData.date || new Date().toISOString().split('T')[0];
   const recordedBy = othersData.recordedBy || null;
   const recordedByName = othersData.recordedByName || null;
+
+  // Serialize diagnosis and hospitalization fields into visitNotes to fit database schema
+  const visitNotesJson = JSON.stringify({
+    visitNotes: othersData.visitNotes || '',
+    diagnosis: othersData.diagnosis || '',
+    diagnosisNotes: othersData.diagnosisNotes || '',
+    hospitalized: othersData.hospitalized || false,
+    timeHospitalized: othersData.timeHospitalized || ''
+  });
 
   if (isOnline) {
     try {
@@ -3436,7 +3444,7 @@ export async function saveOthers(childId, othersData) {
           id,
           childId,
           symptoms,
-          visitNotes,
+          visitNotes: visitNotesJson,
           date,
           recordedBy,
           recordedByName
@@ -3448,7 +3456,7 @@ export async function saveOthers(childId, othersData) {
           `INSERT OR REPLACE INTO symptoms_recorded 
           (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
           VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 'synced')`,
-          [id, childId, symptoms, visitNotes, date, recordedBy, recordedByName]
+          [id, childId, symptoms, visitNotesJson, date, recordedBy, recordedByName]
         );
         await saveDB();
         return result;
@@ -3464,7 +3472,7 @@ export async function saveOthers(childId, othersData) {
       `INSERT OR REPLACE INTO symptoms_recorded 
       (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
       VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'local_created')`,
-      [id, childId, symptoms, visitNotes, date, recordedBy, recordedByName]
+      [id, childId, symptoms, visitNotesJson, date, recordedBy, recordedByName]
     );
     await saveDB();
     return { success: true, message: 'Assessment saved offline', data: { id, childId, ...othersData } };
@@ -3568,5 +3576,72 @@ export async function getClinicalOptions() {
     } catch (error) {
       console.warn("API: Failed to fetch clinical options online, trying cache...", error);
     }
+  }
+
+  // Offline or error fallback: query local SQLite tables
+  try {
+    const medsRows = await executeQuery("SELECT * FROM lookup_medications ORDER BY name ASC");
+    const proceduresRows = await executeQuery("SELECT * FROM lookup_procedures ORDER BY name ASC");
+    const educationRows = await executeQuery("SELECT * FROM lookup_education ORDER BY name ASC");
+
+    const medicationOptions = {
+      ntdsMeds: [],
+      antibiotics: [],
+      otherMeds: []
+    };
+
+    medsRows.forEach(row => {
+      const cat = row.category;
+      if (medicationOptions[cat] !== undefined) {
+        medicationOptions[cat].push(row.name);
+      }
+    });
+
+    const testTypes = [
+      "Haemoglobin test (Hb)",
+      "Erythrocyte sedimentation rate (ESR)",
+      "Blood glucose",
+      "Uric acid test",
+      "H. Pylori test",
+      "Malaria test",
+      "HIV test",
+      "Urinalysis",
+      "VDRL test",
+      "Stool test",
+      "Widal test"
+    ];
+
+    const testResults = [
+      "Negative (-)",
+      "Positive (+)",
+      "Leukocyte +",
+      "Leukocyte ++",
+      "Leukocyte +++",
+      "Glucose +",
+      "Glucose ++",
+      "Glucose +++",
+      "Schistosoma ova seen",
+      "High",
+      "Low",
+      "Normal",
+      "Abnormal"
+    ];
+
+    return {
+      medicationOptions,
+      testTypesOptions: testTypes,
+      testResultOptions: testResults,
+      procedureOptions: proceduresRows.map(row => row.name || row.Name),
+      educationOptions: educationRows.map(row => row.name || row.Name)
+    };
+  } catch (err) {
+    console.error("API: Failed to load clinical options from SQLite cache:", err);
+    return {
+      medicationOptions: { ntdsMeds: [], antibiotics: [], otherMeds: [] },
+      testTypesOptions: [],
+      testResultOptions: [],
+      procedureOptions: [],
+      educationOptions: []
+    };
   }
 }
