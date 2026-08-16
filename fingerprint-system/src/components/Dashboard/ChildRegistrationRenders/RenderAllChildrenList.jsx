@@ -16,13 +16,24 @@ const RenderAllChildrenList = ({
   handleVerifyFingerprintClick,
   handleAddRegistrationClick,
   handlePrintClick,
-  isDeleting, // Add loading prop
-  deletingChildId // Add loading prop
+  isDeleting,
+  deletingChildId
 }) => {
   const filteredAllChildren = Array.isArray(childrenData) ? childrenData.filter(child =>
     child.fullName?.toLowerCase().includes(searchAllChildren.toLowerCase()) ||
     child.customSerialId?.toLowerCase().includes(searchAllChildren.toLowerCase())
   ) : [];
+
+  // Helper function to get profile image
+  const getProfileImage = (child) => {
+    return child?.image1 || child?.image2 || child?.image3 || null;
+  };
+
+  // Helper function to get initials
+  const getInitials = (fullName) => {
+    if (!fullName) return '?';
+    return fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
   return (
     <div className="child-reg-page-content">
@@ -74,8 +85,9 @@ const RenderAllChildrenList = ({
           <thead>
             <tr>
               <th>S/N</th>
+              <th>Photo</th>
               <th>ID</th>
-              <th>Child Name</th>
+              <th>Patient Name</th>
               <th>Age</th>
               <th>Gender</th>
               <th>Location</th>
@@ -94,10 +106,27 @@ const RenderAllChildrenList = ({
               const fingerCount = childFingerprints.length;
               const fingerStatus = fingerCount > 0 ? `${fingerCount}/10` : '0/10';
               const isDeletingThis = isDeleting && deletingChildId === child.id;
+              const profileImage = getProfileImage(child);
+              const initials = getInitials(child.fullName);
               
               return (
                 <tr key={child.id}>
                   <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                  <td>
+                    <div className="child-reg-table-profile-photo">
+                      {profileImage ? (
+                        <img 
+                          src={profileImage} 
+                          alt={child.fullName}
+                          className="child-reg-table-avatar"
+                        />
+                      ) : (
+                        <div className="child-reg-table-avatar-placeholder">
+                          <span>{initials}</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
                   <td>{child.customSerialId}</td>
                   <td>{child.fullName}</td>
                   <td>{calculateAgeFromYear(child.estimatedBirthYear)}</td>

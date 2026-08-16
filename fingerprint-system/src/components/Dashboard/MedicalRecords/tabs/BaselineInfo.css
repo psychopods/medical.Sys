@@ -1,3 +1,5 @@
+/* src/components/Dashboard/MedicalRecords/tabs/BaselineInfo.css */
+
 /* Baseline Info Tab Styles */
 .mr-baseline-form {
   background: white;
@@ -42,16 +44,39 @@
   border: 1px solid #cbd5e1;
   border-radius: 4px;
   font-size: 14px;
+  background: #ffffff;
+  color: #1a1a2e;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .mr-baseline-form .mr-form-group input:focus {
   outline: none;
-  border-color: #0066cc;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .mr-baseline-form .mr-form-group input:disabled {
   background: #f8fafc;
-  color: #64748b;
+  color: #1a1a2e;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+/* Location field with resolved name - highlight it */
+.mr-baseline-form .mr-form-group input[value*="Center"]:disabled,
+.mr-baseline-form .mr-form-group input:not([value*="550e"]):disabled {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+/* Fallback when location is still an ID (UUID) */
+.mr-baseline-form .mr-form-group input[value*="550e"]:disabled {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
 }
 
 .mr-baseline-form .mr-checkbox-label-inline {
@@ -59,11 +84,17 @@
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a2e;
 }
 
 .mr-baseline-form .mr-checkbox-label-inline input {
-  width: auto;
+  width: 18px;
+  height: 18px;
   margin: 0;
+  cursor: pointer;
+  accent-color: #667eea;
 }
 
 .mr-baseline-form .mr-form-actions {
@@ -75,10 +106,46 @@
   border-top: 1px solid #e2e8f0;
 }
 
+/* Buttons */
+.mr-baseline-form .mr-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mr-baseline-form .mr-btn-primary {
+  background: #667eea;
+  color: white;
+  padding: 12px 32px;
+}
+
+.mr-baseline-form .mr-btn-primary:hover {
+  background: #5a67d8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.mr-baseline-form .mr-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
+  .mr-baseline-form {
+    padding: 16px;
+  }
+  
   .mr-baseline-form .mr-form-row {
     flex-direction: column;
     gap: 16px;
+  }
+  
+  .mr-baseline-form .mr-form-group {
+    min-width: 100%;
   }
   
   .mr-baseline-form .mr-form-actions {
@@ -88,5 +155,103 @@
   .mr-baseline-form .mr-btn {
     width: 100%;
     text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .mr-baseline-form {
+    padding: 12px;
+  }
+  
+  .mr-baseline-form h3 {
+    font-size: 16px;
+  }
+  
+  .mr-baseline-form .mr-form-group input {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .mr-baseline-form {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .mr-baseline-form h3 {
+    color: #f1f5f9;
+    border-bottom-color: #334155;
+  }
+
+  .mr-baseline-form .mr-form-group label {
+    color: #e2e8f0;
+  }
+
+  .mr-baseline-form .mr-form-group input {
+    background: #0f172a;
+    border-color: #475569;
+    color: #f1f5f9;
+  }
+
+  .mr-baseline-form .mr-form-group input:focus {
+    border-color: #667eea;
+  }
+
+  .mr-baseline-form .mr-form-group input:disabled {
+    background: #1e293b;
+    color: #cbd5e1;
+  }
+
+  .mr-baseline-form .mr-form-group input[value*="Center"]:disabled,
+  .mr-baseline-form .mr-form-group input:not([value*="550e"]):disabled {
+    background: #1e3a5f;
+    border-color: #3b82f6;
+    color: #93c5fd;
+  }
+
+  .mr-baseline-form .mr-form-group input[value*="550e"]:disabled {
+    background: #3a1a1a;
+    border-color: #ef4444;
+    color: #fca5a5;
+  }
+
+  .mr-baseline-form .mr-checkbox-label-inline {
+    color: #e2e8f0;
+  }
+
+  .mr-baseline-form .mr-form-actions {
+    border-top-color: #334155;
+  }
+
+  .mr-baseline-form .mr-btn-primary {
+    background: #667eea;
+  }
+
+  .mr-baseline-form .mr-btn-primary:hover {
+    background: #5a67d8;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .mr-baseline-form {
+    background: white !important;
+    border-color: #ddd !important;
+    box-shadow: none !important;
+  }
+
+  .mr-baseline-form .mr-btn {
+    display: none !important;
+  }
+
+  .mr-baseline-form .mr-form-group input {
+    border-color: #ddd !important;
+    background: #f5f5f5 !important;
+  }
+
+  .mr-baseline-form .mr-form-actions {
+    display: none !important;
   }
 }

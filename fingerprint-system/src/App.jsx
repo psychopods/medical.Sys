@@ -33,6 +33,7 @@ import UserProfile from './components/Dashboard/UserProfile';
 import NotificationsAdmin from './components/Dashboard/NotificationsAdmin';
 import { ProtectedRoute, RoleBasedRoute } from './components/ProtectedRoute';
 import PatientsHistory from './components/Dashboard/PatientsHistory';
+import ClinicalOptionsManager from './components/Dashboard/ClinicalOptionsManager';
 import './App.css';
 
 // Layout for public pages (with headers and footer)
@@ -241,6 +242,14 @@ function App() {
             <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'pharmacist', 'staff', 'lab_technician']}>
               <ProtectedLayout>
                 <MedicalRecords />
+              </ProtectedLayout>
+            </RoleBasedRoute>
+          } />
+
+          <Route path="/clinicaloptions" element={
+            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse']}>
+              <ProtectedLayout>
+                <ClinicalOptionsManager />
               </ProtectedLayout>
             </RoleBasedRoute>
           } />

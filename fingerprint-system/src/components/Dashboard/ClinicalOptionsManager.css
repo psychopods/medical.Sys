@@ -1,0 +1,756 @@
+/* src/components/Dashboard/ClinicalOptionsManager.css */
+
+.co-clinical-options-container {
+  width: 100%;
+  background: #ffffff;
+  min-height: calc(100vh - 100px);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Page Header */
+.co-page-header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.co-page-header h1 {
+  font-size: 28px;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.co-page-header p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.co-staff-info {
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: #e8f5e9;
+  border-radius: 6px;
+  display: inline-flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.co-staff-name,
+.co-staff-id {
+  font-size: 14px;
+  color: #1a1a2e;
+  font-weight: 500;
+}
+
+/* Tab Navigation */
+.co-tab-navigation {
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 25px;
+}
+
+.co-tab-navigation nav {
+  display: flex;
+  gap: 0;
+  margin-bottom: -2px;
+  flex-wrap: wrap;
+}
+
+.co-tab-button {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.co-tab-button:hover:not(:disabled) {
+  color: #1a1a2e;
+  background: #f8f9fa;
+}
+
+.co-tab-button.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+.co-tab-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tab Content */
+.co-tab-content {
+  animation: coFadeIn 0.3s ease;
+}
+
+@keyframes coFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Form Container */
+.co-form-container-full {
+  width: 100%;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  padding: 30px;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+/* Form Section */
+.co-form-section {
+  margin-bottom: 30px;
+}
+
+.co-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #667eea;
+}
+
+/* Form Grid */
+.co-form-grid-full {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+/* Full Width for specific fields */
+.co-form-group.co-full-width {
+  grid-column: 1 / -1;
+}
+
+/* Form Group */
+.co-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.co-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.co-form-group input,
+.co-form-group textarea,
+.co-form-group select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #ffffff;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.co-form-group input:focus,
+.co-form-group textarea:focus,
+.co-form-group select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.co-form-group input:disabled,
+.co-form-group textarea:disabled,
+.co-form-group select:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.co-form-group select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.co-form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+.co-helper-text {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* Form Actions */
+.co-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Existing List */
+.co-existing-list {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 2px solid #e0e0e0;
+}
+
+.co-category-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.co-category-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.co-category-section h4 .count-badge {
+  background: #667eea;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+/* Tag List */
+.co-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.co-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #ffffff;
+  color: #1a1a2e;
+  border-radius: 20px;
+  font-size: 13px;
+  border: 1px solid #667eea;
+  transition: all 0.2s ease;
+}
+
+.co-tag:hover {
+  background: #f0f4ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.co-tag-remove {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  line-height: 1;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.co-tag-remove:hover {
+  color: #c82333;
+  transform: scale(1.2);
+}
+
+/* Primary Button */
+.co-btn-primary {
+  padding: 12px 32px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  background: #667eea;
+  color: #fff;
+}
+
+.co-btn-primary:hover:not(:disabled) {
+  background: #5a67d8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.co-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Toast Notification */
+.co-toast-notification {
+  position: fixed;
+  top: 100px;
+  right: 30px;
+  min-width: 280px;
+  max-width: 350px;
+  background: white;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  animation: coSlideInRight 0.3s ease;
+  border-left: 4px solid;
+}
+
+.co-toast-notification.success {
+  border-left-color: #28a745;
+  background: #f0fff4;
+}
+
+.co-toast-notification.error {
+  border-left-color: #dc3545;
+  background: #fff5f5;
+}
+
+.co-toast-notification.warning {
+  border-left-color: #ffc107;
+  background: #fff8e1;
+}
+
+.co-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.co-toast-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #999;
+  padding: 0 4px;
+}
+
+.co-toast-close:hover {
+  color: #333;
+}
+
+@keyframes coSlideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Loading State */
+.co-dashboard-loading {
+  min-height: calc(100vh - 100px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.co-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: coSpin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+.co-spinner-small {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: coSpin 0.8s ease-in-out infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes coSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .co-clinical-options-container {
+    padding: 15px;
+  }
+
+  .co-page-header h1 {
+    font-size: 24px;
+  }
+
+  .co-form-grid-full {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .co-form-group.co-full-width {
+    grid-column: 1;
+  }
+
+  .co-form-container-full {
+    padding: 20px;
+  }
+
+  .co-tab-button {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .co-form-actions {
+    flex-direction: column;
+  }
+
+  .co-btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .co-toast-notification {
+    top: 70px;
+    right: 10px;
+    left: 10px;
+    min-width: auto;
+    max-width: none;
+  }
+
+  .co-staff-info {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+
+  .co-category-section {
+    padding: 12px;
+  }
+
+  .co-tag {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .co-page-header h1 {
+    font-size: 20px;
+  }
+
+  .co-tab-navigation nav {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .co-tab-button {
+    padding: 8px 14px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .co-form-container-full {
+    padding: 15px;
+  }
+
+  .co-form-group input,
+  .co-form-group textarea,
+  .co-form-group select {
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  .co-btn-primary {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+
+  .co-tag-list {
+    gap: 6px;
+  }
+
+  .co-tag {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .co-section-title {
+    font-size: 16px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .co-clinical-options-container {
+    padding: 10px;
+  }
+
+  .co-btn-primary,
+  .co-toast-notification {
+    display: none !important;
+  }
+
+  .co-form-container-full {
+    border: 1px solid #ddd;
+    background: white;
+    padding: 15px;
+  }
+
+  .co-tab-content {
+    animation: none;
+  }
+
+  .co-page-header {
+    border-bottom-color: #ddd;
+  }
+
+  .co-staff-info {
+    background: #f5f5f5 !important;
+    border: 1px solid #ddd;
+  }
+
+  .co-tag {
+    border-color: #ddd;
+    background: #f5f5f5 !important;
+  }
+
+  .co-tag-remove {
+    display: none !important;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .co-clinical-options-container {
+    background: #1a1a2e;
+  }
+
+  .co-page-header h1 {
+    color: #f0f0f0;
+  }
+
+  .co-page-header p {
+    color: #aaa;
+  }
+
+  .co-page-header {
+    border-bottom-color: #333;
+  }
+
+  .co-staff-info {
+    background: #1a3a2a;
+  }
+
+  .co-staff-name,
+  .co-staff-id {
+    color: #ddd;
+  }
+
+  .co-tab-navigation {
+    border-bottom-color: #333;
+  }
+
+  .co-tab-button {
+    color: #aaa;
+  }
+
+  .co-tab-button:hover:not(:disabled) {
+    color: #f0f0f0;
+    background: #2a2a4e;
+  }
+
+  .co-tab-button.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+  }
+
+  .co-form-container-full {
+    background: #2a2a4e;
+    border-color: #333;
+  }
+
+  .co-form-group label {
+    color: #ddd;
+  }
+
+  .co-form-group input,
+  .co-form-group textarea,
+  .co-form-group select {
+    background: #1a1a2e;
+    border-color: #444;
+    color: #f0f0f0;
+  }
+
+  .co-form-group input:focus,
+  .co-form-group textarea:focus,
+  .co-form-group select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  }
+
+  .co-form-group input:disabled,
+  .co-form-group textarea:disabled,
+  .co-form-group select:disabled {
+    background: #333;
+  }
+
+  .co-helper-text {
+    color: #888;
+  }
+
+  .co-form-actions {
+    border-top-color: #333;
+  }
+
+  .co-btn-primary {
+    background: #667eea;
+  }
+
+  .co-btn-primary:hover:not(:disabled) {
+    background: #5a67d8;
+  }
+
+  .co-toast-notification {
+    background: #2a2a4e;
+    color: #f0f0f0;
+  }
+
+  .co-toast-notification.success {
+    border-left-color: #28a745;
+    background: #1a3a2a;
+  }
+
+  .co-toast-notification.error {
+    border-left-color: #dc3545;
+    background: #3a1a1a;
+  }
+
+  .co-toast-notification.warning {
+    border-left-color: #ffc107;
+    background: #3a3a1a;
+  }
+
+  .co-toast-close {
+    color: #888;
+  }
+
+  .co-toast-close:hover {
+    color: #fff;
+  }
+
+  .co-dashboard-loading {
+    background: #1a1a2e;
+  }
+
+  .co-dashboard-loading p {
+    color: #aaa;
+  }
+
+  .co-spinner {
+    border-color: #333;
+    border-top-color: #667eea;
+  }
+
+  .co-existing-list {
+    border-top-color: #333;
+  }
+
+  .co-category-section {
+    background: #2a2a4e;
+    border-color: #333;
+  }
+
+  .co-category-section h4 {
+    color: #f0f0f0;
+  }
+
+  .co-tag {
+    background: #1a1a2e;
+    color: #f0f0f0;
+    border-color: #667eea;
+  }
+
+  .co-tag:hover {
+    background: #2a2a4e;
+  }
+
+  .co-tag-remove {
+    color: #f87171;
+  }
+
+  .co-tag-remove:hover {
+    color: #ef4444;
+  }
+
+  .co-section-title {
+    color: #f0f0f0;
+    border-bottom-color: #667eea;
+  }
+}
+
+/* Add to ClinicalOptionsManager.css */
+
+/* Empty State */
+.co-empty-text {
+  color: #999;
+  font-size: 13px;
+  font-style: italic;
+  padding: 8px 12px;
+}
+
+/* Count Badge */
+.count-badge {
+  background: #667eea;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Dark Mode for Empty Text */
+@media (prefers-color-scheme: dark) {
+  .co-empty-text {
+    color: #666;
+  }
+}

@@ -1,6 +1,6 @@
 // Centralized API Endpoints Configuration
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://trhm-api.mitzkits.co.tz';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://streetmedicine.mitzkits.co.tz'; // Default to local server if not set
 
 const buildUrl = (envVar, fallbackPath) => {
   const path = import.meta.env[envVar] || fallbackPath;
@@ -57,8 +57,6 @@ export const API_ENDPOINTS = {
   biometricsEnroll: buildUrl('VITE_API_PATH_BIOMETRICS_ENROLL', '/api/biometrics/enroll'),
   biometricsChild: (childId) => `${buildUrl('VITE_API_PATH_BIOMETRICS_CHILD', '/api/biometrics/child')}/${childId}`,
   biometricsList: buildUrl('VITE_API_PATH_BIOMETRICS_LIST', '/api/biometrics'),
-  clinicalSummary: buildUrl('VITE_API_PATH_REPORTS_CLINICAL_SUMMARY', '/api/reports/clinical-summary'),
-  clinicalOptions: buildUrl('VITE_API_PATH_CHILDREN_CLINICAL_OPTIONS', '/api/children/clinical/options'),
 
   // Contact
   contactSubmit: buildUrl('VITE_API_PATH_CONTACT_SUBMIT', '/api/contact/submit'),
@@ -100,4 +98,8 @@ export const API_ENDPOINTS = {
   // Notifications
   notifications: buildUrl('VITE_API_PATH_NOTIFICATIONS', '/api/notifications'),
   notificationRead: (id) => `${buildUrl('VITE_API_PATH_NOTIFICATIONS', '/api/notifications')}/${id}/read`,
+
+  // Clinical Options & Summary
+  clinicalOptions: buildUrl('VITE_API_PATH_CLINICAL_OPTIONS', '/api/clinical/options'),
+  clinicalSummary: buildUrl('VITE_API_PATH_CLINICAL_SUMMARY', '/api/clinical/summary'),
 };

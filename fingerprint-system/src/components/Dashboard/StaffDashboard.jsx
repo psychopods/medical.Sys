@@ -156,11 +156,11 @@ const StaffDashboard = ({ user, onLogout }) => {
 
   const getStatusClass = (status) => {
     const classes = {
-      'completed': 'sd-status-completed',
-      'pending': 'sd-status-pending',
-      'in-progress': 'sd-status-progress'
+      'completed': 'staff-status-completed',
+      'pending': 'staff-status-pending',
+      'in-progress': 'staff-status-progress'
     };
-    return classes[status] || 'sd-status-default';
+    return classes[status] || 'staff-status-default';
   };
 
   const getStatusLabel = (status) => {
@@ -221,26 +221,26 @@ const StaffDashboard = ({ user, onLogout }) => {
   const displayName = getUserDisplayName();
 
   return (
-    <div className="sd-dashboard">
+    <div className="staff-dashboard">
       {/* Silent Refresh Indicator */}
-      <div className="sd-refresh-indicator">
+      <div className="staff-refresh-indicator">
         {isRefreshing && (
-          <span className="sd-refresh-spinner"></span>
+          <span className="staff-refresh-spinner"></span>
         )}
         {lastRefreshed && (
-          <span className="sd-refresh-time">
+          <span className="staff-refresh-time">
             Last updated: {lastRefreshed.toLocaleTimeString()}
           </span>
         )}
       </div>
 
       {/* Welcome Section */}
-      <div className="sd-welcome-section">
-        <div className="sd-welcome-text">
+      <div className="staff-welcome-section">
+        <div className="staff-welcome-text">
           <h1>Welcome back, {displayName}!</h1>
           <p>Here's an overview of your social support activities</p>
         </div>
-        <div className="sd-welcome-date">
+        <div className="staff-welcome-date">
           <span>{new Date().toLocaleDateString('en-US', { 
             weekday: 'long', 
             year: 'numeric', 
@@ -251,14 +251,14 @@ const StaffDashboard = ({ user, onLogout }) => {
       </div>
 
       {/* Stats Cards */}
-      <div className="sd-stats-grid">
+      <div className="staff-stats-grid">
         {stats.map((stat, index) => (
-          <div className={`sd-stat-card sd-stat-${stat.color}`} key={index}>
-            <div className="sd-stat-icon">{stat.icon}</div>
-            <div className="sd-stat-info">
+          <div className={`staff-stat-card staff-stat-${stat.color}`} key={index}>
+            <div className="staff-stat-icon">{stat.icon}</div>
+            <div className="staff-stat-info">
               <h3>{stat.value}</h3>
               <p>{stat.label}</p>
-              <span className={`sd-stat-trend ${stat.trendUp ? 'sd-trend-up' : 'sd-trend-down'}`}>
+              <span className={`staff-stat-trend ${stat.trendUp ? 'staff-trend-up' : 'staff-trend-down'}`}>
                 {stat.trend}
               </span>
             </div>
@@ -267,29 +267,29 @@ const StaffDashboard = ({ user, onLogout }) => {
       </div>
 
       {/* Quick Actions */}
-      <div className="sd-section-header">
+      <div className="staff-section-header">
         <h2>Quick Actions</h2>
-        <span className="sd-section-badge">4 actions</span>
+        <span className="staff-section-badge">4 actions</span>
       </div>
-      <div className="sd-actions-grid">
+      <div className="staff-actions-grid">
         {quickActions.map((action, index) => (
-          <div className={`sd-action-card sd-action-${action.color}`} key={index} onClick={action.action}>
-            <div className="sd-action-icon">{action.icon}</div>
-            <div className="sd-action-info">
+          <div className={`staff-action-card staff-action-${action.color}`} key={index} onClick={action.action}>
+            <div className="staff-action-icon">{action.icon}</div>
+            <div className="staff-action-info">
               <h4>{action.title}</h4>
               <p>{action.desc}</p>
             </div>
-            <span className="sd-action-arrow">→</span>
+            <span className="staff-action-arrow">→</span>
           </div>
         ))}
       </div>
 
       {/* Recent Social Supports */}
-      <div className="sd-section-header">
+      <div className="staff-section-header">
         <h2>Recent Social Supports</h2>
-        <span className="sd-section-badge sd-support-count">{recentSupports.length} records</span>
+        <span className="staff-section-badge staff-support-count">{recentSupports.length} records</span>
       </div>
-      <div className="sd-supports-table">
+      <div className="staff-supports-table">
         <table>
           <thead>
             <tr>
@@ -305,13 +305,13 @@ const StaffDashboard = ({ user, onLogout }) => {
               recentSupports.map((support) => (
                 <tr key={support.id}>
                   <td>
-                    <div className="sd-child-name">
-                      <span className="sd-child-avatar">{support.child.charAt(0)}</span>
+                    <div className="staff-child-name">
+                      <span className="staff-child-avatar">{support.child.charAt(0)}</span>
                       {support.child}
                     </div>
                   </td>
                   <td>
-                    <span className="sd-support-type">{support.type}</span>
+                    <span className="staff-support-type">{support.type}</span>
                   </td>
                   <td>{new Date(support.date).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -319,18 +319,18 @@ const StaffDashboard = ({ user, onLogout }) => {
                     day: 'numeric'
                   })}</td>
                   <td>
-                    <span className={`sd-status-badge ${getStatusClass(support.status)}`}>
+                    <span className={`staff-status-badge ${getStatusClass(support.status)}`}>
                       {getStatusLabel(support.status)}
                     </span>
                   </td>
                   <td>
-                    <button className="sd-view-btn">View</button>
+                    <button className="staff-view-btn">View</button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="sd-no-data">
+                <td colSpan="5" className="staff-no-data">
                   No social supports recorded yet
                 </td>
               </tr>

@@ -83,6 +83,21 @@ export const menuItems = [
     label: 'Medical Records', 
     roles: ['superuser', 'admin', 'doctor', 'nurse', 'lab_technician', 'pharmacist'] 
   },
+  {
+  path: '/clinicaloptions',
+  icon: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+      <path d="M8 7h8" />
+      <path d="M8 11h6" />
+      <path d="M8 15h4" />
+      <circle cx="17" cy="15" r="2" />
+      <circle cx="17" cy="9" r="2" />
+    </svg>
+  ),
+  label: 'Clinical Options', 
+  roles: ['superuser', 'admin', 'doctor'] 
+},
   { 
     path: '/patients-history', 
     icon: (
@@ -94,7 +109,7 @@ export const menuItems = [
       </svg>
     ), 
     label: 'Patients History', 
-    roles: ['superuser', 'admin', 'doctor', 'nurse', 'lab_technician', 'pharmacist'] 
+    roles: ['superuser', 'admin', 'doctor', 'nurse', 'lab_technician', 'pharmacist', 'staff'] 
   },
   { 
     path: '/gallery-admin', 

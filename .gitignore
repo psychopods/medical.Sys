@@ -20,3 +20,20 @@ API/SB1001U-SDK/
 Thumbs.db
 .vscode/
 .idea/
+
+
+
+# Uploaded images
+API/public/uploads/
+API/public/uploads/*
+!API/public/uploads/.gitkeep
+
+# Or if you want to ignore all uploads anywhere
+**/uploads/
+**/uploads/*
+!**/uploads/.gitkeep
+
+# Also ignore these common upload directories
+uploads/
+temp/
+tmp/

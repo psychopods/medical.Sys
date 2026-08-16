@@ -12,12 +12,32 @@ const RenderFingerprintsList = ({
   handleAddRegistrationClick,
   handlePrintClick,
   getStaffNameById,
-  isLoading // Add loading prop
+  isLoading
 }) => {
   const filteredFingerprintData = Array.isArray(fingerprintData) ? fingerprintData.filter(fp =>
     fp.childName?.toLowerCase().includes(searchFingerprints.toLowerCase()) ||
     fp.customSerialId?.toLowerCase().includes(searchFingerprints.toLowerCase())
   ) : [];
+
+  // Helper function to get profile image for a child
+  const getProfileImage = (childId) => {
+    if (!childrenData || !Array.isArray(childrenData)) return null;
+    const child = childrenData.find(c => c.id === childId || c.customSerialId === childId);
+    return child?.image1 || child?.image2 || child?.image3 || null;
+  };
+
+  // Helper function to get initials for a child
+  const getInitials = (childName) => {
+    if (!childName) return '?';
+    return childName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  // Helper function to get child name
+  const getChildName = (childId) => {
+    if (!childrenData || !Array.isArray(childrenData)) return 'N/A';
+    const child = childrenData.find(c => c.id === childId || c.customSerialId === childId);
+    return child?.fullName || 'N/A';
+  };
 
   return (
     <div className="child-reg-page-content">
@@ -83,8 +103,9 @@ const RenderFingerprintsList = ({
           <thead>
             <tr>
               <th>S/N</th>
+              <th>Photo</th>
               <th>Child ID</th>
-              <th>Child Name</th>
+              <th>Patient Name</th>
               <th>Finger</th>
               <th>Capture Date & Time</th>
               <th>Quality</th>
@@ -112,11 +133,32 @@ const RenderFingerprintsList = ({
               const childDisplayId = fp.customSerialId || fp.childId || 'N/A';
               const fingerName = fp.fingerName || `Finger ${fp.fingerIndex}`;
               
+              // Get child info for photo
+              const childId = fp.childId || fp.child_id;
+              const profileImage = getProfileImage(childId);
+              const childName = fp.childName || getChildName(childId);
+              const initials = getInitials(childName);
+              
               return (
                 <tr key={index}>
                   <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                  <td>
+                    <div className="child-reg-table-profile-photo">
+                      {profileImage ? (
+                        <img 
+                          src={profileImage} 
+                          alt={childName}
+                          className="child-reg-table-avatar"
+                        />
+                      ) : (
+                        <div className="child-reg-table-avatar-placeholder">
+                          <span>{initials}</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
                   <td>{childDisplayId}</td>
-                  <td>{fp.childName || 'N/A'}</td>
+                  <td>{childName}</td>
                   <td>{fingerName}</td>
                   <td>{formattedDate}</td>
                   <td>
@@ -137,7 +179,7 @@ const RenderFingerprintsList = ({
                             showToast('Child record not found', 'error');
                           }
                         }}
-                        title="View Child Details"
+                        title="View Patient Details"
                         disabled={isLoading}
                       >
                         {isLoading ? (
@@ -158,7 +200,7 @@ const RenderFingerprintsList = ({
         </table>
         {filteredFingerprintData.length === 0 && (
           <div className="child-reg-no-data">
-            <p>No fingerprints captured yet. Click "Add Registration" to register a new child.</p>
+            <p>No fingerprints captured yet. Click "Add Registration" to register a new patient.</p>
           </div>
         )}
       </div>

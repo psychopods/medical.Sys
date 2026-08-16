@@ -131,7 +131,7 @@ const BottomHeader = () => {
     { path: '/', name: 'Home' },
     { path: '/street-medicine', name: 'Street Medicine' },
     { path: '/services', name: 'Services' },
-    { path: '/about', name: 'About' },
+    // { path: '/about', name: 'About' },
     { path: '/gallery', name: 'Gallery' },
     { path: '/reports', name: 'Reports' },
     { path: '/contact', name: 'Contact' }
@@ -193,7 +193,7 @@ const BottomHeader = () => {
                 <svg className="bb-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2L15 9H22L16 14L19 21L12 17L5 21L8 14L2 9H9L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                Join Now
+                JOIN OUR MOVEMENT
               </button>
               {showJoinIndicators && (
                 <div className="bb-join-indicators">
@@ -253,7 +253,7 @@ const BottomHeader = () => {
               <svg className="bb-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L15 9H22L16 14L19 21L12 17L5 21L8 14L2 9H9L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Join Now
+              JOIN OUR MOVEMENT
             </button>
             <button className="bb-mobile-login-btn" onClick={handleLoginClick}>
               <svg className="bb-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
