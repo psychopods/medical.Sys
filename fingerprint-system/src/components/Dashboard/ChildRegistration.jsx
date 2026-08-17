@@ -2189,6 +2189,9 @@ const ChildRegistration = () => {
     }
     
     refreshIntervalRef.current = setInterval(() => {
+      if (navigator.onLine) {
+        triggerSync().catch(err => console.warn("Auto-sync error in background timer:", err));
+      }
       if (activePage === 'list' || activePage === 'todayList' || activePage === 'childrenList') {
         refreshAllData(false);
       }

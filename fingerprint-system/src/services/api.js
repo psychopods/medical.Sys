@@ -1668,6 +1668,19 @@ function updateSyncStatus(state, message) {
 
 export function initSyncWorker() {
   updateSyncStatus('idle', 'Ready');
+  if (typeof window !== 'undefined' && !window.__autoSyncListenerAttached) {
+    window.__autoSyncListenerAttached = true;
+    window.addEventListener('online', () => {
+      console.log('Network status reconnected to ONLINE. Auto-triggering sync worker...');
+      triggerSync().catch(err => console.warn('Auto-sync error on reconnect:', err));
+    });
+    // Fire initial sync if online
+    if (navigator.onLine) {
+      setTimeout(() => {
+        triggerSync().catch(err => console.warn('Initial auto-sync error:', err));
+      }, 3000);
+    }
+  }
 }
 
 export async function triggerSync() {

@@ -90,27 +90,22 @@ export async function getDB() {
       } else {
         dbInstance = new SQL.Database();
 
-        // Fetch schema and seeds from public directory
-        const [schemaRes, seedRes] = await Promise.all([
-          fetch(`${baseUrl}SQLite_SYS_Database.sqlite.txt`),
-          fetch(`${baseUrl}sqliteSEED.sql.txt`),
-        ]);
+        // Fetch schema from public directory
+        const schemaRes = await fetch(`${baseUrl}SQLite_SYS_Database.sqlite.txt`);
 
-        if (!schemaRes.ok || !seedRes.ok) {
-          throw new Error('Failed to load database initialization scripts.');
+        if (!schemaRes.ok) {
+          throw new Error('Failed to load database initialization script.');
         }
 
         const schemaSql = await schemaRes.text();
-        const seedSql = await seedRes.text();
 
         // Check if response is HTML (starts with '<'), which means rewrite rules returned the SPA index.html
-        if (schemaSql.trim().startsWith('<') || seedSql.trim().startsWith('<')) {
-          throw new Error('Database initialization scripts returned HTML instead of SQL. Please ensure SQLite_SYS_Database.sqlite.txt and sqliteSEED.sql.txt exist in the public directory and are not being intercepted by rewrite rules.');
+        if (schemaSql.trim().startsWith('<')) {
+          throw new Error('Database initialization scripts returned HTML instead of SQL. Please ensure SQLite_SYS_Database.sqlite.txt exists in the public directory.');
         }
 
-        // Execute schema and seed data
+        // Execute schema ONLY (no seed script to preserve patient data)
         dbInstance.exec(schemaSql);
-        dbInstance.exec(seedSql);
 
         // Save fresh database state
         await saveDB();
