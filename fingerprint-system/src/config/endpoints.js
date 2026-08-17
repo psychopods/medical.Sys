@@ -100,6 +100,6 @@ export const API_ENDPOINTS = {
   notificationRead: (id) => `${buildUrl('VITE_API_PATH_NOTIFICATIONS', '/api/notifications')}/${id}/read`,
 
   // Clinical Options & Summary
-  clinicalOptions: buildUrl('VITE_API_PATH_CLINICAL_OPTIONS', '/api/clinical/options'),
-  clinicalSummary: buildUrl('VITE_API_PATH_CLINICAL_SUMMARY', '/api/clinical/summary'),
+  clinicalOptions: buildUrl('VITE_API_PATH_CHILDREN_CLINICAL_OPTIONS', '/api/children/clinical/options'),
+  clinicalSummary: buildUrl('VITE_API_PATH_REPORTS_CLINICAL_SUMMARY', '/api/reports/clinical-summary'),
 };
