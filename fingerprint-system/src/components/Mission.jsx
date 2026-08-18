@@ -35,7 +35,7 @@ const Mission = () => {
       <div 
         className="mission-vision-section"
         style={{
-          backgroundImage: `url('/image1.png')`,
+          backgroundImage: `url('/image4.webp')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
@@ -54,14 +54,14 @@ const Mission = () => {
               </p>
             </div>
             <div className="mv-mission-image">
-              <img src="/image2.png" alt="Mission" />
+              <img src="/image9.webp" alt="Mission" />
             </div>
           </div>
 
           {/* Vision */}
           <div className="mv-vision-wrapper">
             <div className="mv-vision-image">
-              <img src="/image1.png" alt="Vision" />
+              <img src="/image5.webp" alt="Vision" />
             </div>
             <div className="mv-vision-content">
               <h2 className="mv-section-title">Our Vision</h2>

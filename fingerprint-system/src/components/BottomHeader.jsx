@@ -115,7 +115,7 @@ const BottomHeader = () => {
   };
 
   const handleLogoClick = () => {
-    navigate('/');
+    navigate('/home');
     setIsMenuOpen(false);
   };
 
@@ -128,7 +128,7 @@ const BottomHeader = () => {
   };
 
   const menuItems = [
-    { path: '/', name: 'Home' },
+    { path: '/home', name: 'Home' },
     { path: '/street-medicine', name: 'Street Medicine' },
     { path: '/services', name: 'Services' },
     // { path: '/about', name: 'About' },

@@ -7,10 +7,19 @@
   overflow: hidden;
   width: 100%;
   background-size: cover;
-  background-position: center;
+  background-position: center center;
   background-repeat: no-repeat;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-image 1.5s ease-in-out;
+  will-change: transform, background-image;
+  /* Ensure image covers the entire section */
+  background-attachment: fixed;
+}
+
+/* Fallback for browsers that don't support background-attachment: fixed */
+@supports not (background-attachment: fixed) {
+  .hero-section {
+    background-attachment: scroll;
+  }
 }
 
 .hero-overlay {
@@ -19,7 +28,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(0, 102, 204, 0.75) 0%, rgba(0, 82, 163, 0.85) 100%);
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.85) 0%, rgba(6, 6, 129, 0.75) 100%);
+  z-index: 1;
 }
 
 .hero-particles {
@@ -32,6 +42,7 @@
   background-size: 50px 50px;
   animation: moveParticles 20s linear infinite;
   pointer-events: none;
+  z-index: 2;
 }
 
 @keyframes moveParticles {
@@ -53,8 +64,46 @@
   gap: 50px;
   align-items: center;
   position: relative;
-  z-index: 1;
+  z-index: 3;
   box-sizing: border-box;
+}
+
+/* Image Indicators */
+.hero-image-indicators {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 10;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.indicator-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.4s ease;
+  border: 2px solid transparent;
+}
+
+.indicator-dot:hover {
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(1.2);
+}
+
+.indicator-dot.active {
+  background: #ffd700;
+  border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+  transform: scale(1.2);
 }
 
 /* Animations */
@@ -234,7 +283,7 @@
 .circular-text-svg {
   width: clamp(240px, 32vw, 460px);
   height: clamp(240px, 32vw, 460px);
-  animation: rotateText 20s linear infinite; /* Slower: 20s instead of 12s */
+  animation: rotateText 20s linear infinite;
   pointer-events: none;
 }
 
@@ -247,12 +296,10 @@
     0 0 20px rgba(255, 215, 0, 0.6),
     0 0 40px rgba(255, 215, 0, 0.4),
     0 0 60px rgba(255, 215, 0, 0.2);
-  /* Same font family as hero-title */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   text-transform: uppercase;
 }
 
-/* Date text will be white via inline tspan styling */
 .circular-text tspan {
   text-shadow: 
     0 0 20px rgba(255, 255, 255, 0.8),
@@ -357,6 +404,7 @@
   overflow: hidden;
   line-height: 0;
   pointer-events: none;
+  z-index: 4;
 }
 
 .hero-wave svg {
@@ -384,6 +432,7 @@
 @media (min-width: 768px) and (max-width: 991px) {
   .hero-section {
     min-height: 90vh;
+    background-attachment: scroll;
   }
   
   .hero-container {
@@ -416,6 +465,17 @@
   
   .hero-wave svg {
     height: 60px;
+  }
+  
+  .hero-image-indicators {
+    bottom: 80px;
+    gap: 10px;
+    padding: 8px 16px;
+  }
+  
+  .indicator-dot {
+    width: 10px;
+    height: 10px;
   }
   
   @keyframes expandRing {
@@ -459,6 +519,7 @@
   .hero-section {
     min-height: auto;
     padding: 40px 0;
+    background-attachment: scroll;
   }
   
   .hero-container {
@@ -488,6 +549,17 @@
     height: 40px;
   }
   
+  .hero-image-indicators {
+    bottom: 60px;
+    gap: 8px;
+    padding: 6px 12px;
+  }
+  
+  .indicator-dot {
+    width: 8px;
+    height: 8px;
+  }
+  
   .ring-1, .ring-2, .ring-3 {
     display: none;
   }
@@ -507,6 +579,7 @@
   .hero-section {
     min-height: auto;
     padding: 30px 0;
+    background-attachment: scroll;
   }
   
   .hero-container {
@@ -541,6 +614,18 @@
     height: 30px;
   }
   
+  .hero-image-indicators {
+    bottom: 50px;
+    gap: 6px;
+    padding: 5px 10px;
+  }
+  
+  .indicator-dot {
+    width: 6px;
+    height: 6px;
+    border-width: 1px;
+  }
+  
   .stat:hover {
     transform: none;
   }
@@ -568,6 +653,17 @@
   
   .description-text {
     font-size: 0.8rem;
+  }
+  
+  .hero-image-indicators {
+    bottom: 40px;
+    gap: 5px;
+    padding: 4px 8px;
+  }
+  
+  .indicator-dot {
+    width: 5px;
+    height: 5px;
   }
   
   .circular-text-svg {
@@ -599,6 +695,17 @@
   
   .description-text {
     font-size: 1.05rem;
+  }
+  
+  .hero-image-indicators {
+    bottom: 120px;
+    gap: 14px;
+    padding: 12px 24px;
+  }
+  
+  .indicator-dot {
+    width: 14px;
+    height: 14px;
   }
   
   @keyframes expandRing {
@@ -652,6 +759,17 @@
     font-size: 1.1rem;
   }
   
+  .hero-image-indicators {
+    bottom: 150px;
+    gap: 16px;
+    padding: 14px 28px;
+  }
+  
+  .indicator-dot {
+    width: 16px;
+    height: 16px;
+  }
+  
   @keyframes expandRing {
     0% {
       width: 180px;
@@ -696,7 +814,7 @@
     min-height: auto;
   }
   
-  .hero-overlay, .hero-particles, .hero-wave {
+  .hero-overlay, .hero-particles, .hero-wave, .hero-image-indicators {
     display: none;
   }
   
@@ -738,6 +856,10 @@
   .circular-text-svg {
     animation: none;
   }
+  
+  .hero-section {
+    transition: none;
+  }
 }
 
 /* High contrast mode */
@@ -758,6 +880,11 @@
   .circular-text {
     fill: #ffff00;
     text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+  }
+  
+  .indicator-dot.active {
+    background: #ffff00;
+    border-color: #ffff00;
   }
 }
 

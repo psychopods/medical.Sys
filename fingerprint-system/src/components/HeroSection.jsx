@@ -6,7 +6,20 @@ const HeroSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [transformY, setTransformY] = useState(0);
   const [currentDate, setCurrentDate] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const navigate = useNavigate();
+
+  // Array of background images
+  const backgroundImages = [
+    '/image3.webp',
+    '/image4.webp',
+    '/image5.webp',
+    '/image6.jpg',
+    '/image7.jpg',
+    '/image8.jpg',
+    '/image9.webp',
+    '/image10.webp'
+  ];
 
   useEffect(() => {
     setIsVisible(true);
@@ -60,6 +73,17 @@ const HeroSection = () => {
     };
   }, []);
 
+  // Image rotation effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => 
+        prevIndex === backgroundImages.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000); // Change image every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [backgroundImages.length]);
+
   const handleFingerprintClick = () => {
     navigate('/support');
   };
@@ -68,15 +92,28 @@ const HeroSection = () => {
     <section 
       className="hero-section"
       style={{
-        backgroundImage: `url('/image2.png')`,
+        backgroundImage: `url(${backgroundImages[currentImageIndex]})`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundPosition: 'center center',
         backgroundRepeat: 'no-repeat',
-        transform: `translateY(${transformY}px)`
+        transform: `translateY(${transformY}px)`,
+        transition: 'background-image 1.5s ease-in-out'
       }}
     >
       <div className="hero-overlay"></div>
       <div className="hero-particles"></div>
+      
+      {/* Image counter/indicator */}
+      <div className="hero-image-indicators">
+        {backgroundImages.map((_, index) => (
+          <span 
+            key={index}
+            className={`indicator-dot ${index === currentImageIndex ? 'active' : ''}`}
+            onClick={() => setCurrentImageIndex(index)}
+          />
+        ))}
+      </div>
+      
       <div className="hero-container">
         <div className={`hero-content ${isVisible ? 'fade-in' : ''}`}>
           <h1 className="hero-title">

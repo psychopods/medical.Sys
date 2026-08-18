@@ -129,7 +129,7 @@ const Footer = () => {
         </div>
         
         <div className="footer-bottom">
-          <p>&copy; 2026 Street Medicine Project (TRHM). All rights reserved.</p>
+          <p>&copy; 2026 Street Medicine Outreach Project (SMOP). All rights reserved.</p>
           <div className="footer-links">
             <a href="#">Privacy Policy</a>
             <a href="#">Terms of Service</a>

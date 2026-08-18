@@ -245,7 +245,7 @@ export async function login(usernameOrEmail, password) {
 }
 
 /* ==========================================
-   2. LOCATIONS API (REST + Cache)
+   2. LOCATIONS API (REST + Cache) - UPDATED WITH ADDRESS, LAT, LNG
    ========================================== */
 
 export async function getLocations() {
@@ -258,12 +258,12 @@ export async function getLocations() {
       const data = await response.json();
       const locations = Array.isArray(data) ? data : (data.locations || []);
 
-      // Cache locations locally
+      // Cache locations locally with all fields
       for (const loc of locations) {
         await executeRun(
-          `INSERT OR REPLACE INTO child_locations (id, name, description, version, is_dirty, sync_status) 
-           VALUES (?, ?, ?, ?, 0, 'synced')`,
-          [loc.id, loc.name, loc.description || '', loc.version || 1]
+          `INSERT OR REPLACE INTO child_locations (id, name, description, address, lat, lng, version, is_dirty, sync_status) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
+          [loc.id, loc.name, loc.description || '', loc.address || '', loc.lat || null, loc.lng || null, loc.version || 1]
         );
       }
 

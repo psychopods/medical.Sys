@@ -15,7 +15,7 @@ const RenderLocationsManagement = ({
   handleDeleteLocation,
   goBack,
   setShowLocationForm,
-  isAddingLocation // Add loading prop
+  isAddingLocation
 }) => {
   const filteredLocations = Array.isArray(locations) ? locations.filter(location =>
     location.name?.toLowerCase().includes(searchLocations.toLowerCase())
@@ -58,12 +58,13 @@ const RenderLocationsManagement = ({
                 name="name"
                 value={locationFormData.name}
                 onChange={handleLocationFormChange}
-                placeholder="e.g., Arusha, Dar es Salaam - Ilala, Mwanza"
+                placeholder="e.g., Nyasaka, Arusha, Dar es Salaam"
                 className={locationFormErrors.name ? 'error-input' : ''}
                 disabled={isAddingLocation}
               />
               {locationFormErrors.name && <span className="error-message">{locationFormErrors.name}</span>}
             </div>
+            
             <div className="child-reg-form-group">
               <label>Description (Optional)</label>
               <textarea
@@ -72,6 +73,44 @@ const RenderLocationsManagement = ({
                 onChange={handleLocationFormChange}
                 placeholder="Additional information about this location"
                 rows="3"
+                disabled={isAddingLocation}
+              />
+            </div>
+
+            <div className="child-reg-form-group">
+              <label>Address (Optional)</label>
+              <input
+                type="text"
+                name="address"
+                value={locationFormData.address || ''}
+                onChange={handleLocationFormChange}
+                placeholder="e.g., Nyasaka, Mwanza, Tanzania"
+                disabled={isAddingLocation}
+              />
+            </div>
+
+            <div className="child-reg-form-group">
+              <label>Latitude (Optional)</label>
+              <input
+                type="number"
+                name="lat"
+                value={locationFormData.lat || ''}
+                onChange={handleLocationFormChange}
+                placeholder="e.g., -2.4800"
+                step="any"
+                disabled={isAddingLocation}
+              />
+            </div>
+
+            <div className="child-reg-form-group">
+              <label>Longitude (Optional)</label>
+              <input
+                type="number"
+                name="lng"
+                value={locationFormData.lng || ''}
+                onChange={handleLocationFormChange}
+                placeholder="e.g., 32.9300"
+                step="any"
                 disabled={isAddingLocation}
               />
             </div>
@@ -126,6 +165,8 @@ const RenderLocationsManagement = ({
               <th>S/N</th>
               <th>Location Name</th>
               <th>Description</th>
+              <th>Address</th>
+              <th>Coordinates</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -135,6 +176,16 @@ const RenderLocationsManagement = ({
                 <td style={{ textAlign: 'center' }}>{index + 1}</td>
                 <td><strong>{location.name}</strong></td>
                 <td>{location.description || '—'}</td>
+                <td>{location.address || '—'}</td>
+                <td>
+                  {location.lat && location.lng ? (
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                      {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                    </span>
+                  ) : (
+                    '—'
+                  )}
+                </td>
                 <td>
                   <button 
                     className="child-reg-action-btn child-reg-edit-btn" 

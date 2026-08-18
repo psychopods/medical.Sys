@@ -120,11 +120,15 @@ const ChildRegistration = () => {
     primaryLocationId: "",
   });
 
+  // ===== UPDATED LOCATION STATE WITH ADDRESS, LAT, LNG =====
   const [editingLocation, setEditingLocation] = useState(null);
   const [showLocationForm, setShowLocationForm] = useState(false);
   const [locationFormData, setLocationFormData] = useState({
     name: "",
     description: "",
+    address: "",
+    lat: "",
+    lng: "",
   });
   const [locationFormErrors, setLocationFormErrors] = useState({
     name: "",
@@ -718,6 +722,7 @@ const ChildRegistration = () => {
     }
   };
 
+  // ===== UPDATED LOCATION HANDLERS WITH ADDRESS, LAT, LNG =====
   const handleLocationFormChange = (e) => {
     const { name, value } = e.target;
     setLocationFormData({ ...locationFormData, [name]: value });
@@ -728,13 +733,25 @@ const ChildRegistration = () => {
 
   const resetLocationForm = () => {
     setEditingLocation(null);
-    setLocationFormData({ name: "", description: "" });
+    setLocationFormData({ 
+      name: "", 
+      description: "", 
+      address: "",
+      lat: "",
+      lng: "",
+    });
     setLocationFormErrors({ name: "" });
   };
 
   const handleAddNewLocation = () => {
     setEditingLocation(null);
-    setLocationFormData({ name: "", description: "" });
+    setLocationFormData({ 
+      name: "", 
+      description: "", 
+      address: "",
+      lat: "",
+      lng: "",
+    });
     setLocationFormErrors({ name: "" });
     setShowLocationForm(true);
   };
@@ -1614,16 +1631,19 @@ const ChildRegistration = () => {
     generateRegistrationId("");
   };
 
-  // ===== LOCATION HANDLERS =====
+  // ===== UPDATED LOCATION HANDLERS WITH ADDRESS, LAT, LNG =====
   const addLocation = async (locationData) => {
     try {
       const response = await fetch(API_ENDPOINTS.locations, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          id: crypto.randomUUID(),
+          id: locationData.id || crypto.randomUUID(),
           name: locationData.name,
           description: locationData.description || "",
+          address: locationData.address || "",
+          lat: locationData.lat || null,
+          lng: locationData.lng || null,
         }),
       });
       if (response.ok) {
@@ -1644,6 +1664,9 @@ const ChildRegistration = () => {
         body: JSON.stringify({
           name: locationData.name,
           description: locationData.description || "",
+          address: locationData.address || "",
+          lat: locationData.lat || null,
+          lng: locationData.lng || null,
         }),
       });
       if (response.ok) {
@@ -1672,8 +1695,11 @@ const ChildRegistration = () => {
   const handleEditLocation = (location) => {
     setEditingLocation(location);
     setLocationFormData({
-      name: location.name,
+      name: location.name || "",
       description: location.description || "",
+      address: location.address || "",
+      lat: location.lat || "",
+      lng: location.lng || "",
     });
     setLocationFormErrors({ name: "" });
     setShowLocationForm(true);
@@ -1684,9 +1710,17 @@ const ChildRegistration = () => {
 
     setIsAddingLocation(true);
     try {
+      const locationPayload = {
+        name: locationFormData.name,
+        description: locationFormData.description || "",
+        address: locationFormData.address || "",
+        lat: locationFormData.lat ? parseFloat(locationFormData.lat) : null,
+        lng: locationFormData.lng ? parseFloat(locationFormData.lng) : null,
+      };
+
       let result;
       if (editingLocation) {
-        result = await updateLocation(editingLocation.id, locationFormData);
+        result = await updateLocation(editingLocation.id, locationPayload);
         if (result) {
           showToast('Location updated successfully!', 'success');
           await fetchLocations();
@@ -1696,7 +1730,10 @@ const ChildRegistration = () => {
           showToast('Failed to update location', 'error');
         }
       } else {
-        result = await addLocation(locationFormData);
+        result = await addLocation({
+          ...locationPayload,
+          id: crypto.randomUUID(),
+        });
         if (result) {
           showToast('Location added successfully!', 'success');
           await fetchLocations();
