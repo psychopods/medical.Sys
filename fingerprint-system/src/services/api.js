@@ -1742,18 +1742,30 @@ export async function triggerSync() {
 
     for (const row of dirtyFingerprints) {
       try {
+        const fingerIdx = parseInt(row.finger_index, 10);
+        if (isNaN(fingerIdx) || fingerIdx < 1 || fingerIdx > 10) {
+          console.warn(`Skipping invalid finger index ${row.finger_index} for record ${row.id}`);
+          continue;
+        }
+
+        const templateStr = String(row.template_data || '').trim();
+        if (!templateStr) {
+          console.warn(`Skipping empty fingerprint template for record ${row.id}`);
+          continue;
+        }
+
         const response = await fetch(API_ENDPOINTS.biometricsEnroll, {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({
             id: row.id,
             childId: row.child_id,
-            fingerIndex: row.finger_index,
-            templateBase64: row.template_data,
-            qualityScore: row.quality_score,
+            fingerIndex: fingerIdx,
+            templateBase64: templateStr,
+            qualityScore: row.quality_score !== null && row.quality_score !== undefined ? parseInt(row.quality_score, 10) : null,
             capturedAt: row.created_at,
             matcherVersion: "1.0",
-            imageDataUrl: row.image_data
+            imageDataUrl: row.image_data || null
           })
         });
 
@@ -1762,9 +1774,12 @@ export async function triggerSync() {
             `UPDATE biometric_fingerprints SET sync_status = 'synced', is_dirty = 0 WHERE id = ?`,
             [row.id]
           );
+        } else {
+          const errorMsg = await response.text();
+          console.error(`[Sync] Fingerprint enrollment HTTP ${response.status} for child ${row.child_id} (finger ${fingerIdx}):`, errorMsg);
         }
       } catch (error) {
-        // Silent fail for individual record
+        console.error(`[Sync] Network exception while syncing fingerprint ${row.id}:`, error);
       }
     }
 
@@ -2162,6 +2177,17 @@ export async function triggerSync() {
   } catch (error) {
     console.error('Sync error:', error);
     updateSyncStatus('idle', 'Sync error occurred');
+  }
+}
+
+export async function getPendingFingerprintsCount() {
+  try {
+    const rows = await executeQuery(
+      `SELECT COUNT(*) as count FROM biometric_fingerprints WHERE sync_status IN ('local_created', 'local_updated') OR is_dirty = 1`
+    );
+    return rows[0]?.count || 0;
+  } catch (err) {
+    return 0;
   }
 }
 
