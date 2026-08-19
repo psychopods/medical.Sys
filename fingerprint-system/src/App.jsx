@@ -240,7 +240,7 @@ function App() {
 
           {/* Medical Records Route */}
           <Route path="/medical-records" element={
-            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'pharmacist', 'staff', 'lab_technician']}>
+            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'pharmacist', 'staff', 'lab_technician', 'staff']}>
               <ProtectedLayout>
                 <MedicalRecords />
               </ProtectedLayout>

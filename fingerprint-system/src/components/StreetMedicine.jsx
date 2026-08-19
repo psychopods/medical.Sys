@@ -14,7 +14,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Custom animated marker icon with real location pin SVG
+// Custom animated marker icon with REAL IMAGE
 const createAnimatedIcon = (color = '#0066cc', isActive = true) => {
   return L.divIcon({
     className: 'custom-marker animated-marker',
@@ -23,8 +23,8 @@ const createAnimatedIcon = (color = '#0066cc', isActive = true) => {
         <!-- Pulse rings -->
         <div style="
           position: absolute;
-          width: 50px;
-          height: 50px;
+          width: 60px;
+          height: 60px;
           border-radius: 50%;
           background: rgba(255, 215, 0, 0.25);
           animation: ${isActive ? 'pulse-ring 2s ease-out infinite' : 'none'};
@@ -32,46 +32,70 @@ const createAnimatedIcon = (color = '#0066cc', isActive = true) => {
         "></div>
         <div style="
           position: absolute;
-          width: 50px;
-          height: 50px;
+          width: 60px;
+          height: 60px;
           border-radius: 50%;
           background: rgba(255, 215, 0, 0.15);
           animation: ${isActive ? 'pulse-ring 2s ease-out infinite 1s' : 'none'};
           pointer-events: none;
         "></div>
-        <!-- Location Pin SVG -->
+        
+        <!-- Real Image Marker -->
         <div style="
           position: relative;
           z-index: 2;
           animation: ${isActive ? 'bounce-marker 2s ease-in-out infinite' : 'none'};
-          filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.4));
+          filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.4));
+          cursor: pointer;
         ">
-          <svg width="36" height="46" viewBox="0 0 24 31" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 0C5.373 0 0 5.373 0 12C0 21 12 30 12 30C12 30 24 21 24 12C24 5.373 18.627 0 12 0Z" 
-                  fill="#ffd700" stroke="${color}" stroke-width="2"/>
-            <circle cx="12" cy="12" r="5" fill="${color}" stroke="white" stroke-width="1.5"/>
-            <circle cx="12" cy="12" r="2" fill="white"/>
-          </svg>
+          <img 
+            src="/image4.webp" 
+            alt="Location marker" 
+            style="
+              width: 45px;
+              height: 45px;
+              border-radius: 50%;
+              border: 3px solid #ffd700;
+              object-fit: cover;
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+              transition: all 0.3s ease;
+            "
+            onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2245%22 height=%2245%22%3E%3Ccircle cx=%2222.5%22 cy=%2222.5%22 r=%2222.5%22 fill=%22%230066cc%22/%3E%3Ctext x=%2211%22 y=%2228%22 font-size=%2220%22 fill=%22white%22%3E📍%3C/text%3E%3C/svg%3E'"
+          />
+          <!-- Active indicator dot -->
+          <div style="
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #ffd700;
+            border-radius: 50%;
+            bottom: -2px;
+            right: -2px;
+            border: 3px solid ${color};
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            animation: ${isActive ? 'blink-dot 1.5s ease-in-out infinite' : 'none'};
+            z-index: 3;
+          "></div>
         </div>
-        <!-- Active indicator dot -->
+        
+        <!-- Glow effect for active marker -->
+        ${isActive ? `
         <div style="
           position: absolute;
-          width: 10px;
-          height: 10px;
-          background: #ffd700;
+          width: 70px;
+          height: 70px;
           border-radius: 50%;
-          bottom: -2px;
-          right: -2px;
-          border: 2px solid ${color};
-          box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
-          animation: ${isActive ? 'blink-dot 1.5s ease-in-out infinite' : 'none'};
-          z-index: 3;
+          background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, transparent 70%);
+          animation: glow-pulse 1.5s ease-in-out infinite;
+          pointer-events: none;
+          z-index: 1;
         "></div>
+        ` : ''}
       </div>
     `,
-    iconSize: [40, 50],
-    iconAnchor: [20, 50],
-    popupAnchor: [0, -45],
+    iconSize: [50, 60],
+    iconAnchor: [25, 55],
+    popupAnchor: [0, -50],
   });
 };
 
@@ -84,6 +108,10 @@ const StreetMedicine = () => {
   const [activeLocationId, setActiveLocationId] = useState(null);
   const [totalChildren, setTotalChildren] = useState(0);
   const [hasChildrenData, setHasChildrenData] = useState(false);
+  
+  // Modal state
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -91,6 +119,34 @@ const StreetMedicine = () => {
       setToast({ show: false, message: "", type: "" });
     }, 3000);
   };
+
+  // Open modal with location details
+  const openLocationModal = (location) => {
+    setSelectedLocation(location);
+    setIsModalOpen(true);
+    setActiveLocationId(location.id);
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+  };
+
+  // Close modal
+  const closeLocationModal = () => {
+    setIsModalOpen(false);
+    setSelectedLocation(null);
+    // Restore body scroll
+    document.body.style.overflow = 'auto';
+  };
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape' && isModalOpen) {
+        closeLocationModal();
+      }
+    };
+    window.addEventListener('keydown', handleEscKey);
+    return () => window.removeEventListener('keydown', handleEscKey);
+  }, [isModalOpen]);
 
   const services = [
     {
@@ -129,58 +185,6 @@ const StreetMedicine = () => {
         "Helping individuals reconnect with family and access social services.",
       icon: "reintegration",
     },
-  ];
-
-  // Default locations with coordinates (fallback if API fails)
-  const defaultLocations = [
-    {
-      id: 1,
-      name: "Mwanza City Center",
-      description: "Main outreach hub serving the central business district",
-      lat: -2.5167,
-      lng: 32.9000,
-      address: "Mwanza City Center, Mwanza, Tanzania"
-    },
-    {
-      id: 2,
-      name: "Nyasaka District",
-      description: "Serving communities in the Nyasaka area",
-      lat: -2.4800,
-      lng: 32.9300,
-      address: "Nyasaka, Mwanza, Tanzania"
-    },
-    {
-      id: 3,
-      name: "Ilemela",
-      description: "Outreach services for Ilemela and surrounding areas",
-      lat: -2.4600,
-      lng: 32.9100,
-      address: "Ilemela, Mwanza, Tanzania"
-    },
-    {
-      id: 4,
-      name: "Buhongwa",
-      description: "Serving communities in Buhongwa and nearby settlements",
-      lat: -2.5000,
-      lng: 32.8700,
-      address: "Buhongwa, Mwanza, Tanzania"
-    },
-    {
-      id: 5,
-      name: "Kirumba",
-      description: "Outreach services for Kirumba area",
-      lat: -2.5400,
-      lng: 32.8800,
-      address: "Kirumba, Mwanza, Tanzania"
-    },
-    {
-      id: 6,
-      name: "Mbugani",
-      description: "Serving the Mbugani community",
-      lat: -2.5200,
-      lng: 32.9200,
-      address: "Mbugani, Mwanza, Tanzania"
-    }
   ];
 
   // ===== FETCH LOCATIONS (PUBLIC) =====
@@ -247,12 +251,13 @@ const StreetMedicine = () => {
             id: locationId,
             name: location.name || location.area || "Unknown Location",
             description: location.description || "Outreach location providing medical services",
-            lat: location.lat || location.latitude || defaultLocations[index % defaultLocations.length]?.lat || 0,
-            lng: location.lng || location.longitude || defaultLocations[index % defaultLocations.length]?.lng || 0,
+            lat: location.lat || location.latitude || 0,
+            lng: location.lng || location.longitude || 0,
             address: location.address || location.name || "Mwanza, Tanzania",
             childrenCount: count,
             version: location.version,
             lastModifiedAt: location.lastModifiedAt,
+            image: location.image || "/image4.webp",
           };
         });
 
@@ -261,30 +266,30 @@ const StreetMedicine = () => {
           setHasChildrenData(true);
         }
 
-        setLocations(mappedLocations);
+        // Filter out locations with invalid coordinates
+        const validLocations = mappedLocations.filter(
+          loc => loc.lat !== 0 && loc.lng !== 0 && !isNaN(loc.lat) && !isNaN(loc.lng)
+        );
+
+        setLocations(validLocations);
         
-        if (mappedLocations.length > 0 && mappedLocations[0].lat && mappedLocations[0].lng) {
-          setMapCenter([mappedLocations[0].lat, mappedLocations[0].lng]);
-          setActiveLocationId(mappedLocations[0].id);
+        if (validLocations.length > 0) {
+          setMapCenter([validLocations[0].lat, validLocations[0].lng]);
+          setActiveLocationId(validLocations[0].id);
+        } else {
+          showToast("No valid locations found with coordinates", "error");
+          setLocations([]);
         }
       } else {
-        // Use default locations with counts if available
-        const mappedDefaults = defaultLocations.map(location => ({
-          ...location,
-          childrenCount: childrenCounts[location.id] || 0
-        }));
-        setLocations(mappedDefaults);
-        setMapCenter([defaultLocations[0].lat, defaultLocations[0].lng]);
-        setActiveLocationId(defaultLocations[0].id);
-        if (total > 0) setHasChildrenData(true);
+        showToast("No locations data available", "error");
+        setLocations([]);
+        setHasChildrenData(false);
+        setTotalChildren(0);
       }
     } catch (error) {
-      console.warn("API: Failed to fetch locations, using default locations...", error);
-      
-      // Use default locations
-      setLocations(defaultLocations);
-      setMapCenter([defaultLocations[0].lat, defaultLocations[0].lng]);
-      setActiveLocationId(defaultLocations[0].id);
+      console.error("Failed to fetch locations:", error);
+      showToast("Failed to load locations. Please try again later.", "error");
+      setLocations([]);
       setTotalChildren(0);
       setHasChildrenData(false);
     } finally {
@@ -416,6 +421,55 @@ const StreetMedicine = () => {
         </div>
       )}
 
+      {/* Location Detail Modal - Simple No Overlay */}
+      {isModalOpen && selectedLocation && (
+        <div className="modal-overlay" onClick={closeLocationModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={closeLocationModal}>
+              ×
+            </button>
+            
+            <div className="modal-body">
+              <div className="modal-image-container">
+                <img 
+                  src="/image4.webp" 
+                  alt={selectedLocation.name}
+                  className="modal-location-image"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "/image4.webp";
+                  }}
+                />
+                <div className="modal-image-overlay">
+                  <h2 className="modal-location-name">{selectedLocation.name}</h2>
+                  <span className="modal-location-status">
+                    <span className="status-dot"></span>
+                    Active Location
+                  </span>
+                </div>
+              </div>
+              
+              <div className="modal-details">
+                <div className="modal-section">
+                  <h3>📍 Location Details</h3>
+                  <p className="modal-description">{selectedLocation.description}</p>
+                  <div className="modal-info-grid">
+                    <div className="modal-info-item">
+                      <span className="info-label">Address:</span>
+                      <span className="info-value">{selectedLocation.address}</span>
+                    </div>
+                    <div className="modal-info-item">
+                      <span className="info-label">Children Registered:</span>
+                      <span className="info-value highlight">{selectedLocation.childrenCount || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="street-medicine-hero">
         <div className="street-medicine-hero-content">
@@ -446,6 +500,90 @@ const StreetMedicine = () => {
               or health centers.
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Full Width Map Section */}
+      <div className="map-full-section">
+        <div className="map-header">
+          <h2>Our Outreach Locations</h2>
+          {hasChildrenData && totalChildren > 0 && (
+            <p className="map-total-children">
+              <span className="total-count">{totalChildren}</span> children registered across all locations
+            </p>
+          )}
+          <p className="map-subtitle">Click on any marker to learn more about each location</p>
+        </div>
+        
+        <div className="map-full-container">
+          {!loading && locations.length > 0 && (
+            <MapContainer
+              center={mapCenter}
+              zoom={mapZoom}
+              style={{ height: '550px', width: '100%' }}
+              scrollWheelZoom={true}
+              zoomControl={true}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {locations.map((location, index) => (
+                location.lat && location.lng && (
+                  <Marker
+                    key={location.id || index}
+                    position={[location.lat, location.lng]}
+                    icon={createAnimatedIcon('#0066cc', location.id === activeLocationId)}
+                    eventHandlers={{
+                      click: () => openLocationModal(location)
+                    }}
+                  >
+                    <Popup>
+                      <div className="map-popup">
+                        <h4>{location.name}</h4>
+                        <p>{location.description}</p>
+                        <p className="popup-address">{location.address || "Mwanza, Tanzania"}</p>
+                        {hasChildrenData && (
+                          <div className="popup-children-count">
+                            <div className="count-icon">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="8" r="4" stroke="#0066cc" strokeWidth="2" fill="none"/>
+                                <path d="M5 20V19C5 16.8 6.8 15 9 15H15C17.2 15 19 16.8 19 19V20" stroke="#0066cc" strokeWidth="2" fill="none"/>
+                                <circle cx="12" cy="20" r="1" fill="#0066cc"/>
+                              </svg>
+                            </div>
+                            <div className="count-info">
+                              <span className="count-number">{location.childrenCount || 0}</span>
+                              <span className="count-label">Children Registered</span>
+                            </div>
+                          </div>
+                        )}
+                        <button 
+                          className="popup-view-details"
+                          onClick={() => {
+                            setTimeout(() => openLocationModal(location), 100);
+                          }}
+                        >
+                          View Details →
+                        </button>
+                      </div>
+                    </Popup>
+                  </Marker>
+                )
+              ))}
+            </MapContainer>
+          )}
+          {loading && (
+            <div className="map-loading-full">
+              <div className="loading-spinner"></div>
+              <p>Loading map...</p>
+            </div>
+          )}
+          {!loading && locations.length === 0 && (
+            <div className="map-loading-full">
+              <p>No locations available at the moment. Please try again later.</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -505,77 +643,6 @@ const StreetMedicine = () => {
               ))}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Full Width Map Section */}
-      <div className="map-full-section">
-        <div className="map-header">
-          <h2>Our Outreach Locations</h2>
-          {hasChildrenData && totalChildren > 0 && (
-            <p className="map-total-children">
-              <span className="total-count">{totalChildren}</span> children registered across all locations
-            </p>
-          )}
-          <p className="map-subtitle">Click on any marker to learn more about each location</p>
-        </div>
-        
-        <div className="map-full-container">
-          {!loading && locations.length > 0 && (
-            <MapContainer
-              center={mapCenter}
-              zoom={mapZoom}
-              style={{ height: '550px', width: '100%' }}
-              scrollWheelZoom={true}
-              zoomControl={true}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {locations.map((location, index) => (
-                location.lat && location.lng && (
-                  <Marker
-                    key={location.id || index}
-                    position={[location.lat, location.lng]}
-                    icon={createAnimatedIcon('#0066cc', location.id === activeLocationId)}
-                    eventHandlers={{
-                      click: () => setActiveLocationId(location.id)
-                    }}
-                  >
-                    <Popup>
-                      <div className="map-popup">
-                        <h4>{location.name}</h4>
-                        <p>{location.description}</p>
-                        <p className="popup-address">{location.address || "Mwanza, Tanzania"}</p>
-                        {hasChildrenData && (
-                          <div className="popup-children-count">
-                            <div className="count-icon">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="12" cy="8" r="4" stroke="#0066cc" strokeWidth="2" fill="none"/>
-                                <path d="M5 20V19C5 16.8 6.8 15 9 15H15C17.2 15 19 16.8 19 19V20" stroke="#0066cc" strokeWidth="2" fill="none"/>
-                                <circle cx="12" cy="20" r="1" fill="#0066cc"/>
-                              </svg>
-                            </div>
-                            <div className="count-info">
-                              <span className="count-number">{location.childrenCount || 0}</span>
-                              <span className="count-label">Children Registered</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Popup>
-                  </Marker>
-                )
-              ))}
-            </MapContainer>
-          )}
-          {loading && (
-            <div className="map-loading-full">
-              <div className="loading-spinner"></div>
-              <p>Loading map...</p>
-            </div>
-          )}
         </div>
       </div>
 
