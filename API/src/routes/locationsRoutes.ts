@@ -24,6 +24,17 @@ function optionalString(value: unknown, fieldName: string): string | null {
     return normalized.length > 0 ? normalized : null;
 }
 
+function optionalNumber(value: unknown, fieldName: string): number | null {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+    const num = Number(value);
+    if (isNaN(num)) {
+        throw new HttpError(400, `${fieldName} must be a valid number if provided.`);
+    }
+    return num;
+}
+
 export function createLocationsRouter(pool: Pool): Router {
     const router = Router();
 
@@ -39,8 +50,11 @@ export function createLocationsRouter(pool: Pool): Router {
                 const id = requireString(request.body.id, 'id');
                 const name = requireString(request.body.name, 'name');
                 const description = optionalString(request.body.description, 'description');
+                const address = optionalString(request.body.address, 'address');
+                const lat = optionalNumber(request.body.lat ?? request.body.latitude, 'latitude');
+                const lng = optionalNumber(request.body.lng ?? request.body.longitude, 'longitude');
 
-                const location = await locationsService.createLocation(pool, id, name, description);
+                const location = await locationsService.createLocation(pool, id, name, description, address, lat, lng);
                 response.status(201).json({ message: 'Location created successfully.', location });
             } catch (error) {
                 next(toHttpError(error));
@@ -54,6 +68,18 @@ export function createLocationsRouter(pool: Pool): Router {
             try {
                 const locations = await locationsService.listLocations(pool);
                 response.status(200).json({ locations });
+            } catch (error) {
+                next(toHttpError(error));
+            }
+        }
+    );
+
+    router.get(
+        '/public-summary',
+        async (_request: Request, response: Response, next: NextFunction): Promise<void> => {
+            try {
+                const summary = await locationsService.getPublicLocationSummary(pool);
+                response.status(200).json(summary);
             } catch (error) {
                 next(toHttpError(error));
             }
@@ -86,8 +112,11 @@ export function createLocationsRouter(pool: Pool): Router {
                 const id = requireString(request.params.id, 'id');
                 const name = requireString(request.body.name, 'name');
                 const description = optionalString(request.body.description, 'description');
+                const address = optionalString(request.body.address, 'address');
+                const lat = optionalNumber(request.body.lat ?? request.body.latitude, 'latitude');
+                const lng = optionalNumber(request.body.lng ?? request.body.longitude, 'longitude');
 
-                const location = await locationsService.updateLocation(pool, id, name, description);
+                const location = await locationsService.updateLocation(pool, id, name, description, address, lat, lng);
                 response.status(200).json({ message: 'Location updated successfully.', location });
             } catch (error) {
                 next(toHttpError(error));

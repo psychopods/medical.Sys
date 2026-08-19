@@ -80,6 +80,15 @@ export async function getDB() {
               } catch (colErr) {
                 // Column already exists, safe to ignore
               }
+              try {
+                dbInstance.exec("ALTER TABLE child_locations ADD COLUMN address TEXT NULL;");
+              } catch (e) {}
+              try {
+                dbInstance.exec("ALTER TABLE child_locations ADD COLUMN lat REAL NULL;");
+              } catch (e) {}
+              try {
+                dbInstance.exec("ALTER TABLE child_locations ADD COLUMN lng REAL NULL;");
+              } catch (e) {}
               
               await saveDB();
             }

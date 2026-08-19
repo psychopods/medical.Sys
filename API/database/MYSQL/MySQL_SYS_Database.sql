@@ -108,6 +108,9 @@ CREATE TABLE `child_locations` (
     `id` CHAR(36) NOT NULL,
     `name` VARCHAR(100) NOT NULL UNIQUE,
     `description` VARCHAR(255) NULL,
+    `address` VARCHAR(255) NULL,
+    `lat` DECIMAL(10, 8) NULL,
+    `lng` DECIMAL(11, 8) NULL,
     `version` INT NOT NULL DEFAULT 1,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)

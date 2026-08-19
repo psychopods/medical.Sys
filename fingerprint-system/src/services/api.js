@@ -1548,36 +1548,35 @@ export async function getDashboardStats() {
 
 export async function getLocationStats() {
   try {
-    const response = await fetch(API_ENDPOINTS.children, {
-      headers: getAuthHeaders()
-    });
+    const response = await fetch(API_ENDPOINTS.locationsPublicSummary);
 
     if (response.ok) {
       const data = await response.json();
-      const children = data.children || data;
-      const locations = await getLocations();
+      const locations = data.locations || [];
+      const total = data.totalChildren || 1;
 
-      const locationCount = {};
-      children.forEach(child => {
-        const locationId = child.primaryLocationId;
-        if (locationId) {
-          locationCount[locationId] = (locationCount[locationId] || 0) + 1;
-        }
-      });
-
-      const stats = Object.entries(locationCount).map(([locationId, count]) => {
-        const location = locations.find(l => l.id === locationId);
-        return {
-          location: location?.name || locationId,
-          count: count,
-          percentage: (count / children.length) * 100
-        };
-      }).sort((a, b) => b.count - a.count);
+      const stats = locations.map(loc => ({
+        id: loc.id,
+        location: loc.name,
+        count: loc.childrenCount || 0,
+        percentage: total > 0 ? ((loc.childrenCount || 0) / total) * 100 : 0
+      })).sort((a, b) => b.count - a.count);
 
       return stats;
     }
-    return [];
   } catch (error) {
+    // Fallback to cached locations
+  }
+
+  try {
+    const locations = await getLocations();
+    return locations.map(loc => ({
+      id: loc.id,
+      location: loc.name,
+      count: loc.childrenCount || 0,
+      percentage: 0
+    }));
+  } catch (err) {
     return [];
   }
 }

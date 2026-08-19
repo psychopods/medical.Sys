@@ -236,8 +236,13 @@ const StreetMedicine = () => {
       setTotalChildren(total);
 
       if (locationsArray.length > 0) {
+        let apiTotalChildren = 0;
         const mappedLocations = locationsArray.map((location, index) => {
           const locationId = location.id || index + 1;
+          const count = location.childrenCount !== undefined && location.childrenCount !== null
+            ? Number(location.childrenCount)
+            : (childrenCounts[locationId] || 0);
+          apiTotalChildren += count;
           return {
             id: locationId,
             name: location.name || location.area || "Unknown Location",
@@ -245,11 +250,17 @@ const StreetMedicine = () => {
             lat: location.lat || location.latitude || defaultLocations[index % defaultLocations.length]?.lat || 0,
             lng: location.lng || location.longitude || defaultLocations[index % defaultLocations.length]?.lng || 0,
             address: location.address || location.name || "Mwanza, Tanzania",
-            childrenCount: childrenCounts[locationId] || 0,
+            childrenCount: count,
             version: location.version,
             lastModifiedAt: location.lastModifiedAt,
           };
         });
+
+        if (!hasCounts && apiTotalChildren > 0) {
+          setTotalChildren(apiTotalChildren);
+          setHasChildrenData(true);
+        }
+
         setLocations(mappedLocations);
         
         if (mappedLocations.length > 0 && mappedLocations[0].lat && mappedLocations[0].lng) {

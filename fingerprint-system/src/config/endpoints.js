@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
   
   // Locations
   locations: buildUrl('VITE_API_PATH_LOCATIONS', '/api/locations'),
+  locationsPublicSummary: buildUrl('VITE_API_PATH_LOCATIONS_SUMMARY', '/api/locations/public-summary'),
   location: (id) => `${buildUrl('VITE_API_PATH_LOCATIONS', '/api/locations')}/${id}`,
 
   // Children

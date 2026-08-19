@@ -13,7 +13,10 @@ export async function createLocation(
     pool: Pool,
     id: string,
     name: string,
-    description: string | null
+    description: string | null,
+    address: string | null = null,
+    lat: number | null = null,
+    lng: number | null = null
 ): Promise<ChildLocation> {
     validateUUIDv4(id, 'location ID');
 
@@ -31,14 +34,17 @@ export async function createLocation(
     }
 
     await pool.execute(
-        'INSERT INTO child_locations (id, name, description, version) VALUES (?, ?, ?, 1)',
-        [id, normalizedName, description]
+        'INSERT INTO child_locations (id, name, description, address, lat, lng, version) VALUES (?, ?, ?, ?, ?, ?, 1)',
+        [id, normalizedName, description, address, lat, lng]
     );
 
     return {
         id,
         name: normalizedName,
         description,
+        address,
+        lat,
+        lng,
         version: 1,
         lastModifiedAt: new Date().toISOString()
     };
@@ -46,21 +52,74 @@ export async function createLocation(
 
 export async function listLocations(pool: Pool): Promise<ChildLocation[]> {
     const [rows] = await pool.execute<RowDataPacket[]>(
-        'SELECT id, name, description, version, last_modified_at FROM child_locations ORDER BY name'
+        `SELECT 
+            l.id, 
+            l.name, 
+            l.description, 
+            l.address, 
+            l.lat, 
+            l.lng, 
+            l.version, 
+            l.last_modified_at,
+            COUNT(c.id) AS children_count
+         FROM child_locations l
+         LEFT JOIN children_profiles c ON c.primary_location_id = l.id
+         GROUP BY l.id
+         ORDER BY l.name`
     );
 
     return rows.map((row) => ({
         id: row.id,
         name: row.name,
         description: row.description,
+        address: row.address,
+        lat: row.lat !== null && row.lat !== undefined ? Number(row.lat) : null,
+        lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : null,
+        childrenCount: Number(row.children_count || 0),
         version: row.version,
         lastModifiedAt: row.last_modified_at ? new Date(row.last_modified_at).toISOString() : undefined
     }));
 }
 
+export async function getPublicLocationSummary(pool: Pool) {
+    const locations = await listLocations(pool);
+
+    const [totalChildrenRows] = await pool.execute<RowDataPacket[]>(
+        'SELECT COUNT(*) as total FROM children_profiles'
+    );
+    const totalChildren = Number(totalChildrenRows[0]?.total || 0);
+
+    const [genderRows] = await pool.execute<RowDataPacket[]>(
+        `SELECT gender, COUNT(*) as count 
+         FROM children_profiles 
+         GROUP BY gender`
+    );
+
+    const genderBreakdown = {
+        male: 0,
+        female: 0,
+        other: 0
+    };
+
+    genderRows.forEach((row) => {
+        const g = String(row.gender || '').toLowerCase();
+        if (g === 'male') genderBreakdown.male = Number(row.count);
+        else if (g === 'female') genderBreakdown.female = Number(row.count);
+        else genderBreakdown.other += Number(row.count);
+    });
+
+    return {
+        success: true,
+        totalChildren,
+        totalLocations: locations.length,
+        genderBreakdown,
+        locations
+    };
+}
+
 export async function getLocation(pool: Pool, id: string): Promise<ChildLocation> {
     const [rows] = await pool.execute<RowDataPacket[]>(
-        'SELECT id, name, description, version, last_modified_at FROM child_locations WHERE id = ? LIMIT 1',
+        'SELECT id, name, description, address, lat, lng, version, last_modified_at FROM child_locations WHERE id = ? LIMIT 1',
         [id]
     );
 
@@ -73,6 +132,9 @@ export async function getLocation(pool: Pool, id: string): Promise<ChildLocation
         id: row.id,
         name: row.name,
         description: row.description,
+        address: row.address,
+        lat: row.lat !== null && row.lat !== undefined ? Number(row.lat) : null,
+        lng: row.lng !== null && row.lng !== undefined ? Number(row.lng) : null,
         version: row.version,
         lastModifiedAt: row.last_modified_at ? new Date(row.last_modified_at).toISOString() : undefined
     };
@@ -82,7 +144,10 @@ export async function updateLocation(
     pool: Pool,
     id: string,
     name: string,
-    description: string | null
+    description: string | null,
+    address: string | null = null,
+    lat: number | null = null,
+    lng: number | null = null
 ): Promise<ChildLocation> {
     const normalizedName = name.trim();
     if (!normalizedName) {
@@ -109,14 +174,17 @@ export async function updateLocation(
     const nextVersion = Number(existing.version) + 1;
 
     await pool.execute(
-        'UPDATE child_locations SET name = ?, description = ?, version = ? WHERE id = ?',
-        [normalizedName, description, nextVersion, id]
+        'UPDATE child_locations SET name = ?, description = ?, address = ?, lat = ?, lng = ?, version = ? WHERE id = ?',
+        [normalizedName, description, address, lat, lng, nextVersion, id]
     );
 
     return {
         id,
         name: normalizedName,
         description,
+        address,
+        lat,
+        lng,
         version: nextVersion,
         lastModifiedAt: new Date().toISOString()
     };
