@@ -1633,12 +1633,13 @@ const ChildRegistration = () => {
 
   // ===== UPDATED LOCATION HANDLERS WITH ADDRESS, LAT, LNG =====
   const addLocation = async (locationData) => {
+    const locId = locationData.id || crypto.randomUUID();
     try {
       const response = await fetch(API_ENDPOINTS.locations, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          id: locationData.id || crypto.randomUUID(),
+          id: locId,
           name: locationData.name,
           description: locationData.description || "",
           address: locationData.address || "",
@@ -1647,13 +1648,35 @@ const ChildRegistration = () => {
         }),
       });
       if (response.ok) {
-        return await response.json();
+        const resData = await response.json();
+        // Also update local SQLite as synced
+        try {
+          await executeRun(
+            `INSERT OR REPLACE INTO child_locations (id, name, description, address, lat, lng, version, is_dirty, sync_status) 
+             VALUES (?, ?, ?, ?, ?, ?, 1, 0, 'synced')`,
+            [locId, locationData.name, locationData.description || '', locationData.address || '', locationData.lat || null, locationData.lng || null]
+          );
+          await saveDB();
+        } catch (e) {}
+        return resData;
       }
     } catch (error) {
-      console.error("Error adding location:", error);
+      console.warn("API addLocation failed, saving to local SQLite offline:", error);
+    }
+
+    // Offline Fallback: save locally marked as dirty
+    try {
+      await executeRun(
+        `INSERT OR REPLACE INTO child_locations (id, name, description, address, lat, lng, version, is_dirty, sync_status) 
+         VALUES (?, ?, ?, ?, ?, ?, 1, 1, 'local_created')`,
+        [locId, locationData.name, locationData.description || '', locationData.address || '', locationData.lat || null, locationData.lng || null]
+      );
+      await saveDB();
+      return { success: true, offline: true, location: { id: locId, ...locationData } };
+    } catch (dbErr) {
+      console.error("Failed to save location to SQLite offline:", dbErr);
       return null;
     }
-    return null;
   };
 
   const updateLocation = async (id, locationData) => {
@@ -1670,13 +1693,32 @@ const ChildRegistration = () => {
         }),
       });
       if (response.ok) {
-        return await response.json();
+        const resData = await response.json();
+        try {
+          await executeRun(
+            `UPDATE child_locations SET name = ?, description = ?, address = ?, lat = ?, lng = ?, is_dirty = 0, sync_status = 'synced' WHERE id = ?`,
+            [locationData.name, locationData.description || '', locationData.address || '', locationData.lat || null, locationData.lng || null, id]
+          );
+          await saveDB();
+        } catch (e) {}
+        return resData;
       }
     } catch (error) {
-      console.error("Error updating location:", error);
+      console.warn("API updateLocation failed, saving to local SQLite offline:", error);
+    }
+
+    // Offline Fallback: update locally marked as dirty
+    try {
+      await executeRun(
+        `UPDATE child_locations SET name = ?, description = ?, address = ?, lat = ?, lng = ?, is_dirty = 1, sync_status = 'local_updated' WHERE id = ?`,
+        [locationData.name, locationData.description || '', locationData.address || '', locationData.lat || null, locationData.lng || null, id]
+      );
+      await saveDB();
+      return { success: true, offline: true };
+    } catch (dbErr) {
+      console.error("Failed to update location in SQLite offline:", dbErr);
       return null;
     }
-    return null;
   };
 
   const deleteLocation = async (id) => {

@@ -2080,6 +2080,44 @@ export async function triggerSync() {
       console.error('Failed to query dirty notification reads:', err);
     }
 
+    // 2.7 Sync dirty child locations
+    try {
+      const dirtyLocations = await executeQuery(
+        `SELECT * FROM child_locations WHERE sync_status IN ('local_created', 'local_updated') OR is_dirty = 1`
+      );
+      for (const row of dirtyLocations) {
+        try {
+          const isUpdate = row.sync_status === 'local_updated';
+          const url = isUpdate ? API_ENDPOINTS.location(row.id) : API_ENDPOINTS.locations;
+          const method = isUpdate ? 'PUT' : 'POST';
+
+          const response = await fetch(url, {
+            method,
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              id: row.id,
+              name: row.name,
+              description: row.description || '',
+              address: row.address || '',
+              lat: row.lat ? parseFloat(row.lat) : null,
+              lng: row.lng ? parseFloat(row.lng) : null
+            })
+          });
+
+          if (response.ok) {
+            await executeRun(
+              `UPDATE child_locations SET sync_status = 'synced', is_dirty = 0 WHERE id = ?`,
+              [row.id]
+            );
+          }
+        } catch (error) {
+          console.error('Error syncing location record from SQLite:', error);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to query dirty child locations:', err);
+    }
+
     // 3. Fallback: Sync any leftover items in localStorage offline_registrations
     const offlineData = JSON.parse(localStorage.getItem('offline_registrations') || '[]');
     const unsyncedOffline = [];
