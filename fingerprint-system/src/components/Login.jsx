@@ -3,8 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import './Login.css';
 import { login } from '../services/api.js';
 
-import { API_ENDPOINTS, API_BASE_URL } from '../config/endpoints.js';
-
 const Login = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
