@@ -98,15 +98,23 @@ const Login = () => {
           localStorage.setItem('userId', data.user.id);
         }
 
+        const tokenVal = data.token || data.session?.token || data.session?.accessToken || data.session?.access_token;
+
         if (rememberMe) {
           localStorage.setItem('user', JSON.stringify(data.user));
           if (data.session) {
             localStorage.setItem('session', JSON.stringify(data.session));
           }
+          if (tokenVal) {
+            localStorage.setItem('token', tokenVal);
+          }
         } else {
           sessionStorage.setItem('user', JSON.stringify(data.user));
           if (data.session) {
             sessionStorage.setItem('session', JSON.stringify(data.session));
+          }
+          if (tokenVal) {
+            sessionStorage.setItem('token', tokenVal);
           }
         }
         

@@ -134,7 +134,17 @@ const Layout = ({ children, user, onLogout }) => {
 
   const handleLogout = () => {
     setShowUserMenu(false);
-    onLogout();
+    if (typeof onLogout === 'function') {
+      onLogout();
+    } else {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('session');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('session');
+      navigate('/login');
+    }
   };
 
   const getUserDisplayName = () => {

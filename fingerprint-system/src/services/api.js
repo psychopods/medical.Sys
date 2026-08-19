@@ -38,12 +38,12 @@ function isInlineImageData(value) {
 
 function cacheSafeImageValue(value) {
   if (!value) return null;
-  
+
   // If it's already a URL (not a data URI), normalize it
   if (!isInlineImageData(value)) {
     return normalizeImageUrl(value);
   }
-  
+
   // For data URIs (base64), store them directly
   // SQLite can handle large TEXT fields
   return value;
@@ -122,7 +122,7 @@ window.fetch = async function (url, options = {}) {
 
   if (isTargetApi) {
     options.credentials = 'include';
-    
+
     // Clean up unnecessary Authorization header since we now use HttpOnly cookies
     if (options.headers) {
       if (options.headers instanceof Headers) {
@@ -141,9 +141,9 @@ const originalRemoveItem = localStorage.removeItem;
 localStorage.removeItem = function (key) {
   if (key === 'user' || key === 'token') {
     if (navigator.onLine) {
-      originalFetch(`${API_BASE_URL}/api/auth/logout`, { 
+      originalFetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
-        credentials: 'include' 
+        credentials: 'include'
       }).catch(err => console.warn('Background logout error:', err));
     }
   }
@@ -154,9 +154,9 @@ const originalSessionRemoveItem = sessionStorage.removeItem;
 sessionStorage.removeItem = function (key) {
   if (key === 'user' || key === 'token') {
     if (navigator.onLine) {
-      originalFetch(`${API_BASE_URL}/api/auth/logout`, { 
+      originalFetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
-        credentials: 'include' 
+        credentials: 'include'
       }).catch(err => console.warn('Background logout error:', err));
     }
   }
@@ -189,23 +189,29 @@ export async function login(usernameOrEmail, password) {
 
       if (response.ok && data.success) {
         const user = data.user;
-        const session = data.session;
 
-        // Cache user data for offline
-        const clientHash = bcrypt.hashSync(password, 10);
-        await executeRun(
-          `INSERT OR REPLACE INTO staff_users 
-          (id, username, email, password_hash, role_id, first_name, last_name, phone_number, version, is_dirty, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
-          [user.id, user.username, user.email, clientHash, user.role_id, user.first_name, user.last_name, user.phone_number || '', user.version || 1]
-        );
+        // Cache user data for offline asynchronously without blocking
+        try {
+          const clientHash = bcrypt.hashSync(password, 8);
+          await executeRun(
+            `INSERT OR REPLACE INTO staff_users 
+            (id, username, email, password_hash, role_id, first_name, last_name, phone_number, version, is_dirty, sync_status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
+            [user.id, user.username, user.email, clientHash, user.role_id, user.first_name, user.last_name, user.phone_number || '', user.version || 1]
+          );
+        } catch (dbErr) {
+          console.warn('Failed to cache user offline:', dbErr);
+        }
 
         return data;
       } else {
-        throw new Error(data.message || 'Login failed.');
+        return {
+          success: false,
+          message: data.message || 'Invalid username or password.'
+        };
       }
     } catch (onlineError) {
-      // Silent fail - fallback to offline
+      console.warn('Online login network request failed, falling back to offline database:', onlineError);
     }
   }
 
@@ -490,7 +496,7 @@ export async function updateChild(id, childData) {
   const gender = childData.gender;
   const estimatedBirthYear = parseInt(childData.estimatedBirthYear);
   const primaryLocationId = childData.primaryLocationId;
-  
+
   // Use cacheSafeImageValue to handle image data properly
   const image1 = cacheSafeImageValue(childData.image1 || null);
   const image2 = cacheSafeImageValue(childData.image2 || null);
@@ -520,17 +526,17 @@ export async function updateChild(id, childData) {
           (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced', ?)`,
           [
-            id, 
-            customSerialId, 
-            fullName, 
-            gender, 
-            estimatedBirthYear, 
-            primaryLocationId, 
-            childData.createdByStaffId || '', 
-            image1, 
-            image2, 
-            image3, 
-            childData.version || 1, 
+            id,
+            customSerialId,
+            fullName,
+            gender,
+            estimatedBirthYear,
+            primaryLocationId,
+            childData.createdByStaffId || '',
+            image1,
+            image2,
+            image3,
+            childData.version || 1,
             childData.createdAt || new Date().toISOString()
           ]
         );
@@ -549,22 +555,22 @@ export async function updateChild(id, childData) {
       (id, custom_serial_id, full_name, gender, estimated_birth_year, primary_location_id, created_by_staff_id, image1, image2, image3, version, is_dirty, sync_status, created_at) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'local_updated', ?)`,
       [
-        id, 
-        customSerialId, 
-        fullName, 
-        gender, 
-        estimatedBirthYear, 
-        primaryLocationId, 
-        childData.createdByStaffId || '', 
-        image1, 
-        image2, 
-        image3, 
-        (childData.version || 1) + 1, 
+        id,
+        customSerialId,
+        fullName,
+        gender,
+        estimatedBirthYear,
+        primaryLocationId,
+        childData.createdByStaffId || '',
+        image1,
+        image2,
+        image3,
+        (childData.version || 1) + 1,
         childData.createdAt || new Date().toISOString()
       ]
     );
     await saveDB();
-    
+
     // Return the updated child data with normalized images
     return {
       success: true,
@@ -3145,7 +3151,7 @@ export async function getUsers() {
         for (const u of users) {
           const existing = await executeQuery('SELECT password_hash FROM staff_users WHERE id = ?', [u.id]);
           const pwdHash = existing.length > 0 ? existing[0].password_hash : '';
-          
+
           await executeRun(
             `INSERT OR REPLACE INTO staff_users 
             (id, username, email, password_hash, role_id, first_name, last_name, phone_number, version, is_dirty, sync_status) 
@@ -3603,7 +3609,7 @@ export async function getClinicalOptions() {
       });
       if (response.ok) {
         const options = await response.json();
-        
+
         // Cache to SQLite tables
         // 1. Medications
         if (options.medicationOptions) {
@@ -3645,7 +3651,7 @@ export async function getClinicalOptions() {
             );
           }
         }
-        
+
         await saveDB();
         return options;
       }

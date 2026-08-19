@@ -59,6 +59,10 @@ export const API_ENDPOINTS = {
   biometricsChild: (childId) => `${buildUrl('VITE_API_PATH_BIOMETRICS_CHILD', '/api/biometrics/child')}/${childId}`,
   biometricsList: buildUrl('VITE_API_PATH_BIOMETRICS_LIST', '/api/biometrics'),
 
+  // Public Services
+  publicServices: buildUrl('VITE_API_PATH_PUBLIC_SERVICES', '/api/public-services'),
+  publicService: (id) => `${buildUrl('VITE_API_PATH_PUBLIC_SERVICES', '/api/public-services')}/${id}`,
+
   // Contact
   contactSubmit: buildUrl('VITE_API_PATH_CONTACT_SUBMIT', '/api/contact/submit'),
   contactSubmissions: buildUrl('VITE_API_PATH_CONTACT_SUBMISSIONS', '/api/contact/submissions'),

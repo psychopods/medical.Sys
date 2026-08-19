@@ -39,6 +39,8 @@ import path from 'path';
 app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
 
 
+import { createPublicServicesRouter } from './routes/publicServicesRoutes.ts';
+
 app.get('/health', (_request: Request, response: Response) => {
     response.status(200).json({ status: 'ok' });
 });
@@ -53,6 +55,7 @@ app.use('/api/gallery', createGalleryRouter(pool));
 app.use('/api/reports', createReportsRouter(pool));
 app.use('/api/volunteer', createVolunteerRouter(pool));
 app.use('/api/contact', createContactRouter(pool));
+app.use('/api/public-services', createPublicServicesRouter(pool));
 app.use('/api', createRbacRouter(pool));
 app.use('/api/sync', createSyncRouter(pool));
 

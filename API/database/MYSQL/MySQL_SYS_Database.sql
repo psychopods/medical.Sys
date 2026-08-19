@@ -506,6 +506,16 @@ INSERT INTO `lookup_education` (`id`, `name`) VALUES
 ('e001bddc-3e5f-11ed-b878-0242ac120002', 'Life Skills'),
 ('e001beae-3e5f-11ed-b878-0242ac120002', 'Water Safety'),
 ('e001bf76-3e5f-11ed-b878-0242ac120002', 'Sanitation Education')
-ON DUPLICATE KEY UPDATE name=VALUES(name);
 
-
+-- Public Outreach Services Table
+CREATE TABLE IF NOT EXISTS `public_services` (
+    `id` CHAR(36) NOT NULL,
+    `title` VARCHAR(150) NOT NULL,
+    `description` TEXT NOT NULL,
+    `image_url` VARCHAR(255) NULL,
+    `display_order` INT NOT NULL DEFAULT 0,
+    `version` INT NOT NULL DEFAULT 1,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

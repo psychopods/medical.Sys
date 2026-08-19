@@ -28,6 +28,7 @@ import GalleryAdmin from './components/Dashboard/GalleryAdmin';
 import ReportsAdmin from './components/Dashboard/ReportsAdmin';
 import VolunteerAdmin from './components/Dashboard/VolunteerAdmin';
 import ContactAdmin from './components/Dashboard/ContactAdmin';
+import ServicesAdmin from './components/Dashboard/ServicesAdmin';
 import MedicalRecords from './components/Dashboard/MedicalRecords';
 import UserProfile from './components/Dashboard/UserProfile';
 import NotificationsAdmin from './components/Dashboard/NotificationsAdmin';
@@ -71,7 +72,7 @@ function App() {
         <Routes>
           {/* Redirect root to home after loading */}
           <Route path="/" element={<Navigate to="/home" replace />} />
-          
+
           {/* Public Routes with headers and footer */}
           <Route path="/home" element={
             <PublicLayout>
@@ -141,7 +142,7 @@ function App() {
               <Staff />
             </PublicLayout>
           } />
-          
+
           {/* Protected Routes - NO headers, just the dashboard content */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
@@ -150,7 +151,7 @@ function App() {
               </ProtectedLayout>
             </ProtectedRoute>
           } />
-          
+
           {/* User Profile Route - Accessible to all authenticated users */}
           <Route path="/profile" element={
             <ProtectedRoute>
@@ -159,7 +160,7 @@ function App() {
               </ProtectedLayout>
             </ProtectedRoute>
           } />
-          
+
           {/* Role-Based Routes - NO headers */}
           <Route path="/user-management" element={
             <RoleBasedRoute allowedRoles={['superuser']}>
@@ -168,7 +169,7 @@ function App() {
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
-          
+
           <Route path="/child-registration" element={
             <RoleBasedRoute allowedRoles={['superuser', 'nurse', 'staff', 'admin']}>
               <ProtectedLayout>
@@ -176,7 +177,7 @@ function App() {
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
-          
+
           <Route path="/medical-examination" element={
             <RoleBasedRoute allowedRoles={['superuser', 'doctor']}>
               <ProtectedLayout>
@@ -184,7 +185,7 @@ function App() {
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
-          
+
           <Route path="/laboratory" element={
             <RoleBasedRoute allowedRoles={['superuser', 'lab_technician']}>
               <ProtectedLayout>
@@ -192,7 +193,7 @@ function App() {
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
-          
+
           <Route path="/pharmacy" element={
             <RoleBasedRoute allowedRoles={['superuser', 'pharmacist']}>
               <ProtectedLayout>
@@ -200,7 +201,7 @@ function App() {
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
-          
+
           {/* Gallery Admin Route */}
           <Route path="/gallery-admin" element={
             <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
@@ -209,7 +210,7 @@ function App() {
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
-          
+
           {/* Reports Admin Route */}
           <Route path="/reports-admin" element={
             <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
@@ -218,7 +219,7 @@ function App() {
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
-          
+
           {/* Volunteer Admin Route */}
           <Route path="/volunteer-admin" element={
             <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
@@ -227,7 +228,7 @@ function App() {
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
-          
+
           {/* Contact Admin Route */}
           <Route path="/contact-admin" element={
             <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
@@ -236,7 +237,7 @@ function App() {
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
-          
+
           {/* Medical Records Route */}
           <Route path="/medical-records" element={
             <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'pharmacist', 'staff', 'lab_technician']}>
@@ -253,7 +254,16 @@ function App() {
               </ProtectedLayout>
             </RoleBasedRoute>
           } />
-          
+
+          {/* Public Services Admin Route */}
+          <Route path="/services-admin" element={
+            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'staff']}>
+              <ProtectedLayout>
+                <ServicesAdmin />
+              </ProtectedLayout>
+            </RoleBasedRoute>
+          } />
+
           {/* Notifications Admin Routes */}
           <Route path="/notifications-admin" element={
             <RoleBasedRoute allowedRoles={['superuser', 'admin']}>
@@ -269,7 +279,7 @@ function App() {
               <PatientsHistory />
             </RoleBasedRoute>
           } />
-          
+
           {/* Catch all - redirect to home */}
           <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>

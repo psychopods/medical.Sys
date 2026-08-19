@@ -1,65 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Services.css';
+import { API_ENDPOINTS } from '../config/endpoints.js';
+
+const defaultServices = [
+  {
+    id: '1',
+    title: 'Medical Care',
+    description: 'Free health checkups, emergency treatment, and regular medical support. Each visit is tracked via fingerprint for continuous care.',
+    imageUrl: '/image6.jpg',
+  },
+  {
+    id: '2',
+    title: 'Food Supply',
+    description: 'Nutritious meals provided during visits. Fingerprint registration ensures each child receives proper food support.',
+    imageUrl: '/image7.jpg',
+  },
+  {
+    id: '3',
+    title: 'Clothing & Shoes',
+    description: 'Clean, weather-appropriate clothing and durable footwear based on size recorded via fingerprint.',
+    imageUrl: '/image8.jpg',
+  },
+  {
+    id: '4',
+    title: 'Fingerprint Registration',
+    description: 'Secure biometric registration to track service distribution and maintain health records.',
+    imageUrl: '/image5.png',
+  },
+  {
+    id: '5',
+    title: 'Health Education',
+    description: 'Basic health education and hygiene awareness programs during each visit.',
+    imageUrl: '/image10.webp',
+  },
+  {
+    id: '6',
+    title: 'Emotional Support',
+    description: 'Counseling and emotional support services during visits to ensure wellbeing.',
+    imageUrl: '/image9.webp',
+  },
+  {
+    id: '7',
+    title: 'Admission Support',
+    description: 'Assistance with school enrollment, documentation, and access to educational programs for vulnerable children.',
+    imageUrl: '/image5.webp',
+  }
+];
 
 const Services = () => {
+  const [services, setServices] = useState(defaultServices);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [imageErrors, setImageErrors] = useState({});
 
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => {
-      setToast({ show: false, message: '', type: '' });
-    }, 3000);
-  };
-
-  const handleImageError = (serviceId) => {
-    setImageErrors(prev => ({ ...prev, [serviceId]: true }));
-  };
-
-  const services = [
-    {
-      id: 1,
-      title: 'Medical Care',
-      description: 'Free health checkups, emergency treatment, and regular medical support. Each visit is tracked via fingerprint for continuous care.',
-      image: '/image6.jpg',
-    },
-    {
-      id: 2,
-      title: 'Food Supply',
-      description: 'Nutritious meals provided during visits. Fingerprint registration ensures each child receives proper food support.',
-      image: '/image7.jpg',
-    },
-    {
-      id: 3,
-      title: 'Clothing & Shoes',
-      description: 'Clean, weather-appropriate clothing and durable footwear based on size recorded via fingerprint.',
-      image: '/image8.jpg',
-    },
-    {
-      id: 4,
-      title: 'Fingerprint Registration',
-      description: 'Secure biometric registration to track service distribution and maintain health records.',
-      image: '/image5.png',
-    },
-    {
-      id: 5,
-      title: 'Health Education',
-      description: 'Basic health education and hygiene awareness programs during each visit.',
-      image: '/image10.webp',
-    },
-    {
-      id: 6,
-      title: 'Emotional Support',
-      description: 'Counseling and emotional support services during visits to ensure wellbeing.',
-      image: '/image9.webp',
-    },
-    {
-      id: 7,
-      title: 'Admission Support',
-      description: 'Assistance with school enrollment, documentation, and access to educational programs for vulnerable children.',
-      image: '/image5.webp',
-    }
-  ];
+  useEffect(() => {
+    const fetchPublicServices = async () => {
+      try {
+        const response = await fetch(API_ENDPOINTS.publicServices);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.services && data.services.length > 0) {
+            setServices(data.services);
+          }
+        }
+      } catch (error) {
+        console.warn('Using default services fallback:', error);
+      }
+    };
+    fetchPublicServices();
+  }, []);
 
   return (
     <div className="services-page">
@@ -105,7 +113,7 @@ const Services = () => {
                 </div>
               ) : (
                 <img 
-                  src={service.image} 
+                  src={service.imageUrl || service.image} 
                   alt={service.title}
                   onError={() => handleImageError(service.id)}
                 />
