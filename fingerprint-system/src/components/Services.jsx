@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import './Services.css';
+import { API_ENDPOINTS } from '../config/endpoints.js';
 
 const Services = () => {
+  const [services, setServices] = useState([]);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [imageErrors, setImageErrors] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  const handleImageError = (serviceId) => {
+    setImageErrors(prev => ({ ...prev, [serviceId]: true }));
+  };
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -12,54 +19,69 @@ const Services = () => {
     }, 3000);
   };
 
-  const handleImageError = (serviceId) => {
-    setImageErrors(prev => ({ ...prev, [serviceId]: true }));
-  };
+  useEffect(() => {
+    const fetchPublicServices = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(API_ENDPOINTS.publicServices);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.services && data.services.length > 0) {
+            setServices(data.services);
+          } else {
+            showToast('No services available', 'error');
+          }
+        } else {
+          showToast('Failed to load services', 'error');
+        }
+      } catch (error) {
+        console.warn('Failed to fetch services:', error);
+        showToast('Could not load services. Please try again later.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPublicServices();
+  }, []);
 
-  const services = [
-    {
-      id: 1,
-      title: 'Medical Care',
-      description: 'Free health checkups, emergency treatment, and regular medical support. Each visit is tracked via fingerprint for continuous care.',
-      image: '/image6.jpg',
-    },
-    {
-      id: 2,
-      title: 'Food Supply',
-      description: 'Nutritious meals provided during visits. Fingerprint registration ensures each child receives proper food support.',
-      image: '/image7.jpg',
-    },
-    {
-      id: 3,
-      title: 'Clothing & Shoes',
-      description: 'Clean, weather-appropriate clothing and durable footwear based on size recorded via fingerprint.',
-      image: '/image8.jpg',
-    },
-    {
-      id: 4,
-      title: 'Fingerprint Registration',
-      description: 'Secure biometric registration to track service distribution and maintain health records.',
-      image: '/image5.png',
-    },
-    {
-      id: 5,
-      title: 'Health Education',
-      description: 'Basic health education and hygiene awareness programs during each visit.',
-      image: '/image10.webp',
-    },
-    {
-      id: 6,
-      title: 'Emotional Support',
-      description: 'Counseling and emotional support services during visits to ensure wellbeing.',
-      image: '/image9.webp',
-    },
-    {
-      id: 7,
-      title: 'Admission Support',
-      description: 'Assistance with school enrollment, documentation, and access to educational programs for vulnerable children.',
-      image: '/image5.webp',
-    }
-  ];
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="services-page">
+        <div className="services-hero">
+          <div className="services-hero-content">
+            <h1>Our Services</h1>
+            <p>TRHM provides comprehensive healthcare and support for vulnerable communities</p>
+          </div>
+        </div>
+        <div className="services-container">
+          <div className="services-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading services...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no services
+  if (services.length === 0 && !loading) {
+    return (
+      <div className="services-page">
+        <div className="services-hero">
+          <div className="services-hero-content">
+            <h1>Our Services</h1>
+            <p>TRHM provides comprehensive healthcare and support for vulnerable communities</p>
+          </div>
+        </div>
+        <div className="services-container">
+          <div className="services-empty">
+            <p>No services available at the moment. Please check back later.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="services-page">
@@ -97,17 +119,18 @@ const Services = () => {
         </div>
 
         {services.map((service, index) => (
-          <div className={`service-item ${index % 2 === 0 ? 'service-item-left' : 'service-item-right'}`} key={service.id}>
+          <div className={`service-item ${index % 2 === 0 ? 'service-item-left' : 'service-item-right'}`} key={service.id || index}>
             <div className="service-item-image">
               {imageErrors[service.id] ? (
                 <div className="service-image-placeholder">
-                  <span className="placeholder-text">{service.title.charAt(0)}</span>
+                  <span className="placeholder-text">{service.title?.charAt(0) || 'S'}</span>
                 </div>
               ) : (
                 <img 
-                  src={service.imageUrl || service.image} 
-                  alt={service.title}
+                  src={service.imageUrl || service.image || '/image6.jpg'} 
+                  alt={service.title || 'Service'}
                   onError={() => handleImageError(service.id)}
+                  loading="lazy"
                 />
               )}
             </div>
@@ -115,8 +138,8 @@ const Services = () => {
               <div className="service-item-number">
                 {String(index + 1).padStart(2, '0')}
               </div>
-              <h3>{service.title}</h3>
-              <p>{service.description}</p>
+              <h3>{service.title || 'Service'}</h3>
+              <p>{service.description || 'Service description'}</p>
             </div>
           </div>
         ))}
