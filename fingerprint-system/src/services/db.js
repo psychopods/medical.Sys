@@ -65,7 +65,7 @@ export async function getDB() {
 
       if (cachedBuffer) {
         dbInstance = new SQL.Database(new Uint8Array(cachedBuffer));
-        
+
         // Dynamic migration: execute schema SQL to ensure any new/missing tables are created in the cached database
         try {
           const schemaRes = await fetch(`${baseUrl}SQLite_SYS_Database.sqlite.txt`);
@@ -73,7 +73,7 @@ export async function getDB() {
             const schemaSql = await schemaRes.text();
             if (!schemaSql.trim().startsWith('<')) {
               dbInstance.exec(schemaSql);
-              
+
               // Safe column migration for existing user databases
               try {
                 dbInstance.exec("ALTER TABLE biometric_fingerprints ADD COLUMN image_data TEXT NULL;");
@@ -82,14 +82,14 @@ export async function getDB() {
               }
               try {
                 dbInstance.exec("ALTER TABLE child_locations ADD COLUMN address TEXT NULL;");
-              } catch (e) {}
+              } catch (e) { }
               try {
                 dbInstance.exec("ALTER TABLE child_locations ADD COLUMN lat REAL NULL;");
-              } catch (e) {}
+              } catch (e) { }
               try {
                 dbInstance.exec("ALTER TABLE child_locations ADD COLUMN lng REAL NULL;");
-              } catch (e) {}
-              
+              } catch (e) { }
+
               await saveDB();
             }
           }
@@ -124,6 +124,7 @@ export async function getDB() {
       return dbInstance;
     } catch (error) {
       isInitializing = false;
+      initPromise = null; // Reset promise on failure to allow retry
       throw error;
     }
   })();
@@ -131,11 +132,34 @@ export async function getDB() {
   return initPromise;
 }
 
-// Export and save current database state to IndexedDB
-export async function saveDB() {
+let saveTimer = null;
+
+// Export and save current database state to IndexedDB with debouncing option
+export async function saveDB(immediate = false) {
   if (!dbInstance) return;
-  const binaryArray = dbInstance.export();
-  await saveDbBuffer(binaryArray);
+
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+
+  const performSave = async () => {
+    if (!dbInstance) return;
+    const binaryArray = dbInstance.export();
+    await saveDbBuffer(binaryArray);
+  };
+
+  if (immediate) {
+    await performSave();
+  } else {
+    saveTimer = setTimeout(async () => {
+      try {
+        await performSave();
+      } catch (err) {
+        console.warn('Debounced saveDB failed:', err);
+      }
+    }, 250);
+  }
 }
 
 // Query helper: returns an array of row objects

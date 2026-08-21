@@ -142,10 +142,9 @@
   stroke: #ffd700;
 }
 
-/* Toast Notification */
 .toast-notification {
   position: fixed;
-  top: 80px;
+  top: 20px;
   right: 20px;
   min-width: 300px;
   background: white;
@@ -159,6 +158,11 @@
   z-index: 10000;
   animation: slideIn 0.3s ease;
   border-left: 4px solid;
+  transition: top 0.3s ease;
+}
+
+.top-header.visible ~ .toast-notification {
+  top: 80px;
 }
 
 .toast-notification.info {

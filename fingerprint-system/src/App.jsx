@@ -240,7 +240,7 @@ function App() {
 
           {/* Medical Records Route */}
           <Route path="/medical-records" element={
-            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'pharmacist', 'staff', 'lab_technician', 'staff']}>
+            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'pharmacist', 'lab_technician', 'staff']}>
               <ProtectedLayout>
                 <MedicalRecords />
               </ProtectedLayout>
@@ -273,10 +273,12 @@ function App() {
             </RoleBasedRoute>
           } />
 
-          {/* Patients History Route - REMOVED ProtectedLayout wrapper */}
+          {/* Patients History Route */}
           <Route path="/patients-history" element={
-            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'pharmacist', 'staff', 'lab_technician']}>
-              <PatientsHistory />
+            <RoleBasedRoute allowedRoles={['superuser', 'admin', 'doctor', 'nurse', 'pharmacist', 'lab_technician', 'staff']}>
+              <ProtectedLayout>
+                <PatientsHistory />
+              </ProtectedLayout>
             </RoleBasedRoute>
           } />
 

@@ -1,6 +1,6 @@
 // Centralized API Endpoints Configuration
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://trhm-api.mitzkits.co.tz';
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://trhm-api.mitzkits.co.tz').replace(/\/+$/, '');
 
 const buildUrl = (envVar, fallbackPath) => {
   const path = import.meta.env[envVar] || fallbackPath;

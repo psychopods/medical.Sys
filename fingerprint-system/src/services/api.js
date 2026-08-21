@@ -113,22 +113,52 @@ async function cacheChildProfileLocalWithQuotaFallback(childRecord) {
   }
 }
 
-// Global Fetch Interceptor for Secure Cookies
+export function getAuthToken() {
+  let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (token) return token;
+
+  const sessionStr = localStorage.getItem('session') || sessionStorage.getItem('session');
+  if (sessionStr) {
+    try {
+      const sessionObj = JSON.parse(sessionStr);
+      const val = sessionObj.accessToken || sessionObj.token || sessionObj.access_token;
+      if (val) return val;
+    } catch (e) {}
+  }
+
+  const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+  if (userStr) {
+    try {
+      const userObj = JSON.parse(userStr);
+      const val = userObj.token || userObj.accessToken;
+      if (val) return val;
+    } catch (e) {}
+  }
+
+  return null;
+}
+
+// Global Fetch Interceptor for Secure Authorization
 const originalFetch = window.fetch;
 window.fetch = async function (url, options = {}) {
   const urlStr = typeof url === 'string' ? url : (url instanceof URL ? url.href : '');
-  // Force credentials: 'include' for same-origin or backend API calls
   const isTargetApi = urlStr.startsWith('/') || urlStr.includes('mitzkits.co.tz') || urlStr.includes('localhost');
 
   if (isTargetApi) {
     options.credentials = 'include';
 
-    // Clean up unnecessary Authorization header since we now use HttpOnly cookies
-    if (options.headers) {
-      if (options.headers instanceof Headers) {
-        options.headers.delete('Authorization');
+    const token = getAuthToken();
+    if (token) {
+      if (!options.headers) {
+        options.headers = { 'Authorization': `Bearer ${token}` };
+      } else if (options.headers instanceof Headers) {
+        if (!options.headers.has('Authorization')) {
+          options.headers.set('Authorization', `Bearer ${token}`);
+        }
       } else if (typeof options.headers === 'object') {
-        delete options.headers['Authorization'];
+        if (!options.headers['Authorization'] && !options.headers['authorization']) {
+          options.headers['Authorization'] = `Bearer ${token}`;
+        }
       }
     }
   }
@@ -136,38 +166,68 @@ window.fetch = async function (url, options = {}) {
   return originalFetch(url, options);
 };
 
+// Debounced background storage logout helper
+let isLoggingOut = false;
+
+function handleStorageLogout(key, isClear = false) {
+  if (!navigator.onLine || isLoggingOut) return;
+
+  const authKeys = ['user', 'token', 'session'];
+  if (isClear || authKeys.includes(key)) {
+    // Extract auth token BEFORE storage key is removed
+    const token = getAuthToken();
+
+    isLoggingOut = true;
+    setTimeout(() => { isLoggingOut = false; }, 2000);
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    originalFetch(`${API_BASE_URL}/api/auth/logout`, {
+      method: 'POST',
+      headers,
+      credentials: 'include'
+    }).catch(err => console.warn('Background logout error:', err));
+  }
+}
+
 // Global Storage Interceptors to automatically trigger backend logout
 const originalRemoveItem = localStorage.removeItem;
 localStorage.removeItem = function (key) {
-  if (key === 'user' || key === 'token') {
-    if (navigator.onLine) {
-      originalFetch(`${API_BASE_URL}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      }).catch(err => console.warn('Background logout error:', err));
-    }
-  }
+  handleStorageLogout(key);
   return originalRemoveItem.apply(this, arguments);
 };
 
 const originalSessionRemoveItem = sessionStorage.removeItem;
 sessionStorage.removeItem = function (key) {
-  if (key === 'user' || key === 'token') {
-    if (navigator.onLine) {
-      originalFetch(`${API_BASE_URL}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      }).catch(err => console.warn('Background logout error:', err));
-    }
-  }
+  handleStorageLogout(key);
   return originalSessionRemoveItem.apply(this, arguments);
+};
+
+const originalClear = localStorage.clear;
+localStorage.clear = function () {
+  handleStorageLogout(null, true);
+  return originalClear.apply(this, arguments);
+};
+
+const originalSessionClear = sessionStorage.clear;
+sessionStorage.clear = function () {
+  handleStorageLogout(null, true);
+  return originalSessionClear.apply(this, arguments);
 };
 
 // Helper to get authorization headers
 export function getAuthHeaders() {
-  return {
+  const token = getAuthToken();
+  const headers = {
     'Content-Type': 'application/json'
   };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
 }
 
 /* ==========================================
@@ -232,7 +292,10 @@ export async function login(usernameOrEmail, password) {
     throw new Error('Invalid credentials.');
   }
 
-  const mappedRole = cachedUser.role_id === '22222222-2222-4222-8222-222222222221' ? 'superuser' : 'nurse';
+  let mappedRole = cachedUser.role || (cachedUser.role_name ? cachedUser.role_name.toLowerCase().replace(/\s+/g, '_') : null);
+  if (!mappedRole) {
+    mappedRole = cachedUser.role_id === '22222222-2222-4222-8222-222222222221' ? 'superuser' : 'nurse';
+  }
 
   return {
     success: true,

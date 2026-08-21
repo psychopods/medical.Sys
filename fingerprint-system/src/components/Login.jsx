@@ -16,9 +16,22 @@ const Login = () => {
   
   const navigate = useNavigate();
 
+  const toastTimerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
   const showToast = (message, type = 'success') => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToast({ show: true, message, type });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToast({ show: false, message: '', type: '' });
     }, 3000);
   };
@@ -91,29 +104,31 @@ const Login = () => {
       const data = await login(identifier, password);
       
       if (data.success) {
-        // Save user ID to localStorage for local writes attribution
-        if (data.user?.id) {
-          localStorage.setItem('userId', data.user.id);
-        }
-
         const tokenVal = data.token || data.session?.token || data.session?.accessToken || data.session?.access_token;
+        const userId = data.user?.id || '';
 
         if (rememberMe) {
+          // Clear any non-remembered session state
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('session');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('userId');
+
           localStorage.setItem('user', JSON.stringify(data.user));
-          if (data.session) {
-            localStorage.setItem('session', JSON.stringify(data.session));
-          }
-          if (tokenVal) {
-            localStorage.setItem('token', tokenVal);
-          }
+          if (data.session) localStorage.setItem('session', JSON.stringify(data.session));
+          if (tokenVal) localStorage.setItem('token', tokenVal);
+          if (userId) localStorage.setItem('userId', userId);
         } else {
+          // Clear any previous remembered local state
+          localStorage.removeItem('user');
+          localStorage.removeItem('session');
+          localStorage.removeItem('token');
+          localStorage.removeItem('userId');
+
           sessionStorage.setItem('user', JSON.stringify(data.user));
-          if (data.session) {
-            sessionStorage.setItem('session', JSON.stringify(data.session));
-          }
-          if (tokenVal) {
-            sessionStorage.setItem('token', tokenVal);
-          }
+          if (data.session) sessionStorage.setItem('session', JSON.stringify(data.session));
+          if (tokenVal) sessionStorage.setItem('token', tokenVal);
+          if (userId) sessionStorage.setItem('userId', userId);
         }
         
         const userName = data.user?.first_name || data.user?.username || 'User';

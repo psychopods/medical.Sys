@@ -5,36 +5,52 @@ const TopHeader = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const toastTimerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const showToast = (message, type = 'info') => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToast({ show: true, message, type });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToast({ show: false, message: '', type: '' });
     }, 3000);
   };
 
-  // Handle top header visibility on scroll
+  // Handle top header visibility on scroll with rAF throttling
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      const isAtBottom = currentScrollY + windowHeight >= documentHeight - 10;
-      
-      // Show header when:
-      // 1. Scrolling up, OR
-      // 2. At the bottom of the page, OR
-      // 3. At the very top of the page
-      if (currentScrollY < lastScrollY || currentScrollY < 50 || isAtBottom) {
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 50) {
-        setIsVisible(false);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = Math.max(0, window.scrollY);
+          const windowHeight = window.innerHeight;
+          const documentHeight = document.documentElement.scrollHeight;
+          const isAtBottom = currentScrollY + windowHeight >= documentHeight - 10;
+          
+          if (currentScrollY < lastScrollY || currentScrollY < 50 || isAtBottom) {
+            setIsVisible(true);
+          } else if (currentScrollY > lastScrollY && currentScrollY > 50) {
+            setIsVisible(false);
+          }
+          
+          setLastScrollY(currentScrollY);
+          ticking = false;
+        });
+        ticking = true;
       }
-      
-      setLastScrollY(currentScrollY);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
