@@ -15,17 +15,20 @@ const Staff = () => {
     {
       name: 'Dr. Marko Hingi',
       position: 'Medical Doctor',
-      description: 'Leading medical services and healthcare delivery for vulnerable populations.'
+      description: 'Leading medical services and healthcare delivery for vulnerable populations.',
+      image: '/teams/Dr. Marko Hingi photo.png'
     },
     {
       name: 'Augustino Mhanga',
       position: 'Programs Manager',
-      description: 'Overseeing all outreach programs and community engagement initiatives.'
+      description: 'Overseeing all outreach programs and community engagement initiatives.',
+      image: '/teams/Augustino\'s Photo.png'
     },
     {
       name: 'Dr. Adamu Kondo Bashiru',
       position: 'Medical Officer Incharge',
-      description: 'Managing medical operations and ensuring quality healthcare services.'
+      description: 'Managing medical operations and ensuring quality healthcare services.',
+      image: '/teams/Adam Bashiru Photo.png'
     }
   ];
 
@@ -33,26 +36,30 @@ const Staff = () => {
     {
       name: 'Diana Mnazi',
       position: 'Nurse',
-      description: 'Providing compassionate nursing care and health education to patients.'
+      description: 'Providing compassionate nursing care and health education to patients.',
+      image: '/teams/diana photo.png'
     },
     {
       name: 'Dorica Makelemo',
       position: 'Laboratory Technologist & Mental Health Lead',
-      description: 'Leading laboratory services and mental health support programs.'
+      description: 'Leading laboratory services and mental health support programs.',
+      image: '/teams/Doricah Photo.png'
     },
     {
       name: 'Martha Mussa',
       position: 'Nurse and Project Officer – Street Medicine',
-      description: 'Coordinating street medicine outreach and providing nursing care.'
+      description: 'Coordinating street medicine outreach and providing nursing care.',
+      image: '/teams/Martha Photo.png'
     },
     {
-      name: 'Ayubu Mkungu',
+      name: 'Sophia Benedict',
       position: 'Clinical Officer',
-      description: 'Providing clinical assessments and treatment to patients.'
+      description: 'Providing clinical assessments and treatment to patients.',
+      image: '/teams/Sophia Benedict.png'
     }
   ];
 
-  // Single people icon for all staff
+  // Default placeholder icon when image fails to load
   const PeopleIcon = () => (
     <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M17 21V19C17 16.8 15.2 15 13 15H5C2.8 15 1 16.8 1 19V21" stroke="#0066cc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -89,10 +96,29 @@ const Staff = () => {
           <div className="leadership-grid">
             {leadershipTeam.map((member, index) => (
               <div className="staff-card" key={index}>
-                <div className="staff-icon"><PeopleIcon /></div>
-                <h3>{member.name}</h3>
-                <p className="staff-position">{member.position}</p>
-                <p className="staff-description">{member.description}</p>
+                <div className="staff-image-wrapper">
+                  <img 
+                    src={member.image} 
+                    alt={member.name}
+                    className="staff-image"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                      const fallback = e.target.parentElement.querySelector('.staff-image-fallback');
+                      if (fallback) {
+                        fallback.style.display = 'flex';
+                      }
+                    }}
+                  />
+                  <div className="staff-image-fallback">
+                    <PeopleIcon />
+                  </div>
+                </div>
+                <div className="staff-info">
+                  <h3>{member.name}</h3>
+                  <p className="staff-position">{member.position}</p>
+                  <p className="staff-description">{member.description}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -106,10 +132,29 @@ const Staff = () => {
           <div className="medical-grid">
             {medicalTeam.map((member, index) => (
               <div className="staff-card" key={index}>
-                <div className="staff-icon"><PeopleIcon /></div>
-                <h3>{member.name}</h3>
-                <p className="staff-position">{member.position}</p>
-                <p className="staff-description">{member.description}</p>
+                <div className="staff-image-wrapper">
+                  <img 
+                    src={member.image} 
+                    alt={member.name}
+                    className="staff-image"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                      const fallback = e.target.parentElement.querySelector('.staff-image-fallback');
+                      if (fallback) {
+                        fallback.style.display = 'flex';
+                      }
+                    }}
+                  />
+                  <div className="staff-image-fallback">
+                    <PeopleIcon />
+                  </div>
+                </div>
+                <div className="staff-info">
+                  <h3>{member.name}</h3>
+                  <p className="staff-position">{member.position}</p>
+                  <p className="staff-description">{member.description}</p>
+                </div>
               </div>
             ))}
           </div>

@@ -65,7 +65,43 @@
 }
 
 /* ================================
-   METRIC GRID
+   OVERVIEW GRID - NEW
+   ================================ */
+
+.mr-service-delivery .mr-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+}
+
+.mr-service-delivery .mr-overview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.mr-service-delivery .mr-overview-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.mr-service-delivery .mr-overview-value-large {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+/* ================================
+   METRIC GRID - DEPRECATED (kept for backward compatibility)
    ================================ */
 
 .mr-service-delivery .mr-metric-grid {
@@ -168,6 +204,7 @@
   font-weight: 500;
   color: #334155;
   flex-shrink: 0;
+  word-break: break-word;
 }
 
 .mr-service-delivery .mr-med-bar-container {
@@ -241,6 +278,78 @@
 }
 
 /* ================================
+   LATEST BMI MINI
+   ================================ */
+
+.mr-service-delivery .mr-latest-bmi-mini {
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mr-service-delivery .mr-latest-bmi-mini-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.mr-service-delivery .mr-latest-bmi-mini-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mr-service-delivery .mr-latest-bmi-mini-status {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mr-service-delivery .mr-latest-bmi-mini-date {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* BMI Status Colors */
+.mr-bmi-status-severely-underweight {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.mr-bmi-status-underweight {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.mr-bmi-status-normal {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.mr-bmi-status-overweight {
+  background: #fde68a;
+  color: #b45309;
+}
+
+.mr-bmi-status-obese {
+  background: #fca5a5;
+  color: #b91c1c;
+}
+
+.mr-bmi-status-unknown {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ================================
    EMPTY STATE
    ================================ */
 
@@ -252,8 +361,42 @@
 }
 
 /* ================================
+   LOADING STATE
+   ================================ */
+
+.mr-service-delivery .mr-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+}
+
+.mr-service-delivery .mr-spinner-small {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #0066cc;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ================================
    RESPONSIVE DESIGN
    ================================ */
+
+@media (max-width: 1024px) {
+  .mr-service-delivery .mr-overview-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+}
 
 @media (max-width: 768px) {
   .mr-service-delivery {
@@ -268,6 +411,19 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
+  }
+
+  .mr-service-delivery .mr-overview-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .mr-service-delivery .mr-overview-item {
+    padding: 0.4rem 0.6rem;
+  }
+
+  .mr-service-delivery .mr-overview-value-large {
+    font-size: 1.2rem;
   }
 
   .mr-service-delivery .mr-metric-label {
@@ -305,11 +461,34 @@
   .mr-service-delivery .mr-procedure-name {
     font-size: 0.8rem;
   }
+
+  .mr-service-delivery .mr-latest-bmi-mini {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
 }
 
 @media (max-width: 480px) {
   .mr-service-delivery .mr-section-block {
     padding: 0.75rem 1rem;
+  }
+
+  .mr-service-delivery .mr-overview-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.4rem;
+  }
+
+  .mr-service-delivery .mr-overview-item {
+    padding: 0.3rem 0.5rem;
+  }
+
+  .mr-service-delivery .mr-overview-value-large {
+    font-size: 1rem;
+  }
+
+  .mr-service-delivery .mr-overview-label {
+    font-size: 0.6rem;
   }
 
   .mr-service-delivery .mr-metric-label {
@@ -352,75 +531,105 @@
   .mr-service-delivery .mr-procedure-name {
     font-size: 0.75rem;
   }
+
+  .mr-service-delivery .mr-latest-bmi-mini {
+    padding: 8px 12px;
+    gap: 4px;
+  }
+
+  .mr-service-delivery .mr-latest-bmi-mini-label {
+    font-size: 11px;
+  }
+
+  .mr-service-delivery .mr-latest-bmi-mini-value {
+    font-size: 14px;
+  }
+
+  .mr-service-delivery .mr-latest-bmi-mini-status {
+    font-size: 10px;
+    padding: 1px 10px;
+  }
+
+  .mr-service-delivery .mr-latest-bmi-mini-date {
+    font-size: 10px;
+  }
 }
 
-/* Add to ServiceDelivery.css */
+@media (max-width: 360px) {
+  .mr-service-delivery .mr-overview-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 
-.mr-loading-state {
+  .mr-service-delivery .mr-med-name {
+    width: 80px;
+    font-size: 0.65rem;
+  }
+
+  .mr-service-delivery .mr-med-bar {
+    height: 18px;
+  }
+
+  .mr-service-delivery .mr-med-count {
+    font-size: 0.6rem;
+    min-width: 20px;
+  }
+
+  .mr-service-delivery .mr-med-count-inner {
+    font-size: 0.55rem;
+  }
+}
+
+
+/* Symptoms and Diagnoses Tags */
+.mr-symptom-list,
+.mr-diagnosis-list {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: #94a3b8;
-}
-
-.mr-spinner-small {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #0066cc;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 12px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.mr-latest-bmi-mini {
-  margin-top: 12px;
-  padding: 10px 16px;
-  background: #f8fafc;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
 }
 
-.mr-latest-bmi-mini-label {
+.mr-symptom-tag,
+.mr-diagnosis-tag {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
   font-size: 13px;
-  color: #64748b;
   font-weight: 500;
 }
 
-.mr-latest-bmi-mini-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: #0f172a;
+.mr-symptom-tag {
+  background: #fef3c7;
+  color: #92400e;
 }
 
-.mr-latest-bmi-mini-status {
-  display: inline-block;
-  padding: 2px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
+.mr-diagnosis-tag {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
-.mr-latest-bmi-mini-date {
-  font-size: 12px;
-  color: #94a3b8;
+.mr-badge-symptom {
+  background: #fef3c7;
+  color: #92400e;
 }
 
-@media (max-width: 768px) {
-  .mr-latest-bmi-mini {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
+.mr-badge-diagnosis {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.mr-error-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #dc2626;
+}
+
+.mr-error-state button {
+  margin-top: 12px;
+  padding: 8px 24px;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }

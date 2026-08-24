@@ -30,7 +30,7 @@ const Footer = () => {
                   e.target.style.display = 'none';
                 }}
               />
-              Street Medicine
+              Street Medicine Project
             </h3>
             <p>The Street Medicine Project is dedicated to delivering healthcare, social support, and essential rehabilitation services directly to vulnerable children living on the streets.</p>
             <div className="footer-social">
@@ -129,7 +129,7 @@ const Footer = () => {
         </div>
         
         <div className="footer-bottom">
-          <p>&copy; 2026 Street Medicine Outreach Project (SMOP). All rights reserved.</p>
+          <p>&copy; 2026 Street Medicine Project. All rights reserved.</p>
           <div className="footer-links">
             <a href="#">Privacy Policy</a>
             <a href="#">Terms of Service</a>

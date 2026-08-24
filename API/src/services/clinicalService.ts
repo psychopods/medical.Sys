@@ -185,7 +185,7 @@ export async function getTestsHistory(pool: Pool, childId: string): Promise<any[
     }));
 }
 
-// 5. SERVICES RENDERED
+// 5. SERVICES RENDERED - FIXED!
 export async function saveService(
     pool: Pool,
     id: string,
@@ -199,15 +199,26 @@ export async function saveService(
     await pool.execute<ResultSetHeader>(
         `INSERT INTO services_rendered 
         (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
         service_type = VALUES(service_type),
         services_list = VALUES(services_list),
         date = VALUES(date),
         recorded_by = VALUES(recorded_by),
         recorded_by_name = VALUES(recorded_by_name),
-        version = version + 1`,
-        [id, childId, serviceType, servicesList, date, recordedBy, recordedByName]
+        version = version + 1,
+        sync_status = 'synced'`,
+        [
+            id,                    // 1. id
+            childId,               // 2. child_id
+            serviceType,           // 3. service_type
+            servicesList,          // 4. services_list
+            date,                  // 5. date
+            recordedBy || null,    // 6. recorded_by
+            recordedByName || null, // 7. recorded_by_name
+            1,                     // 8. version ← FIXED: Added this
+            'synced'               // 9. sync_status ← FIXED: Added this
+        ]
     );
     return { id, childId, serviceType, servicesList, date };
 }
@@ -246,10 +257,19 @@ export async function saveSymptoms(
     recordedBy: string | null,
     recordedByName: string | null
 ): Promise<any> {
+    // Validate child exists
+    const [childCheck] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM children_profiles WHERE id = ? LIMIT 1',
+        [childId]
+    );
+    if (childCheck.length === 0) {
+        throw new HttpError(404, `Child with ID '${childId}' not found.`);
+    }
+
     await pool.execute<ResultSetHeader>(
         `INSERT INTO symptoms_recorded 
         (id, child_id, symptoms, visit_notes, date, recorded_by, recorded_by_name, version, sync_status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
         symptoms = VALUES(symptoms),
         visit_notes = VALUES(visit_notes),
@@ -257,7 +277,17 @@ export async function saveSymptoms(
         recorded_by = VALUES(recorded_by),
         recorded_by_name = VALUES(recorded_by_name),
         version = version + 1`,
-        [id, childId, symptoms, visitNotes, date, recordedBy, recordedByName]
+        [
+            id,                    // 1. id
+            childId,               // 2. child_id
+            symptoms || '',        // 3. symptoms
+            visitNotes || '',      // 4. visit_notes
+            date,                  // 5. date
+            recordedBy || null,    // 6. recorded_by
+            recordedByName || 'System', // 7. recorded_by_name
+            1,                     // 8. version
+            'synced'               // 9. sync_status
+        ]
     );
     return { id, childId, symptoms, visitNotes, date };
 }
@@ -279,7 +309,7 @@ export async function getSymptomsHistory(pool: Pool, childId: string): Promise<a
     }));
 }
 
-// 7. CLOTHING PROVISIONS
+// 7. CLOTHING PROVISIONS - FIXED!
 export async function saveClothing(
     pool: Pool,
     id: string,
@@ -293,15 +323,26 @@ export async function saveClothing(
     await pool.execute<ResultSetHeader>(
         `INSERT INTO clothing_provisions 
         (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, sync_status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
         shoes = VALUES(shoes),
         clothes = VALUES(clothes),
         date = VALUES(date),
         recorded_by = VALUES(recorded_by),
         recorded_by_name = VALUES(recorded_by_name),
-        version = version + 1`,
-        [id, childId, shoes, clothes, date, recordedBy, recordedByName]
+        version = version + 1,
+        sync_status = 'synced'`,
+        [
+            id,                    // 1. id
+            childId,               // 2. child_id
+            shoes || '',           // 3. shoes
+            clothes || '',         // 4. clothes
+            date,                  // 5. date
+            recordedBy || null,    // 6. recorded_by
+            recordedByName || null, // 7. recorded_by_name
+            1,                     // 8. version ← FIXED: Added this
+            'synced'               // 9. sync_status ← FIXED: Added this
+        ]
     );
     return { id, childId, shoes, clothes, date };
 }
@@ -323,70 +364,161 @@ export async function getClothingHistory(pool: Pool, childId: string): Promise<a
     }));
 }
 
+// 8. CLINICAL OPTIONS
 export async function getClinicalOptions(pool: Pool): Promise<any> {
-    const [medsRows] = await pool.execute<RowDataPacket[]>(
-        'SELECT id, name, category FROM lookup_medications ORDER BY name ASC'
-    );
-    const [testsRows] = await pool.execute<RowDataPacket[]>(
-        'SELECT id, name FROM lookup_tests ORDER BY name ASC'
-    );
-    const [proceduresRows] = await pool.execute<RowDataPacket[]>(
-        'SELECT id, name FROM lookup_procedures ORDER BY name ASC'
-    );
-    const [educationRows] = await pool.execute<RowDataPacket[]>(
-        'SELECT id, name FROM lookup_education ORDER BY name ASC'
-    );
+    try {
+        // 1. Get medications from lookup_medications table
+        const [medsRows] = await pool.execute<RowDataPacket[]>(
+            'SELECT name, category FROM lookup_medications ORDER BY category, name'
+        );
+        
+        const medicationOptions: Record<string, string[]> = {
+            ntdsMeds: [],
+            antibiotics: [],
+            otherMeds: []
+        };
 
-    const medicationOptions: Record<string, string[]> = {
-        ntdsMeds: [],
-        antibiotics: [],
-        otherMeds: []
-    };
+        medsRows.forEach((row) => {
+            const cat = row.category;
+            if (medicationOptions[cat] !== undefined) {
+                medicationOptions[cat].push(row.name);
+            } else {
+                medicationOptions[cat] = [row.name];
+            }
+        });
 
-    medsRows.forEach((row) => {
-        const cat = row.category;
-        if (medicationOptions[cat] !== undefined) {
-            medicationOptions[cat].push(row.name);
-        } else {
-            medicationOptions[cat] = [row.name];
+        // 2. Get test types from test_reference table
+        let testTypes: string[] = [];
+        let testResults: string[] = [];
+        
+        try {
+            const [testTypesRows] = await pool.execute<RowDataPacket[]>(
+                "SELECT name FROM test_reference WHERE category = 'testType' ORDER BY name"
+            );
+            testTypes = testTypesRows.map(row => row.name);
+        } catch (error) {
+            console.warn('Could not fetch test types, using defaults:', error);
         }
-    });
 
-    const testTypes = [
-        "Haemoglobin test (Hb)",
-        "Erythrocyte sedimentation rate (ESR)",
-        "Blood glucose",
-        "Uric acid test",
-        "H. Pylori test",
-        "Malaria test",
-        "HIV test",
-        "Urinalysis",
-        "VDRL test",
-        "Stool test",
-        "Widal test"
-    ];
+        try {
+            const [testResultsRows] = await pool.execute<RowDataPacket[]>(
+                "SELECT name FROM test_reference WHERE category = 'testResult' ORDER BY name"
+            );
+            testResults = testResultsRows.map(row => row.name);
+        } catch (error) {
+            console.warn('Could not fetch test results, using defaults:', error);
+        }
 
-    const testResults = [
-        "Negative (-)",
-        "Positive (+)",
-        "Leukocyte +",
-        "Leukocyte ++",
-        "Leukocyte +++",
-        "Glucose +",
-        "Glucose ++",
-        "Glucose +++",
-        "Schistosoma ova seen",
-        "High",
-        "Low",
-        "Normal",
-        "Abnormal"
-    ];
+        // Default test types and results if none found
+        const defaultTestTypes = [
+            "Haemoglobin test (Hb)",
+            "Erythrocyte sedimentation rate (ESR)",
+            "Blood glucose",
+            "Uric acid test",
+            "H. Pylori test",
+            "Malaria test",
+            "HIV test",
+            "Urinalysis",
+            "VDRL test",
+            "Stool test",
+            "Widal test"
+        ];
 
-    return {
-        medicationOptions,
-        testTypesOptions: testTypes,
-        testResultOptions: testResults,
-        procedureOptions: proceduresRows.map(row => row.name),
-        educationOptions: educationRows.map(row => row.name)
-    };
+        const defaultTestResults = [
+            "Negative (-)",
+            "Positive (+)",
+            "Leukocyte +",
+            "Leukocyte ++",
+            "Leukocyte +++",
+            "Glucose +",
+            "Glucose ++",
+            "Glucose +++",
+            "Schistosoma ova seen",
+            "High",
+            "Low",
+            "Normal",
+            "Abnormal"
+        ];
+
+        // 3. Get procedures from procedure_reference table
+        let procedures: string[] = [];
+        try {
+            const [proceduresRows] = await pool.execute<RowDataPacket[]>(
+                'SELECT name FROM procedure_reference ORDER BY name'
+            );
+            procedures = proceduresRows.map(row => row.name);
+        } catch (error) {
+            console.warn('Could not fetch procedures, using empty array:', error);
+        }
+
+        // 4. Get education options from lookup_education table
+        let education: string[] = [];
+        try {
+            const [educationRows] = await pool.execute<RowDataPacket[]>(
+                'SELECT name FROM lookup_education ORDER BY name'
+            );
+            education = educationRows.map(row => row.name);
+        } catch (error) {
+            console.warn('Could not fetch education options, using defaults:', error);
+        }
+
+        const defaultEducation = [
+            "Hygiene Education",
+            "Nutrition Education",
+            "Disease Prevention",
+            "First Aid Training",
+            "Health Awareness"
+        ];
+
+        // Return the options
+        return {
+            medicationOptions,
+            testTypesOptions: testTypes.length > 0 ? testTypes : defaultTestTypes,
+            testResultOptions: testResults.length > 0 ? testResults : defaultTestResults,
+            procedureOptions: procedures,
+            educationOptions: education.length > 0 ? education : defaultEducation
+        };
+    } catch (error) {
+        console.error('Error fetching clinical options from MySQL:', error);
+        // Return default values if query fails
+        return {
+            medicationOptions: { ntdsMeds: [], antibiotics: [], otherMeds: [] },
+            testTypesOptions: [
+                "Haemoglobin test (Hb)",
+                "Erythrocyte sedimentation rate (ESR)",
+                "Blood glucose",
+                "Uric acid test",
+                "H. Pylori test",
+                "Malaria test",
+                "HIV test",
+                "Urinalysis",
+                "VDRL test",
+                "Stool test",
+                "Widal test"
+            ],
+            testResultOptions: [
+                "Negative (-)",
+                "Positive (+)",
+                "Leukocyte +",
+                "Leukocyte ++",
+                "Leukocyte +++",
+                "Glucose +",
+                "Glucose ++",
+                "Glucose +++",
+                "Schistosoma ova seen",
+                "High",
+                "Low",
+                "Normal",
+                "Abnormal"
+            ],
+            procedureOptions: [],
+            educationOptions: [
+                "Hygiene Education",
+                "Nutrition Education",
+                "Disease Prevention",
+                "First Aid Training",
+                "Health Awareness"
+            ]
+        };
+    }
 }

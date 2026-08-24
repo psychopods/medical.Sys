@@ -107,15 +107,15 @@ const Services = () => {
       <div className="services-hero">
         <div className="services-hero-content">
           <h1>Our Services</h1>
-          <p>TRHM provides comprehensive healthcare and support for vulnerable communities</p>
+          <p>We provides comprehensive healthcare and support for vulnerable communities</p>
         </div>
       </div>
 
       {/* Services Section */}
       <div className="services-container">
         <div className="services-intro">
-          <h2>How Fingerprint Registration Helps</h2>
-          <p>Every child gets a unique digital identity, ensuring they receive consistent care across all services during each visit.</p>
+          <h2>Our Approach to Care</h2>
+          <p>We provide a range of healthcare, social, and wellbeing services designed to meet the immediate and long-term needs of vulnerable children and individuals. Through community outreach, we bring essential care, support, and health education closer to those who face barriers to accessing traditional health services.</p>
         </div>
 
         {services.map((service, index) => (

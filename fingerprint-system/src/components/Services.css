@@ -69,9 +69,12 @@
   padding: 80px 20px;
 }
 
-/* Services Intro */
+/* ============================================
+   SERVICES INTRO - LEFT ALIGNED
+   ============================================ */
+
 .services-intro {
-  text-align: center;
+  text-align: left;
   margin-bottom: 70px;
   animation: fadeInUp 0.8s ease;
 }
@@ -81,63 +84,22 @@
   font-weight: 700;
   color: #1a1a2e;
   margin-bottom: 15px;
+  text-align: left;
 }
 
 .services-intro p {
-  font-size: 18px;
-  color: #555;
-  line-height: 1.7;
-  max-width: 700px;
-  margin: 0 auto;
+  font-size: 17px;
+  color: #444;
+  line-height: 1.8;
+  text-align: left;
+  max-width: 100%;
+  margin: 0;
 }
 
-/* Loading State */
-.services-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  min-height: 300px;
-}
+/* ============================================
+   SERVICES LIST - NO SHADOWS
+   ============================================ */
 
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #e0e8f0;
-  border-top-color: #0066cc;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.services-loading p {
-  font-size: 16px;
-  color: #888;
-}
-
-/* Empty State */
-.services-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  min-height: 300px;
-  text-align: center;
-}
-
-.services-empty p {
-  font-size: 18px;
-  color: #888;
-  max-width: 500px;
-}
-
-/* Service Item - Alternating Layout */
 .service-item {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -167,12 +129,11 @@
   order: 1;
 }
 
-/* Service Item Image */
+/* Service Item Image - No Shadow, No Border Radius */
 .service-item-image {
   position: relative;
   width: 100%;
   height: 350px;
-  border-radius: 16px;
   overflow: hidden;
   background: #f0f7ff;
 }
@@ -182,6 +143,7 @@
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s ease;
+  display: block;
 }
 
 .service-item:hover .service-item-image img {
@@ -205,13 +167,14 @@
   text-transform: uppercase;
 }
 
-/* Service Item Content - Full Text Wrapping */
+/* Service Item Content */
 .service-item-content {
-  padding: 20px 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-width: 0; /* Prevents overflow */
+  min-width: 0;
+  text-align: left;
 }
 
 .service-item-number {
@@ -231,7 +194,7 @@
   line-height: 1.3;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  hyphens: auto;
+  text-align: left;
 }
 
 .service-item-content p {
@@ -243,10 +206,13 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal;
-  hyphens: auto;
+  text-align: left;
 }
 
-/* Toast Notification */
+/* ============================================
+   TOAST NOTIFICATION
+   ============================================ */
+
 .toast-notification {
   position: fixed;
   top: 80px;
@@ -327,7 +293,58 @@
   }
 }
 
-/* Responsive Design */
+/* ============================================
+   LOADING & EMPTY STATES
+   ============================================ */
+
+.services-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  min-height: 300px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e0e8f0;
+  border-top-color: #0066cc;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.services-loading p {
+  font-size: 16px;
+  color: #888;
+}
+
+.services-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  min-height: 300px;
+  text-align: center;
+}
+
+.services-empty p {
+  font-size: 18px;
+  color: #888;
+  max-width: 500px;
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
 @media (max-width: 1024px) {
   .service-item {
     gap: 40px;
@@ -414,16 +431,6 @@
     min-width: auto;
     max-width: none;
   }
-  
-  .services-loading {
-    padding: 60px 20px;
-    min-height: 250px;
-  }
-  
-  .services-empty {
-    padding: 60px 20px;
-    min-height: 250px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -458,7 +465,6 @@
   
   .service-item-image {
     height: 200px;
-    border-radius: 12px;
   }
   
   .service-item-number {
@@ -477,27 +483,12 @@
   .placeholder-text {
     font-size: 50px;
   }
-  
-  .services-loading {
-    padding: 40px 16px;
-    min-height: 200px;
-  }
-  
-  .services-loading p {
-    font-size: 14px;
-  }
-  
-  .services-empty {
-    padding: 40px 16px;
-    min-height: 200px;
-  }
-  
-  .services-empty p {
-    font-size: 16px;
-  }
 }
 
-/* Reduced Motion */
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
 @media (prefers-reduced-motion: reduce) {
   .services-hero {
     background-attachment: scroll;
@@ -524,7 +515,10 @@
   }
 }
 
-/* High Contrast Mode */
+/* ============================================
+   HIGH CONTRAST MODE
+   ============================================ */
+
 @media (prefers-contrast: high) {
   .services-hero::before {
     background: rgba(0, 102, 204, 0.9);

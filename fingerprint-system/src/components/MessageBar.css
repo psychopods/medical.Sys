@@ -1,17 +1,43 @@
+/* ============================================
+   MESSAGE BAR - GOLD THEME
+   ============================================ */
+
 .message-bar {
   position: fixed;
   top: 70px;
   left: 0;
   right: 0;
-  background: linear-gradient(135deg, #FFD700 0%, #DAA520 100%);
-  color: white;
-  padding: 10px 0;
+  background: linear-gradient(135deg, #e8a317 0%, #e8a317 50%, #e8a317 100%);
+  color: #1a1a2e;
+  padding: 0;
   z-index: 998;
   transform: translateY(-100%);
-  animation: slideDown 0.3s ease forwards;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  /* backdrop-filter: blur(10px); - REMOVED - this was causing text blur */
+  animation: slideDown 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+/* Decorative gradient line at top - darker gold */
+.message-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #b8860b, #8b6914, #b8860b);
+  background-size: 200% 100%;
+  animation: shimmerLine 3s ease-in-out infinite;
+}
+
+@keyframes shimmerLine {
+  0%, 100% {
+    background-position: -200% 0;
+  }
+  50% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes slideDown {
@@ -28,45 +54,71 @@
 .message-bar-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 40px;
+  padding: 12px 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
+  min-height: 56px;
+}
+
+/* ============================================
+   ICON - Dark version for gold background
+   ============================================ */
+
+.message-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .message-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: rgba(0, 0, 0, 0.15);
+  width: 40px;
+  height: 40px;
+  background: rgba(26, 26, 46, 0.1);
   border-radius: 50%;
-  transition: all 0.3s ease;
-  animation: pulse 2s infinite;
-  flex-shrink: 0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(26, 26, 46, 0.08);
+  position: relative;
+}
+
+.message-icon::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.message-icon:hover::after {
+  opacity: 1;
 }
 
 .message-icon svg {
   width: 20px;
   height: 20px;
-  transition: transform 0.3s ease;
+  stroke: #1a1a2e;
+  fill: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 1;
 }
 
 .message-icon:hover svg {
-  transform: scale(1.1);
+  transform: scale(1.1) rotate(-5deg);
+  stroke: #000000;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
+/* ============================================
+   CONTENT - Dark text for gold background
+   ============================================ */
 
 .message-content {
   flex: 1;
@@ -77,29 +129,39 @@
 }
 
 .message-text {
-  font-size: 1rem;
-  opacity: 1;
-  transition: all 0.3s ease;
-  animation: fadeInOut 0.5s ease;
-  font-weight: 500;
-  line-height: 1.5;
-  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a1a2e;
   letter-spacing: 0.3px;
-  word-spacing: 1px;
-  color: white;
-  text-shadow: none;
+  line-height: 1.5;
+  animation: fadeInOut 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Highlight effect on text - dark version */
+.message-text::before {
+  content: '✦';
+  display: inline-block;
+  margin-right: 8px;
+  color: #1a1a2e;
+  font-size: 0.7rem;
+  opacity: 0.5;
 }
 
 @keyframes fadeInOut {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
+/* ============================================
+   DOTS - Dark version
+   ============================================ */
 
 .message-dots {
   display: flex;
@@ -109,79 +171,107 @@
 }
 
 .dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(26, 26, 46, 0.25);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  border: none;
+  padding: 0;
 }
 
 .dot:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(26, 26, 46, 0.5);
   transform: scale(1.2);
 }
 
 .dot.active {
-  width: 24px;
+  width: 28px;
   border-radius: 4px;
-  background: white;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  background: linear-gradient(90deg, #1a1a2e, #2d2d44);
+  box-shadow: 0 0 20px rgba(26, 26, 46, 0.15);
 }
 
-/* Responsive Design */
+.dot.active:hover {
+  transform: scale(1);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
 @media (max-width: 1024px) {
   .message-bar-container {
-    padding: 0 30px;
-    gap: 18px;
-  }
-  
-  .message-text {
-    font-size: 0.95rem;
-    color: white;
-  }
-}
-
-@media (max-width: 768px) {
-  .message-bar {
-    top: 70px;
-    padding: 8px 0;
-  }
-  
-  .message-bar-container {
-    flex-direction: column;
-    gap: 10px;
-    padding: 0 20px;
-    text-align: center;
-  }
-  
-  .message-content {
-    justify-content: center;
-    text-align: center;
-    gap: 10px;
+    padding: 10px 30px;
+    gap: 16px;
+    min-height: 50px;
   }
   
   .message-text {
     font-size: 0.9rem;
-    text-align: center;
-    width: 100%;
-    line-height: 1.4;
-    color: white;
   }
   
   .message-icon {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
   }
   
   .message-icon svg {
     width: 18px;
     height: 18px;
   }
+}
+
+@media (max-width: 768px) {
+  .message-bar {
+    top: 70px;
+  }
+  
+  .message-bar-container {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 12px;
+    padding: 8px 16px;
+    min-height: 44px;
+  }
+  
+  .message-content {
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+  
+  .message-text {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.2px;
+    width: 100%;
+  }
+  
+  .message-text::before {
+    content: '✦';
+    margin-right: 6px;
+    font-size: 0.6rem;
+  }
+  
+  .message-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  
+  .message-icon svg {
+    width: 16px;
+    height: 16px;
+  }
   
   .message-dots {
-    gap: 8px;
+    gap: 6px;
+    flex-shrink: 0;
   }
   
   .dot {
@@ -190,101 +280,91 @@
   }
   
   .dot.active {
-    width: 20px;
+    width: 18px;
   }
 }
 
 @media (max-width: 480px) {
   .message-bar {
     top: 60px;
-    padding: 6px 0;
   }
   
   .message-bar-container {
+    padding: 6px 12px;
     gap: 8px;
-    padding: 0 15px;
+    min-height: 38px;
   }
   
   .message-text {
-    font-size: 0.85rem;
-    letter-spacing: 0.2px;
-    word-spacing: 0.5px;
-    line-height: 1.3;
-    color: white;
+    font-size: 0.7rem;
+    letter-spacing: 0.1px;
+  }
+  
+  .message-text::before {
+    display: none;
   }
   
   .message-icon {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
   }
   
   .message-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
   
   .dot {
     width: 5px;
     height: 5px;
+    gap: 4px;
   }
   
   .dot.active {
-    width: 16px;
+    width: 14px;
   }
   
-  .message-content {
-    gap: 8px;
+  .message-dots {
+    gap: 4px;
   }
 }
 
-/* Large screens */
+@media (max-width: 360px) {
+  .message-bar-container {
+    padding: 4px 10px;
+    gap: 6px;
+    min-height: 34px;
+  }
+  
+  .message-text {
+    font-size: 0.65rem;
+  }
+  
+  .message-icon {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .message-icon svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* ============================================
+   LARGE SCREENS
+   ============================================ */
+
 @media (min-width: 1400px) {
   .message-bar-container {
-    padding: 0 60px;
-    gap: 25px;
+    padding: 14px 60px;
+    gap: 24px;
+    min-height: 64px;
   }
   
   .message-text {
     font-size: 1.05rem;
     letter-spacing: 0.4px;
-    word-spacing: 1.5px;
-    color: white;
-  }
-  
-  .message-icon {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .message-icon svg {
-    width: 22px;
-    height: 22px;
-  }
-  
-  .dot {
-    width: 8px;
-    height: 8px;
-  }
-  
-  .dot.active {
-    width: 28px;
-  }
-}
-
-/* Ultra-wide screens */
-@media (min-width: 1920px) {
-  .message-bar-container {
-    max-width: 1600px;
-    padding: 0 80px;
-    gap: 30px;
-  }
-  
-  .message-text {
-    font-size: 1.1rem;
-    letter-spacing: 0.5px;
-    word-spacing: 2px;
-    line-height: 1.6;
-    color: white;
   }
   
   .message-icon {
@@ -293,19 +373,139 @@
   }
   
   .message-icon svg {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
+  }
+  
+  .dot {
+    width: 9px;
+    height: 9px;
+  }
+  
+  .dot.active {
+    width: 32px;
   }
 }
 
-/* Reduced Motion */
+@media (min-width: 1920px) {
+  .message-bar-container {
+    max-width: 1600px;
+    padding: 16px 80px;
+    gap: 30px;
+    min-height: 72px;
+  }
+  
+  .message-text {
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    line-height: 1.6;
+  }
+  
+  .message-icon {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .message-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .dot {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .dot.active {
+    width: 36px;
+  }
+}
+
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
 @media (prefers-reduced-motion: reduce) {
   .message-bar,
   .message-icon,
   .dot,
-  .message-text {
+  .message-text,
+  .message-bar::before {
     animation: none;
     transition: none;
+  }
+  
+  .message-bar::before {
+    display: none;
+  }
+  
+  .message-icon:hover svg {
+    transform: none;
+  }
+  
+  .message-text {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ============================================
+   HIGH CONTRAST
+   ============================================ */
+
+@media (prefers-contrast: high) {
+  .message-bar {
+    background: #b8860b;
+    border-bottom: 3px solid #1a1a2e;
+  }
+  
+  .message-bar::before {
+    display: none;
+  }
+  
+  .message-icon {
+    border: 2px solid #1a1a2e;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .message-icon svg {
+    stroke: #1a1a2e;
+  }
+  
+  .dot.active {
+    background: #1a1a2e;
+    box-shadow: none;
+  }
+  
+  .dot {
+    background: rgba(26, 26, 46, 0.4);
+  }
+  
+  .message-text {
+    color: #1a1a2e;
+  }
+  
+  .message-text::before {
+    color: #1a1a2e;
+  }
+}
+
+/* ============================================
+   TOUCH DEVICE OPTIMIZATIONS
+   ============================================ */
+
+@media (hover: none) and (pointer: coarse) {
+  .dot {
+    min-width: 10px;
+    min-height: 10px;
+  }
+  
+  .dot.active {
+    min-width: 24px;
+  }
+  
+  .message-icon:active svg {
+    transform: scale(0.9);
   }
   
   .message-icon:hover svg {
@@ -313,30 +513,32 @@
   }
 }
 
-/* High Contrast Mode */
-@media (prefers-contrast: high) {
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
   .message-bar {
-    background: #B8860B;
-    border: 1px solid #fff;
-  }
-  
-  .dot.active {
-    background: #ffff00;
-  }
-  
-  .message-text {
-    color: white;
+    display: none;
   }
 }
 
-/* Touch Device Optimizations */
-@media (hover: none) and (pointer: coarse) {
-  .dot {
-    min-width: 10px;
-    min-height: 10px;
+/* ============================================
+   HIDE ON MOBILE (768px and below)
+   ============================================ */
+
+@media (max-width: 768px) {
+  .message-bar {
+    display: none !important;
   }
-  
-  .message-icon:active svg {
-    transform: scale(0.95);
+}
+
+/* ============================================
+   SHOW ONLY ON DESKTOP
+   ============================================ */
+
+@media (min-width: 769px) {
+  .message-bar {
+    display: block;
   }
 }

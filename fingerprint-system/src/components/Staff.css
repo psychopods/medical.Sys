@@ -2,13 +2,17 @@
 .staff-page {
   width: 100%;
   min-height: 100vh;
+  background: #f8fafc;
 }
 
-/* Hero Section */
+/* ============================================
+   HERO SECTION
+   ============================================ */
+
 .staff-hero {
   position: relative;
   width: 100%;
-  height: 350px;
+  height: 400px;
   background-image: url('/image8.jpg');
   background-size: cover;
   background-position: center;
@@ -26,7 +30,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 102, 204, 0.8);
+  background: linear-gradient(135deg, rgba(10, 44, 76, 0.88) 0%, rgba(10, 88, 202, 0.75) 100%);
 }
 
 .staff-hero-content {
@@ -35,23 +39,26 @@
   text-align: center;
   color: white;
   padding: 0 20px;
+  max-width: 800px;
 }
 
 .staff-hero-content h1 {
-  font-size: 56px;
+  font-size: 52px;
   font-weight: 700;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   color: #ffd700;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   animation: fadeInUp 0.8s ease;
 }
 
 .staff-hero-content p {
-  font-size: 20px;
+  font-size: 18px;
   opacity: 0.95;
   animation: fadeInUp 0.8s ease 0.2s both;
-  max-width: 800px;
+  max-width: 700px;
   margin: 0 auto;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 @keyframes fadeInUp {
@@ -59,36 +66,45 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Container */
+/* ============================================
+   CONTAINER
+   ============================================ */
+
 .container {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px;
 }
 
-/* Section Title */
+/* ============================================
+   SECTION TITLE
+   ============================================ */
+
 .section-title {
   font-size: 32px;
   font-weight: 700;
-  color: #0066cc;
-  text-align: left;
+  color: #1a1a2e;
+  text-align: center;
   margin-bottom: 40px;
   position: relative;
-  display: inline-block;
 }
 
 .section-title::after {
   content: '';
   position: absolute;
-  bottom: -10px;
-  left: 0;
-  width: 50px;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
   height: 3px;
   background: #0066cc;
   border-radius: 2px;
 }
 
-/* Leadership Section */
+/* ============================================
+   LEADERSHIP SECTION
+   ============================================ */
+
 .leadership-section {
   padding: 80px 0;
   background: #ffffff;
@@ -97,89 +113,170 @@
 .leadership-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 40px;
+  gap: 30px;
 }
 
-/* Medical Team Section */
+/* ============================================
+   MEDICAL TEAM SECTION
+   ============================================ */
+
 .medical-team-section {
   padding: 80px 0;
-  background: #f0f7ff;
+  background: #f8fafc;
 }
 
 .medical-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 30px;
+  gap: 24px;
 }
 
-/* Staff Card */
+/* ============================================
+   STAFF CARD
+   ============================================ */
+
 .staff-card {
-  padding: 30px;
-  border: 1px solid #e0e8f0;
   background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #e5e7eb;
   text-align: center;
-  transition: all 0.3s ease;
-  height: 100%;
+  padding: 28px 20px 24px;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  height: 100%;
 }
 
 .staff-card:hover {
+  transform: translateY(-6px);
   border-color: #0066cc;
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 12px 40px rgba(0, 102, 204, 0.08);
 }
 
-.staff-icon {
-  margin-bottom: 20px;
+/* ============================================
+   STAFF IMAGE - PERFECT CIRCLE
+   ============================================ */
+
+.staff-image-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid #e5e7eb;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
 }
 
-.staff-icon svg {
-  width: 60px;
-  height: 60px;
+.staff-card:hover .staff-image-wrapper {
+  border-color: #0066cc;
+  box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
+}
+
+.staff-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.staff-card:hover .staff-image {
+  transform: scale(1.08);
+}
+
+/* Fallback icon when image fails to load */
+.staff-image-fallback {
+  display: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+}
+
+.staff-image-fallback svg {
+  width: 50px;
+  height: 50px;
   stroke: #0066cc;
+  opacity: 0.5;
+}
+
+/* ============================================
+   STAFF INFO
+   ============================================ */
+
+.staff-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
 .staff-card h3 {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: #1a1a2e;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  line-height: 1.3;
 }
 
 .staff-position {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #0066cc;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  background: rgba(0, 102, 204, 0.06);
+  padding: 2px 12px;
+  border-radius: 20px;
+  display: inline-block;
 }
 
 .staff-description {
   font-size: 13px;
-  color: #666;
+  color: #6b7280;
   line-height: 1.6;
   flex: 1;
+  margin: 0;
+  max-width: 280px;
 }
 
-/* Toast Notification */
+/* ============================================
+   TOAST NOTIFICATION
+   ============================================ */
+
 .toast-notification {
   position: fixed;
   top: 90px;
   right: 20px;
   min-width: 280px;
   background: #fff;
-  border-radius: 4px;
-  padding: 12px 16px;
+  border-radius: 8px;
+  padding: 14px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   z-index: 10001;
   animation: slideIn 0.3s ease;
-  border-left: 3px solid #10b981;
-  border-top: 1px solid #e0e8f0;
-  border-right: 1px solid #e0e8f0;
-  border-bottom: 1px solid #e0e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #10b981;
 }
 
 .toast-close {
@@ -188,6 +285,11 @@
   cursor: pointer;
   font-size: 20px;
   color: #999;
+  transition: color 0.2s ease;
+}
+
+.toast-close:hover {
+  color: #333;
 }
 
 @keyframes slideIn {
@@ -195,41 +297,29 @@
   to { transform: translateX(0); opacity: 1; }
 }
 
-/* Responsive Breakpoints */
-
-/* Large Desktop (1200px - 1400px) */
-@media (min-width: 1200px) and (max-width: 1400px) {
-  .container {
-    max-width: 1200px;
-  }
-  
-  .leadership-grid {
-    gap: 30px;
-  }
-  
-  .medical-grid {
-    gap: 25px;
-  }
-}
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
 
 /* Desktop (992px - 1199px) */
 @media (min-width: 992px) and (max-width: 1199px) {
-  .container {
-    max-width: 1000px;
-  }
-  
   .leadership-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 30px;
+    gap: 24px;
   }
   
   .medical-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 30px;
+    gap: 24px;
   }
   
-  .section-title {
-    font-size: 30px;
+  .staff-image-wrapper {
+    width: 110px;
+    height: 110px;
+  }
+  
+  .staff-hero-content h1 {
+    font-size: 44px;
   }
 }
 
@@ -241,11 +331,11 @@
   }
   
   .staff-hero-content h1 {
-    font-size: 42px;
+    font-size: 38px;
   }
   
   .staff-hero-content p {
-    font-size: 18px;
+    font-size: 16px;
   }
   
   .leadership-section,
@@ -254,25 +344,30 @@
   }
   
   .section-title {
-    font-size: 28px;
+    font-size: 30px;
   }
   
   .leadership-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 25px;
+    gap: 20px;
   }
   
   .medical-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 25px;
+    gap: 20px;
+  }
+  
+  .staff-image-wrapper {
+    width: 100px;
+    height: 100px;
   }
   
   .staff-card {
-    padding: 25px;
+    padding: 20px 16px;
   }
   
   .staff-card h3 {
-    font-size: 18px;
+    font-size: 16px;
   }
 }
 
@@ -284,11 +379,11 @@
   }
   
   .staff-hero-content h1 {
-    font-size: 36px;
+    font-size: 32px;
   }
   
   .staff-hero-content p {
-    font-size: 16px;
+    font-size: 15px;
   }
   
   .leadership-section,
@@ -311,16 +406,18 @@
   }
   
   .staff-card {
-    padding: 20px;
+    padding: 24px 20px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  
+  .staff-image-wrapper {
+    width: 100px;
+    height: 100px;
   }
   
   .staff-card h3 {
-    font-size: 18px;
-  }
-  
-  .staff-icon svg {
-    width: 50px;
-    height: 50px;
+    font-size: 17px;
   }
   
   .toast-notification {
@@ -334,13 +431,13 @@
 /* Mobile (320px - 480px) */
 @media (max-width: 480px) {
   .staff-hero {
-    height: 250px;
+    height: 280px;
     background-attachment: scroll;
   }
   
   .staff-hero-content h1 {
-    font-size: 28px;
-    letter-spacing: 1px;
+    font-size: 26px;
+    letter-spacing: 0.5px;
   }
   
   .staff-hero-content p {
@@ -356,23 +453,31 @@
     font-size: 24px;
   }
   
-  .section-title::after {
-    width: 40px;
-    bottom: -8px;
-  }
-  
   .leadership-grid {
     grid-template-columns: 1fr;
-    gap: 15px;
+    gap: 16px;
   }
   
   .medical-grid {
     grid-template-columns: 1fr;
-    gap: 15px;
+    gap: 16px;
   }
   
   .staff-card {
-    padding: 15px;
+    padding: 20px 16px;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+  
+  .staff-image-wrapper {
+    width: 80px;
+    height: 80px;
+    border-width: 2px;
+  }
+  
+  .staff-image-fallback svg {
+    width: 35px;
+    height: 35px;
   }
   
   .staff-card h3 {
@@ -381,26 +486,22 @@
   
   .staff-position {
     font-size: 12px;
+    padding: 2px 10px;
   }
   
   .staff-description {
     font-size: 12px;
-  }
-  
-  .staff-icon svg {
-    width: 45px;
-    height: 45px;
   }
 }
 
 /* Small Mobile (up to 360px) */
 @media (max-width: 360px) {
   .staff-hero {
-    height: 220px;
+    height: 240px;
   }
   
   .staff-hero-content h1 {
-    font-size: 24px;
+    font-size: 22px;
   }
   
   .staff-hero-content p {
@@ -412,16 +513,28 @@
   }
   
   .staff-card {
-    padding: 12px;
+    padding: 16px 12px;
   }
   
-  .staff-icon svg {
-    width: 40px;
-    height: 40px;
+  .staff-image-wrapper {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .staff-image-fallback svg {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .staff-card h3 {
+    font-size: 15px;
   }
 }
 
-/* Reduced Motion */
+/* ============================================
+   REDUCED MOTION
+   ============================================ */
+
 @media (prefers-reduced-motion: reduce) {
   .staff-hero {
     background-attachment: scroll;
@@ -430,6 +543,7 @@
   .staff-hero-content h1,
   .staff-hero-content p {
     animation: none;
+    opacity: 1;
   }
   
   .staff-card {
@@ -440,12 +554,23 @@
   .staff-card:hover {
     transform: none;
   }
+  
+  .staff-image {
+    transition: none;
+  }
+  
+  .staff-card:hover .staff-image {
+    transform: none;
+  }
 }
 
-/* High Contrast Mode */
+/* ============================================
+   HIGH CONTRAST MODE
+   ============================================ */
+
 @media (prefers-contrast: high) {
   .staff-hero::before {
-    background: rgba(0, 102, 204, 0.9);
+    background: rgba(0, 40, 80, 0.95);
   }
   
   .staff-card {
@@ -454,5 +579,50 @@
   
   .staff-card:hover {
     border-color: #ffd700;
+  }
+  
+  .staff-image-wrapper {
+    border-color: #0066cc;
+    border-width: 3px;
+  }
+  
+  .staff-card:hover .staff-image-wrapper {
+    border-color: #ffd700;
+  }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  .staff-hero {
+    background: #0066cc;
+    height: 200px;
+  }
+  
+  .staff-hero::before {
+    display: none;
+  }
+  
+  .staff-hero-content h1 {
+    color: #ffd700;
+  }
+  
+  .staff-hero-content p {
+    color: white;
+  }
+  
+  .staff-card {
+    break-inside: avoid;
+    border: 1px solid #ccc;
+  }
+  
+  .staff-image-wrapper {
+    border-color: #ccc;
+  }
+  
+  .toast-notification {
+    display: none;
   }
 }

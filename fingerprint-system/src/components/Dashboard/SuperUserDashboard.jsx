@@ -5,6 +5,7 @@ import { getChildren, getUsers, getRoles, getPermissions, getPermissionCategorie
 
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// console.log('API_BASE_URL:', API_BASE_URL);
 
 // ===== SVG ICONS =====
 const Icons = {

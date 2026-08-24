@@ -1101,7 +1101,15 @@ export async function saveSymptoms(childId, symptomsData) {
 
 // CLOTHING PROVISIONS
 export async function saveClothing(childId, clothingData) {
+  
   const id = clothingData.id || crypto.randomUUID();
+  const shoes = String(clothingData.shoes || '');
+  const clothes = String(clothingData.clothes || '');
+  const date = clothingData.date || new Date().toISOString().split('T')[0];
+  const recordedBy = clothingData.recordedBy || null;
+  const recordedByName = clothingData.recordedByName || null;
+  
+
   const isOnline = navigator.onLine;
 
   if (isOnline) {
@@ -1109,33 +1117,48 @@ export async function saveClothing(childId, clothingData) {
       const response = await fetch(API_ENDPOINTS.clothing(childId), {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ id, ...clothingData })
+        body: JSON.stringify({ 
+          id, 
+          shoes, 
+          clothes, 
+          date, 
+          recordedBy, 
+          recordedByName 
+        })
       });
       if (response.ok) {
         const result = await response.json();
+        
+        // Save to SQLite
         await executeRun(
-          `INSERT OR REPLACE INTO clothing_provisions (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 'synced')`,
-          [id, childId, clothingData.shoes, clothingData.clothes, clothingData.date, clothingData.recordedBy, clothingData.recordedByName]
+          `INSERT OR REPLACE INTO clothing_provisions 
+          (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 'synced')`,
+          [id, childId, shoes, clothes, date, recordedBy, recordedByName]
         );
         await saveDB();
         return result;
+      } else {
+        const errorText = await response.text();
+        console.error("API: Clothing save failed with status:", response.status, errorText);
+        throw new Error(`Server returned ${response.status}: ${errorText}`);
       }
     } catch (error) {
-      console.warn('API: Failed to save clothing online, caching locally...', error);
+      // Fall through to offline save
     }
   }
 
+  // Offline: cache locally
   try {
     await executeRun(
-      `INSERT OR REPLACE INTO clothing_provisions (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'local_created')`,
-      [id, childId, clothingData.shoes, clothingData.clothes, clothingData.date, clothingData.recordedBy, clothingData.recordedByName]
+      `INSERT OR REPLACE INTO clothing_provisions 
+      (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'local_created')`,
+      [id, childId, shoes, clothes, date, recordedBy, recordedByName]
     );
     await saveDB();
-    return { success: true, message: 'Clothing saved offline', data: { id, childId, ...clothingData } };
+    return { success: true, message: 'Clothing saved offline' };
   } catch (err) {
-    console.error('API: Error saving clothing offline:', err);
     throw err;
   }
 }
@@ -1186,6 +1209,7 @@ export async function getClothingHistory(childId) {
 
 // SERVICES
 export async function saveMedicalServices(childId, servicesData) {
+  
   const id = servicesData.id || crypto.randomUUID();
   const meds = [
     ...(servicesData.medications?.ntdsMeds || []),
@@ -1194,22 +1218,39 @@ export async function saveMedicalServices(childId, servicesData) {
   ];
   const tests = servicesData.tests?.testTypes || [];
   const procedures = servicesData.procedures || [];
-  const allServices = [...meds, ...tests, ...procedures];
-  const servicesList = servicesData.services || (allServices.length > 0 ? allServices.join(', ') : 'Medical checkup');
+  
+  // Combine everything into one services list
+  const allItems = [...meds, ...tests, ...procedures];
+  const servicesList = allItems.length > 0 ? allItems.join(', ') : 'Medical checkup';
+  
+  
   const isOnline = navigator.onLine;
 
+  // Save as a single medical service record with all items
   if (isOnline) {
     try {
       const response = await fetch(API_ENDPOINTS.medicalServices(childId), {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ id, services: servicesList, ...servicesData })
+        body: JSON.stringify({
+          id,
+          services: servicesList,
+          medications: servicesData.medications,
+          tests: servicesData.tests,
+          procedures: procedures, // Send procedures separately for backend
+          date: servicesData.date,
+          recordedBy: servicesData.recordedBy,
+          recordedByName: servicesData.recordedByName
+        })
       });
       if (response.ok) {
         const result = await response.json();
+        
+        // Save to SQLite
         await executeRun(
-          `INSERT OR REPLACE INTO services_rendered (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-           VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 0, 'synced')`,
+          `INSERT OR REPLACE INTO services_rendered 
+          (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+          VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 0, 'synced')`,
           [id, childId, servicesList, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
         );
         await saveDB();
@@ -1220,10 +1261,12 @@ export async function saveMedicalServices(childId, servicesData) {
     }
   }
 
+  // Offline: save to SQLite
   try {
     await executeRun(
-      `INSERT OR REPLACE INTO services_rendered (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-       VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 1, 'local_created')`,
+      `INSERT OR REPLACE INTO services_rendered 
+      (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+      VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 1, 'local_created')`,
       [id, childId, servicesList, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
     );
     await saveDB();
@@ -1235,53 +1278,137 @@ export async function saveMedicalServices(childId, servicesData) {
 }
 
 export async function saveSocialServices(childId, servicesData) {
+  
   const id = servicesData.id || crypto.randomUUID();
   const socialItems = [];
-  if (servicesData.clothing?.clothes) socialItems.push(`Clothes size: ${servicesData.clothing.clothes}`);
-  if (servicesData.clothing?.shoes) socialItems.push(`Shoes size: ${servicesData.clothing.shoes}`);
-  if (servicesData.education && servicesData.education.length > 0) {
-    socialItems.push(`Education: ${servicesData.education.join(', ')}`);
+  
+  // Build social items list (EXCLUDING education)
+  if (servicesData.clothing?.clothes) {
+    socialItems.push(`Clothes: ${servicesData.clothing.clothes}`);
   }
-  if (servicesData.foodRefreshment) socialItems.push(`Food/Refreshment: ${servicesData.foodRefreshment}`);
-  if (servicesData.otherServices) socialItems.push(`Other: ${servicesData.otherServices}`);
+  if (servicesData.clothing?.shoes) {
+    socialItems.push(`Shoes: ${servicesData.clothing.shoes}`);
+  }
+  if (servicesData.foodRefreshment) {
+    socialItems.push(`Food: ${servicesData.foodRefreshment}`);
+  }
+  if (servicesData.otherServices) {
+    socialItems.push(`Other: ${servicesData.otherServices}`);
+  }
 
-  const servicesList = servicesData.services || (socialItems.length > 0 ? socialItems.join(', ') : 'Social assistance');
+  // Get education topics separately
+  const educationTopics = servicesData.education || [];
+  const hasEducation = educationTopics.length > 0;
+  
+  // Build the social services list (without education)
+  const servicesList = socialItems.length > 0 ? socialItems.join(', ') : 'Social assistance';
+  
   const isOnline = navigator.onLine;
 
-  if (isOnline) {
-    try {
-      const response = await fetch(API_ENDPOINTS.socialServices(childId), {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ id, services: servicesList, ...servicesData })
-      });
-      if (response.ok) {
-        const result = await response.json();
-        await executeRun(
-          `INSERT OR REPLACE INTO services_rendered (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-           VALUES (?, ?, 'social', ?, ?, ?, ?, 1, 0, 'synced')`,
-          [id, childId, servicesList, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
-        );
-        await saveDB();
-        return result;
+  // 1. SAVE SOCIAL SERVICES (without education)
+  if (socialItems.length > 0 || servicesList) {
+    if (isOnline) {
+      try {
+        const response = await fetch(API_ENDPOINTS.socialServices(childId), {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ 
+            id, 
+            services: servicesList, 
+            date: servicesData.date,
+            recordedBy: servicesData.recordedBy,
+            recordedByName: servicesData.recordedByName
+          })
+        });
+        if (response.ok) {
+          const result = await response.json();
+          
+          // Save to SQLite
+          await executeRun(
+            `INSERT OR REPLACE INTO services_rendered 
+            (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+            VALUES (?, ?, 'social', ?, ?, ?, ?, 1, 0, 'synced')`,
+            [id, childId, servicesList, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
+          );
+          await saveDB();
+        }
+      } catch (error) {
+        console.warn('API: Failed to save social services online, caching locally...', error);
       }
-    } catch (error) {
-      console.warn('API: Failed to save social services online, caching locally...', error);
+    } else {
+      // Offline: save social services to SQLite
+      await executeRun(
+        `INSERT OR REPLACE INTO services_rendered 
+        (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+        VALUES (?, ?, 'social', ?, ?, ?, ?, 1, 1, 'local_created')`,
+        [id, childId, servicesList, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
+      );
     }
   }
 
-  try {
-    await executeRun(
-      `INSERT OR REPLACE INTO services_rendered (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-       VALUES (?, ?, 'social', ?, ?, ?, ?, 1, 1, 'local_created')`,
-      [id, childId, servicesList, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
-    );
-    await saveDB();
-    return { success: true, message: 'Social services saved offline' };
-  } catch (err) {
-    console.error('API: Error saving social services offline:', err);
-    throw err;
+  // 2. SAVE EDUCATION TOPICS AS SEPARATE RECORDS
+  if (hasEducation) {
+    for (const educationTopic of educationTopics) {
+      const eduId = crypto.randomUUID();
+      
+      if (isOnline) {
+        try {
+          const response = await fetch(API_ENDPOINTS.education(childId), {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              id: eduId,
+              education: educationTopic,
+              date: servicesData.date,
+              recordedBy: servicesData.recordedBy,
+              recordedByName: servicesData.recordedByName
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            
+            // Save to SQLite as education record
+            await executeRun(
+              `INSERT OR REPLACE INTO services_rendered 
+              (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+              VALUES (?, ?, 'education', ?, ?, ?, ?, 1, 0, 'synced')`,
+              [eduId, childId, educationTopic, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
+            );
+            await saveDB();
+          } else {
+            const errorText = await response.text();
+            console.error(`API: education "${educationTopic}" save failed:`, response.status, errorText);
+            // Fall through to offline save
+          }
+        } catch (error) {
+          console.warn(`API: Failed to save education "${educationTopic}" online, caching locally...`, error);
+        }
+      }
+      
+      // Offline or failed: save education to SQLite
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO services_rendered 
+          (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+          VALUES (?, ?, 'education', ?, ?, ?, ?, 1, 1, 'local_created')`,
+          [eduId, childId, educationTopic, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
+        );
+        await saveDB();
+      } catch (err) {
+        console.error(`API: Error saving education "${educationTopic}" offline:`, err);
+        throw err;
+      }
+    }
   }
+
+  await saveDB();
+  return { 
+    success: true, 
+    message: hasEducation 
+      ? `Social services and ${educationTopics.length} education topics saved offline` 
+      : 'Social services saved offline' 
+  };
 }
 
 export async function saveEducationServices(childId, educationData) {
@@ -1739,7 +1866,6 @@ export function initSyncWorker() {
   if (typeof window !== 'undefined' && !window.__autoSyncListenerAttached) {
     window.__autoSyncListenerAttached = true;
     window.addEventListener('online', () => {
-      console.log('Network status reconnected to ONLINE. Auto-triggering sync worker...');
       triggerSync().catch(err => console.warn('Auto-sync error on reconnect:', err));
     });
     // Fire initial sync if online

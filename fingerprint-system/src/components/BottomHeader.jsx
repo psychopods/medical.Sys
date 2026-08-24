@@ -166,8 +166,8 @@ const BottomHeader = () => {
               />
             </div>
             <div className="bb-logo-text">
-              <span className="bb-logo-title">Street Medicine</span>
-              <span className="bb-logo-subtitle">Street Medicine Project</span>
+              <span className="bb-logo-title">Street Medicine Project</span>
+              <span className="bb-logo-subtitle">Call to care. Committed to community.</span>
             </div>
           </div>
           

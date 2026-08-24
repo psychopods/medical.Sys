@@ -286,7 +286,7 @@ const Contact = () => {
       <div className="contact-hero">
         <div className="contact-hero-content">
           <h1>Contact Us</h1>
-          <p>TRHM - Reach out to support our mission for rural health</p>
+          <p>Reach out to support our mission for rural health</p>
         </div>
       </div>
 

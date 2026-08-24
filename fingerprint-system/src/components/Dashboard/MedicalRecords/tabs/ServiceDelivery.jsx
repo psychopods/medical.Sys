@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import "./ServiceDelivery.css";
 import * as api from "../../../../services/api.js";
 
@@ -9,7 +9,6 @@ const ServiceDelivery = ({
   vitalsData,
   medicalRecords
 }) => {
-  // State for calculated child-specific service data
   const [childServiceData, setChildServiceData] = useState({
     totalVisits: 0,
     totalServices: 0,
@@ -21,41 +20,76 @@ const ServiceDelivery = ({
     totalTests: 0,
     medications: {},
     procedures: [],
+    symptoms: [],
+    diagnoses: [],
   });
 
-  // State for clinical history logs from database
   const [vitalsHistory, setVitalsHistory] = useState([]);
   const [medicationsHistory, setMedicationsHistory] = useState([]);
   const [testsHistory, setTestsHistory] = useState([]);
   const [servicesHistory, setServicesHistory] = useState([]);
   const [clothingHistory, setClothingHistory] = useState([]);
+  const [symptomsHistory, setSymptomsHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Fetch full clinical history for the child from database
-  const fetchFullHistory = async (childId) => {
+  const fetchFullHistory = useCallback(async (childId) => {
     if (!childId) return;
     try {
       setLoading(true);
-      const [vitals, meds, tests, srvs, clothing] = await Promise.all([
-        api.apiFetchVitalsRecords(childId),
-        api.apiFetchMedicationRecords(childId),
-        api.apiFetchTestsRecords(childId),
-        api.apiFetchServicesRecords(childId),
-        api.apiFetchClothingRecords(childId)
+      setError(null);
+      
+      
+      // Fetch data from API - each call handles its own errors
+      const [vitals, meds, tests, srvs, clothing, symptoms] = await Promise.all([
+        api.apiFetchVitalsRecords(childId).catch(err => {
+          console.warn('⚠️ Failed to fetch vitals:', err);
+          return [];
+        }),
+        api.apiFetchMedicationRecords(childId).catch(err => {
+          console.warn('⚠️ Failed to fetch medications:', err);
+          return [];
+        }),
+        api.apiFetchTestsRecords(childId).catch(err => {
+          console.warn('⚠️ Failed to fetch tests:', err);
+          return [];
+        }),
+        api.apiFetchServicesRecords(childId).catch(err => {
+          console.warn('⚠️ Failed to fetch services:', err);
+          return [];
+        }),
+        api.apiFetchClothingRecords(childId).catch(err => {
+          console.warn('⚠️ Failed to fetch clothing:', err);
+          return [];
+        }),
+        api.apiFetchSymptomsRecords(childId).catch(err => {
+          console.warn('⚠️ Failed to fetch symptoms:', err);
+          return [];
+        })
       ]);
+      
+      
+      // Log service type breakdown
+      const socialServices = (srvs || []).filter(r => (r.serviceType || r.service_type) === 'social');
+      const educationServices = (srvs || []).filter(r => (r.serviceType || r.service_type) === 'education');
+      const procedureServices = (srvs || []).filter(r => (r.serviceType || r.service_type) === 'procedure');
+      const medicalServices = (srvs || []).filter(r => (r.serviceType || r.service_type) === 'medical');
+      
+      
       setVitalsHistory(vitals || []);
       setMedicationsHistory(meds || []);
       setTestsHistory(tests || []);
       setServicesHistory(srvs || []);
       setClothingHistory(clothing || []);
+      setSymptomsHistory(symptoms || []);
     } catch (error) {
-      console.error('Error fetching full history:', error);
+      console.error('❌ Error fetching full history:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Fetch history when child changes
   useEffect(() => {
     if (child && child.id) {
       fetchFullHistory(child.id);
@@ -65,35 +99,151 @@ const ServiceDelivery = ({
       setTestsHistory([]);
       setServicesHistory([]);
       setClothingHistory([]);
+      setSymptomsHistory([]);
     }
-  }, [child]);
+  }, [child, fetchFullHistory]);
 
   useEffect(() => {
     if (child && child.id) {
       calculateChildServiceData();
     }
-  }, [child, medicalRecords, vitalsHistory, medicationsHistory, testsHistory, servicesHistory, clothingHistory]);
+  }, [child, medicalRecords, vitalsHistory, medicationsHistory, testsHistory, servicesHistory, clothingHistory, symptomsHistory]);
 
-  const calculateChildServiceData = () => {
-    // Count total visits (medical records)
-    const totalVisits = medicalRecords ? medicalRecords.length : 0;
+  // Helper function to check if an item is a procedure
+  const isProcedureItem = useCallback((item) => {
+    if (!item) return false;
+    
+    const lowerItem = item.toLowerCase().trim();
+    
+    // Common procedure keywords
+    const procedureKeywords = [
+      'wound', 'dressing', 'suture', 'suturing', 'incision', 'drainage',
+      'cast', 'splint', 'catheter', 'cannulation', 'blood draw', 'immunization',
+      'first aid', 'bandage', 'stitch', 'injection', 'iv', 'intravenous',
+      'surgery', 'operation', 'procedure', 'catheterization', 'suturing',
+      'incision and drainage', 'casting', 'splinting', 'iv cannulation',
+      'wound dressing', 'wound care', 'surgical', 'biopsy', 'excision',
+      'debridement', 'suture removal', 'wound closure', 'sterile dressing'
+    ];
+    
+    // Check if the item contains any procedure keyword
+    const isProcedure = procedureKeywords.some(keyword => 
+      lowerItem.includes(keyword)
+    );
+    
+    // Also check if the item ends with "procedure" or is in the procedure list
+    const looksLikeProcedure = 
+      lowerItem.includes(' procedure') || 
+      lowerItem.endsWith('procedure') ||
+      lowerItem.match(/^[a-z]+\s+(?:and\s+)?[a-z]+(?:s)?$/i) && !lowerItem.includes('medication') && !lowerItem.includes('test');
+    
+    return isProcedure || looksLikeProcedure;
+  }, []);
+
+  // Helper to extract procedures from a services list string
+  const extractProceduresFromList = useCallback((list) => {
+    const foundProcedures = [];
+    if (!list) return foundProcedures;
+    
+    // Split by commas or pipes
+    const items = list.split(/[,|]/).map(s => s.trim()).filter(Boolean);
+    
+    // Look for "Procedures:" prefix
+    const procedurePrefixMatch = list.match(/Procedures?:\s*([^,]+(?:,\s*[^,]+)*)/i);
+    if (procedurePrefixMatch) {
+      const procItems = procedurePrefixMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+      procItems.forEach(p => {
+        if (p && !foundProcedures.includes(p)) {
+          foundProcedures.push(p);
+        }
+      });
+    }
+    
+    // Check each item individually
+    items.forEach(item => {
+      if (isProcedureItem(item)) {
+        // Extract just the procedure name (remove any labels)
+        let procedureName = item;
+        // Remove "Procedure:" prefix if present
+        procedureName = procedureName.replace(/^Procedures?\s*:\s*/i, '');
+        // Remove "Wound:" "Suture:" etc prefixes
+        procedureName = procedureName.replace(/^[A-Za-z]+\s*:\s*/, '');
+        
+        if (procedureName && !foundProcedures.includes(procedureName)) {
+          foundProcedures.push(procedureName);
+        }
+      }
+    });
+    
+    return foundProcedures;
+  }, [isProcedureItem]);
+
+  const calculateChildServiceData = useCallback(() => {
+    
+    // Count total unique visits from all record types
+    const allRecords = [
+      ...(vitalsHistory || []),
+      ...(medicationsHistory || []),
+      ...(testsHistory || []),
+      ...(servicesHistory || []),
+      ...(clothingHistory || []),
+      ...(symptomsHistory || [])
+    ];
+    
+    const uniqueDates = new Set();
+    allRecords.forEach(record => {
+      const date = record.date || record.visitDate || record.createdAt || record.dateGiven || record.date_given;
+      if (date) {
+        const dateKey = new Date(date).toISOString().split('T')[0];
+        uniqueDates.add(dateKey);
+      }
+    });
+    
+    if (medicalRecords && medicalRecords.length > 0) {
+      medicalRecords.forEach(record => {
+        if (record.visitDate) {
+          const dateKey = new Date(record.visitDate).toISOString().split('T')[0];
+          uniqueDates.add(dateKey);
+        }
+      });
+    }
+    
+    const totalVisits = uniqueDates.size;
 
     let totalServices = 0;
     let medications = {};
     let procedures = [];
+    let totalClothes = 0;
+    let totalShoes = 0;
+    let totalEducation = 0;
+    let totalFood = 0;
+    let totalTests = 0;
+    let symptomsList = [];
+    let diagnosesList = [];
 
     // 1. Process medication history
     if (medicationsHistory && medicationsHistory.length > 0) {
       medicationsHistory.forEach(record => {
         const meds = [];
         if (record.ntdsMeds || record.ntds_meds) {
-          (record.ntdsMeds || record.ntds_meds).split(',').forEach(m => meds.push(m.trim()));
+          const medStr = record.ntdsMeds || record.ntds_meds;
+          medStr.split(',').forEach(m => {
+            const trimmed = m.trim();
+            if (trimmed) meds.push(trimmed);
+          });
         }
         if (record.antibiotics) {
-          record.antibiotics.split(',').forEach(m => meds.push(m.trim()));
+          record.antibiotics.split(',').forEach(m => {
+            const trimmed = m.trim();
+            if (trimmed) meds.push(trimmed);
+          });
         }
         if (record.otherMeds || record.other_meds) {
-          (record.otherMeds || record.other_meds).split(',').forEach(m => meds.push(m.trim()));
+          const medStr = record.otherMeds || record.other_meds;
+          medStr.split(',').forEach(m => {
+            const trimmed = m.trim();
+            if (trimmed) meds.push(trimmed);
+          });
         }
         meds.forEach(med => {
           if (med) {
@@ -104,67 +254,173 @@ const ServiceDelivery = ({
       });
     }
 
-    // 2. Process laboratory tests history
-    let totalTests = 0;
+    // 2. Process laboratory tests
     if (testsHistory && testsHistory.length > 0) {
       totalTests = testsHistory.length;
       totalServices += totalTests;
     }
 
-    // 3. Process services rendered history (procedures, education, food refreshment)
-    let totalEducation = 0;
-    let totalFood = 0;
+    // 3. Process services rendered - IMPROVED PROCEDURE DETECTION
     if (servicesHistory && servicesHistory.length > 0) {
+      
       servicesHistory.forEach(record => {
         const type = record.serviceType || record.service_type || '';
         const list = record.servicesList || record.services_list || '';
         
+        // EDUCATION SERVICES
         if (type === 'education') {
           totalEducation++;
           totalServices++;
-        } else if (type === 'social') {
-          if (list.includes('Food/Refreshment')) {
-            totalFood++;
-            totalServices++;
-          }
-        } else if (type === 'medical') {
-          if (list.includes('Procedures:')) {
-            const procPart = list.split('Procedures:')[1];
-            if (procPart) {
-              procPart.split(',').forEach(p => {
-                const proc = p.trim();
-                if (proc) {
-                  procedures.push(proc);
-                  totalServices++;
+        } 
+        // SOCIAL SERVICES
+        else if (type === 'social') {
+          totalServices++;
+          
+          if (list) {
+            const items = list.split(',').map(s => s.trim()).filter(Boolean);
+            
+            items.forEach(item => {
+              const lowerItem = item.toLowerCase();
+              
+              if (lowerItem.includes('clothes') || lowerItem.includes('clothing')) {
+                const numMatch = item.match(/(\d+)/);
+                if (numMatch) {
+                  totalClothes += parseInt(numMatch[1]);
+                } else {
+                  totalClothes += 1;
                 }
-              });
-            }
+              }
+              
+              if (lowerItem.includes('shoe')) {
+                const numMatch = item.match(/(\d+)/);
+                if (numMatch) {
+                  totalShoes += parseInt(numMatch[1]);
+                } else {
+                  totalShoes += 1;
+                }
+              }
+              
+              if (lowerItem.includes('food') || lowerItem.includes('meal') || lowerItem.includes('refreshment')) {
+                totalFood++;
+              }
+            });
+          }
+        } 
+        // PROCEDURE SERVICES - Directly add procedures
+        else if (type === 'procedure') {
+          if (list) {
+            const procItems = list.split(',').map(s => s.trim()).filter(Boolean);
+            procItems.forEach(proc => {
+              if (proc && !procedures.includes(proc)) {
+                procedures.push(proc);
+                totalServices++;
+              }
+            });
+          }
+        }
+        // MEDICAL SERVICES - Improved procedure extraction
+        else if (type === 'medical') {
+          totalServices++;
+          
+          if (list) {
+            // Extract procedures from the list
+            const extractedProcedures = extractProceduresFromList(list);
+            
+            extractedProcedures.forEach(proc => {
+              if (proc && !procedures.includes(proc)) {
+                procedures.push(proc);
+              }
+            });
+            
+            // Also count other medical items (medications, tests, etc.)
+            const items = list.split(/[,|]/).map(s => s.trim()).filter(Boolean);
+            items.forEach(item => {
+              // Skip if it's already identified as a procedure
+              if (extractedProcedures.some(p => item.includes(p) || p.includes(item))) {
+                return;
+              }
+              
+              // Skip medication and test items
+              const lowerItem = item.toLowerCase();
+              if (!lowerItem.includes('medication') && 
+                  !lowerItem.includes('test') && 
+                  !lowerItem.includes('result') &&
+                  !lowerItem.includes('blood') &&
+                  !lowerItem.includes('urine') &&
+                  !lowerItem.includes('stool') &&
+                  !lowerItem.includes('hiv') &&
+                  !lowerItem.includes('malaria')) {
+                // Count as a service item
+                totalServices++;
+              }
+            });
           }
         }
       });
     }
-    procedures = [...new Set(procedures)];
 
-    // 4. Process clothing provisions history
-    let totalClothes = 0;
-    let totalShoes = 0;
+    // 4. Process clothing provisions
     if (clothingHistory && clothingHistory.length > 0) {
+      
       clothingHistory.forEach(record => {
         if (record.clothes) {
-          totalClothes += parseInt(record.clothes) || 1; // Fallback to 1 if size is a string size like "M"
+          const clothesNum = parseInt(record.clothes);
+          totalClothes += isNaN(clothesNum) ? 1 : clothesNum;
         }
         if (record.shoes) {
-          totalShoes += parseInt(record.shoes) || 1; // Fallback to 1 if size is a string size like "35"
+          const shoesNum = parseInt(record.shoes);
+          totalShoes += isNaN(shoesNum) ? 1 : shoesNum;
         }
         totalServices++;
       });
     }
 
-    // Get average BMI from ALL vitals history
+    // 5. Process symptoms and diagnoses
+    if (symptomsHistory && symptomsHistory.length > 0) {
+      symptomsHistory.forEach(record => {
+        if (record.symptoms) {
+          const symps = record.symptoms.split(',').map(s => s.trim()).filter(Boolean);
+          symps.forEach(s => {
+            if (s && !symptomsList.includes(s)) {
+              symptomsList.push(s);
+            }
+          });
+        }
+        
+        let diagnosis = record.diagnosis || '';
+        if (record.visitNotes) {
+          try {
+            const parsed = JSON.parse(record.visitNotes);
+            if (parsed && parsed.diagnosis) {
+              diagnosis = parsed.diagnosis;
+            }
+          } catch (e) {
+            const notes = record.visitNotes || '';
+            const diagMatch = notes.match(/[Dd]iagnosis:?\s*([^\n]+)/);
+            if (diagMatch && diagMatch[1]) {
+              diagnosis = diagMatch[1];
+            }
+          }
+        }
+        if (diagnosis) {
+          const diags = diagnosis.split(',').map(d => d.trim()).filter(Boolean);
+          diags.forEach(d => {
+            if (d && !diagnosesList.includes(d)) {
+              diagnosesList.push(d);
+            }
+          });
+        }
+      });
+    }
+
+    // Remove duplicates
+    procedures = [...new Set(procedures)];
+    symptomsList = [...new Set(symptomsList)];
+    diagnosesList = [...new Set(diagnosesList)];
+
+    // Calculate average BMI from all vitals
     let averageBMI = 0;
     let bmiCount = 0;
-    
-    // Use vitalsHistory
     const recordsToUse = vitalsHistory || [];
     
     if (recordsToUse && recordsToUse.length > 0) {
@@ -182,8 +438,7 @@ const ServiceDelivery = ({
       }
     }
 
-
-    setChildServiceData({
+    const finalData = {
       totalVisits,
       totalServices,
       averageBMI,
@@ -194,15 +449,15 @@ const ServiceDelivery = ({
       totalTests,
       medications,
       procedures,
-    });
-  };
+      symptoms: symptomsList,
+      diagnoses: diagnosesList,
+    };
 
-  // Find max value for medication bars
-  const maxMedCount = Math.max(...Object.values(childServiceData.medications), 0);
+    setChildServiceData(finalData);
+  }, [vitalsHistory, medicationsHistory, testsHistory, servicesHistory, clothingHistory, symptomsHistory, medicalRecords, extractProceduresFromList]);
 
-  // Get latest BMI for display
-  const getLatestBMI = () => {
-    const recordsToUse = vitalsHistory && vitalsHistory.length > 0 ? vitalsHistory : (vitalsData && vitalsData.bmi ? [vitalsData] : []);
+  const getLatestBMI = useCallback(() => {
+    const recordsToUse = vitalsHistory && vitalsHistory.length > 0 ? vitalsHistory : [];
     if (!recordsToUse || recordsToUse.length === 0) return null;
     
     const sorted = [...recordsToUse].sort((a, b) => {
@@ -220,11 +475,10 @@ const ServiceDelivery = ({
       };
     }
     return null;
-  };
+  }, [vitalsHistory]);
 
   const latestBMI = getLatestBMI();
 
-  // Format date helper
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -233,6 +487,12 @@ const ServiceDelivery = ({
       day: 'numeric'
     });
   };
+
+  // Sort medications by count (descending)
+  const sortedMedications = Object.entries(childServiceData.medications)
+    .sort((a, b) => b[1] - a[1]);
+
+  const maxMedCount = Math.max(...Object.values(childServiceData.medications), 1);
 
   if (loading) {
     return (
@@ -245,53 +505,41 @@ const ServiceDelivery = ({
     );
   }
 
+  if (error) {
+    return (
+      <div className="mr-service-delivery">
+        <div className="mr-error-state">
+          <p>Error loading data: {error}</p>
+          <button onClick={() => child && child.id && fetchFullHistory(child.id)}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mr-service-delivery">
-      {/* Service Delivery Summary Section */}
+      {/* Service Delivery Summary */}
       <div className="mr-section-block">
         <div className="mr-section-header">
           <h3>Service Delivery Summary</h3>
-          <span className="mr-section-badge">Patient</span>
+          <span className="mr-section-badge">{child?.fullName || 'Patient'}</span>
         </div>
-        <div className="mr-metric-grid">
-          <div className="mr-metric-item">
-            <span className="mr-metric-label">Total Visits</span>
-            <div className="mr-metric-bar-container">
-              <div 
-                className="mr-metric-bar mr-metric-bar-blue"
-                style={{ width: `${Math.min((childServiceData.totalVisits / 20) * 100, 100)}%` }}
-              >
-                <span className="mr-metric-value">
-                  {childServiceData.totalVisits}
-                </span>
-              </div>
-            </div>
+        <div className="mr-overview-grid">
+          <div className="mr-overview-item">
+            <span className="mr-overview-label">Total Visits</span>
+            <span className="mr-overview-value-large">{childServiceData.totalVisits}</span>
           </div>
-          <div className="mr-metric-item">
-            <span className="mr-metric-label">Total Services</span>
-            <div className="mr-metric-bar-container">
-              <div 
-                className="mr-metric-bar mr-metric-bar-green"
-                style={{ width: `${Math.min((childServiceData.totalServices / 30) * 100, 100)}%` }}
-              >
-                <span className="mr-metric-value">
-                  {childServiceData.totalServices}
-                </span>
-              </div>
-            </div>
+          <div className="mr-overview-item">
+            <span className="mr-overview-label">Total Services</span>
+            <span className="mr-overview-value-large">{childServiceData.totalServices}</span>
           </div>
-          <div className="mr-metric-item">
-            <span className="mr-metric-label">Average BMI</span>
-            <div className="mr-metric-bar-container">
-              <div 
-                className="mr-metric-bar mr-metric-bar-purple"
-                style={{ width: `${Math.min((childServiceData.averageBMI / 30) * 100, 100)}%` }}
-              >
-                <span className="mr-metric-value">
-                  {childServiceData.averageBMI > 0 ? childServiceData.averageBMI.toFixed(1) : 'N/A'}
-                </span>
-              </div>
-            </div>
+          <div className="mr-overview-item">
+            <span className="mr-overview-label">Average BMI</span>
+            <span className="mr-overview-value-large">
+              {childServiceData.averageBMI > 0 ? childServiceData.averageBMI.toFixed(1) : 'N/A'}
+            </span>
           </div>
         </div>
         {latestBMI && (
@@ -306,82 +554,37 @@ const ServiceDelivery = ({
         )}
       </div>
 
-      {/* Material Support Provided Section */}
+      {/* Material Support */}
       <div className="mr-section-block">
         <div className="mr-section-header">
           <h3>Material Support Provided</h3>
           <span className="mr-section-badge mr-badge-material">Support</span>
         </div>
-        <div className="mr-metric-grid">
-          <div className="mr-metric-item">
-            <span className="mr-metric-label">Clothes Given</span>
-            <div className="mr-metric-bar-container">
-              <div 
-                className="mr-metric-bar mr-metric-bar-orange"
-                style={{ width: `${Math.min((childServiceData.totalClothes / 10) * 100, 100)}%` }}
-              >
-                <span className="mr-metric-value">
-                  {childServiceData.totalClothes}
-                </span>
-              </div>
-            </div>
+        <div className="mr-overview-grid">
+          <div className="mr-overview-item">
+            <span className="mr-overview-label">Clothes Given</span>
+            <span className="mr-overview-value-large">{childServiceData.totalClothes}</span>
           </div>
-          <div className="mr-metric-item">
-            <span className="mr-metric-label">Shoes Given</span>
-            <div className="mr-metric-bar-container">
-              <div 
-                className="mr-metric-bar mr-metric-bar-teal"
-                style={{ width: `${Math.min((childServiceData.totalShoes / 10) * 100, 100)}%` }}
-              >
-                <span className="mr-metric-value">
-                  {childServiceData.totalShoes}
-                </span>
-              </div>
-            </div>
+          <div className="mr-overview-item">
+            <span className="mr-overview-label">Shoes Given</span>
+            <span className="mr-overview-value-large">{childServiceData.totalShoes}</span>
           </div>
-          <div className="mr-metric-item">
-            <span className="mr-metric-label">Education Sessions</span>
-            <div className="mr-metric-bar-container">
-              <div 
-                className="mr-metric-bar mr-metric-bar-yellow"
-                style={{ width: `${Math.min((childServiceData.totalEducation / 10) * 100, 100)}%` }}
-              >
-                <span className="mr-metric-value">
-                  {childServiceData.totalEducation}
-                </span>
-              </div>
-            </div>
+          <div className="mr-overview-item">
+            <span className="mr-overview-label">Education Sessions</span>
+            <span className="mr-overview-value-large">{childServiceData.totalEducation}</span>
           </div>
-          <div className="mr-metric-item">
-            <span className="mr-metric-label">Food Provided</span>
-            <div className="mr-metric-bar-container">
-              <div 
-                className="mr-metric-bar mr-metric-bar-pink"
-                style={{ width: `${childServiceData.totalFood > 0 ? 50 : 10}%` }}
-              >
-                <span className="mr-metric-value">
-                  {childServiceData.totalFood > 0 ? 'Yes' : 'No'}
-                </span>
-              </div>
-            </div>
+          <div className="mr-overview-item">
+            <span className="mr-overview-label">Food Provided</span>
+            <span className="mr-overview-value-large">{childServiceData.totalFood > 0 ? 'Yes' : 'No'}</span>
           </div>
-          <div className="mr-metric-item">
-            <span className="mr-metric-label">Tests Done</span>
-            <div className="mr-metric-bar-container">
-              <div 
-                className="mr-metric-bar mr-metric-bar-indigo"
-                style={{ width: `${Math.min((childServiceData.totalTests / 10) * 100, 100)}%` }}
-              >
-                <span className="mr-metric-value">
-                  {childServiceData.totalTests}
-                </span>
-              </div>
-            </div>
+          <div className="mr-overview-item">
+            <span className="mr-overview-label">Tests Done</span>
+            <span className="mr-overview-value-large">{childServiceData.totalTests}</span>
           </div>
         </div>
       </div>
 
-      {/* Medications Given Section */}
+      {/* Medications Given */}
       <div className="mr-section-block">
         <div className="mr-section-header">
           <h3>Medications Given</h3>
@@ -389,27 +592,25 @@ const ServiceDelivery = ({
             {Object.keys(childServiceData.medications).length} medications
           </span>
         </div>
-        {Object.keys(childServiceData.medications).length > 0 ? (
+        {sortedMedications.length > 0 ? (
           <div className="mr-medication-list">
-            {Object.entries(childServiceData.medications).map(
-              ([med, count]) => {
-                const percentage = maxMedCount > 0 ? (count / maxMedCount) * 100 : 0;
-                return (
-                  <div key={med} className="mr-med-item">
-                    <span className="mr-med-name">{med}</span>
-                    <div className="mr-med-bar-container">
-                      <div
-                        className="mr-med-bar"
-                        style={{ width: `${Math.max(percentage, 2)}%` }}
-                      >
-                        <span className="mr-med-count-inner">{count}</span>
-                      </div>
-                      <span className="mr-med-count">{count}</span>
+            {sortedMedications.map(([med, count]) => {
+              const percentage = (count / maxMedCount) * 100;
+              return (
+                <div key={med} className="mr-med-item">
+                  <span className="mr-med-name">{med}</span>
+                  <div className="mr-med-bar-container">
+                    <div
+                      className="mr-med-bar"
+                      style={{ width: `${Math.max(percentage, 2)}%` }}
+                    >
+                      <span className="mr-med-count-inner">{count}</span>
                     </div>
+                    <span className="mr-med-count">{count}</span>
                   </div>
-                );
-              }
-            )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="mr-empty-state">
@@ -418,7 +619,7 @@ const ServiceDelivery = ({
         )}
       </div>
 
-      {/* Procedures Section */}
+      {/* Procedures Performed */}
       <div className="mr-section-block">
         <div className="mr-section-header">
           <h3>Procedures Performed</h3>
@@ -441,6 +642,40 @@ const ServiceDelivery = ({
           </div>
         )}
       </div>
+
+      {/* Symptoms */}
+      {childServiceData.symptoms.length > 0 && (
+        <div className="mr-section-block">
+          <div className="mr-section-header">
+            <h3>Symptoms Recorded</h3>
+            <span className="mr-section-badge mr-badge-symptom">
+              {childServiceData.symptoms.length} symptoms
+            </span>
+          </div>
+          <div className="mr-symptom-list">
+            {childServiceData.symptoms.map((symptom, index) => (
+              <span key={index} className="mr-symptom-tag">{symptom}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Diagnoses */}
+      {childServiceData.diagnoses.length > 0 && (
+        <div className="mr-section-block">
+          <div className="mr-section-header">
+            <h3>Diagnoses</h3>
+            <span className="mr-section-badge mr-badge-diagnosis">
+              {childServiceData.diagnoses.length} diagnoses
+            </span>
+          </div>
+          <div className="mr-diagnosis-list">
+            {childServiceData.diagnoses.map((diagnosis, index) => (
+              <span key={index} className="mr-diagnosis-tag">{diagnosis}</span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -28,6 +28,7 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     procedures: []
   });
   const [currentUser, setCurrentUser] = useState(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const navigate = useNavigate();
 
@@ -46,62 +47,49 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     name: ''
   });
 
-  // Load existing options
+  // Check online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Load existing options - PRIMARY: API (MySQL), FALLBACK: SQLite
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
         
-        // Create the test_reference table if it doesn't exist
-        try {
-          await executeRun(
-            `CREATE TABLE IF NOT EXISTS test_reference (
-              id TEXT PRIMARY KEY,
-              category TEXT NOT NULL,
-              name TEXT NOT NULL,
-              description TEXT,
-              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`
-          );
-          await saveDB();
-        } catch (err) {
-          console.log('Creating test_reference table:', err);
+        // Create SQLite tables if they don't exist (for fallback)
+        await createSQLiteTables();
+
+        // PRIMARY: Try to load from API (MySQL)
+        let options = null;
+        let fromAPI = false;
+
+        if (isOnline) {
+          try {
+            options = await getClinicalOptions();
+            fromAPI = true;
+          } catch (apiError) {
+            console.warn('⚠️ Failed to fetch from API, using SQLite fallback:', apiError);
+            fromAPI = false;
+          }
         }
 
-        // Create medication_reference table if it doesn't exist
-        try {
-          await executeRun(
-            `CREATE TABLE IF NOT EXISTS medication_reference (
-              id TEXT PRIMARY KEY,
-              category TEXT NOT NULL,
-              name TEXT NOT NULL,
-              description TEXT,
-              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`
-          );
-          await saveDB();
-        } catch (err) {
-          console.log('Creating medication_reference table:', err);
+        // FALLBACK: If API failed or offline, try SQLite
+        if (!options) {
+          options = await loadFromSQLite();
         }
 
-        // Create procedure_reference table if it doesn't exist
-        try {
-          await executeRun(
-            `CREATE TABLE IF NOT EXISTS procedure_reference (
-              id TEXT PRIMARY KEY,
-              name TEXT NOT NULL,
-              description TEXT,
-              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )`
-          );
-          await saveDB();
-        } catch (err) {
-          console.log('Creating procedure_reference table:', err);
-        }
-
-        // Load clinical options from API
-        const options = await getClinicalOptions();
-        
+        // Set the options in state
         setExistingOptions({
           ntdsMeds: options.medicationOptions?.ntdsMeds || [],
           antibiotics: options.medicationOptions?.antibiotics || [],
@@ -110,6 +98,11 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
           testResults: options.testResultOptions || [],
           procedures: options.procedureOptions || []
         });
+
+        // If data came from API, cache it to SQLite for offline use
+        if (fromAPI && options) {
+          await cacheToSQLite(options);
+        }
 
         // Load current user
         const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
@@ -121,7 +114,7 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
           navigate('/login');
         }
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('❌ Error loading data:', error);
         showToast('Failed to load clinical options', 'error');
       } finally {
         setLoading(false);
@@ -129,7 +122,211 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     };
 
     loadData();
-  }, [navigate]);
+  }, [navigate, isOnline]);
+
+  // Create SQLite tables for fallback
+  const createSQLiteTables = async () => {
+    try {
+      // lookup_medications table
+      await executeRun(
+        `CREATE TABLE IF NOT EXISTS lookup_medications (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          category TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`
+      );
+
+      // test_reference table
+      await executeRun(
+        `CREATE TABLE IF NOT EXISTS test_reference (
+          id TEXT PRIMARY KEY,
+          category TEXT NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`
+      );
+
+      // procedure_reference table
+      await executeRun(
+        `CREATE TABLE IF NOT EXISTS procedure_reference (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          description TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`
+      );
+
+      await saveDB();
+    } catch (err) {
+    }
+  };
+
+  // Load from SQLite (fallback)
+  const loadFromSQLite = async () => {
+    try {
+      // Load medications
+      const medsRows = await executeQuery('SELECT name, category FROM lookup_medications ORDER BY category, name');
+      
+      const medicationOptions = {
+        ntdsMeds: [],
+        antibiotics: [],
+        otherMeds: []
+      };
+
+      medsRows.forEach(row => {
+        if (medicationOptions[row.category] !== undefined) {
+          medicationOptions[row.category].push(row.name);
+        }
+      });
+
+      // Load tests
+      const testsRows = await executeQuery('SELECT category, name FROM test_reference ORDER BY category, name');
+      const testTypes = [];
+      const testResults = [];
+
+      testsRows.forEach(row => {
+        if (row.category === 'testType') {
+          testTypes.push(row.name);
+        } else if (row.category === 'testResult') {
+          testResults.push(row.name);
+        }
+      });
+
+      // Load procedures
+      const procRows = await executeQuery('SELECT name FROM procedure_reference ORDER BY name');
+      const procedures = procRows.map(row => row.name);
+
+      // Default test types and results if none exist
+      const defaultTestTypes = [
+        "Haemoglobin test (Hb)",
+        "Erythrocyte sedimentation rate (ESR)",
+        "Blood glucose",
+        "Uric acid test",
+        "H. Pylori test",
+        "Malaria test",
+        "HIV test",
+        "Urinalysis",
+        "VDRL test",
+        "Stool test",
+        "Widal test"
+      ];
+
+      const defaultTestResults = [
+        "Negative (-)",
+        "Positive (+)",
+        "Leukocyte +",
+        "Leukocyte ++",
+        "Leukocyte +++",
+        "Glucose +",
+        "Glucose ++",
+        "Glucose +++",
+        "Schistosoma ova seen",
+        "High",
+        "Low",
+        "Normal",
+        "Abnormal"
+      ];
+
+      return {
+        medicationOptions,
+        testTypesOptions: testTypes.length > 0 ? testTypes : defaultTestTypes,
+        testResultOptions: testResults.length > 0 ? testResults : defaultTestResults,
+        procedureOptions: procedures
+      };
+    } catch (error) {
+      console.error('Error loading from SQLite:', error);
+      // Return defaults
+      return {
+        medicationOptions: { ntdsMeds: [], antibiotics: [], otherMeds: [] },
+        testTypesOptions: [
+          "Haemoglobin test (Hb)",
+          "Erythrocyte sedimentation rate (ESR)",
+          "Blood glucose",
+          "Uric acid test",
+          "H. Pylori test",
+          "Malaria test",
+          "HIV test",
+          "Urinalysis",
+          "VDRL test",
+          "Stool test",
+          "Widal test"
+        ],
+        testResultOptions: [
+          "Negative (-)",
+          "Positive (+)",
+          "Leukocyte +",
+          "Leukocyte ++",
+          "Leukocyte +++",
+          "Glucose +",
+          "Glucose ++",
+          "Glucose +++",
+          "Schistosoma ova seen",
+          "High",
+          "Low",
+          "Normal",
+          "Abnormal"
+        ],
+        procedureOptions: []
+      };
+    }
+  };
+
+  // Cache API data to SQLite
+  const cacheToSQLite = async (options) => {
+    try {
+      // Cache medications
+      const medCategories = ['ntdsMeds', 'antibiotics', 'otherMeds'];
+      for (const cat of medCategories) {
+        const meds = options.medicationOptions?.[cat] || [];
+        // Clear existing
+        await executeRun('DELETE FROM lookup_medications WHERE category = ?', [cat]);
+        // Insert new
+        for (const name of meds) {
+          const id = crypto.randomUUID ? crypto.randomUUID() : 'med_' + Date.now() + '_' + Math.random();
+          await executeRun(
+            'INSERT INTO lookup_medications (id, name, category) VALUES (?, ?, ?)',
+            [id, name, cat]
+          );
+        }
+      }
+
+      // Cache tests
+      const testTypes = options.testTypesOptions || [];
+      const testResults = options.testResultOptions || [];
+      await executeRun('DELETE FROM test_reference');
+      for (const name of testTypes) {
+        const id = crypto.randomUUID ? crypto.randomUUID() : 'test_' + Date.now() + '_' + Math.random();
+        await executeRun(
+          'INSERT INTO test_reference (id, category, name) VALUES (?, ?, ?)',
+          [id, 'testType', name]
+        );
+      }
+      for (const name of testResults) {
+        const id = crypto.randomUUID ? crypto.randomUUID() : 'test_' + Date.now() + '_' + Math.random();
+        await executeRun(
+          'INSERT INTO test_reference (id, category, name) VALUES (?, ?, ?)',
+          [id, 'testResult', name]
+        );
+      }
+
+      // Cache procedures
+      const procedures = options.procedureOptions || [];
+      await executeRun('DELETE FROM procedure_reference');
+      for (const name of procedures) {
+        const id = crypto.randomUUID ? crypto.randomUUID() : 'proc_' + Date.now() + '_' + Math.random();
+        await executeRun(
+          'INSERT INTO procedure_reference (id, name) VALUES (?, ?)',
+          [id, name]
+        );
+      }
+
+      await saveDB();
+    } catch (error) {
+      console.warn('Failed to cache to SQLite:', error);
+    }
+  };
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -146,7 +343,7 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     navigate('/login');
   };
 
-  // Save new medication to reference table (UNCHANGED)
+  // Save new medication - Save to API (MySQL) and cache to SQLite
   const handleSaveMedication = async () => {
     if (!newMedication.name.trim()) {
       showToast('Please enter a medication name.', 'error');
@@ -162,27 +359,25 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     setSaving(true);
     try {
       const id = crypto.randomUUID ? crypto.randomUUID() : 'med_' + Date.now();
-      
-      // Check if lookup_medications table exists, if not create it
-      try {
-        await executeRun(
-          `CREATE TABLE IF NOT EXISTS lookup_medications (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            category TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          )`
-        );
-      } catch (err) {
-        console.log('Table may already exist:', err);
+
+      // PRIMARY: Save to MySQL via API
+      if (isOnline) {
+        try {
+          // Call API to save medication
+          await saveMedication(id, newMedication.name.trim(), category);
+        } catch (apiError) {
+          console.warn('⚠️ Failed to save to API, saving to SQLite only:', apiError);
+        }
       }
 
+      // ALWAYS save to SQLite (for offline access)
       await executeRun(
         "INSERT OR REPLACE INTO lookup_medications (id, name, category) VALUES (?, ?, ?)",
         [id, newMedication.name.trim(), newMedication.category]
       );
       await saveDB();
 
+      // Update state
       setExistingOptions(prev => ({
         ...prev,
         [category]: [...prev[category], newMedication.name.trim()]
@@ -198,7 +393,7 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     }
   };
 
-  // Save new test to test_reference table (UPDATED)
+  // Save new test - Save to API (MySQL) and cache to SQLite
   const handleSaveTest = async () => {
     if (!newTest.name.trim()) {
       showToast('Please enter a test name.', 'error');
@@ -215,20 +410,17 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     setSaving(true);
     try {
       const id = crypto.randomUUID ? crypto.randomUUID() : 'test_' + Date.now();
-      
-      // Create the test_reference table if it doesn't exist
-      await executeRun(
-        `CREATE TABLE IF NOT EXISTS test_reference (
-          id TEXT PRIMARY KEY,
-          category TEXT NOT NULL,
-          name TEXT NOT NULL,
-          description TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`
-      );
-      await saveDB();
 
-      // Insert into test_reference table
+      // PRIMARY: Save to MySQL via API
+      if (isOnline) {
+        try {
+          await saveTest(id, newTest.name.trim(), category);
+        } catch (apiError) {
+          console.warn('⚠️ Failed to save to API, saving to SQLite only:', apiError);
+        }
+      }
+
+      // ALWAYS save to SQLite
       await executeRun(
         `INSERT OR REPLACE INTO test_reference (id, category, name, description) 
          VALUES (?, ?, ?, ?)`,
@@ -251,7 +443,7 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     }
   };
 
-  // Save new procedure to reference table (UNCHANGED)
+  // Save new procedure - Save to API (MySQL) and cache to SQLite
   const handleSaveProcedure = async () => {
     if (!newProcedure.name.trim()) {
       showToast('Please enter a procedure name.', 'error');
@@ -266,22 +458,20 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     setSaving(true);
     try {
       const id = crypto.randomUUID ? crypto.randomUUID() : 'proc_' + Date.now();
-      
-      // Check if lookup_procedures table exists, if not create it
-      try {
-        await executeRun(
-          `CREATE TABLE IF NOT EXISTS lookup_procedures (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          )`
-        );
-      } catch (err) {
-        console.log('Table may already exist:', err);
+
+      // PRIMARY: Save to MySQL via API
+      if (isOnline) {
+        try {
+          // Use saveMedicalServices or a dedicated procedure API
+          await saveMedicalServices(id, newProcedure.name.trim(), 'procedure');
+        } catch (apiError) {
+          console.warn('⚠️ Failed to save to API, saving to SQLite only:', apiError);
+        }
       }
 
+      // ALWAYS save to SQLite
       await executeRun(
-        "INSERT OR REPLACE INTO lookup_procedures (id, name) VALUES (?, ?)",
+        "INSERT OR REPLACE INTO procedure_reference (id, name) VALUES (?, ?)",
         [id, newProcedure.name.trim()]
       );
       await saveDB();
@@ -301,11 +491,25 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     }
   };
 
-  // Delete a medication (UNCHANGED)
+  // Delete a medication - Delete from API (MySQL) and SQLite
   const handleDeleteMedication = async (name, category) => {
     if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     try {
+      // PRIMARY: Delete from MySQL via API
+      if (isOnline) {
+        try {
+          // Assuming there's a delete endpoint
+          await fetch(`/api/clinical/medications/${encodeURIComponent(name)}?category=${category}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (apiError) {
+          console.warn('⚠️ Failed to delete from API, deleting from SQLite only:', apiError);
+        }
+      }
+
+      // ALWAYS delete from SQLite
       await executeRun(
         "DELETE FROM lookup_medications WHERE name = ? AND category = ?",
         [name, category]
@@ -324,24 +528,25 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     }
   };
 
-  // Delete a test (UPDATED)
+  // Delete a test - Delete from API (MySQL) and SQLite
   const handleDeleteTest = async (name, category) => {
     if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     const key = category === 'testType' ? 'testTypes' : 'testResults';
     try {
-      // Create table if not exists (for safety)
-      await executeRun(
-        `CREATE TABLE IF NOT EXISTS test_reference (
-          id TEXT PRIMARY KEY,
-          category TEXT NOT NULL,
-          name TEXT NOT NULL,
-          description TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`
-      );
-      await saveDB();
+      // PRIMARY: Delete from MySQL via API
+      if (isOnline) {
+        try {
+          await fetch(`/api/clinical/tests/${encodeURIComponent(name)}?category=${category}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (apiError) {
+          console.warn('⚠️ Failed to delete from API, deleting from SQLite only:', apiError);
+        }
+      }
 
+      // ALWAYS delete from SQLite
       await executeRun(
         "DELETE FROM test_reference WHERE name = ? AND category = ?",
         [name, category]
@@ -360,13 +565,26 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
     }
   };
 
-  // Delete a procedure (UNCHANGED)
+  // Delete a procedure - Delete from API (MySQL) and SQLite
   const handleDeleteProcedure = async (name) => {
     if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     try {
+      // PRIMARY: Delete from MySQL via API
+      if (isOnline) {
+        try {
+          await fetch(`/api/clinical/procedures/${encodeURIComponent(name)}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (apiError) {
+          console.warn('⚠️ Failed to delete from API, deleting from SQLite only:', apiError);
+        }
+      }
+
+      // ALWAYS delete from SQLite
       await executeRun(
-        "DELETE FROM lookup_procedures WHERE name = ?",
+        "DELETE FROM procedure_reference WHERE name = ?",
         [name]
       );
       await saveDB();
@@ -406,6 +624,10 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
       <div className="co-page-header">
         <h1>Clinical Options Manager</h1>
         <p>Manage medication, test, and procedure options for clinical forms</p>
+        <div className="co-connection-status">
+          <span className={`co-status-dot ${isOnline ? 'online' : 'offline'}`}></span>
+          <span className="co-status-text">{isOnline ? 'Connected to Server' : 'Offline Mode (SQLite only)'}</span>
+        </div>
       </div>
 
       {/* Tab Navigation */}
@@ -426,7 +648,7 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
 
       {/* Tab Content */}
       <div className="co-tab-content">
-        {/* Medications Tab - UNCHANGED */}
+        {/* Medications Tab */}
         {activeTab === 'medications' && (
           <div className="co-form-container-full">
             <div className="co-form-section">
@@ -542,7 +764,7 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
           </div>
         )}
 
-        {/* Tests Tab - UPDATED */}
+        {/* Tests Tab */}
         {activeTab === 'tests' && (
           <div className="co-form-container-full">
             <div className="co-form-section">
@@ -637,7 +859,7 @@ const ClinicalOptionsManager = ({ onSave, onError }) => {
           </div>
         )}
 
-        {/* Procedures Tab - UNCHANGED */}
+        {/* Procedures Tab */}
         {activeTab === 'procedures' && (
           <div className="co-form-container-full">
             <div className="co-form-section">

@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './HeroSection.css';
+import { API_ENDPOINTS } from '../config/endpoints.js';
 
 const HeroSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [transformY, setTransformY] = useState(0);
   const [currentDate, setCurrentDate] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [stats, setStats] = useState({
+    totalChildren: 0,
+    totalLocations: 0,
+    yearFounded: 2015
+  });
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   // Array of background images
@@ -21,10 +28,65 @@ const HeroSection = () => {
     '/image10.webp'
   ];
 
+  // ===== FETCH STATS FROM API =====
+  const fetchStats = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(API_ENDPOINTS.locations);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      let locationsArray = [];
+
+      if (Array.isArray(data)) {
+        locationsArray = data;
+      } else if (data.locations && Array.isArray(data.locations)) {
+        locationsArray = data.locations;
+      }
+
+      let totalChildren = 0;
+      let validLocations = 0;
+
+      locationsArray.forEach(location => {
+        if (location.childrenCount !== undefined && location.childrenCount !== null) {
+          totalChildren += Number(location.childrenCount);
+        }
+        const lat = location.lat || location.latitude || 0;
+        const lng = location.lng || location.longitude || 0;
+        if (lat !== 0 && lng !== 0 && !isNaN(lat) && !isNaN(lng)) {
+          validLocations++;
+        }
+      });
+
+      setStats({
+        totalChildren: totalChildren || 0,
+        totalLocations: validLocations || locationsArray.length || 0,
+        yearFounded: 2015
+      });
+
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+      setStats({
+        totalChildren: 0,
+        totalLocations: 0,
+        yearFounded: 2015
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
   useEffect(() => {
     setIsVisible(true);
     
-    // Set current date
     const now = new Date();
     const options = { 
       year: 'numeric', 
@@ -79,13 +141,24 @@ const HeroSection = () => {
       setCurrentImageIndex((prevIndex) => 
         prevIndex === backgroundImages.length - 1 ? 0 : prevIndex + 1
       );
-    }, 5000); // Change image every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [backgroundImages.length]);
 
   const handleFingerprintClick = () => {
     navigate('/support');
+  };
+
+  // Navigate to street medicine page
+  const handleStatClick = () => {
+    navigate('/street-medicine');
+  };
+
+  // Format number with + sign for display
+  const formatStatNumber = (num) => {
+    if (num === 0) return '0';
+    return `${num}+`;
   };
 
   return (
@@ -117,7 +190,7 @@ const HeroSection = () => {
       <div className="hero-container">
         <div className={`hero-content ${isVisible ? 'fade-in' : ''}`}>
           <h1 className="hero-title">
-            Street Medicine Outreach Project <span className="highlight">(SMOP)</span>
+             <span className="highlight">Street Medicine Project</span>
           </h1>
           <p className="hero-subtitle">
             Delivering healthcare and support directly to vulnerable children living on the streets.
@@ -130,7 +203,82 @@ const HeroSection = () => {
               Our outreach team provides emergency care, health education, and helps children reintegrate into society with dignity and proper support.
             </p>
           </div>
+          
+          {/* Stats Section - Fetched from API */}
+          <div className="hero-stats">
+            {loading ? (
+              <>
+                <div className="stat stat-loading">
+                  <div className="stat-skeleton"></div>
+                  <div className="stat-skeleton-label"></div>
+                </div>
+                <div className="stat stat-loading">
+                  <div className="stat-skeleton"></div>
+                  <div className="stat-skeleton-label"></div>
+                </div>
+                <div className="stat stat-loading">
+                  <div className="stat-skeleton"></div>
+                  <div className="stat-skeleton-label"></div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div 
+                  className="stat stat-clickable"
+                  onClick={handleStatClick}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleStatClick();
+                    }
+                  }}
+                  aria-label="View children served statistics"
+                >
+                  <h3>{formatStatNumber(stats.totalChildren)}</h3>
+                  <p>Children Served</p>
+                  <span className="stat-arrow">→</span>
+                </div>
+                <div 
+                  className="stat stat-clickable"
+                  onClick={handleStatClick}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleStatClick();
+                    }
+                  }}
+                  aria-label="View outreach locations"
+                >
+                  <h3>{formatStatNumber(stats.totalLocations)}</h3>
+                  <p>Outreach Locations</p>
+                  <span className="stat-arrow">→</span>
+                </div>
+                <div 
+                  className="stat stat-clickable"
+                  onClick={handleStatClick}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleStatClick();
+                    }
+                  }}
+                  aria-label="View year founded"
+                >
+                  <h3>{stats.yearFounded}</h3>
+                  <p>Year Initiated</p>
+                  <span className="stat-arrow">→</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
+        
         <div className={`hero-image ${isVisible ? 'slide-in' : ''}`}>
           <div 
             className="fingerprint-wrapper"
@@ -165,7 +313,6 @@ const HeroSection = () => {
               <div className="ring ring-2"></div>
               <div className="ring ring-3"></div>
             </div>
-            {/* Circular rotating text with date in white */}
             <div className="circular-text-wrapper">
               <svg className="circular-text-svg" viewBox="0 0 200 200" width="200" height="200">
                 <defs>

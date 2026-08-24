@@ -7,7 +7,6 @@ const AppInitializer = ({ onLoadingComplete }) => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Show loading screen immediately
     const timer = setTimeout(() => {
       setShowContent(true);
     }, 100);
@@ -33,12 +32,9 @@ const AppInitializer = ({ onLoadingComplete }) => {
     return () => clearInterval(interval);
   }, [showContent, isInitialized]);
 
-  // This effect runs when loading completes - HIDE the loading screen
   useEffect(() => {
     if (loadingProgress === 100 && showContent) {
-      // Add a small delay before hiding the loading screen
       const hideTimer = setTimeout(() => {
-        // Call the callback to notify parent that loading is complete
         if (onLoadingComplete) {
           onLoadingComplete();
         }
@@ -53,41 +49,26 @@ const AppInitializer = ({ onLoadingComplete }) => {
 
   return (
     <div className="app-initializer">
-      {/* Animated Background */}
-      <div className="init-bg">
-        <div className="init-bg-gradient"></div>
-        <div className="init-bg-pattern"></div>
-      </div>
+      {/* Simple White Background */}
+      <div className="init-bg"></div>
 
       {/* Main Content - Only Logo */}
       <div className="init-container">
-        {/* Logo Section - Styled like Login page */}
+        {/* Logo Section */}
         <div className="init-logo-section">
-          <div className="init-logo-animation">
+          <div className="init-logo-wrapper">
+            <div className="init-logo-ring">
+              <div className="init-logo-ring-inner"></div>
+            </div>
             <img 
               src="/trhm.jpg" 
               alt="Street Medicine System" 
               className="init-logo-image"
             />
+            <div className="init-logo-glow"></div>
           </div>
-        </div>
-
-        {/* Loading Section - Shows Percentage */}
-        <div className="init-loading-section">
-          <div className="init-loading-card">
-            <div className="init-progress-bar-container">
-              <div 
-                className="init-progress-bar" 
-                style={{ width: `${loadingProgress}%` }}
-              >
-                <div className="init-progress-glow"></div>
-              </div>
-            </div>
-            {/* Percentage Text */}
-            <div className="init-progress-text">
-              {loadingProgress}% Complete
-            </div>
-          </div>
+          <h1 className="init-title">Street Medicine Project </h1>
+          <p className="init-subtitle">Loading your experience</p>
         </div>
       </div>
     </div>
