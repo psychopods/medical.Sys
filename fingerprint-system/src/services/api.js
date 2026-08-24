@@ -1350,6 +1350,7 @@ export async function saveSocialServices(childId, servicesData) {
   if (hasEducation) {
     for (const educationTopic of educationTopics) {
       const eduId = crypto.randomUUID();
+      let savedOnline = false;
       
       if (isOnline) {
         try {
@@ -1366,8 +1367,7 @@ export async function saveSocialServices(childId, servicesData) {
           });
           
           if (response.ok) {
-            const result = await response.json();
-            
+            savedOnline = true;
             // Save to SQLite as education record
             await executeRun(
               `INSERT OR REPLACE INTO services_rendered 
@@ -1379,7 +1379,6 @@ export async function saveSocialServices(childId, servicesData) {
           } else {
             const errorText = await response.text();
             console.error(`API: education "${educationTopic}" save failed:`, response.status, errorText);
-            // Fall through to offline save
           }
         } catch (error) {
           console.warn(`API: Failed to save education "${educationTopic}" online, caching locally...`, error);
@@ -1387,17 +1386,19 @@ export async function saveSocialServices(childId, servicesData) {
       }
       
       // Offline or failed: save education to SQLite
-      try {
-        await executeRun(
-          `INSERT OR REPLACE INTO services_rendered 
-          (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-          VALUES (?, ?, 'education', ?, ?, ?, ?, 1, 1, 'local_created')`,
-          [eduId, childId, educationTopic, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
-        );
-        await saveDB();
-      } catch (err) {
-        console.error(`API: Error saving education "${educationTopic}" offline:`, err);
-        throw err;
+      if (!savedOnline) {
+        try {
+          await executeRun(
+            `INSERT OR REPLACE INTO services_rendered 
+            (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+            VALUES (?, ?, 'education', ?, ?, ?, ?, 1, 1, 'local_created')`,
+            [eduId, childId, educationTopic, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
+          );
+          await saveDB();
+        } catch (err) {
+          console.error(`API: Error saving education "${educationTopic}" offline:`, err);
+          throw err;
+        }
       }
     }
   }
