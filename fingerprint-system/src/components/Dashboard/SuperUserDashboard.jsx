@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SuperUserDashboard.css';
-import { getChildren, getUsers, getRoles, getPermissions, getPermissionCategories } from '../../services/api.js';
+import { 
+  getChildren, 
+  getUsers, 
+  getRoles, 
+  getPermissions, 
+  getPermissionCategories,
+  getAllFingerprints 
+} from '../../services/api.js';
 
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-// console.log('API_BASE_URL:', API_BASE_URL);
 
 // ===== SVG ICONS =====
 const Icons = {
@@ -367,13 +373,30 @@ const SuperUserDashboard = ({ user, onLogout }) => {
     setApiStatus(results);
   };
 
-  // Fetch children data with age categorization and date filtering
+  // Fetch children data with age categorization and date filtering - FIXED
   const fetchChildrenData = async () => {
     try {
       const children = await getChildren();
       
       // Get today's date for filtering
       const today = new Date().toISOString().split('T')[0];
+      
+      // Fetch all fingerprints to determine which children have them
+      let allFingerprints = [];
+      try {
+        const fingerprints = await getAllFingerprints();
+        allFingerprints = fingerprints || [];
+      } catch (fpError) {
+        console.warn('Could not fetch fingerprints for dashboard:', fpError);
+      }
+      
+      // Create a Set of child IDs that have fingerprints
+      const childIdsWithFingerprints = new Set();
+      allFingerprints.forEach(fp => {
+        if (fp && (fp.childId || fp.child_id)) {
+          childIdsWithFingerprints.add(fp.childId || fp.child_id);
+        }
+      });
       
       // Filter patients registered today or in the future
       const todayAndFutureRegistrations = children.filter(child => 
@@ -384,7 +407,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
       const sortedRecentChildren = [...todayAndFutureRegistrations].sort((a, b) => {
         const dateA = new Date(a.createdAt);
         const dateB = new Date(b.createdAt);
-        return dateB - dateA; // Newest first
+        return dateB - dateA;
       });
       
       // Get today's registrations count
@@ -392,9 +415,11 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         child.createdAt && child.createdAt.split('T')[0] === today
       );
       
-      const captured = children.filter(child => child.fingerprintCaptured).length;
+      // Calculate fingerprint stats using the Set
+      const captured = children.filter(child => childIdsWithFingerprints.has(child.id)).length;
       const pending = children.length - captured;
       
+      // Age distribution
       let youngCount = 0;
       let olderCount = 0;
       
@@ -404,6 +429,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         else olderCount++;
       });
       
+      // Monthly registrations chart data
       const registrationsByMonth = {};
       const weeklyRegistrations = {};
       const activityByHour = {};
@@ -451,7 +477,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
         totalChildren: children.length,
         registeredToday: todayRegistrations.length,
         fingerprintsCaptured: captured,
-        recentChildren: sortedRecentChildren.slice(0, 10), // Show up to 10 most recent
+        recentChildren: sortedRecentChildren.slice(0, 10),
         youngPatients: youngCount,
         olderPatients: olderCount
       };
@@ -1506,7 +1532,7 @@ const SuperUserDashboard = ({ user, onLogout }) => {
 
         {/* Row 2: Distribution Charts */}
         <div className="sd-charts-row">
-          {/* Donut Chart - Fingerprint Status */}
+          {/* Donut Chart - Fingerprint Status - NOW CORRECTLY DISPLAYING DATA */}
           <div className="sd-chart-card">
             <div className="sd-chart-header">
               <h3>Fingerprint Enrollment Status</h3>
@@ -1523,7 +1549,9 @@ const SuperUserDashboard = ({ user, onLogout }) => {
                     strokeDashoffset="0" transform="rotate(-90 90 90)"
                   />
                   <text x="90" y="85" textAnchor="middle" fontSize="24" fontWeight="bold" fill="#333">
-                    {Math.round((chartData.fingerprintStatus.captured / (chartData.fingerprintStatus.captured + chartData.fingerprintStatus.pending || 1)) * 100) || 0}%
+                    {chartData.fingerprintStatus.captured + chartData.fingerprintStatus.pending > 0 
+                      ? Math.round((chartData.fingerprintStatus.captured / (chartData.fingerprintStatus.captured + chartData.fingerprintStatus.pending)) * 100) 
+                      : 0}%
                   </text>
                   <text x="90" y="105" textAnchor="middle" fontSize="12" fill="#888">Enrolled</text>
                 </svg>

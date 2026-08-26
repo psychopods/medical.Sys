@@ -141,7 +141,7 @@ export async function getMedicationsHistory(pool: Pool, childId: string): Promis
     }));
 }
 
-// 4. LABORATORY TESTS
+// 4. LABORATORY TESTS - FIXED!
 export async function saveTest(
     pool: Pool,
     id: string,
@@ -152,10 +152,20 @@ export async function saveTest(
     recordedBy: string | null,
     recordedByName: string | null
 ): Promise<any> {
-    await pool.execute<ResultSetHeader>(
+    // Validate child exists
+    const [childCheck] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM children_profiles WHERE id = ? LIMIT 1',
+        [childId]
+    );
+    if (childCheck.length === 0) {
+        throw new HttpError(404, `Child with ID '${childId}' not found.`);
+    }
+
+    // FIXED: 10 columns, 10 values
+    await pool.execute(
         `INSERT INTO laboratory_tests 
-        (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, sync_status) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'synced')
+        (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE 
         test_type = VALUES(test_type),
         result = VALUES(result),
@@ -163,7 +173,18 @@ export async function saveTest(
         recorded_by = VALUES(recorded_by),
         recorded_by_name = VALUES(recorded_by_name),
         version = version + 1`,
-        [id, childId, testType, result, date, recordedBy, recordedByName]
+        [
+            id,
+            childId,
+            testType,
+            result,
+            date,
+            recordedBy || null,
+            recordedByName || 'System',
+            1,        // version
+            0,        // is_dirty
+            'synced'  // sync_status
+        ]
     );
     return { id, childId, testType, result, date };
 }
@@ -190,13 +211,23 @@ export async function saveService(
     pool: Pool,
     id: string,
     childId: string,
-    serviceType: 'medical' | 'social' | 'education',
+    serviceType: 'medical' | 'social' | 'education' | 'procedure', // Added 'procedure'
     servicesList: string,
     date: string,
     recordedBy: string | null,
     recordedByName: string | null
 ): Promise<any> {
-    await pool.execute<ResultSetHeader>(
+    // Validate child exists
+    const [childCheck] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM children_profiles WHERE id = ? LIMIT 1',
+        [childId]
+    );
+    if (childCheck.length === 0) {
+        throw new HttpError(404, `Child with ID '${childId}' not found.`);
+    }
+
+    // FIXED: 9 columns, 9 values
+    await pool.execute(
         `INSERT INTO services_rendered 
         (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -206,18 +237,17 @@ export async function saveService(
         date = VALUES(date),
         recorded_by = VALUES(recorded_by),
         recorded_by_name = VALUES(recorded_by_name),
-        version = version + 1,
-        sync_status = 'synced'`,
+        version = version + 1`,
         [
-            id,                    // 1. id
-            childId,               // 2. child_id
-            serviceType,           // 3. service_type
-            servicesList,          // 4. services_list
-            date,                  // 5. date
-            recordedBy || null,    // 6. recorded_by
-            recordedByName || null, // 7. recorded_by_name
-            1,                     // 8. version ← FIXED: Added this
-            'synced'               // 9. sync_status ← FIXED: Added this
+            id,
+            childId,
+            serviceType,
+            servicesList,
+            date,
+            recordedBy || null,
+            recordedByName || 'System',
+            1,
+            'synced'
         ]
     );
     return { id, childId, serviceType, servicesList, date };
@@ -278,15 +308,15 @@ export async function saveSymptoms(
         recorded_by_name = VALUES(recorded_by_name),
         version = version + 1`,
         [
-            id,                    // 1. id
-            childId,               // 2. child_id
-            symptoms || '',        // 3. symptoms
-            visitNotes || '',      // 4. visit_notes
-            date,                  // 5. date
-            recordedBy || null,    // 6. recorded_by
-            recordedByName || 'System', // 7. recorded_by_name
-            1,                     // 8. version
-            'synced'               // 9. sync_status
+            id,
+            childId,
+            symptoms || '',
+            visitNotes || '',
+            date,
+            recordedBy || null,
+            recordedByName || 'System',
+            1,
+            'synced'
         ]
     );
     return { id, childId, symptoms, visitNotes, date };
@@ -320,7 +350,17 @@ export async function saveClothing(
     recordedBy: string | null,
     recordedByName: string | null
 ): Promise<any> {
-    await pool.execute<ResultSetHeader>(
+    // Validate child exists
+    const [childCheck] = await pool.execute<RowDataPacket[]>(
+        'SELECT 1 FROM children_profiles WHERE id = ? LIMIT 1',
+        [childId]
+    );
+    if (childCheck.length === 0) {
+        throw new HttpError(404, `Child with ID '${childId}' not found.`);
+    }
+
+    // FIXED: 9 columns, 9 values
+    await pool.execute(
         `INSERT INTO clothing_provisions 
         (id, child_id, shoes, clothes, date, recorded_by, recorded_by_name, version, sync_status) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -330,18 +370,17 @@ export async function saveClothing(
         date = VALUES(date),
         recorded_by = VALUES(recorded_by),
         recorded_by_name = VALUES(recorded_by_name),
-        version = version + 1,
-        sync_status = 'synced'`,
+        version = version + 1`,
         [
-            id,                    // 1. id
-            childId,               // 2. child_id
-            shoes || '',           // 3. shoes
-            clothes || '',         // 4. clothes
-            date,                  // 5. date
-            recordedBy || null,    // 6. recorded_by
-            recordedByName || null, // 7. recorded_by_name
-            1,                     // 8. version ← FIXED: Added this
-            'synced'               // 9. sync_status ← FIXED: Added this
+            id,
+            childId,
+            shoes || '',
+            clothes || '',
+            date,
+            recordedBy || null,
+            recordedByName || 'System',
+            1,
+            'synced'
         ]
     );
     return { id, childId, shoes, clothes, date };

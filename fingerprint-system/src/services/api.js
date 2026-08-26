@@ -974,40 +974,57 @@ export async function getMedicationsHistory(childId) {
 }
 
 // TESTS
+// In api.js - saveTest function
 export async function saveTest(childId, testData) {
   const id = testData.id || crypto.randomUUID();
   const isOnline = navigator.onLine;
+  const testType = testData.testType;
+  const result = testData.result || 'Pending';
+  const date = testData.date || new Date().toISOString().split('T')[0];
+  const recordedBy = testData.recordedBy || null;
+  const recordedByName = testData.recordedByName || null;
 
   if (isOnline) {
     try {
       const response = await fetch(API_ENDPOINTS.tests(childId), {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ id, ...testData })
+        body: JSON.stringify({
+          id,
+          testType,
+          result,
+          date,
+          recordedBy,
+          recordedByName
+        })
       });
       if (response.ok) {
-        const result = await response.json();
+        const resultData = await response.json();
+        // Cache to SQLite
         await executeRun(
-          `INSERT OR REPLACE INTO laboratory_tests (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 'synced')`,
-          [id, childId, testData.testType, testData.result, testData.date, testData.recordedBy, testData.recordedByName]
+          `INSERT OR REPLACE INTO laboratory_tests 
+          (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 'synced')`,
+          [id, childId, testType, result, date, recordedBy, recordedByName]
         );
         await saveDB();
-        return result;
+        return resultData;
       }
     } catch (error) {
       console.warn('API: Failed to save test online, caching locally...', error);
     }
   }
 
+  // Offline: cache locally
   try {
     await executeRun(
-      `INSERT OR REPLACE INTO laboratory_tests (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'local_created')`,
-      [id, childId, testData.testType, testData.result, testData.date, testData.recordedBy, testData.recordedByName]
+      `INSERT OR REPLACE INTO laboratory_tests 
+      (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'local_created')`,
+      [id, childId, testType, result, date, recordedBy, recordedByName]
     );
     await saveDB();
-    return { success: true, message: 'Test saved offline', data: { id, childId, ...testData } };
+    return { success: true, message: 'Test saved offline' };
   } catch (err) {
     console.error('API: Error saving test offline:', err);
     throw err;
@@ -1208,25 +1225,30 @@ export async function getClothingHistory(childId) {
 }
 
 // SERVICES
+// In api.js - UPDATED saveMedicalServices
 export async function saveMedicalServices(childId, servicesData) {
-  
   const id = servicesData.id || crypto.randomUUID();
+  const isOnline = navigator.onLine;
+  
   const meds = [
     ...(servicesData.medications?.ntdsMeds || []),
     ...(servicesData.medications?.antibiotics || []),
     ...(servicesData.medications?.otherMeds || [])
   ];
   const tests = servicesData.tests?.testTypes || [];
+  const testResults = servicesData.tests?.results || [];
+  const testNotes = servicesData.tests?.notes || '';
   const procedures = servicesData.procedures || [];
   
-  // Combine everything into one services list
-  const allItems = [...meds, ...tests, ...procedures];
-  const servicesList = allItems.length > 0 ? allItems.join(', ') : 'Medical checkup';
+  // Combine medications and tests for the medical service record
+  const medicalItems = [...meds, ...tests];
+  const servicesList = medicalItems.length > 0 ? medicalItems.join(', ') : 'Medical checkup';
   
-  
-  const isOnline = navigator.onLine;
+  const date = servicesData.date || new Date().toISOString().split('T')[0];
+  const recordedBy = servicesData.recordedBy || null;
+  const recordedByName = servicesData.recordedByName || null;
 
-  // Save as a single medical service record with all items
+  // 1. Save medical services (medications + tests) as a single medical record
   if (isOnline) {
     try {
       const response = await fetch(API_ENDPOINTS.medicalServices(childId), {
@@ -1237,44 +1259,154 @@ export async function saveMedicalServices(childId, servicesData) {
           services: servicesList,
           medications: servicesData.medications,
           tests: servicesData.tests,
-          procedures: procedures, // Send procedures separately for backend
-          date: servicesData.date,
-          recordedBy: servicesData.recordedBy,
-          recordedByName: servicesData.recordedByName
+          date,
+          recordedBy,
+          recordedByName
         })
       });
       if (response.ok) {
         const result = await response.json();
         
-        // Save to SQLite
+        // Save to SQLite as medical record
         await executeRun(
           `INSERT OR REPLACE INTO services_rendered 
           (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
           VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 0, 'synced')`,
-          [id, childId, servicesList, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
+          [id, childId, servicesList, date, recordedBy, recordedByName]
         );
         await saveDB();
-        return result;
+        console.log('✅ Medical services saved');
       }
     } catch (error) {
       console.warn('API: Failed to save medical services online, caching locally...', error);
     }
+  } else {
+    // Offline: save medical to SQLite
+    try {
+      await executeRun(
+        `INSERT OR REPLACE INTO services_rendered 
+        (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+        VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 1, 'local_created')`,
+        [id, childId, servicesList, date, recordedBy, recordedByName]
+      );
+      await saveDB();
+    } catch (err) {
+      console.error('API: Error saving medical services offline:', err);
+    }
   }
 
-  // Offline: save to SQLite
-  try {
-    await executeRun(
-      `INSERT OR REPLACE INTO services_rendered 
-      (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-      VALUES (?, ?, 'medical', ?, ?, ?, ?, 1, 1, 'local_created')`,
-      [id, childId, servicesList, servicesData.date, servicesData.recordedBy, servicesData.recordedByName]
-    );
-    await saveDB();
-    return { success: true, message: 'Medical services saved offline' };
-  } catch (err) {
-    console.error('API: Error saving medical services offline:', err);
-    throw err;
+  // 2. Save EACH TEST as a separate record in laboratory_tests
+  if (tests && tests.length > 0) {
+    
+    for (let i = 0; i < tests.length; i++) {
+      const testType = tests[i];
+      const result = testResults && testResults.length > i ? testResults[i] : 'Pending';
+      const testId = crypto.randomUUID ? crypto.randomUUID() : 'test_' + Date.now() + '_' + Math.random();
+      
+      if (isOnline) {
+        try {
+          // Save as test record
+          const response = await fetch(API_ENDPOINTS.tests(childId), {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              id: testId,
+              testType: testType,
+              result: result,
+              notes: testNotes,
+              date: date,
+              recordedBy: recordedBy,
+              recordedByName: recordedByName
+            })
+          });
+          
+          if (response.ok) {
+            const resultData = await response.json();
+            
+            // Save to SQLite as test record
+            await executeRun(
+              `INSERT OR REPLACE INTO laboratory_tests 
+              (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, 'synced')`,
+              [testId, childId, testType, result, date, recordedBy, recordedByName]
+            );
+            await saveDB();
+          } else {
+            const errorText = await response.text();
+            console.error(`❌ Failed to save test "${testType}":`, response.status, errorText);
+            // Fall through to offline save
+          }
+        } catch (error) {
+          console.warn(`⚠️ Failed to save test "${testType}" online, caching locally...`, error);
+        }
+      }
+      
+      // Offline or failed: save test to SQLite
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO laboratory_tests 
+          (id, child_id, test_type, result, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 'local_created')`,
+          [testId, childId, testType, result, date, recordedBy, recordedByName]
+        );
+        await saveDB();
+      } catch (err) {
+        console.error(`❌ Error saving test "${testType}" offline:`, err);
+      }
+    }
   }
+
+  // 3. Save EACH procedure as a separate record with service_type = 'procedure'
+  if (procedures && procedures.length > 0) {
+    
+    for (const procedure of procedures) {
+      const procId = crypto.randomUUID ? crypto.randomUUID() : 'proc_' + Date.now() + '_' + Math.random();
+      
+      if (isOnline) {
+        try {
+          const response = await fetch(API_ENDPOINTS.medicalServices(childId), {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              id: procId,
+              services: procedure,
+              serviceType: 'procedure',
+              date,
+              recordedBy,
+              recordedByName
+            })
+          });
+          
+          if (response.ok) {
+            
+            await executeRun(
+              `INSERT OR REPLACE INTO services_rendered 
+              (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+              VALUES (?, ?, 'procedure', ?, ?, ?, ?, 1, 0, 'synced')`,
+              [procId, childId, procedure, date, recordedBy, recordedByName]
+            );
+            await saveDB();
+          }
+        } catch (error) {
+          console.warn(`⚠️ Failed to save procedure "${procedure}" online, caching locally...`, error);
+        }
+      }
+      
+      try {
+        await executeRun(
+          `INSERT OR REPLACE INTO services_rendered 
+          (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+          VALUES (?, ?, 'procedure', ?, ?, ?, ?, 1, 1, 'local_created')`,
+          [procId, childId, procedure, date, recordedBy, recordedByName]
+        );
+        await saveDB();
+      } catch (err) {
+        console.error(`❌ Error saving procedure "${procedure}" offline:`, err);
+      }
+    }
+  }
+
+  return { success: true, message: 'Medical services, tests, and procedures saved' };
 }
 
 export async function saveSocialServices(childId, servicesData) {
@@ -3003,59 +3135,87 @@ export async function apiSaveEducation(educationData) {
   }
 }
 
+// In api.js - UPDATED apiFetchServicesRecords
 export async function apiFetchServicesRecords(childId) {
   const isOnline = navigator.onLine;
+  
+  // PRIMARY: Always try API first
   if (isOnline) {
     try {
       const response = await fetch(API_ENDPOINTS.services(childId), {
         headers: getAuthHeaders()
       });
+      
       if (response.ok) {
         const data = await response.json();
         const records = Array.isArray(data) ? data : (data.services || []);
-        for (const record of records) {
-          if (record && record.id) {
-            await executeRun(
-              `INSERT OR REPLACE INTO services_rendered 
-          (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, sync_status) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced')`,
-              [
-                record.id,
-                childId,
-                record.serviceType || record.service_type || 'medical',
-                record.servicesList || record.services_list || '',
-                record.date || '',
-                record.recordedBy || record.recorded_by || null,
-                record.recordedByName || record.recorded_by_name || null,
-                record.version || 1
-              ]
-            );
+        
+        // Try to cache to SQLite, but DON'T fail if it doesn't work
+        try {
+          for (const record of records) {
+            if (record && record.id) {
+              const serviceType = record.serviceType || record.service_type || 'medical';
+              
+              await executeRun(
+                `INSERT OR REPLACE INTO services_rendered 
+                (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                  record.id,
+                  childId,
+                  serviceType,
+                  record.servicesList || record.services_list || '',
+                  record.date || '',
+                  record.recordedBy || record.recorded_by || null,
+                  record.recordedByName || record.recorded_by_name || null,
+                  record.version || 1,
+                  0,
+                  'synced'
+                ]
+              );
+            }
           }
+          await saveDB();
+          console.log('✅ Cached services to SQLite');
+        } catch (cacheError) {
+          // Log but don't fail - API data is still valid
+          console.warn('⚠️ Failed to cache services to SQLite (will use API data):', cacheError.message);
         }
-        await saveDB();
+        
+        // ALWAYS return API data (primary source)
         return records;
+      } else {
+        console.warn('⚠️ API returned error:', response.status);
+        // Fall through to SQLite
       }
     } catch (error) {
-      console.warn('API: Failed to fetch services online, using SQLite.', error);
+      console.warn('⚠️ Failed to fetch services online:', error);
+      // Fall through to SQLite
     }
+  } else {
+    console.log('📴 Offline mode - using SQLite');
   }
 
-  // SQLite Fallback
+  // FALLBACK: SQLite (only when offline or API fails)
   try {
     const rows = await executeQuery('SELECT * FROM services_rendered WHERE child_id = ? ORDER BY date DESC, created_at DESC', [childId]);
+    
     return rows.map(row => ({
       id: row.id,
       childId: row.child_id,
       serviceType: row.service_type,
+      service_type: row.service_type,
       servicesList: row.services_list,
       servicesProvided: row.services_list ? row.services_list.split(',').map(s => s.trim()) : [],
       date: row.date,
       recordedBy: row.recorded_by,
       recordedByName: row.recorded_by_name,
-      createdAt: row.created_at
+      createdAt: row.created_at,
+      version: row.version,
+      syncStatus: row.sync_status
     }));
   } catch (err) {
-    console.error('API: Error fetching services from SQLite:', err);
+    console.error('❌ Error fetching services from SQLite:', err);
     return [];
   }
 }
@@ -3510,8 +3670,11 @@ export async function getPermissionCategories() {
    MEDICAL SERVICES API (NEW - FETCH ONLY)
    ========================================== */
 
+// In api.js - UPDATED apiFetchMedicalServicesRecords
 export async function apiFetchMedicalServicesRecords(childId) {
   const isOnline = navigator.onLine;
+  
+  // PRIMARY: API first
   if (isOnline) {
     try {
       const response = await fetch(API_ENDPOINTS.services(childId), {
@@ -3520,37 +3683,50 @@ export async function apiFetchMedicalServicesRecords(childId) {
       if (response.ok) {
         const data = await response.json();
         const records = Array.isArray(data) ? data : (data.records || []);
-        // Cache to SQLite services_rendered table
-        for (const record of records) {
-          if (record && record.id) {
-            await executeRun(
-              `INSERT OR REPLACE INTO services_rendered 
-              (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'synced')`,
-              [
-                record.id,
-                childId,
-                record.serviceType || record.service_type || 'medical',
-                record.servicesList || record.services_list || '',
-                record.date || '',
-                record.recordedBy || record.recorded_by || null,
-                record.recordedByName || record.recorded_by_name || null,
-                record.version || 1
-              ]
-            );
+        
+        // Try to cache, but don't fail
+        try {
+          for (const record of records) {
+            if (record && record.id) {
+              const serviceType = record.serviceType || record.service_type || 'medical';
+              await executeRun(
+                `INSERT OR REPLACE INTO services_rendered 
+                (id, child_id, service_type, services_list, date, recorded_by, recorded_by_name, version, is_dirty, sync_status) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                  record.id,
+                  childId,
+                  serviceType,
+                  record.servicesList || record.services_list || '',
+                  record.date || '',
+                  record.recordedBy || record.recorded_by || null,
+                  record.recordedByName || record.recorded_by_name || null,
+                  record.version || 1,
+                  0,
+                  'synced'
+                ]
+              );
+            }
           }
+          await saveDB();
+        } catch (cacheError) {
+          console.warn('⚠️ Failed to cache medical services:', cacheError.message);
         }
-        await saveDB();
+        
+        // Return API data (filtered for medical)
         return records.filter(r => (r.serviceType || r.service_type) === 'medical');
       }
     } catch (error) {
-      console.warn('API: Failed to fetch medical services online, using SQLite.', error);
+      console.warn('⚠️ Failed to fetch medical services online:', error);
     }
   }
 
-  // SQLite Fallback
+  // FALLBACK: SQLite
   try {
-    const rows = await executeQuery("SELECT * FROM services_rendered WHERE child_id = ? AND service_type = 'medical' ORDER BY date DESC, created_at DESC", [childId]);
+    const rows = await executeQuery(
+      "SELECT * FROM services_rendered WHERE child_id = ? AND service_type = 'medical' ORDER BY date DESC, created_at DESC", 
+      [childId]
+    );
     return rows.map(row => ({
       id: row.id,
       childId: row.child_id,
@@ -3562,7 +3738,7 @@ export async function apiFetchMedicalServicesRecords(childId) {
       createdAt: row.created_at
     }));
   } catch (err) {
-    console.error('API: Error fetching medical services from SQLite:', err);
+    console.error('❌ Error fetching medical services from SQLite:', err);
     return [];
   }
 }

@@ -405,25 +405,44 @@ export function createChildrenRouter(pool: Pool): Router {
     );
 
     // Services
-    router.post(
-        '/:id/medical-services',
-        requirePermission(pool, 'children:update'),
-        async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
-            try {
-                const childId = requireString(request.params.id, 'id');
-                const id = optionalString(request.body.id) || crypto.randomUUID();
-                const servicesList = Array.isArray(request.body.services) ? request.body.services.join(', ') : requireString(request.body.services, 'services');
-                const date = requireString(request.body.date, 'date');
-                const recordedBy = optionalString(request.body.recordedBy);
-                const recordedByName = optionalString(request.body.recordedByName);
+   // In server/routes/childrenRouter.ts
+router.post(
+    '/:id/medical-services',
+    requirePermission(pool, 'children:update'),
+    async (request: Request<{ id: string }>, response: Response, next: NextFunction): Promise<void> => {
+        try {
+            const childId = requireString(request.params.id, 'id');
+            const id = optionalString(request.body.id) || crypto.randomUUID();
+            const serviceType = request.body.serviceType || 'medical'; // Allow 'procedure' type
+            const servicesList = requireString(request.body.services, 'services');
+            const date = requireString(request.body.date, 'date');
+            const recordedBy = optionalString(request.body.recordedBy);
+            const recordedByName = optionalString(request.body.recordedByName);
 
-                const data = await clinicalService.saveService(pool, id, childId, 'medical', servicesList, date, recordedBy, recordedByName);
-                response.status(200).json({ success: true, message: 'Medical services saved successfully.', data });
-            } catch (error) {
-                next(toHttpError(error));
-            }
+            console.log('📝 Saving medical service:', { childId, serviceType, servicesList });
+
+            const data = await clinicalService.saveService(
+                pool, 
+                id, 
+                childId, 
+                serviceType, // Use the serviceType from request
+                servicesList, 
+                date, 
+                recordedBy, 
+                recordedByName
+            );
+            
+            response.status(200).json({ 
+                success: true, 
+                message: `${serviceType} saved successfully.`, 
+                data 
+            });
+        } catch (error) {
+            console.error('❌ Error saving medical service:', error);
+            next(toHttpError(error));
         }
-    );
+    }
+);
 
     router.post(
         '/:id/social-services',

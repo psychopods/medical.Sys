@@ -109,75 +109,6 @@ const ServiceDelivery = ({
     }
   }, [child, medicalRecords, vitalsHistory, medicationsHistory, testsHistory, servicesHistory, clothingHistory, symptomsHistory]);
 
-  // Helper function to check if an item is a procedure
-  const isProcedureItem = useCallback((item) => {
-    if (!item) return false;
-    
-    const lowerItem = item.toLowerCase().trim();
-    
-    // Common procedure keywords
-    const procedureKeywords = [
-      'wound', 'dressing', 'suture', 'suturing', 'incision', 'drainage',
-      'cast', 'splint', 'catheter', 'cannulation', 'blood draw', 'immunization',
-      'first aid', 'bandage', 'stitch', 'injection', 'iv', 'intravenous',
-      'surgery', 'operation', 'procedure', 'catheterization', 'suturing',
-      'incision and drainage', 'casting', 'splinting', 'iv cannulation',
-      'wound dressing', 'wound care', 'surgical', 'biopsy', 'excision',
-      'debridement', 'suture removal', 'wound closure', 'sterile dressing'
-    ];
-    
-    // Check if the item contains any procedure keyword
-    const isProcedure = procedureKeywords.some(keyword => 
-      lowerItem.includes(keyword)
-    );
-    
-    // Also check if the item ends with "procedure" or is in the procedure list
-    const looksLikeProcedure = 
-      lowerItem.includes(' procedure') || 
-      lowerItem.endsWith('procedure') ||
-      lowerItem.match(/^[a-z]+\s+(?:and\s+)?[a-z]+(?:s)?$/i) && !lowerItem.includes('medication') && !lowerItem.includes('test');
-    
-    return isProcedure || looksLikeProcedure;
-  }, []);
-
-  // Helper to extract procedures from a services list string
-  const extractProceduresFromList = useCallback((list) => {
-    const foundProcedures = [];
-    if (!list) return foundProcedures;
-    
-    // Split by commas or pipes
-    const items = list.split(/[,|]/).map(s => s.trim()).filter(Boolean);
-    
-    // Look for "Procedures:" prefix
-    const procedurePrefixMatch = list.match(/Procedures?:\s*([^,]+(?:,\s*[^,]+)*)/i);
-    if (procedurePrefixMatch) {
-      const procItems = procedurePrefixMatch[1].split(',').map(s => s.trim()).filter(Boolean);
-      procItems.forEach(p => {
-        if (p && !foundProcedures.includes(p)) {
-          foundProcedures.push(p);
-        }
-      });
-    }
-    
-    // Check each item individually
-    items.forEach(item => {
-      if (isProcedureItem(item)) {
-        // Extract just the procedure name (remove any labels)
-        let procedureName = item;
-        // Remove "Procedure:" prefix if present
-        procedureName = procedureName.replace(/^Procedures?\s*:\s*/i, '');
-        // Remove "Wound:" "Suture:" etc prefixes
-        procedureName = procedureName.replace(/^[A-Za-z]+\s*:\s*/, '');
-        
-        if (procedureName && !foundProcedures.includes(procedureName)) {
-          foundProcedures.push(procedureName);
-        }
-      }
-    });
-    
-    return foundProcedures;
-  }, [isProcedureItem]);
-
   const calculateChildServiceData = useCallback(() => {
     
     // Count total unique visits from all record types
@@ -258,9 +189,11 @@ const ServiceDelivery = ({
     if (testsHistory && testsHistory.length > 0) {
       totalTests = testsHistory.length;
       totalServices += totalTests;
+    } else {
+      console.log('⚠️ No tests found in testsHistory');
     }
 
-    // 3. Process services rendered - IMPROVED PROCEDURE DETECTION
+    // 3. Process services rendered - PROCEDURES ONLY from service_type = 'procedure'
     if (servicesHistory && servicesHistory.length > 0) {
       
       servicesHistory.forEach(record => {
@@ -306,61 +239,31 @@ const ServiceDelivery = ({
             });
           }
         } 
-        // PROCEDURE SERVICES - Directly add procedures
+        // PROCEDURE SERVICES - ONLY from service_type = 'procedure'
         else if (type === 'procedure') {
+          // console.log('🔧 Procedure service found from API:', list);
           if (list) {
             const procItems = list.split(',').map(s => s.trim()).filter(Boolean);
             procItems.forEach(proc => {
               if (proc && !procedures.includes(proc)) {
                 procedures.push(proc);
                 totalServices++;
+                // console.log('🔧 Procedure added from API:', proc);
               }
             });
           }
         }
-        // MEDICAL SERVICES - Improved procedure extraction
+        // MEDICAL SERVICES - DO NOT extract procedures from here
         else if (type === 'medical') {
           totalServices++;
-          
-          if (list) {
-            // Extract procedures from the list
-            const extractedProcedures = extractProceduresFromList(list);
-            
-            extractedProcedures.forEach(proc => {
-              if (proc && !procedures.includes(proc)) {
-                procedures.push(proc);
-              }
-            });
-            
-            // Also count other medical items (medications, tests, etc.)
-            const items = list.split(/[,|]/).map(s => s.trim()).filter(Boolean);
-            items.forEach(item => {
-              // Skip if it's already identified as a procedure
-              if (extractedProcedures.some(p => item.includes(p) || p.includes(item))) {
-                return;
-              }
-              
-              // Skip medication and test items
-              const lowerItem = item.toLowerCase();
-              if (!lowerItem.includes('medication') && 
-                  !lowerItem.includes('test') && 
-                  !lowerItem.includes('result') &&
-                  !lowerItem.includes('blood') &&
-                  !lowerItem.includes('urine') &&
-                  !lowerItem.includes('stool') &&
-                  !lowerItem.includes('hiv') &&
-                  !lowerItem.includes('malaria')) {
-                // Count as a service item
-                totalServices++;
-              }
-            });
-          }
+          // console.log('💉 Medical service found (counted as service, no procedure extraction)');
         }
       });
     }
 
     // 4. Process clothing provisions
     if (clothingHistory && clothingHistory.length > 0) {
+      // console.log('📊 Processing clothing provisions:', clothingHistory.length);
       
       clothingHistory.forEach(record => {
         if (record.clothes) {
@@ -373,10 +276,12 @@ const ServiceDelivery = ({
         }
         totalServices++;
       });
+      // console.log('👕 Total clothes:', totalClothes, 'Total shoes:', totalShoes);
     }
 
     // 5. Process symptoms and diagnoses
     if (symptomsHistory && symptomsHistory.length > 0) {
+      // console.log('📊 Processing symptoms:', symptomsHistory.length);
       symptomsHistory.forEach(record => {
         if (record.symptoms) {
           const symps = record.symptoms.split(',').map(s => s.trim()).filter(Boolean);
@@ -453,8 +358,9 @@ const ServiceDelivery = ({
       diagnoses: diagnosesList,
     };
 
+
     setChildServiceData(finalData);
-  }, [vitalsHistory, medicationsHistory, testsHistory, servicesHistory, clothingHistory, symptomsHistory, medicalRecords, extractProceduresFromList]);
+  }, [vitalsHistory, medicationsHistory, testsHistory, servicesHistory, clothingHistory, symptomsHistory, medicalRecords]);
 
   const getLatestBMI = useCallback(() => {
     const recordsToUse = vitalsHistory && vitalsHistory.length > 0 ? vitalsHistory : [];
@@ -493,6 +399,7 @@ const ServiceDelivery = ({
     .sort((a, b) => b[1] - a[1]);
 
   const maxMedCount = Math.max(...Object.values(childServiceData.medications), 1);
+
 
   if (loading) {
     return (
