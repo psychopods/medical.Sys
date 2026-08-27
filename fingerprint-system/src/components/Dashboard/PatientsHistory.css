@@ -1914,3 +1914,472 @@
     gap: 8px;
   }
 }
+
+/* Add to PatientsHistory.css */
+
+/* ================================
+   DATE FILTERS EXPANDED
+   ================================ */
+
+.ph-date-filters-expanded {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+  align-items: flex-end;
+}
+
+.ph-date-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.ph-date-filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ph-date-input {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.ph-date-input:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.ph-btn-date-filter {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ph-btn-date-filter:hover {
+  background: #e2e8f0;
+}
+
+.ph-btn-date-filter.active {
+  background: #dbeafe;
+  border-color: #3b82f6;
+  color: #1e40af;
+}
+
+.ph-btn-clear-date {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.ph-btn-clear-date:hover {
+  background: #fecaca;
+}
+
+/* ================================
+   TIMELINE DATE FILTERS
+   ================================ */
+
+.ph-timeline-date-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  align-items: flex-end;
+}
+
+.ph-timeline-date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ph-timeline-date-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ph-timeline-date-input {
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.ph-timeline-date-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.ph-timeline-year-select {
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  background: white;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.ph-timeline-year-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ================================
+   BADGE COLORS
+   ================================ */
+
+.ph-badge-baseline {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.ph-badge-vitals {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ph-badge-medication {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.ph-badge-test {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ph-badge-service {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.ph-badge-assessment {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+/* ================================
+   RESPONSIVE ADDITIONS
+   ================================ */
+
+@media (max-width: 768px) {
+  .ph-date-filters-expanded {
+    flex-direction: column;
+    padding: 14px;
+  }
+
+  .ph-date-filter-group {
+    min-width: 100%;
+  }
+
+  .ph-timeline-date-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ph-timeline-date-group {
+    width: 100%;
+  }
+
+  .ph-history-summary-cards {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+  }
+
+  .ph-summary-card {
+    padding: 8px 12px;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .ph-summary-info .ph-summary-count {
+    font-size: 16px;
+  }
+
+  .ph-summary-info .ph-summary-label {
+    font-size: 10px;
+  }
+
+  .ph-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ph-filter-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .ph-filter-btn {
+    font-size: 12px;
+    padding: 4px 12px;
+  }
+
+  .ph-clear-filters-btn {
+    text-align: center;
+  }
+
+  .ph-history-timeline {
+    padding-left: 16px;
+  }
+
+  .ph-timeline-item {
+    gap: 12px;
+  }
+
+  .ph-timeline-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .ph-timeline-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .ph-history-card {
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+
+  .ph-history-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ph-history-card-left {
+    flex-wrap: wrap;
+  }
+
+  .ph-history-diagnosis,
+  .ph-history-treatment,
+  .ph-history-notes,
+  .ph-history-services,
+  .ph-history-measurement {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ph-history-card-body .ph-label,
+  .ph-history-services .ph-label,
+  .ph-history-measurement .ph-label {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .ph-history-summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ph-filter-buttons {
+    gap: 4px;
+  }
+
+  .ph-filter-btn {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .ph-filter-btn .ph-filter-count {
+    font-size: 10px;
+    padding: 0 6px;
+  }
+
+  .ph-history-card-body .ph-value,
+  .ph-history-services .ph-value,
+  .ph-history-measurement .ph-value {
+    font-size: 13px;
+  }
+
+  .ph-history-date {
+    font-size: 13px;
+  }
+
+  .ph-history-badge {
+    font-size: 10px;
+    padding: 2px 10px;
+  }
+}
+
+/* Dark mode additions */
+@media (prefers-color-scheme: dark) {
+  .ph-date-filters-expanded {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .ph-date-filter-group label {
+    color: #94a3b8;
+  }
+
+  .ph-date-input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+
+  .ph-date-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  .ph-btn-date-filter {
+    background: #1e293b;
+    color: #94a3b8;
+    border-color: #334155;
+  }
+
+  .ph-btn-date-filter:hover {
+    background: #334155;
+  }
+
+  .ph-btn-date-filter.active {
+    background: #1e3a5f;
+    border-color: #3b82f6;
+    color: #60a5fa;
+  }
+
+  .ph-btn-clear-date {
+    background: #7f1d1d;
+    color: #fca5a5;
+    border-color: #991b1b;
+  }
+
+  .ph-btn-clear-date:hover {
+    background: #991b1b;
+  }
+
+  .ph-timeline-date-filters {
+    border-top-color: #334155;
+  }
+
+  .ph-timeline-date-group label {
+    color: #94a3b8;
+  }
+
+  .ph-timeline-date-input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+
+  .ph-timeline-date-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  .ph-timeline-year-select {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+
+  .ph-timeline-year-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  .ph-badge-baseline {
+    background: #1e3a5f;
+    color: #60a5fa;
+  }
+
+  .ph-badge-vitals {
+    background: #14532d;
+    color: #4ade80;
+  }
+
+  .ph-badge-medication {
+    background: #3b0764;
+    color: #c084fc;
+  }
+
+  .ph-badge-test {
+    background: #78350f;
+    color: #fbbf24;
+  }
+
+  .ph-badge-service {
+    background: #164e63;
+    color: #22d3ee;
+  }
+
+  .ph-badge-assessment {
+    background: #831843;
+    color: #f472b6;
+  }
+}
+
+/* Print styles */
+@media print {
+  .ph-btn,
+  .ph-filter-btn,
+  .ph-clear-filters-btn,
+  .ph-btn-clear-date,
+  .ph-btn-date-filter,
+  .ph-actions,
+  .ph-clear-search {
+    display: none !important;
+  }
+
+  .ph-history-card {
+    break-inside: avoid;
+    border: 1px solid #ddd !important;
+  }
+
+  .ph-timeline-item {
+    break-inside: avoid;
+  }
+
+  .ph-filter-row,
+  .ph-timeline-date-filters,
+  .ph-history-controls {
+    display: none !important;
+  }
+
+  .ph-history-summary-cards {
+    display: none !important;
+  }
+}

@@ -6,7 +6,7 @@ import './PatientsHistory.css';
 import * as api from '../../services/api.js';
 
 // ============================================
-// SVG ICONS (Same as AllHistory)
+// SVG ICONS
 // ============================================
 
 const IconMedical = () => (
@@ -181,8 +181,17 @@ const IconCalendarCheck = () => (
   </svg>
 );
 
+const IconCalendar = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
 // ============================================
-// MISSING ICONS - ADDED
+// MISSING ICONS
 // ============================================
 
 const NoDataIcon = () => (
@@ -237,6 +246,24 @@ const getTypeLabel = (type) => {
   return labels[type] || type;
 };
 
+// Get the appropriate label for the diagnosis field based on record type
+const getDiagnosisLabel = (recordType) => {
+  const labels = {
+    baseline: 'Information',
+    vitals: 'Vitals',
+    medication: 'Medication',
+    test: 'Test Details',
+    service: 'Service Details',
+    education: 'Education Details',
+    assessment: 'Assessment',
+    clothing: 'Items',
+    social: 'Service Details',
+    diagnosis: 'Diagnosis',
+    unknown: 'Details'
+  };
+  return labels[recordType] || 'Details';
+};
+
 // Helper to get user from localStorage
 const getStoredUser = () => {
   try {
@@ -270,6 +297,10 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
   const [filterAgeGroup, setFilterAgeGroup] = useState('all');
   const [filterLocation, setFilterLocation] = useState('all');
   const [filterFingerprint, setFilterFingerprint] = useState('all');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [filterYear, setFilterYear] = useState('all');
+  const [showDateFilters, setShowDateFilters] = useState(false);
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [locations, setLocations] = useState([]);
@@ -341,6 +372,22 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // Get year from date
+  const getYearFromDate = (dateString) => {
+    if (!dateString) return null;
+    return new Date(dateString).getFullYear();
+  };
+
+  // Get available years from patients
+  const getAvailableYears = () => {
+    const years = new Set();
+    patients.forEach(patient => {
+      const year = getYearFromDate(patient.createdAt);
+      if (year) years.add(year);
+    });
+    return Array.from(years).sort((a, b) => b - a);
   };
 
   // Get age group
@@ -752,11 +799,10 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
   };
 
   // ============================================
-  // EXPORT FUNCTION - INCLUDES ALL MEDICAL HISTORY
+  // EXPORT FUNCTION
   // ============================================
 
   const exportToCSV = () => {
-    // If viewing a specific patient's records, export that patient's full history
     if (showPatientDetails && selectedPatient && viewingRecords) {
       const timeline = patientFullData ? getTimelineRecords() : [];
       if (timeline.length === 0) {
@@ -765,28 +811,26 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
       }
 
       const headers = [
-        'Date', 'Type', 'Diagnosis', 'Details', 'Services Provided', 
+        'Date', 'Type', 'Title', 'Details', 'Services Provided', 
         'Measurements', 'Notes', 'Recorded By'
       ];
       
       const rows = timeline.map(record => {
-        let diagnosis = record.title || '';
+        let title = record.title || '';
         let details = record.details || '';
         let servicesProvided = '';
         let measurements = record.measurement || '';
         let notes = record.notes || '';
         
-        // For baseline records, use the baseline data
         if (record.isBaseline && record.baselineData) {
           const data = record.baselineData;
-          diagnosis = 'Baseline Information';
+          title = 'Baseline Information';
           details = `Kid ID: ${data.kidId} | Full Name: ${data.fullName} | Gender: ${data.gender} | Age: ${data.age} | Location: ${data.location}`;
           servicesProvided = '';
           measurements = '';
           notes = '';
         }
         
-        // For service records, use services provided
         if (record.isService) {
           servicesProvided = record.details || '';
           details = '';
@@ -799,7 +843,7 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
             day: 'numeric'
           }),
           getTypeLabel(record.type),
-          diagnosis,
+          title,
           details,
           servicesProvided,
           measurements,
@@ -824,7 +868,6 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
       return;
     }
 
-    // Export patient list
     if (filteredPatients.length === 0) {
       showToast('No data to export', 'warning');
       return;
@@ -865,10 +908,13 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
       const recordTypes = ['all', ...new Set(timeline.map(r => r.type))];
       
       let filteredTimeline = timeline;
+      
+      // Filter by record type
       if (selectedFilterRecords !== 'all') {
         filteredTimeline = timeline.filter(r => r.type === selectedFilterRecords);
       }
       
+      // Filter by search term
       if (searchRecordsTerm.trim()) {
         const term = searchRecordsTerm.toLowerCase().trim();
         filteredTimeline = filteredTimeline.filter(r => 
@@ -878,6 +924,35 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
           r.measurement?.toLowerCase().includes(term) ||
           r.recordedBy?.toLowerCase().includes(term)
         );
+      }
+      
+      // Filter by date range
+      if (timelineDateFrom) {
+        const fromDate = new Date(timelineDateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        filteredTimeline = filteredTimeline.filter(record => {
+          const recordDate = new Date(record.date);
+          return recordDate >= fromDate;
+        });
+      }
+
+      if (timelineDateTo) {
+        const toDate = new Date(timelineDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        filteredTimeline = filteredTimeline.filter(record => {
+          const recordDate = new Date(record.date);
+          return recordDate <= toDate;
+        });
+      }
+
+      // Filter by year
+      if (timelineYear !== 'all') {
+        const year = parseInt(timelineYear);
+        filteredTimeline = filteredTimeline.filter(record => {
+          if (!record.date) return false;
+          const recordYear = new Date(record.date).getFullYear();
+          return recordYear === year;
+        });
       }
 
       return (
@@ -945,6 +1020,8 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
                         </button>
                       )}
                     </div>
+                    
+                    {/* Timeline Record Type Filters */}
                     <div className="ph-filter-row">
                       <div className="ph-filter-buttons">
                         {recordTypes.map(type => (
@@ -966,8 +1043,58 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
                         <button className="ph-clear-filters-btn" onClick={() => {
                           setSearchRecordsTerm('');
                           setSelectedFilterRecords('all');
+                          setTimelineDateFrom('');
+                          setTimelineDateTo('');
+                          setTimelineYear('all');
                         }}>
                           Clear Filters
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Timeline Date Filters */}
+                    <div className="ph-timeline-date-filters">
+                      <div className="ph-timeline-date-group">
+                        <label>From</label>
+                        <input
+                          type="date"
+                          value={timelineDateFrom}
+                          onChange={(e) => setTimelineDateFrom(e.target.value)}
+                          className="ph-timeline-date-input"
+                        />
+                      </div>
+                      <div className="ph-timeline-date-group">
+                        <label>To</label>
+                        <input
+                          type="date"
+                          value={timelineDateTo}
+                          onChange={(e) => setTimelineDateTo(e.target.value)}
+                          className="ph-timeline-date-input"
+                        />
+                      </div>
+                      <div className="ph-timeline-date-group">
+                        <label>Year</label>
+                        <select 
+                          value={timelineYear} 
+                          onChange={(e) => setTimelineYear(e.target.value)}
+                          className="ph-timeline-year-select"
+                        >
+                          <option value="all">All Years</option>
+                          {timelineYears.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {(timelineDateFrom || timelineDateTo || timelineYear !== 'all') && (
+                        <button 
+                          className="ph-btn ph-btn-clear-date"
+                          onClick={() => {
+                            setTimelineDateFrom('');
+                            setTimelineDateTo('');
+                            setTimelineYear('all');
+                          }}
+                        >
+                          Clear Dates
                         </button>
                       )}
                     </div>
@@ -1020,7 +1147,7 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
                             ) : (
                               <>
                                 <div className="ph-history-diagnosis">
-                                  <span className="ph-label">Diagnosis:</span>
+                                  <span className="ph-label">{getDiagnosisLabel(record.type)}:</span>
                                   <span className="ph-value">{record.title}</span>
                                 </div>
                                 
@@ -1039,7 +1166,7 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
                                        record.type === 'test' ? 'Result' : 
                                        record.type === 'clothing' ? 'Items' : 
                                        record.type === 'education' ? 'Topics' : 
-                                       'Details'}
+                                       getDiagnosisLabel(record.type)}
                                     </span>
                                     <span className="ph-value">{record.details}</span>
                                   </div>
@@ -1150,6 +1277,30 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
   };
 
   // ============================================
+  // TIMELINE DATE FILTERS STATE
+  // ============================================
+
+  const [timelineDateFrom, setTimelineDateFrom] = useState('');
+  const [timelineDateTo, setTimelineDateTo] = useState('');
+  const [timelineYear, setTimelineYear] = useState('all');
+  const [timelineYears, setTimelineYears] = useState([]);
+
+  // Update timeline years when records change
+  useEffect(() => {
+    if (patientFullData) {
+      const timeline = getTimelineRecords();
+      const years = new Set();
+      timeline.forEach(record => {
+        if (record.date) {
+          const year = new Date(record.date).getFullYear();
+          if (!isNaN(year)) years.add(year);
+        }
+      });
+      setTimelineYears(Array.from(years).sort((a, b) => b - a));
+    }
+  }, [patientFullData]);
+
+  // ============================================
   // REMAINING FUNCTIONS
   // ============================================
 
@@ -1220,6 +1371,22 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
     setViewingRecords(false);
     setPatientFullData(null);
   };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setFilterGender('all');
+    setFilterAgeGroup('all');
+    setFilterLocation('all');
+    setFilterFingerprint('all');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setFilterYear('all');
+    setShowDateFilters(false);
+  };
+
+  // Get available years
+  const availableYears = getAvailableYears();
 
   // Initial load
   useEffect(() => {
@@ -1336,6 +1503,34 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
         }
       }
 
+      // Date range filter
+      if (filterDateFrom) {
+        const fromDate = new Date(filterDateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        result = result.filter(patient => {
+          const patientDate = new Date(patient.createdAt);
+          return patientDate >= fromDate;
+        });
+      }
+
+      if (filterDateTo) {
+        const toDate = new Date(filterDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        result = result.filter(patient => {
+          const patientDate = new Date(patient.createdAt);
+          return patientDate <= toDate;
+        });
+      }
+
+      // Year filter
+      if (filterYear !== 'all') {
+        const year = parseInt(filterYear);
+        result = result.filter(patient => {
+          const patientYear = getYearFromDate(patient.createdAt);
+          return patientYear === year;
+        });
+      }
+
       result.sort((a, b) => {
         let valA, valB;
         switch (sortBy) {
@@ -1374,7 +1569,7 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
       console.error('Error filtering patients:', error);
       setFilteredPatients(patients);
     }
-  }, [patients, searchTerm, filterGender, filterAgeGroup, filterLocation, filterFingerprint, sortBy, sortOrder]);
+  }, [patients, searchTerm, filterGender, filterAgeGroup, filterLocation, filterFingerprint, filterDateFrom, filterDateTo, filterYear, sortBy, sortOrder]);
 
   const ageGroups = [
     { value: 'all', label: 'All Ages' },
@@ -1523,16 +1718,69 @@ const PatientsHistory = ({ user: propUser, onLogout: propOnLogout }) => {
               <option value="no">No Fingerprints</option>
             </select>
           </div>
-          <button className="ph-btn ph-btn-clear" onClick={() => {
-            setSearchTerm('');
-            setFilterGender('all');
-            setFilterAgeGroup('all');
-            setFilterLocation('all');
-            setFilterFingerprint('all');
-          }}>
+          
+          {/* Date Filter Toggle */}
+          <button 
+            className={`ph-btn ph-btn-date-filter ${showDateFilters ? 'active' : ''}`}
+            onClick={() => setShowDateFilters(!showDateFilters)}
+            title="Toggle date filters"
+          >
+            <IconCalendar /> {showDateFilters ? 'Hide Date Filters' : 'Date Filters'}
+          </button>
+          
+          <button className="ph-btn ph-btn-clear" onClick={clearAllFilters}>
             Clear Filters
           </button>
         </div>
+
+        {/* Date Filters - Expanded */}
+        {showDateFilters && (
+          <div className="ph-date-filters-expanded">
+            <div className="ph-date-filter-group">
+              <label>From Date</label>
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+                className="ph-date-input"
+              />
+            </div>
+            <div className="ph-date-filter-group">
+              <label>To Date</label>
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={(e) => setFilterDateTo(e.target.value)}
+                className="ph-date-input"
+              />
+            </div>
+            <div className="ph-date-filter-group">
+              <label>Year</label>
+              <select 
+                value={filterYear} 
+                onChange={(e) => setFilterYear(e.target.value)}
+                className="ph-filter-select"
+              >
+                <option value="all">All Years</option>
+                {availableYears.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+            {(filterDateFrom || filterDateTo || filterYear !== 'all') && (
+              <button 
+                className="ph-btn ph-btn-clear-date"
+                onClick={() => {
+                  setFilterDateFrom('');
+                  setFilterDateTo('');
+                  setFilterYear('all');
+                }}
+              >
+                Clear Dates
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="ph-table-container">
           <table className="ph-table">

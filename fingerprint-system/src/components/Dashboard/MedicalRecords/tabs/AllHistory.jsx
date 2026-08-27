@@ -778,6 +778,22 @@ const AllHistory = ({
     setShowDateFilter(false);
   };
 
+  // Get the appropriate label for the diagnosis field based on record type
+  const getDiagnosisLabel = (recordType) => {
+    const labels = {
+      baseline: 'Information',
+      vitals: 'Vitals',
+      medication: 'Medication',
+      test: 'Test Details',
+      service: 'Service Details',
+      education: 'Education Details',
+      assessment: 'Assessment',
+      diagnosis: 'Diagnosis',
+      unknown: 'Details'
+    };
+    return labels[recordType] || 'Details';
+  };
+
   // If no child selected
   if (!child || !child.id) {
     return (
@@ -1041,7 +1057,7 @@ const AllHistory = ({
                   ) : (
                     <>
                       <div className="mr-history-diagnosis">
-                        <span className="mr-label">Diagnosis:</span>
+                        <span className="mr-label">{getDiagnosisLabel(record.recordType)}:</span>
                         <span className="mr-value">{record.diagnosis}</span>
                       </div>
                       
