@@ -27,6 +27,35 @@
   margin-bottom: 8px;
 }
 
+.co-connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #f0f0f0;
+}
+
+.co-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.co-status-dot.online {
+  background: #28a745;
+}
+
+.co-status-dot.offline {
+  background: #dc3545;
+}
+
+.co-status-text {
+  font-size: 13px;
+  color: #555;
+}
+
 .co-staff-info {
   margin-top: 8px;
   padding: 8px 16px;
@@ -283,6 +312,24 @@
   transform: scale(1.2);
 }
 
+/* Empty State */
+.co-empty-text {
+  color: #999;
+  font-size: 13px;
+  font-style: italic;
+  padding: 8px 12px;
+}
+
+/* Count Badge */
+.count-badge {
+  background: #667eea;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 /* Primary Button */
 .co-btn-primary {
   padding: 12px 32px;
@@ -294,6 +341,10 @@
   transition: all 0.3s ease;
   background: #667eea;
   color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .co-btn-primary:hover:not(:disabled) {
@@ -306,6 +357,23 @@
   opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
+}
+
+/* Loading Spinner for Buttons */
+.co-btn-spinner {
+  animation: coSpin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes coSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.co-btn-spinner {
+  stroke: #ffffff;
+  width: 18px;
+  height: 18px;
 }
 
 /* Toast Notification */
@@ -406,12 +474,6 @@
   vertical-align: middle;
 }
 
-@keyframes coSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .co-clinical-options-container {
@@ -471,6 +533,11 @@
     font-size: 12px;
     padding: 4px 10px;
   }
+
+  .co-connection-status {
+    font-size: 12px;
+    padding: 3px 10px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -517,6 +584,10 @@
   .co-section-title {
     font-size: 16px;
   }
+
+  .co-status-text {
+    font-size: 11px;
+  }
 }
 
 /* Print Styles */
@@ -556,201 +627,5 @@
 
   .co-tag-remove {
     display: none !important;
-  }
-}
-
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-  .co-clinical-options-container {
-    background: #1a1a2e;
-  }
-
-  .co-page-header h1 {
-    color: #f0f0f0;
-  }
-
-  .co-page-header p {
-    color: #aaa;
-  }
-
-  .co-page-header {
-    border-bottom-color: #333;
-  }
-
-  .co-staff-info {
-    background: #1a3a2a;
-  }
-
-  .co-staff-name,
-  .co-staff-id {
-    color: #ddd;
-  }
-
-  .co-tab-navigation {
-    border-bottom-color: #333;
-  }
-
-  .co-tab-button {
-    color: #aaa;
-  }
-
-  .co-tab-button:hover:not(:disabled) {
-    color: #f0f0f0;
-    background: #2a2a4e;
-  }
-
-  .co-tab-button.active {
-    color: #667eea;
-    border-bottom-color: #667eea;
-  }
-
-  .co-form-container-full {
-    background: #2a2a4e;
-    border-color: #333;
-  }
-
-  .co-form-group label {
-    color: #ddd;
-  }
-
-  .co-form-group input,
-  .co-form-group textarea,
-  .co-form-group select {
-    background: #1a1a2e;
-    border-color: #444;
-    color: #f0f0f0;
-  }
-
-  .co-form-group input:focus,
-  .co-form-group textarea:focus,
-  .co-form-group select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-  }
-
-  .co-form-group input:disabled,
-  .co-form-group textarea:disabled,
-  .co-form-group select:disabled {
-    background: #333;
-  }
-
-  .co-helper-text {
-    color: #888;
-  }
-
-  .co-form-actions {
-    border-top-color: #333;
-  }
-
-  .co-btn-primary {
-    background: #667eea;
-  }
-
-  .co-btn-primary:hover:not(:disabled) {
-    background: #5a67d8;
-  }
-
-  .co-toast-notification {
-    background: #2a2a4e;
-    color: #f0f0f0;
-  }
-
-  .co-toast-notification.success {
-    border-left-color: #28a745;
-    background: #1a3a2a;
-  }
-
-  .co-toast-notification.error {
-    border-left-color: #dc3545;
-    background: #3a1a1a;
-  }
-
-  .co-toast-notification.warning {
-    border-left-color: #ffc107;
-    background: #3a3a1a;
-  }
-
-  .co-toast-close {
-    color: #888;
-  }
-
-  .co-toast-close:hover {
-    color: #fff;
-  }
-
-  .co-dashboard-loading {
-    background: #1a1a2e;
-  }
-
-  .co-dashboard-loading p {
-    color: #aaa;
-  }
-
-  .co-spinner {
-    border-color: #333;
-    border-top-color: #667eea;
-  }
-
-  .co-existing-list {
-    border-top-color: #333;
-  }
-
-  .co-category-section {
-    background: #2a2a4e;
-    border-color: #333;
-  }
-
-  .co-category-section h4 {
-    color: #f0f0f0;
-  }
-
-  .co-tag {
-    background: #1a1a2e;
-    color: #f0f0f0;
-    border-color: #667eea;
-  }
-
-  .co-tag:hover {
-    background: #2a2a4e;
-  }
-
-  .co-tag-remove {
-    color: #f87171;
-  }
-
-  .co-tag-remove:hover {
-    color: #ef4444;
-  }
-
-  .co-section-title {
-    color: #f0f0f0;
-    border-bottom-color: #667eea;
-  }
-}
-
-/* Add to ClinicalOptionsManager.css */
-
-/* Empty State */
-.co-empty-text {
-  color: #999;
-  font-size: 13px;
-  font-style: italic;
-  padding: 8px 12px;
-}
-
-/* Count Badge */
-.count-badge {
-  background: #667eea;
-  color: white;
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-/* Dark Mode for Empty Text */
-@media (prefers-color-scheme: dark) {
-  .co-empty-text {
-    color: #666;
   }
 }

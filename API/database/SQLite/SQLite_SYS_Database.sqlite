@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS staff_users (
     version INTEGER NOT NULL DEFAULT 1, 
     is_dirty INTEGER NOT NULL DEFAULT 0, 
     sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')), 
-    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, -- Fixed: Trailing comma parsing bug resolved cleanly 
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, 
     FOREIGN KEY (role_id) REFERENCES roles (id) 
 ); 
@@ -56,6 +56,9 @@ CREATE TABLE IF NOT EXISTS child_locations (
     id TEXT PRIMARY KEY NOT NULL, 
     name TEXT NOT NULL UNIQUE, 
     description TEXT, 
+    address TEXT NULL,
+    lat REAL NULL,
+    lng REAL NULL,
     version INTEGER NOT NULL DEFAULT 1, 
     is_dirty INTEGER NOT NULL DEFAULT 0, 
     sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')), 
@@ -68,7 +71,7 @@ CREATE TABLE IF NOT EXISTS children_profiles (
     full_name TEXT NOT NULL, 
     gender TEXT NOT NULL CHECK(gender IN ('Male', 'Female', 'Unknown')), 
     estimated_birth_year INTEGER, 
-    age_months_at_intake INTEGER, -- Added: Mirrored cleanly to complete integration data pathways
+    age_months_at_intake INTEGER,
     primary_location_id TEXT NOT NULL, 
     created_by_staff_id TEXT NOT NULL, 
     image1 TEXT NULL, 
@@ -87,7 +90,7 @@ CREATE TABLE IF NOT EXISTS biometric_fingerprints (
     id TEXT PRIMARY KEY NOT NULL, 
     child_id TEXT NOT NULL, 
     finger_index INTEGER NOT NULL CHECK (finger_index BETWEEN 1 AND 10), 
-    template_data TEXT NOT NULL, -- Fixed: Standardized as text to support clean Base64 strings across environments 
+    template_data TEXT NOT NULL,
     quality_score INTEGER NULL, 
     status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'VERIFIED', 'REJECTED')), 
     version INTEGER NOT NULL DEFAULT 1, 
@@ -95,6 +98,7 @@ CREATE TABLE IF NOT EXISTS biometric_fingerprints (
     sync_status TEXT NOT NULL DEFAULT 'local_created' CHECK (sync_status IN ('local_created', 'synced', 'local_updated')), 
     last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, 
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+    image_data TEXT NULL,
     FOREIGN KEY (child_id) REFERENCES children_profiles(id) ON DELETE CASCADE, 
     UNIQUE(child_id, finger_index) 
 ); 
@@ -243,4 +247,183 @@ CREATE TABLE IF NOT EXISTS contact_submissions (
     message_content TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================
+-- MEDICAL TABLES
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS medical_baselines (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    visit_date TEXT NOT NULL,
+    first_visit INTEGER NOT NULL DEFAULT 1,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS child_vitals (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    weight REAL NULL,
+    height REAL NULL,
+    bmi REAL NULL,
+    bmi_status TEXT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    date TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS medications_given (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    ntds_meds TEXT NULL,
+    antibiotics TEXT NULL,
+    other_meds TEXT NULL,
+    date_given TEXT NOT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS laboratory_tests (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    test_type TEXT NOT NULL,
+    result TEXT NOT NULL,
+    date TEXT NOT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles (id) ON DELETE CASCADE
+);
+
+-- ============================================
+-- SERVICES_RENDERED TABLE (UPDATED WITH PROCEDURE)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS services_rendered (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    service_type TEXT NOT NULL CHECK(service_type IN ('medical', 'social', 'education', 'procedure')),
+    services_list TEXT NOT NULL,
+    date TEXT NOT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_services_child_id ON services_rendered (child_id);
+CREATE INDEX IF NOT EXISTS idx_services_service_type ON services_rendered (service_type);
+CREATE INDEX IF NOT EXISTS idx_services_date ON services_rendered (date);
+
+CREATE TABLE IF NOT EXISTS symptoms_recorded (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    symptoms TEXT NULL,
+    visit_notes TEXT NULL,
+    date TEXT NOT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS clothing_provisions (
+    id TEXT PRIMARY KEY NOT NULL,
+    child_id TEXT NOT NULL,
+    shoes TEXT NULL,
+    clothes TEXT NULL,
+    date TEXT NOT NULL,
+    recorded_by TEXT NULL,
+    recorded_by_name TEXT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    is_dirty INTEGER NOT NULL DEFAULT 0,
+    sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES children_profiles (id) ON DELETE CASCADE
+);
+
+-- ============================================
+-- REFERENCE TABLES
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS test_reference (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    description TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_test_reference_category ON test_reference (category);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_test_reference_name_category ON test_reference (name, category);
+
+CREATE TABLE IF NOT EXISTS procedure_reference (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================
+-- LOOKUP TABLES
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS lookup_medications (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    category TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS lookup_tests (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS lookup_procedures (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS lookup_education (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -190,7 +190,7 @@ const ServiceDelivery = ({
       totalTests = testsHistory.length;
       totalServices += totalTests;
     } else {
-      console.log('⚠️ No tests found in testsHistory');
+      // console.log('⚠️ No tests found in testsHistory');
     }
 
     // 3. Process services rendered - PROCEDURES ONLY from service_type = 'procedure'

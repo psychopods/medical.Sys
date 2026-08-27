@@ -23,7 +23,25 @@ DROP TABLE IF EXISTS `reports_success_stories`;
 DROP TABLE IF EXISTS `reports_impact_metrics`;
 DROP TABLE IF EXISTS `volunteer_applications`;
 DROP TABLE IF EXISTS `contact_submissions`;
+DROP TABLE IF EXISTS `lookup_medications`;
+DROP TABLE IF EXISTS `lookup_tests`;
+DROP TABLE IF EXISTS `lookup_procedures`;
+DROP TABLE IF EXISTS `lookup_education`;
+DROP TABLE IF EXISTS `public_services`;
+DROP TABLE IF EXISTS `clothing_provisions`;
+DROP TABLE IF EXISTS `symptoms_recorded`;
+DROP TABLE IF EXISTS `services_rendered`;
+DROP TABLE IF EXISTS `laboratory_tests`;
+DROP TABLE IF EXISTS `medications_given`;
+DROP TABLE IF EXISTS `child_vitals`;
+DROP TABLE IF EXISTS `medical_baselines`;
+DROP TABLE IF EXISTS `procedure_reference`;
+DROP TABLE IF EXISTS `test_reference`;
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================
+-- ROLES & PERMISSIONS TABLES
+-- ============================================
 
 CREATE TABLE `roles` (
     `id` VARCHAR(36) NOT NULL,
@@ -60,6 +78,10 @@ CREATE TABLE `role_permissions` (
     CONSTRAINT `fk_mysql_rp_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_mysql_rp_perm` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- STAFF USERS TABLES
+-- ============================================
 
 CREATE TABLE `staff_users` (
     `id` VARCHAR(36) NOT NULL,
@@ -104,6 +126,10 @@ CREATE TABLE `password_reset_tokens` (
     INDEX `idx_reset_token_expires_at` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ============================================
+-- CHILDREN PROFILES TABLES
+-- ============================================
+
 CREATE TABLE `child_locations` (
     `id` CHAR(36) NOT NULL,
     `name` VARCHAR(100) NOT NULL UNIQUE,
@@ -144,11 +170,11 @@ CREATE TABLE `biometric_fingerprints` (
     `id` CHAR(36) NOT NULL,
     `child_id` CHAR(36) NOT NULL,
     `finger_index` TINYINT NOT NULL CHECK (`finger_index` BETWEEN 1 AND 10),
-    `template_data` MEDIUMTEXT NOT NULL, -- Fixed: Transformed to MEDIUMTEXT to accept text-safe Base64 values
+    `template_data` MEDIUMTEXT NOT NULL,
     `quality_score` TINYINT NULL,
     `status` ENUM('PENDING','VERIFIED','REJECTED') DEFAULT 'PENDING',
     `version` INT NOT NULL DEFAULT 1,
-    `image_data` MEDIUMTEXT NULL, -- Added to store grayscale fingerprint preview image path/URL
+    `image_data` MEDIUMTEXT NULL,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -157,9 +183,13 @@ CREATE TABLE `biometric_fingerprints` (
     INDEX `idx_bio_last_modified` (`last_modified_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ============================================
+-- NOTIFICATIONS TABLES
+-- ============================================
+
 CREATE TABLE `notifications` (
     `id` CHAR(36) NOT NULL,
-    `type` VARCHAR(50) NOT NULL, -- 'SYSTEM', 'ANNOUNCEMENT', 'EVENT'
+    `type` VARCHAR(50) NOT NULL,
     `title` VARCHAR(100) NOT NULL,
     `message` TEXT NOT NULL,
     `target_type` VARCHAR(10) NOT NULL CHECK (`target_type` IN ('ALL', 'ROLE', 'USER')),
@@ -186,6 +216,10 @@ CREATE TABLE `notification_reads` (
     CONSTRAINT `fk_reads_staff` FOREIGN KEY (`staff_user_id`) REFERENCES `staff_users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ============================================
+-- GALLERY TABLES
+-- ============================================
+
 CREATE TABLE `gallery_categories` (
     `category_key` VARCHAR(50) NOT NULL UNIQUE,
     `category_name` VARCHAR(100) NOT NULL,
@@ -209,6 +243,10 @@ CREATE TABLE `gallery_items` (
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_gallery_cat` FOREIGN KEY (`category_key`) REFERENCES `gallery_categories` (`category_key`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- REPORTS TABLES
+-- ============================================
 
 CREATE TABLE `reports_annual` (
     `id` CHAR(36) NOT NULL,
@@ -262,6 +300,10 @@ CREATE TABLE `reports_impact_metrics` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ============================================
+-- PUBLIC TABLES
+-- ============================================
+
 CREATE TABLE `volunteer_applications` (
     `id` CHAR(36) NOT NULL,
     `full_name` VARCHAR(100) NOT NULL,
@@ -285,6 +327,22 @@ CREATE TABLE `contact_submissions` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `public_services` (
+    `id` CHAR(36) NOT NULL,
+    `title` VARCHAR(150) NOT NULL,
+    `description` TEXT NOT NULL,
+    `image_url` VARCHAR(255) NULL,
+    `display_order` INT NOT NULL DEFAULT 0,
+    `version` INT NOT NULL DEFAULT 1,
+    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- MEDICAL RECORDS TABLES (WITH is_dirty COLUMN)
+-- ============================================
+
 CREATE TABLE `medical_baselines` (
     `id` CHAR(36) NOT NULL,
     `child_id` CHAR(36) NOT NULL,
@@ -293,6 +351,7 @@ CREATE TABLE `medical_baselines` (
     `recorded_by` CHAR(36) NULL,
     `recorded_by_name` VARCHAR(100) NULL,
     `version` INT NOT NULL DEFAULT 1,
+    `is_dirty` INT NOT NULL DEFAULT 0,
     `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -311,6 +370,7 @@ CREATE TABLE `child_vitals` (
     `recorded_by_name` VARCHAR(100) NULL,
     `date` DATE NOT NULL,
     `version` INT NOT NULL DEFAULT 1,
+    `is_dirty` INT NOT NULL DEFAULT 0,
     `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -328,6 +388,7 @@ CREATE TABLE `medications_given` (
     `recorded_by` CHAR(36) NULL,
     `recorded_by_name` VARCHAR(100) NULL,
     `version` INT NOT NULL DEFAULT 1,
+    `is_dirty` INT NOT NULL DEFAULT 0,
     `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -344,6 +405,7 @@ CREATE TABLE `laboratory_tests` (
     `recorded_by` CHAR(36) NULL,
     `recorded_by_name` VARCHAR(100) NULL,
     `version` INT NOT NULL DEFAULT 1,
+    `is_dirty` INT NOT NULL DEFAULT 0,
     `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -360,11 +422,13 @@ CREATE TABLE `services_rendered` (
     `recorded_by` CHAR(36) NULL,
     `recorded_by_name` VARCHAR(100) NULL,
     `version` INT NOT NULL DEFAULT 1,
+    `is_dirty` INT NOT NULL DEFAULT 0,
     `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    CONSTRAINT `fk_services_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_services_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `CHECK_service_type` CHECK (`service_type` IN ('medical', 'social', 'education', 'procedure'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `symptoms_recorded` (
@@ -376,6 +440,7 @@ CREATE TABLE `symptoms_recorded` (
     `recorded_by` CHAR(36) NULL,
     `recorded_by_name` VARCHAR(100) NULL,
     `version` INT NOT NULL DEFAULT 1,
+    `is_dirty` INT NOT NULL DEFAULT 0,
     `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -392,12 +457,40 @@ CREATE TABLE `clothing_provisions` (
     `recorded_by` CHAR(36) NULL,
     `recorded_by_name` VARCHAR(100) NULL,
     `version` INT NOT NULL DEFAULT 1,
+    `is_dirty` INT NOT NULL DEFAULT 0,
     `sync_status` VARCHAR(20) NOT NULL DEFAULT 'synced',
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_clothing_child` FOREIGN KEY (`child_id`) REFERENCES `children_profiles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- REFERENCE TABLES
+-- ============================================
+
+CREATE TABLE `test_reference` (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_category (category),
+    UNIQUE KEY unique_name_category (name, category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `procedure_reference` (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_modified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- LOOKUP TABLES
+-- ============================================
 
 CREATE TABLE `lookup_medications` (
     `id` CHAR(36) NOT NULL,
@@ -423,6 +516,10 @@ CREATE TABLE `lookup_education` (
     `name` VARCHAR(100) NOT NULL UNIQUE,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- SEED DATA
+-- ============================================
 
 -- Seeds for Medications
 INSERT INTO `lookup_medications` (`id`, `name`, `category`) VALUES
@@ -505,17 +602,96 @@ INSERT INTO `lookup_education` (`id`, `name`) VALUES
 ('e001bd14-3e5f-11ed-b878-0242ac120002', 'Drug Abuse Prevention'),
 ('e001bddc-3e5f-11ed-b878-0242ac120002', 'Life Skills'),
 ('e001beae-3e5f-11ed-b878-0242ac120002', 'Water Safety'),
-('e001bf76-3e5f-11ed-b878-0242ac120002', 'Sanitation Education')
+('e001bf76-3e5f-11ed-b878-0242ac120002', 'Sanitation Education');
 
--- Public Outreach Services Table
-CREATE TABLE IF NOT EXISTS `public_services` (
-    `id` CHAR(36) NOT NULL,
-    `title` VARCHAR(150) NOT NULL,
-    `description` TEXT NOT NULL,
-    `image_url` VARCHAR(255) NULL,
-    `display_order` INT NOT NULL DEFAULT 0,
-    `version` INT NOT NULL DEFAULT 1,
-    `last_modified_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Seed test_reference
+INSERT IGNORE INTO test_reference (name, category) VALUES 
+    ('Complete Blood Count', 'testType'),
+    ('Malaria Test', 'testType'),
+    ('HIV Test', 'testType'),
+    ('Hepatitis B Test', 'testType'),
+    ('Hepatitis C Test', 'testType'),
+    ('Pregnancy Test', 'testType'),
+    ('Urinalysis', 'testType'),
+    ('Stool Analysis', 'testType'),
+    ('Blood Glucose', 'testType'),
+    ('HbA1c', 'testType'),
+    ('VDRL Test', 'testType'),
+    ('Haemoglobin Test', 'testType'),
+    ('Blood Culture', 'testType'),
+    ('Chest X-Ray', 'testType'),
+    ('Ultrasound', 'testType'),
+    ('ECG/EKG', 'testType'),
+    ('Normal', 'testResult'),
+    ('Abnormal', 'testResult'),
+    ('Positive', 'testResult'),
+    ('Negative', 'testResult'),
+    ('Reactive', 'testResult'),
+    ('Non-reactive', 'testResult'),
+    ('Pending', 'testResult'),
+    ('Inconclusive', 'testResult'),
+    ('Detected', 'testResult'),
+    ('Not Detected', 'testResult');
+
+-- Seed procedure_reference
+INSERT IGNORE INTO procedure_reference (name) VALUES 
+    ('Wound Dressing'),
+    ('Suture Removal'),
+    ('Incision and Drainage'),
+    ('Lumbar Puncture'),
+    ('Bone Marrow Aspiration'),
+    ('Endoscopy'),
+    ('Biopsy'),
+    ('Catheterization'),
+    ('Dialysis'),
+    ('Blood Transfusion'),
+    ('Oxygen Therapy'),
+    ('Intubation'),
+    ('Surgical Wound Care'),
+    ('Burn Care'),
+    ('Skin Grafting'),
+    ('Chest Tube Insertion'),
+    ('Central Line Insertion'),
+    ('Arterial Line Insertion'),
+    ('Cricothyroidotomy'),
+    ('Tracheostomy'),
+    ('Fine Needle Aspiration'),
+    ('Core Needle Biopsy'),
+    ('Bone Marrow Biopsy'),
+    ('Spinal Tap'),
+    ('Thoracentesis'),
+    ('Paracentesis'),
+    ('Pericardiocentesis'),
+    ('Joint Aspiration'),
+    ('Nerve Block'),
+    ('Epidural Injection');
+
+-- ============================================
+-- VERIFICATION QUERIES
+-- ============================================
+
+-- Check all tables
+SHOW TABLES;
+
+-- Check is_dirty columns
+SELECT TABLE_NAME, COLUMN_NAME 
+FROM information_schema.COLUMNS 
+WHERE TABLE_SCHEMA = 'MySQL_SYS_Database' 
+AND COLUMN_NAME = 'is_dirty'
+ORDER BY TABLE_NAME;
+
+-- Check CHECK constraint on services_rendered
+SHOW CREATE TABLE services_rendered;
+
+-- Count reference data
+SELECT 'test_reference' as table_name, COUNT(*) as count FROM test_reference
+UNION ALL
+SELECT 'procedure_reference', COUNT(*) FROM procedure_reference
+UNION ALL
+SELECT 'lookup_medications', COUNT(*) FROM lookup_medications
+UNION ALL
+SELECT 'lookup_tests', COUNT(*) FROM lookup_tests
+UNION ALL
+SELECT 'lookup_procedures', COUNT(*) FROM lookup_procedures
+UNION ALL
+SELECT 'lookup_education', COUNT(*) FROM lookup_education;

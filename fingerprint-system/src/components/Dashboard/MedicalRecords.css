@@ -38,12 +38,12 @@
 }
 
 /* ================================
-   TABS NAVIGATION
+   TABS NAVIGATION - UPDATED FOR RESPONSIVE
    ================================ */
 
 .mr-tabs-nav {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 8px;
   margin-bottom: 24px;
   padding-bottom: 12px;
@@ -51,25 +51,29 @@
 }
 
 .mr-tab-nav-btn {
-  padding: 10px 20px;
-  background: none;
-  border: none;
+  padding: 10px 16px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #64748b;
   transition: all 0.2s;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .mr-tab-nav-btn:hover {
-  background: #f1f5f9;
+  background: #e2e8f0;
   color: #1e293b;
+  border-color: #cbd5e1;
 }
 
 .mr-tab-nav-btn.active {
   background: #0066cc;
   color: white;
+  border-color: #0066cc;
 }
 
 /* ================================
@@ -134,6 +138,8 @@
   border: 1px solid #cbd5e1;
   border-radius: 4px;
   font-size: 14px;
+  background: #ffffff;
+  color: #1a1a2e;
 }
 
 .mr-form-group input:focus,
@@ -141,6 +147,13 @@
 .mr-form-group textarea:focus {
   outline: none;
   border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.mr-form-group input:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
 }
 
 .mr-form-group textarea {
@@ -150,12 +163,20 @@
   border-radius: 0.5rem;
   font-family: inherit;
   resize: vertical;
+  background: #ffffff;
+  color: #1a1a2e;
 }
 
 .mr-form-group textarea:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.mr-form-group textarea:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
 }
 
 /* ================================
@@ -182,6 +203,11 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .mr-btn-primary {
@@ -191,6 +217,8 @@
 
 .mr-btn-primary:hover {
   background: #0052a3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
 }
 
 .mr-btn-secondary {
@@ -201,6 +229,18 @@
 
 .mr-btn-secondary:hover {
   background: #e2e8f0;
+}
+
+.mr-btn-add {
+  background: #10b981;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.mr-btn-add:hover {
+  background: #059669;
 }
 
 /* ================================
@@ -481,7 +521,7 @@
   color: #1e293b;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid #3b82f6;
+  border-bottom: 2px solid #0066cc;
   display: inline-block;
 }
 
@@ -637,7 +677,7 @@
 
 .mr-med-bar {
   height: 24px;
-  background-color: #3b82f6;
+  background-color: #0066cc;
   border-radius: 12px;
   transition: width 0.3s ease;
   opacity: 0.8;
@@ -659,6 +699,7 @@
   padding: 60px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
+  border-radius: 8px;
 }
 
 .mr-empty-state h3 {
@@ -695,6 +736,42 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* ================================
+   LOADING SPINNER FOR BUTTONS
+   ================================ */
+
+.mr-btn-spinner {
+  animation: mr-spin 0.8s linear infinite;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+@keyframes mr-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.mr-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.mr-btn-primary:disabled {
+  background: #94a3b8;
+}
+
+.mr-btn-primary:disabled:hover {
+  background: #94a3b8;
+  transform: none;
+}
+
+/* Loading state for buttons */
+.mr-btn .mr-btn-spinner {
+  stroke: #ffffff;
+  width: 18px;
+  height: 18px;
 }
 
 /* ================================
@@ -736,9 +813,61 @@
    RESPONSIVE DESIGN
    ================================ */
 
+/* Tablet and Medium Screens */
+@media (max-width: 1024px) {
+  .medical-records-page {
+    padding: 20px;
+  }
+  
+  .mr-tabs-nav {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 6px;
+  }
+  
+  .mr-tab-nav-btn {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  
+  .mr-dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+/* Mobile and Small Screens */
 @media (max-width: 768px) {
   .medical-records-page {
-    padding: 16px;
+    padding: 12px;
+  }
+  
+  .mr-header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .mr-header h1 {
+    font-size: 18px;
+    margin: 8px 0 0 0;
+  }
+  
+  /* Tabs - 3 columns on mobile */
+  .mr-tabs-nav {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding-bottom: 8px;
+  }
+  
+  .mr-tab-nav-btn {
+    font-size: 11px;
+    padding: 8px 6px;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.2;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .mr-form-row {
@@ -746,18 +875,13 @@
     gap: 16px;
   }
   
-  .mr-tabs-nav {
-    flex-direction: column;
-    gap: 4px;
-  }
-  
-  .mr-tab-nav-btn {
-    width: 100%;
-    text-align: center;
+  .mr-form-group {
+    min-width: 100%;
   }
   
   .mr-checkbox-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
   
   .mr-form-card,
@@ -774,9 +898,10 @@
     flex-direction: column;
   }
   
-  .mr-btn {
+  .mr-form-actions .mr-btn {
     width: 100%;
     text-align: center;
+    justify-content: center;
   }
   
   .mr-dashboard-grid {
@@ -788,22 +913,230 @@
   }
   
   .mr-bmi-bar-label {
-    width: 100px;
+    width: 80px;
     font-size: 0.7rem;
   }
   
   .mr-med-name {
-    width: 100px;
+    width: 80px;
     font-size: 0.75rem;
   }
   
   .mr-table-responsive {
     overflow-x: auto;
   }
+  
+  .mr-data-table th,
+  .mr-data-table td {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .mr-form-card h3,
+  .mr-history-card h3 {
+    font-size: 16px;
+  }
+  
+  .mr-dashboard-card {
+    padding: 1rem;
+  }
+  
+  .mr-dashboard-card h3 {
+    font-size: 1rem;
+  }
+  
+  .mr-toast {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  
+  .mr-empty-state {
+    padding: 30px 20px;
+  }
+  
+  .mr-empty-state h3 {
+    font-size: 16px;
+  }
+  
+  .mr-btn {
+    font-size: 13px;
+    padding: 8px 16px;
+  }
+  
+  .mr-btn-spinner {
+    width: 16px;
+    height: 16px;
+  }
 }
 
+/* Extra Small Screens */
 @media (max-width: 480px) {
+  .medical-records-page {
+    padding: 8px;
+  }
+  
+  .mr-header h1 {
+    font-size: 16px;
+  }
+  
+  /* Tabs - 3 columns on extra small screens with smaller padding */
+  .mr-tabs-nav {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+  
+  .mr-tab-nav-btn {
+    font-size: 10px;
+    padding: 6px 4px;
+    min-height: 38px;
+    border-radius: 4px;
+  }
+  
+  .mr-checkbox-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  
+  .mr-checkbox-label {
+    font-size: 13px;
+  }
+  
+  .mr-form-card,
+  .mr-history-card {
+    padding: 12px;
+  }
+  
+  .mr-form-card h3,
+  .mr-history-card h3 {
+    font-size: 15px;
+  }
+  
+  .mr-form-group label {
+    font-size: 13px;
+  }
+  
+  .mr-form-group input,
+  .mr-form-group select,
+  .mr-form-group textarea {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+  
+  .mr-bmi-bar-label {
+    width: 60px;
+    font-size: 0.65rem;
+  }
+  
+  .mr-med-name {
+    width: 60px;
+    font-size: 0.7rem;
+  }
+  
+  .mr-med-bar {
+    height: 18px;
+  }
+  
+  .mr-med-count {
+    font-size: 0.65rem;
+    min-width: 30px;
+  }
+  
+  .mr-data-table th,
+  .mr-data-table td {
+    padding: 0.4rem;
+    font-size: 0.65rem;
+  }
+  
   .mr-empty-state {
-    padding: 40px;
+    padding: 20px 16px;
+  }
+  
+  .mr-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+  
+  .mr-toast {
+    padding: 8px 12px;
+    font-size: 12px;
+    border-left-width: 3px;
+  }
+  
+  .mr-dashboard-card {
+    padding: 0.75rem;
+  }
+  
+  .mr-metric-item {
+    padding: 0.3rem 0;
+  }
+  
+  .mr-metric-label {
+    font-size: 0.75rem;
+  }
+  
+  .mr-metric-value {
+    font-size: 0.85rem;
+  }
+  
+  .mr-bmi-bar-item {
+    gap: 0.5rem;
+  }
+  
+  .mr-bmi-bar {
+    height: 18px;
+  }
+  
+  .mr-bmi-bar-count {
+    font-size: 0.65rem;
+    min-width: 25px;
+  }
+}
+
+/* Very Small Screens (under 360px) */
+@media (max-width: 360px) {
+  .mr-tabs-nav {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+  
+  .mr-tab-nav-btn {
+    font-size: 10px;
+    padding: 6px 4px;
+    min-height: 36px;
+  }
+  
+  .mr-header h1 {
+    font-size: 14px;
+  }
+  
+  .mr-back-btn {
+    font-size: 12px;
+  }
+}
+
+/* Landscape Phone Mode */
+@media (max-height: 500px) and (orientation: landscape) {
+  .mr-tabs-nav {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+  
+  .mr-tab-nav-btn {
+    font-size: 10px;
+    padding: 4px 8px;
+    min-height: 32px;
+  }
+  
+  .mr-form-row {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  
+  .medical-records-page {
+    padding: 10px;
   }
 }

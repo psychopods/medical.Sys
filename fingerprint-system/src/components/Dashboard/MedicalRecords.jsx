@@ -34,6 +34,20 @@ const EmptyIcon = () => (
   </svg>
 );
 
+// Loading Spinner Icon for Buttons
+const LoadingSpinner = () => (
+  <svg className="mr-btn-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2v4" />
+    <path d="M12 18v4" />
+    <path d="M4.93 4.93l2.83 2.83" />
+    <path d="M16.24 16.24l2.83 2.83" />
+    <path d="M2 12h4" />
+    <path d="M18 12h4" />
+    <path d="M4.93 19.07l2.83-2.83" />
+    <path d="M16.24 7.76l2.83-2.83" />
+  </svg>
+);
+
 // Patient Selector Page Component
 const PatientSelectorPage = ({ 
   isLoadingPatients, 
@@ -177,6 +191,13 @@ const MedicalRecords = () => {
   const [filteredPatients, setFilteredPatients] = useState([]);
   const [isLoadingPatients, setIsLoadingPatients] = useState(false);
   const toastTimeoutRef = useRef(null);
+
+  // Loading states for each save action
+  const [savingBaseline, setSavingBaseline] = useState(false);
+  const [savingVitals, setSavingVitals] = useState(false);
+  const [savingMedicalServices, setSavingMedicalServices] = useState(false);
+  const [savingSocialServices, setSavingSocialServices] = useState(false);
+  const [savingOthers, setSavingOthers] = useState(false);
 
   // Offline and Sync States
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
@@ -502,8 +523,6 @@ const MedicalRecords = () => {
     };
   };
 
-
-
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
     if (toastTimeoutRef.current) {
@@ -582,6 +601,7 @@ const MedicalRecords = () => {
       showToast("Please select a patient first", "error");
       return;
     }
+    setSavingBaseline(true);
     try {
       await api.saveBaseline(child.id, {
         visitDate: baselineData.visitDate,
@@ -594,6 +614,8 @@ const MedicalRecords = () => {
     } catch (error) {
       console.error("Error saving baseline:", error);
       showToast("Failed to save baseline information", "error");
+    } finally {
+      setSavingBaseline(false);
     }
   };
 
@@ -602,6 +624,7 @@ const MedicalRecords = () => {
       showToast("Please select a patient first", "error");
       return;
     }
+    setSavingVitals(true);
     const bmi = calculateBMI(vitalsData.weight, vitalsData.height);
     const bmiStatus = getBMIStatus(bmi);
 
@@ -626,6 +649,8 @@ const MedicalRecords = () => {
     } catch (error) {
       console.error("Error saving vitals:", error);
       showToast("Failed to save vitals", "error");
+    } finally {
+      setSavingVitals(false);
     }
   };
 
@@ -634,6 +659,7 @@ const MedicalRecords = () => {
       showToast("Please select a patient first", "error");
       return;
     }
+    setSavingMedicalServices(true);
     try {
       // 1. Save services_rendered record
       await api.saveMedicalServices(child.id, {
@@ -698,6 +724,8 @@ const MedicalRecords = () => {
     } catch (error) {
       console.error("Error saving medical services:", error);
       showToast("Failed to save medical services", "error");
+    } finally {
+      setSavingMedicalServices(false);
     }
   };
 
@@ -706,6 +734,7 @@ const MedicalRecords = () => {
       showToast("Please select a patient first", "error");
       return;
     }
+    setSavingSocialServices(true);
     try {
       // 1. Save services_rendered record
       await api.saveSocialServices(child.id, {
@@ -750,6 +779,8 @@ const MedicalRecords = () => {
     } catch (error) {
       console.error("Error saving social services:", error);
       showToast("Failed to save social services", "error");
+    } finally {
+      setSavingSocialServices(false);
     }
   };
 
@@ -758,6 +789,7 @@ const MedicalRecords = () => {
       showToast("Please select a patient first", "error");
       return;
     }
+    setSavingOthers(true);
     try {
       await api.saveOthers(child.id, {
         symptoms: othersData.symptoms,
@@ -784,6 +816,8 @@ const MedicalRecords = () => {
     } catch (error) {
       console.error("Error saving assessment:", error);
       showToast("Failed to save assessment", "error");
+    } finally {
+      setSavingOthers(false);
     }
   };
 
@@ -1043,6 +1077,11 @@ const MedicalRecords = () => {
             getUserDisplayName={getUserDisplayName}
             getRecordTypeLabel={getRecordTypeLabel}
             showToast={showToast}
+            savingBaseline={savingBaseline}
+            savingVitals={savingVitals}
+            savingMedicalServices={savingMedicalServices}
+            savingSocialServices={savingSocialServices}
+            savingOthers={savingOthers}
           />
         </div>
       </div>

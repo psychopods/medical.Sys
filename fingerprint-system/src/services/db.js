@@ -47,6 +47,89 @@ let SQL = null;
 let isInitializing = false;
 let initPromise = null;
 
+// ============================================
+// MIGRATION FUNCTIONS
+// ============================================
+
+const migrateServicesTable = async (db) => {
+  try {
+    const tableCheck = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='services_rendered'");
+    
+    if (tableCheck.length === 0 || tableCheck[0].values.length === 0) {
+      return;
+    }
+    
+    const result = db.exec("SELECT sql FROM sqlite_master WHERE type='table' AND name='services_rendered'");
+    const createSQL = result[0]?.values?.[0]?.[0] || '';
+    
+    if (!createSQL.includes("'procedure'")) {
+      try {
+        db.run("BEGIN TRANSACTION");
+        
+        db.run(`
+          CREATE TABLE services_rendered_new (
+            id TEXT PRIMARY KEY NOT NULL,
+            child_id TEXT NOT NULL,
+            service_type TEXT NOT NULL CHECK(service_type IN ('medical', 'social', 'education', 'procedure')),
+            services_list TEXT NOT NULL,
+            date TEXT NOT NULL,
+            recorded_by TEXT NULL,
+            recorded_by_name TEXT NULL,
+            version INTEGER NOT NULL DEFAULT 1,
+            is_dirty INTEGER NOT NULL DEFAULT 0,
+            sync_status TEXT NOT NULL DEFAULT 'synced' CHECK(sync_status IN ('local_created', 'synced', 'local_updated')),
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_modified_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (child_id) REFERENCES children_profiles (id) ON DELETE CASCADE
+          )
+        `);
+        
+        db.run(`INSERT INTO services_rendered_new SELECT * FROM services_rendered`);
+        db.run(`DROP TABLE services_rendered`);
+        db.run(`ALTER TABLE services_rendered_new RENAME TO services_rendered`);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_services_child_id ON services_rendered (child_id)`);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_services_service_type ON services_rendered (service_type)`);
+        db.run(`CREATE INDEX IF NOT EXISTS idx_services_date ON services_rendered (date)`);
+        
+        db.run("COMMIT");
+        await saveDB(true);
+      } catch (error) {
+        db.run("ROLLBACK");
+      }
+    }
+  } catch (error) {
+    // Silent fail
+  }
+};
+
+const migrateAddIsDirtyColumns = async (db) => {
+  const tables = [
+    'medical_baselines',
+    'child_vitals', 
+    'medications_given',
+    'laboratory_tests',
+    'symptoms_recorded',
+    'clothing_provisions'
+  ];
+  
+  for (const table of tables) {
+    try {
+      const result = db.exec(`PRAGMA table_info(${table})`);
+      const columns = result[0]?.values?.map(row => row[1]) || [];
+      
+      if (!columns.includes('is_dirty')) {
+        db.run(`ALTER TABLE ${table} ADD COLUMN is_dirty INTEGER NOT NULL DEFAULT 0`);
+      }
+    } catch (error) {
+      // Table might not exist yet, ignore
+    }
+  }
+};
+
+// ============================================
+// MAIN DATABASE INITIALIZATION
+// ============================================
+
 export async function getDB() {
   if (dbInstance) return dbInstance;
   if (isInitializing) return initPromise;
@@ -54,19 +137,16 @@ export async function getDB() {
   isInitializing = true;
   initPromise = (async () => {
     try {
-      // 1. Initialize sql.js WebAssembly
       const baseUrl = import.meta.env.BASE_URL || '/';
       SQL = await initSqlJs({
         locateFile: (file) => `${baseUrl}sql-wasm.wasm`,
       });
 
-      // 2. Load cached database from IndexedDB
       const cachedBuffer = await getCachedDbBuffer();
 
       if (cachedBuffer) {
         dbInstance = new SQL.Database(new Uint8Array(cachedBuffer));
 
-        // Dynamic migration: execute schema SQL to ensure any new/missing tables are created in the cached database
         try {
           const schemaRes = await fetch(`${baseUrl}SQLite_SYS_Database.sqlite.txt`);
           if (schemaRes.ok) {
@@ -74,7 +154,6 @@ export async function getDB() {
             if (!schemaSql.trim().startsWith('<')) {
               dbInstance.exec(schemaSql);
 
-              // Safe column migration for existing user databases
               try {
                 dbInstance.exec("ALTER TABLE biometric_fingerprints ADD COLUMN image_data TEXT NULL;");
               } catch (colErr) {
@@ -90,16 +169,18 @@ export async function getDB() {
                 dbInstance.exec("ALTER TABLE child_locations ADD COLUMN lng REAL NULL;");
               } catch (e) { }
 
-              await saveDB();
+              await migrateServicesTable(dbInstance);
+              await migrateAddIsDirtyColumns(dbInstance);
+
+              await saveDB(true);
             }
           }
         } catch (migrationError) {
-          // Silent fail for migration errors (device may be offline)
+          // Silent fail
         }
       } else {
         dbInstance = new SQL.Database();
 
-        // Fetch schema from public directory
         const schemaRes = await fetch(`${baseUrl}SQLite_SYS_Database.sqlite.txt`);
 
         if (!schemaRes.ok) {
@@ -108,23 +189,23 @@ export async function getDB() {
 
         const schemaSql = await schemaRes.text();
 
-        // Check if response is HTML (starts with '<'), which means rewrite rules returned the SPA index.html
         if (schemaSql.trim().startsWith('<')) {
           throw new Error('Database initialization scripts returned HTML instead of SQL. Please ensure SQLite_SYS_Database.sqlite.txt exists in the public directory.');
         }
 
-        // Execute schema ONLY (no seed script to preserve patient data)
         dbInstance.exec(schemaSql);
 
-        // Save fresh database state
-        await saveDB();
+        await migrateServicesTable(dbInstance);
+        await migrateAddIsDirtyColumns(dbInstance);
+
+        await saveDB(true);
       }
 
       isInitializing = false;
       return dbInstance;
     } catch (error) {
       isInitializing = false;
-      initPromise = null; // Reset promise on failure to allow retry
+      initPromise = null;
       throw error;
     }
   })();
@@ -134,7 +215,6 @@ export async function getDB() {
 
 let saveTimer = null;
 
-// Export and save current database state to IndexedDB with debouncing option
 export async function saveDB(immediate = false) {
   if (!dbInstance) return;
 
@@ -156,13 +236,12 @@ export async function saveDB(immediate = false) {
       try {
         await performSave();
       } catch (err) {
-        console.warn('Debounced saveDB failed:', err);
+        // Silent fail
       }
     }, 250);
   }
 }
 
-// Query helper: returns an array of row objects
 export async function executeQuery(sql, params = []) {
   const db = await getDB();
   let stmt;
@@ -181,7 +260,6 @@ export async function executeQuery(sql, params = []) {
   }
 }
 
-// Run helper: executes update/insert queries and saves database state
 export async function executeRun(sql, params = []) {
   const db = await getDB();
   try {
@@ -195,7 +273,6 @@ export async function executeRun(sql, params = []) {
   }
 }
 
-// Run multiple statements (e.g. for batch migrations or sync delta application)
 export async function executeBatch(sql) {
   const db = await getDB();
   try {
@@ -203,5 +280,34 @@ export async function executeBatch(sql) {
     await saveDB();
   } catch (error) {
     throw error;
+  }
+}
+
+export async function resetDatabase() {
+  try {
+    const db = await openIndexedDB();
+    const transaction = db.transaction([IDB_STORE], 'readwrite');
+    const store = transaction.objectStore(IDB_STORE);
+    store.clear();
+    
+    await new Promise((resolve, reject) => {
+      transaction.oncomplete = resolve;
+      transaction.onerror = reject;
+    });
+    
+    dbInstance = null;
+    isInitializing = false;
+    initPromise = null;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function isDatabaseReady() {
+  try {
+    const db = await getDB();
+    return db !== null;
+  } catch {
+    return false;
   }
 }
